@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+pnpm lint-staged
+
+cd src-tauri
+if ! cargo fmt -- --check; then
+    echo "Rust 代码格式检查失败，请运行 'cargo fmt' 修复"
+    exit 1
+fi
+
+if ! cargo clippy -- -D warnings; then
+    echo "Rust Clippy 检查失败，请修复警告"
+    exit 1
+fi

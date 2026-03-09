@@ -1,19 +1,20 @@
 # 🐰 Hopp
 
-> 轻量级、跨平台的 API 请求测试工具，Postman 的开源替代品
+> Lightweight, cross-platform API testing tool, an open-source alternative to Postman
+
+[简体中文](./README.zh-CN.md) | English
 
 [![CI](https://github.com/scottli139/hopp/actions/workflows/ci.yml/badge.svg)](https://github.com/scottli139/hopp/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tauri](https://img.shields.io/badge/Tauri-2.x-blue?logo=tauri)](https://tauri.app)
 [![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react)](https://react.dev)
+[![AI Powered](https://img.shields.io/badge/AI%20Powered-Kimi-orange?logo=artificial-intelligence)](https://www.moonshot.cn)
 
-<p align="center">
-  <img src="./docs/assets/logo.png" alt="Hopp Logo" width="200">
-</p>
+**🤖 100% AI Developed** — Frontend by [Kimi Code CLI](https://www.moonshot.cn/) · Backend by [Kimi 2.5 Model](https://www.moonshot.cn/)
 
-## 📸 场景展示
+## 📸 Screenshots
 
-### 发送 HTTP 请求
+### Sending HTTP Requests
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  📁 Sidebar  │  Request Tab Bar                              │
@@ -34,13 +35,13 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 管理请求集合
-- 📁 创建文件夹组织请求
-- ⭐ 收藏常用请求
-- 🕐 自动保存请求历史
-- 📤 导入/导出 Postman 集合
+### Managing Request Collections
+- 📁 Create folders to organize requests
+- ⭐ Bookmark frequently used requests
+- 🕐 Automatically save request history
+- 📤 Import/Export Postman collections
 
-### 环境变量
+### Environment Variables
 ```
 Environment: Production
 ├─ baseUrl: https://api.production.com
@@ -48,101 +49,103 @@ Environment: Production
 └─ version: v2
 ```
 
-### WebSocket 测试
-- 🔌 支持 ws/wss 协议
-- 📨 实时消息收发
-- 📜 消息历史记录
+### WebSocket Testing
+- 🔌 Support for ws/wss protocols
+- 📨 Real-time message sending/receiving
+- 📜 Message history records
 
-## ✨ 特性
+## ✨ Features
 
-| 特性 | 描述 | 状态 |
-|------|------|------|
-| 🚀 **轻量快速** | 基于 Tauri 构建，启动 < 2s，内存 < 200MB | ✅ |
-| 💻 **跨平台** | 支持 macOS、Windows、Linux | ✅ |
-| 🎨 **精美界面** | 现代化 UI，支持深色/浅色主题 | ✅ |
-| 🔧 **完整功能** | HTTP/HTTPS、WebSocket、环境变量、集合 | ✅ |
-| 📦 **数据管理** | 本地 SQLite 存储，Postman 导入/导出 | ✅ |
-| 🔒 **隐私安全** | 数据本地存储，不上传云端 | ✅ |
-| ⚡ **高性能** | Rust 后端，响应迅速 | ✅ |
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 🚀 **Lightweight & Fast** | Built with Tauri, starts in < 2s, memory < 200MB | ✅ |
+| 💻 **Cross-Platform** | Supports macOS, Windows, Linux | ✅ |
+| 🎨 **Beautiful UI** | Modern UI with dark/light theme support | ✅ |
+| 🔧 **Full-Featured** | HTTP/HTTPS, WebSocket, environment variables, collections | ✅ |
+| 📦 **Data Management** | Local SQLite storage, Postman import/export | ✅ |
+| 🔒 **Privacy & Security** | Data stored locally, no cloud upload | ✅ |
+| ⚡ **High Performance** | Rust backend for fast response | ✅ |
+| 🌍 **Multi-Language** | Supports English and Simplified Chinese | ✅ |
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 下载安装
+### Download & Install
 
-从 [Releases](https://github.com/scottli139/hopp/releases) 下载对应平台的安装包：
+Download the appropriate package for your platform from [Releases](https://github.com/scottli139/hopp/releases):
 
-| 平台 | 下载 |
-|------|------|
+| Platform | Download |
+|----------|----------|
 | macOS (Apple Silicon) | `Hopp_0.1.0_aarch64.dmg` |
 | macOS (Intel) | `Hopp_0.1.0_x64.dmg` |
 | Windows | `Hopp_0.1.0_x64-setup.exe` |
 | Linux | `Hopp_0.1.0_amd64.AppImage` |
 
-### 使用指南
+### User Guide
 
-1. **发送请求** - 输入 URL，选择 HTTP 方法，点击发送
-2. **管理集合** - 在侧边栏创建文件夹，右键保存请求
-3. **环境变量** - 创建环境配置，在 URL/Headers 中使用 `{{variable}}`
-4. **WebSocket** - 切换到 WebSocket 标签，输入 ws/wss URL 连接
+1. **Send Requests** - Enter URL, select HTTP method, click send
+2. **Manage Collections** - Create folders in sidebar, right-click to save requests
+3. **Environment Variables** - Create environment configs, use `{{variable}}` in URL/Headers
+4. **WebSocket** - Switch to WebSocket tab, enter ws/wss URL to connect
+5. **Language** - Switch between English and Chinese in settings
 
-## 🛠️ 开发环境
+## 🛠️ Development Environment
 
-### 前置要求
+### Prerequisites
 
 - [Node.js](https://nodejs.org/) 18+
 - [Rust](https://www.rust-lang.org/) 1.75+
 - [pnpm](https://pnpm.io/) 8+
 
 ```bash
-# 验证环境
+# Verify environment
 node --version    # v18+
 rustc --version   # 1.75+
 pnpm --version    # 8+
 ```
 
-### 本地开发
+### Local Development
 
 ```bash
-# 1. 克隆仓库
+# 1. Clone repository
 git clone https://github.com/scottli139/hopp.git
 cd hopp
 
-# 2. 安装依赖
+# 2. Install dependencies
 pnpm install
 
-# 3. 启动开发服务器
+# 3. Start development server
 pnpm tauri dev
 
-# 4. 运行测试
-pnpm test:unit      # 单元测试
-pnpm test:e2e       # E2E 测试
+# 4. Run tests
+pnpm test:unit      # Unit tests
+pnpm test:e2e       # E2E tests
 
-# 5. 构建生产版本
+# 5. Build production version
 pnpm tauri build
 ```
 
-### 项目脚本
+### Project Scripts
 
 ```bash
-# 代码检查
-pnpm lint           # ESLint 检查
-pnpm lint:fix       # ESLint 自动修复
-pnpm format         # Prettier 格式化
-pnpm type-check     # TypeScript 类型检查
-pnpm check          # 运行所有检查
+# Code checks
+pnpm lint           # ESLint check
+pnpm lint:fix       # ESLint auto-fix
+pnpm format         # Prettier formatting
+pnpm type-check     # TypeScript type check
+pnpm check          # Run all checks
 
-# 测试
-pnpm test:unit      # 单元测试
-pnpm test:unit:coverage  # 单元测试 + 覆盖率
-pnpm test:e2e       # E2E 测试
+# Testing
+pnpm test:unit      # Unit tests
+pnpm test:unit:coverage  # Unit tests + coverage
+pnpm test:e2e       # E2E tests
 
-# 构建
-pnpm dev            # 开发模式
-pnpm build          # 构建前端
-pnpm tauri build    # 构建桌面应用
+# Building
+pnpm dev            # Development mode
+pnpm build          # Build frontend
+pnpm tauri build    # Build desktop app
 ```
 
-## 🏗️ 技术栈
+## 🏗️ Tech Stack
 
 ```
 Frontend                    Backend
@@ -153,72 +156,74 @@ Vite 5.x                    Tokio
 Tailwind CSS                Reqwest
 Radix UI                    SQLite
 Zustand                     thiserror
+i18next                     -
 ```
 
-## 📚 文档
+## 📚 Documentation
 
-| 文档 | 描述 |
-|------|------|
-| [需求规格说明书](./docs/PRD.md) | 功能需求详细说明 |
-| [架构设计文档](./docs/ARCHITECTURE.md) | 技术架构与模块设计 |
-| [开发计划](./docs/DEVELOPMENT_PLAN.md) | 里程碑与任务规划 |
-| [代码规范](./docs/CODING_STANDARDS.md) | 编码规范与最佳实践 |
-| [测试方案](./docs/TESTING.md) | 自动化测试策略 |
-| [开发环境](./docs/DEVELOPMENT_ENVIRONMENT.md) | 环境搭建指南 |
+| Document | Description |
+|----------|-------------|
+| [Requirements Specification](./docs/PRD.md) | Detailed functional requirements |
+| [Architecture Design](./docs/ARCHITECTURE.md) | Technical architecture & module design |
+| [Development Plan](./docs/DEVELOPMENT_PLAN.md) | Milestones & task planning |
+| [Coding Standards](./docs/CODING_STANDARDS.md) | Coding standards & best practices |
+| [Testing Strategy](./docs/TESTING.md) | Automated testing strategy |
+| [Development Environment](./docs/DEVELOPMENT_ENVIRONMENT.md) | Environment setup guide |
 
-## 🤝 贡献指南
+## 🤝 Contributing
 
-我们欢迎所有形式的贡献！
+We welcome all forms of contributions!
 
 ```bash
-# 1. Fork 本仓库
-# 2. 创建功能分支
+# 1. Fork this repository
+# 2. Create feature branch
 git checkout -b feature/amazing-feature
 
-# 3. 提交更改
+# 3. Commit changes
 git commit -m "feat: add amazing feature"
 
-# 4. 推送分支
+# 4. Push branch
 git push origin feature/amazing-feature
 
-# 5. 创建 Pull Request
+# 5. Create Pull Request
 ```
 
-请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md) 了解详细信息。
+Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
-### 提交规范
+### Commit Convention
 
-我们使用 [Conventional Commits](https://www.conventionalcommits.org/)：
+We use [Conventional Commits](https://www.conventionalcommits.org/):
 
-- `feat`: 新功能
-- `fix`: Bug 修复
-- `docs`: 文档更新
-- `style`: 代码格式
-- `refactor`: 重构
-- `perf`: 性能优化
-- `test`: 测试相关
-- `chore`: 构建/依赖
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation update
+- `style`: Code formatting
+- `refactor`: Refactoring
+- `perf`: Performance optimization
+- `test`: Testing related
+- `chore`: Build/dependencies
 
-## 📅 路线图
+## 📅 Roadmap
 
-- [x] M1: 基础框架 (v0.1.0)
-- [ ] M2: 数据管理 (v0.2.0) - 集合、历史记录
-- [ ] M3: 环境变量 (v0.3.0) - 环境、Cookie、主题
-- [ ] M4: 高级功能 (v0.4.0) - WebSocket、代码生成
-- [ ] M5: 发布准备 (v1.0.0) - 测试、文档、签名
+- [x] M1: Basic Framework (v0.1.0)
+- [ ] M2: Data Management (v0.2.0) - Collections, history
+- [ ] M3: Environment Variables (v0.3.0) - Environments, cookies, themes
+- [ ] M4: Advanced Features (v0.4.0) - WebSocket, code generation
+- [ ] M5: Release Preparation (v1.0.0) - Testing, documentation, signing
 
-查看 [BACKLOG.md](./docs/BACKLOG.md) 了解未来计划。
+See [BACKLOG.md](./docs/BACKLOG.md) for future plans.
 
-## 📄 许可证
+## 📄 License
 
 [MIT License](./LICENSE) © 2024 Hopp Contributors
 
-## 🙏 致谢
+## 🙏 Acknowledgements
 
-- [Tauri](https://tauri.app/) - 构建跨平台桌面应用的框架
-- [React](https://react.dev/) - 用户界面库
-- [Radix UI](https://www.radix-ui.com/) - 无样式 UI 组件
-- [Reqwest](https://docs.rs/reqwest/) - Rust HTTP 客户端
+- [Tauri](https://tauri.app/) - Framework for building cross-platform desktop apps
+- [React](https://react.dev/) - UI library
+- [Radix UI](https://www.radix-ui.com/) - Unstyled UI components
+- [Reqwest](https://docs.rs/reqwest/) - Rust HTTP client
+- [i18next](https://www.i18next.com/) - Internationalization framework
 
 ---
 

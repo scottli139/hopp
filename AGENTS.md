@@ -8,7 +8,7 @@
 
 **Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Tauri 构建，注重性能和用户体验。
 
-**当前状态**: ✅ **M1.1 项目初始化已完成，CI/CD 配置完成**  
+**当前状态**: ✅ **M1.1 项目初始化已完成，多语言 & 日志系统已完成，等待 M1.3 基础布局组件**  
 **技术栈**: Tauri 2.x + React 18 + TypeScript + Rust  
 **目标平台**: macOS 10.15+ / Windows 10+ / Linux
 
@@ -26,6 +26,10 @@
 | CI/CD 配置 | ✅ | 2026-03-09 | GitHub Actions 工作流全部通过 |
 | 文档完善 | ✅ | 2026-03-09 | PRD、架构、开发计划、代码规范、测试方案文档完成 |
 | GitHub Pages | ✅ | 2026-03-09 | 项目主页部署完成 |
+| 多语言支持 | ✅ | 2026-03-09 | i18next 集成完成，支持中/英双语 |
+| 日志系统 | ✅ | 2026-03-09 | 前端 loglevel + 后端 tracing，支持日志查看/导出/清理 |
+| AI 开发标识 | ✅ | 2026-03-09 | README 和 GitHub Pages 添加 Kimi AI 开发标识 |
+| GitHub 设置指南 | ✅ | 2026-03-09 | 创建 GitHub 仓库 description 和 topics 推荐文档 |
 
 ### 进行中 🔄
 
@@ -43,6 +47,8 @@
 | M1.7 前后端集成 | 🔴 P0 | 8h |
 | M1.8 基础本地存储 | 🟡 P1 | 8h |
 | M1.9 多标签页功能 | 🟡 P1 | 8h |
+| M1.10 日志系统 | ✅ | 2026-03-09 | 支持前端/后端日志、日志文件管理、问题排查 |
+| M1.11 AI 标识 & GitHub 优化 | ✅ | 2026-03-09 | README 优化、GitHub 设置指南 |
 
 ---
 
@@ -67,6 +73,33 @@
 - 可访问性（a11y）支持好
 - 与 Tailwind CSS 配合良好
 - 官方维护，质量可靠
+
+#### 4. 国际化方案选择 i18next 的原因
+- 功能成熟，社区活跃
+- 支持语言自动检测和本地存储
+- React 集成简单（react-i18next）
+- TypeScript 支持良好
+- 支持命名空间和复数等高级特性
+
+#### 5. 日志系统设计方案
+**前端日志**: 使用 `loglevel` 库
+- 轻量级，无依赖
+- 支持日志级别控制
+- 同时输出到控制台和 localStorage
+- 支持导出日志文件
+
+**后端日志**: 使用 Rust `tracing` + `tracing-subscriber` + `tracing-appender`
+- 结构化日志输出
+- 支持日志文件按天滚动
+- 自动清理旧日志
+- 日志文件存储在应用数据目录
+
+**日志功能**:
+- 前端: `src/utils/logger.ts` - 提供 trace/debug/info/warn/error 方法
+- 后端: `src-tauri/src/utils/logger.rs` - 初始化和管理日志文件
+- 命令: `src-tauri/src/commands/log.rs` - Tauri 命令暴露给前端
+- 服务: `src/services/logService.ts` - 前端调用后端命令的封装
+- 组件: `src/components/LogViewer.tsx` - 日志查看器 UI
 
 ### 遇到的问题与解决方案
 
@@ -106,6 +139,36 @@
 ```bash
 # 准备 1024x1024 的 SVG 或 PNG 图标
 pnpm tauri icon /path/to/icon.svg --output src-tauri/icons
+```
+
+#### 日志文件位置
+
+**后端日志文件**（Rust tracing 输出）：
+
+| 操作系统 | 日志目录路径 |
+|----------|--------------|
+| **macOS** | `~/Library/Application Support/hopp/logs/` |
+| **Windows** | `%APPDATA%/hopp/logs/` (通常是 `C:/Users/<用户名>/AppData/Roaming/hopp/logs/`) |
+| **Linux** | `~/.config/hopp/logs/` 或 `~/.local/share/hopp/logs/` |
+
+**前端日志**：存储在 localStorage（键名：`hopp_logs`），可通过浏览器 DevTools → Application → Local Storage 查看
+
+**快速打开日志目录**：在应用内点击 "Show Logs" → 查看 "Log Directory" 路径
+
+#### 添加新语言支持
+```bash
+# 1. 在 src/i18n/locales/ 下创建新的翻译文件，如 ja.json
+# 2. 在 src/i18n/index.ts 中导入并添加到 resources
+# 3. 更新 Language 类型定义
+# 4. 在组件中使用 useTranslation hook
+
+# 使用示例
+import { useTranslation } from 'react-i18next';
+
+const MyComponent = () => {
+  const { t, i18n } = useTranslation();
+  return <h1>{t('app.name')}</h1>;
+};
 ```
 
 #### Git 配置
@@ -148,6 +211,8 @@ docs/
 | Radix UI | 1.x | 无样式 UI 组件库 |
 | Zustand | 4.x | 全局状态管理 |
 | Monaco Editor | latest | JSON/代码编辑 |
+| i18next | 25.x | 国际化框架 |
+| react-i18next | 16.x | React i18n 集成 |
 
 ### 后端 (Backend - Tauri)
 
@@ -187,6 +252,11 @@ hopp/
 │   ├── services/               # API 服务
 │   ├── types/                  # TypeScript 类型
 │   ├── utils/                  # 工具函数
+│   ├── i18n/                   # 国际化配置
+│   │   ├── locales/            # 翻译文件
+│   │   │   ├── en.json         # 英文翻译
+│   │   │   └── zh-CN.json      # 中文翻译
+│   │   └── index.ts            # i18n 配置
 │   └── test/                   # 测试配置
 ├── src-tauri/                  # Rust 后端
 │   ├── src/
@@ -282,6 +352,10 @@ pnpm tauri build            # 构建生产版本
 | 日期 | 版本 | 更新内容 |
 |------|------|----------|
 | 2026-03-09 | v0.1.0-init | 项目初始化完成，CI/CD 配置完成，文档完善 |
+| 2026-03-09 | v0.1.0-i18n | 多语言支持完成（中/英双语），README 双语版，GitHub Pages 双语切换 |
+| 2026-03-09 | v0.1.0-logging | 日志系统完成，新增日志规范到 CODING_STANDARDS.md |
+| 2026-03-09 | v0.1.0-ai-badge | README 和 GitHub Pages 添加 AI 开发标识 (Kimi Code CLI + Kimi 2.5 Model) |
+| 2026-03-09 | v0.1.0-github-settings | 创建 GitHub 仓库设置指南 (description + topics 推荐) |
 
 ---
 

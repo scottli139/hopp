@@ -591,3 +591,158 @@ feature/M1-1 .... 功能分支
 - [ ] CI 检查通过
 - [ ] 功能测试通过
 - [ ] 文档已更新
+- [ ] 必要的日志已添加
+
+---
+
+## 📝 日志规范
+
+### 基本原则
+
+**每个新功能必须添加适当的日志**，以便：
+- 排查用户问题
+- 自动化测试验证
+- 运行时行为追踪
+
+### 前端日志规范
+
+```typescript
+// ✅ 正确的日志使用
+import logger from '@/utils/logger';
+
+// 1. 用户操作 - 使用 info
+const handleSendRequest = async () => {
+  logger.info('Sending HTTP request', { 
+    method: request.method, 
+    url: request.url 
+  });
+  
+  try {
+    const response = await sendRequest(request);
+    logger.info('Request succeeded', { 
+      status: response.status,
+      duration: response.duration 
+    });
+  } catch (error) {
+    logger.error('Request failed', error as Error, {
+      method: request.method,
+      url: request.url
+    });
+  }
+};
+
+// 2. 状态变化 - 使用 debug
+useEffect(() => {
+  logger.debug('Active request changed', { requestId: activeRequestId });
+}, [activeRequestId]);
+
+// 3. 关键配置变更 - 使用 info
+const updateSettings = (settings: Settings) => {
+  logger.info('Settings updated', { 
+    theme: settings.theme,
+    language: settings.language 
+  });
+  saveSettings(settings);
+};
+```
+
+#### 日志级别使用指南
+
+| 级别 | 使用场景 | 示例 |
+|------|----------|------|
+| `trace` | 详细执行流程 | 函数进入/退出、循环迭代 |
+| `debug` | 开发调试信息 | 状态变化、配置值 |
+| `info` | 关键业务事件 | 用户操作、请求发送/完成 |
+| `warn` | 警告/预期外情况 | 降级处理、重试 |
+| `error` | 错误/异常 | 请求失败、操作失败 |
+
+#### 日志内容规范
+
+```typescript
+// ✅ 好 - 包含上下文
+logger.info('Collection imported', { 
+  name: collection.name,
+  requestCount: collection.requests.length,
+  source: 'postman'
+});
+
+// ❌ 差 - 信息不足
+logger.info('Import done');
+```
+
+### 后端日志规范
+
+```rust
+// ✅ 正确的日志使用
+use tracing::{info, debug, error, warn};
+
+// 1. 命令/请求处理 - 使用 info
+#[tauri::command]
+pub async fn send_http_request(request: HttpRequest) -> Result<HttpResponse, String> {
+    info!(method = %request.method, url = %request.url, "Sending HTTP request");
+    
+    let client = HttpClient::new();
+    match client.send(request).await {
+        Ok(response) => {
+            info!(status = response.status, "Request completed");
+            Ok(response)
+        }
+        Err(e) => {
+            error!(error = %e, "Request failed");
+            Err(e.to_string())
+        }
+    }
+}
+
+// 2. 内部处理 - 使用 debug
+debug!(request_id = %id, "Processing request");
+
+// 3. 警告情况 - 使用 warn
+warn!(retry_count = retry, "Request timeout, retrying...");
+```
+
+#### Rust 日志属性规范
+
+```rust
+// ✅ 使用结构化字段
+info!(
+    user_id = %user.id,
+    action = "create_collection",
+    collection_name = %name,
+    "User created collection"
+);
+
+// ❌ 避免字符串拼接
+info!("User {} created collection {}", user.id, name);
+```
+
+### 日志检查清单
+
+新增功能时，确保：
+
+- [ ] **关键操作**有 `info` 级别日志（创建、更新、删除、发送）
+- [ ] **错误处理**有 `error` 级别日志，包含错误对象和上下文
+- [ ] **状态变化**有 `debug` 级别日志
+- [ ] **用户交互**有日志记录（按钮点击、表单提交）
+- [ ] **外部调用**有开始和结束的日志对（请求/响应）
+- [ ] **敏感信息**已脱敏（密码、Token 等不记录）
+
+### 敏感信息处理
+
+```typescript
+// ✅ 脱敏处理
+logger.info('API key configured', { 
+  keyId: apiKey.id,
+  // ❌ 不要记录: key: apiKey.value
+  maskedValue: maskString(apiKey.value, 4) // 只显示后4位
+});
+```
+
+```rust
+// ✅ 脱敏处理
+info!(
+    api_key_id = %key_id,
+    "API key configured"
+    // ❌ 不要记录实际 key 值
+);
+```

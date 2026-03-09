@@ -7,6 +7,7 @@ on:
     paths:
       - 'docs/**'
       - 'README.md'
+      - 'README.zh-CN.md'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -33,11 +34,13 @@ jobs:
         run: |
           mkdir -p _site
           cp README.md _site/
+          cp README.zh-CN.md _site/
           cp -r docs _site/
           
+          # 创建英文版首页
           cat > _site/index.html << 'EOF'
           <!DOCTYPE html>
-          <html lang="zh-CN">
+          <html lang="en">
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -56,9 +59,234 @@ jobs:
                 margin: 0 auto;
                 padding: 40px 20px;
               }
+              .lang-switch {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                display: flex;
+                gap: 10px;
+              }
+              .lang-switch a {
+                color: white;
+                text-decoration: none;
+                padding: 5px 12px;
+                border-radius: 20px;
+                font-size: 14px;
+                opacity: 0.7;
+                transition: all 0.3s;
+              }
+              .lang-switch a:hover,
+              .lang-switch a.active {
+                opacity: 1;
+                background: rgba(255,255,255,0.2);
+              }
               .hero {
                 text-align: center;
-                padding: 60px 20px;
+                padding: 80px 20px 60px;
+                color: white;
+              }
+              .hero h1 {
+                font-size: 4rem;
+                margin-bottom: 20px;
+              }
+              .hero p {
+                font-size: 1.5rem;
+                opacity: 0.9;
+                margin-bottom: 15px;
+              }
+              .ai-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: rgba(255,140,0,0.2);
+                border: 1px solid rgba(255,140,0,0.4);
+                color: #ffcc80;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 0.9rem;
+                margin-bottom: 25px;
+                backdrop-filter: blur(10px);
+              }
+              .ai-badge a {
+                color: #ffcc80;
+                text-decoration: underline;
+              }
+              .badges {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                flex-wrap: wrap;
+                margin-bottom: 30px;
+              }
+              .badges img {
+                height: 20px;
+              }
+              .features {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin: 40px 0;
+              }
+              .feature-card {
+                background: rgba(255,255,255,0.1);
+                backdrop-filter: blur(10px);
+                padding: 25px;
+                border-radius: 12px;
+                color: white;
+              }
+              .feature-card h3 {
+                font-size: 1.2rem;
+                margin-bottom: 10px;
+              }
+              .feature-card p {
+                opacity: 0.8;
+                font-size: 0.95rem;
+              }
+              .btn {
+                display: inline-block;
+                background: white;
+                color: #667eea;
+                padding: 15px 30px;
+                border-radius: 30px;
+                text-decoration: none;
+                font-weight: 600;
+                margin: 10px;
+                transition: transform 0.3s;
+              }
+              .btn:hover {
+                transform: translateY(-2px);
+              }
+              .btn-primary {
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                color: white;
+              }
+              .links {
+                display: flex;
+                justify-content: center;
+                gap: 30px;
+                margin-top: 30px;
+                flex-wrap: wrap;
+              }
+              .links a {
+                color: white;
+                opacity: 0.8;
+                text-decoration: none;
+              }
+              .links a:hover {
+                opacity: 1;
+                text-decoration: underline;
+              }
+              footer {
+                text-align: center;
+                padding: 40px;
+                color: white;
+                opacity: 0.8;
+              }
+              @media (max-width: 600px) {
+                .hero h1 { font-size: 2.5rem; }
+                .hero p { font-size: 1.1rem; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="lang-switch">
+              <a href="index.html" class="active">English</a>
+              <a href="index.zh-CN.html">简体中文</a>
+            </div>
+            <div class="container">
+              <div class="hero">
+                <h1>🐰 Hopp</h1>
+                <p>Lightweight, cross-platform API testing tool</p>
+                <div class="ai-badge">
+                  🤖 100% AI Developed · Frontend by <a href="https://www.moonshot.cn/" target="_blank">Kimi Code CLI</a> · Backend by <a href="https://www.moonshot.cn/" target="_blank">Kimi 2.5</a>
+                </div>
+                <div class="badges">
+                  <img src="https://github.com/scottli139/hopp/actions/workflows/ci.yml/badge.svg" alt="CI">
+                  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
+                </div>
+                <a href="https://github.com/scottli139/hopp/releases" class="btn btn-primary">Download</a>
+                <a href="https://github.com/scottli139/hopp" class="btn">GitHub</a>
+                
+                <div class="features">
+                  <div class="feature-card">
+                    <h3>🚀 Lightweight</h3>
+                    <p>Built with Tauri, starts in &lt; 2s, memory &lt; 200MB</p>
+                  </div>
+                  <div class="feature-card">
+                    <h3>💻 Cross-Platform</h3>
+                    <p>Supports macOS, Windows, and Linux</p>
+                  </div>
+                  <div class="feature-card">
+                    <h3>🔧 Full-Featured</h3>
+                    <p>HTTP/HTTPS, WebSocket, environments, collections</p>
+                  </div>
+                  <div class="feature-card">
+                    <h3>🌍 Multi-Language</h3>
+                    <p>English and Simplified Chinese supported</p>
+                  </div>
+                </div>
+                
+                <div class="links">
+                  <a href="./docs/PRD.md">Requirements</a>
+                  <a href="./docs/ARCHITECTURE.md">Architecture</a>
+                  <a href="./docs/DEVELOPMENT_PLAN.md">Roadmap</a>
+                  <a href="./README.md">Documentation</a>
+                </div>
+              </div>
+              <footer>
+                <p>Built with ❤️ by Hopp Team · 🐰 Hop to your APIs!</p>
+              </footer>
+            </div>
+          </body>
+          </html>
+          EOF
+          
+          # 创建中文版首页
+          cat > _site/index.zh-CN.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="zh-CN">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Hopp - API 测试工具</title>
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+                line-height: 1.6;
+                color: #333;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+              }
+              .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 40px 20px;
+              }
+              .lang-switch {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                display: flex;
+                gap: 10px;
+              }
+              .lang-switch a {
+                color: white;
+                text-decoration: none;
+                padding: 5px 12px;
+                border-radius: 20px;
+                font-size: 14px;
+                opacity: 0.7;
+                transition: all 0.3s;
+              }
+              .lang-switch a:hover,
+              .lang-switch a.active {
+                opacity: 1;
+                background: rgba(255,255,255,0.2);
+              }
+              .hero {
+                text-align: center;
+                padding: 80px 20px 60px;
                 color: white;
               }
               .hero h1 {
@@ -75,9 +303,31 @@ jobs:
                 justify-content: center;
                 gap: 10px;
                 flex-wrap: wrap;
+                margin-bottom: 30px;
               }
               .badges img {
                 height: 20px;
+              }
+              .features {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin: 40px 0;
+              }
+              .feature-card {
+                background: rgba(255,255,255,0.1);
+                backdrop-filter: blur(10px);
+                padding: 25px;
+                border-radius: 12px;
+                color: white;
+              }
+              .feature-card h3 {
+                font-size: 1.2rem;
+                margin-bottom: 10px;
+              }
+              .feature-card p {
+                opacity: 0.8;
+                font-size: 0.95rem;
               }
               .btn {
                 display: inline-block;
@@ -88,33 +338,90 @@ jobs:
                 text-decoration: none;
                 font-weight: 600;
                 margin: 10px;
+                transition: transform 0.3s;
+              }
+              .btn:hover {
+                transform: translateY(-2px);
               }
               .btn-primary {
                 background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
                 color: white;
               }
+              .links {
+                display: flex;
+                justify-content: center;
+                gap: 30px;
+                margin-top: 30px;
+                flex-wrap: wrap;
+              }
+              .links a {
+                color: white;
+                opacity: 0.8;
+                text-decoration: none;
+              }
+              .links a:hover {
+                opacity: 1;
+                text-decoration: underline;
+              }
               footer {
                 text-align: center;
                 padding: 40px;
                 color: white;
+                opacity: 0.8;
+              }
+              @media (max-width: 600px) {
+                .hero h1 { font-size: 2.5rem; }
+                .hero p { font-size: 1.1rem; }
               }
             </style>
           </head>
           <body>
+            <div class="lang-switch">
+              <a href="index.html">English</a>
+              <a href="index.zh-CN.html" class="active">简体中文</a>
+            </div>
             <div class="container">
               <div class="hero">
                 <h1>🐰 Hopp</h1>
                 <p>轻量级、跨平台的 API 请求测试工具</p>
+                <div class="ai-badge">
+                  🤖 100% AI 开发 · 前端 <a href="https://www.moonshot.cn/" target="_blank">Kimi Code CLI</a> · 后端 <a href="https://www.moonshot.cn/" target="_blank">Kimi 2.5</a>
+                </div>
                 <div class="badges">
                   <img src="https://github.com/scottli139/hopp/actions/workflows/ci.yml/badge.svg" alt="CI">
                   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
                 </div>
-                <br><br>
                 <a href="https://github.com/scottli139/hopp/releases" class="btn btn-primary">下载安装</a>
                 <a href="https://github.com/scottli139/hopp" class="btn">GitHub</a>
+                
+                <div class="features">
+                  <div class="feature-card">
+                    <h3>🚀 轻量快速</h3>
+                    <p>基于 Tauri 构建，启动 &lt; 2s，内存 &lt; 200MB</p>
+                  </div>
+                  <div class="feature-card">
+                    <h3>💻 跨平台</h3>
+                    <p>支持 macOS、Windows、Linux</p>
+                  </div>
+                  <div class="feature-card">
+                    <h3>🔧 完整功能</h3>
+                    <p>HTTP/HTTPS、WebSocket、环境变量、集合</p>
+                  </div>
+                  <div class="feature-card">
+                    <h3>🌍 多语言</h3>
+                    <p>支持简体中文和英语</p>
+                  </div>
+                </div>
+                
+                <div class="links">
+                  <a href="./docs/PRD.md">需求文档</a>
+                  <a href="./docs/ARCHITECTURE.md">架构设计</a>
+                  <a href="./docs/DEVELOPMENT_PLAN.md">开发计划</a>
+                  <a href="./README.zh-CN.md">使用文档</a>
+                </div>
               </div>
               <footer>
-                <p>Built with ❤️ by Hopp Team</p>
+                <p>Built with ❤️ by Hopp Team · 🐰 Hop to your APIs!</p>
               </footer>
             </div>
           </body>

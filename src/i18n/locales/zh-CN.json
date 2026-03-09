@@ -1,0 +1,81 @@
+{
+  "app": {
+    "name": "Hopp",
+    "tagline": "轻量级、跨平台的 API 测试工具"
+  },
+  "common": {
+    "loading": "加载中...",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "create": "创建",
+    "close": "关闭",
+    "confirm": "确认",
+    "search": "搜索",
+    "clear": "清空",
+    "copy": "复制",
+    "copied": "已复制！",
+    "error": "错误",
+    "success": "成功",
+    "warning": "警告",
+    "info": "提示"
+  },
+  "sidebar": {
+    "history": "历史记录",
+    "collections": "集合",
+    "favorites": "收藏",
+    "environments": "环境"
+  },
+  "request": {
+    "newRequest": "新建请求",
+    "send": "发送",
+    "sending": "发送中...",
+    "url": "请求地址",
+    "method": "请求方法",
+    "params": "参数",
+    "headers": "请求头",
+    "body": "请求体",
+    "auth": "认证",
+    "response": "响应",
+    "status": "状态",
+    "time": "耗时",
+    "size": "大小"
+  },
+  "http": {
+    "methods": {
+      "GET": "GET",
+      "POST": "POST",
+      "PUT": "PUT",
+      "DELETE": "DELETE",
+      "PATCH": "PATCH",
+      "HEAD": "HEAD",
+      "OPTIONS": "OPTIONS"
+    }
+  },
+  "settings": {
+    "title": "设置",
+    "general": "通用",
+    "appearance": "外观",
+    "theme": "主题",
+    "language": "语言",
+    "light": "浅色",
+    "dark": "深色",
+    "system": "跟随系统"
+  },
+  "language": {
+    "en": "English",
+    "zhCN": "简体中文"
+  },
+  "logs": {
+    "title": "日志",
+    "refresh": "刷新",
+    "export": "导出",
+    "cleanup": "清理",
+    "noLogs": "暂无日志",
+    "totalFiles": "文件总数",
+    "totalSize": "总大小",
+    "logDirectory": "日志目录",
+    "confirmCleanup": "保留最近7天的日志，删除其余日志？"
+  }
+}

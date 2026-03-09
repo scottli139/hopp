@@ -12,14 +12,14 @@ pub fn run() {
             let app_handle = app.handle();
             let app_dir = app_handle.path().app_data_dir()?;
             std::fs::create_dir_all(&app_dir)?;
-            
+
             if let Err(e) = utils::logger::init_logger_with_app_dir(&app_dir, None) {
                 eprintln!("Failed to initialize logger: {}", e);
             } else {
                 info!("Hopp application started");
                 info!("App directory: {:?}", app_dir);
             }
-            
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

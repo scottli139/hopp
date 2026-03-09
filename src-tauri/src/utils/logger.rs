@@ -60,11 +60,8 @@ pub fn init_logger(config: Option<LoggerConfig>) -> Result<(), Box<dyn std::erro
     // 根据配置组合不同的输出层
     if config.enable_console && config.enable_file {
         // 同时输出到控制台和文件
-        let file_appender = RollingFileAppender::new(
-            config.rotation.clone(),
-            &config.log_dir,
-            "hopp.log",
-        );
+        let file_appender =
+            RollingFileAppender::new(config.rotation.clone(), &config.log_dir, "hopp.log");
 
         let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
         // 保存 guard 防止被丢弃
@@ -85,11 +82,8 @@ pub fn init_logger(config: Option<LoggerConfig>) -> Result<(), Box<dyn std::erro
             .init();
     } else if config.enable_file {
         // 只输出到文件
-        let file_appender = RollingFileAppender::new(
-            config.rotation.clone(),
-            &config.log_dir,
-            "hopp.log",
-        );
+        let file_appender =
+            RollingFileAppender::new(config.rotation.clone(), &config.log_dir, "hopp.log");
 
         let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
         std::mem::forget(_guard);

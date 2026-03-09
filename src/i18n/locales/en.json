@@ -1,7 +1,9 @@
 {
   "app": {
     "name": "Hopp",
-    "tagline": "Lightweight, cross-platform API testing tool"
+    "tagline": "Lightweight, cross-platform API testing tool",
+    "welcome": "Welcome to Hopp",
+    "testConnection": "Test Connection"
   },
   "common": {
     "loading": "Loading...",
@@ -25,7 +27,13 @@
     "history": "History",
     "collections": "Collections",
     "favorites": "Favorites",
-    "environments": "Environments"
+    "environments": "Environments",
+    "defaultCollection": "Default Collection",
+    "getUsers": "GET Users",
+    "createUser": "POST Create User",
+    "starredRequests": "Starred Requests",
+    "settings": "Settings",
+    "help": "Help"
   },
   "request": {
     "newRequest": "New Request",
@@ -76,6 +84,22 @@
     "totalFiles": "Total Files",
     "totalSize": "Total Size",
     "logDirectory": "Log Directory",
-    "confirmCleanup": "Keep logs from the last 7 days and delete the rest?"
+    "confirmCleanup": "Keep logs from the last 7 days and delete the rest?",
+    "show": "Show Logs",
+    "hide": "Hide Logs"
+  },
+  "header": {
+    "save": "Save",
+    "share": "Share",
+    "close": "Close"
+  },
+  "statusBar": {
+    "idle": "Idle",
+    "connecting": "Connecting...",
+    "ready": "Ready",
+    "error": "Error",
+    "status": "Status",
+    "time": "Time",
+    "size": "Size"
   }
 }

@@ -1,7 +1,9 @@
 {
   "app": {
     "name": "Hopp",
-    "tagline": "轻量级、跨平台的 API 测试工具"
+    "tagline": "轻量级、跨平台的 API 测试工具",
+    "welcome": "欢迎使用 Hopp",
+    "testConnection": "测试连接"
   },
   "common": {
     "loading": "加载中...",
@@ -25,7 +27,13 @@
     "history": "历史记录",
     "collections": "集合",
     "favorites": "收藏",
-    "environments": "环境"
+    "environments": "环境",
+    "defaultCollection": "默认集合",
+    "getUsers": "GET 用户列表",
+    "createUser": "POST 创建用户",
+    "starredRequests": "已收藏请求",
+    "settings": "设置",
+    "help": "帮助"
   },
   "request": {
     "newRequest": "新建请求",
@@ -76,6 +84,22 @@
     "totalFiles": "文件总数",
     "totalSize": "总大小",
     "logDirectory": "日志目录",
-    "confirmCleanup": "保留最近7天的日志，删除其余日志？"
+    "confirmCleanup": "保留最近7天的日志，删除其余日志？",
+    "show": "显示日志",
+    "hide": "隐藏日志"
+  },
+  "header": {
+    "save": "保存",
+    "share": "分享",
+    "close": "关闭"
+  },
+  "statusBar": {
+    "idle": "空闲",
+    "connecting": "连接中...",
+    "ready": "就绪",
+    "error": "错误",
+    "status": "状态",
+    "time": "耗时",
+    "size": "大小"
   }
 }

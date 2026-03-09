@@ -1,5 +1,51 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+
+// Initialize i18n for tests
+void i18n
+  .use(initReactI18next)
+  .init({
+    lng: 'en',
+    fallbackLng: 'en',
+    ns: ['translation'],
+    defaultNS: 'translation',
+    resources: {
+      en: {
+        translation: {
+          app: {
+            name: 'Hopp',
+            tagline: 'Lightweight, cross-platform API testing tool',
+          },
+          sidebar: {
+            history: 'History',
+            collections: 'Collections',
+            favorites: 'Favorites',
+            settings: 'Settings',
+            help: 'Help',
+          },
+          header: {
+            save: 'Save',
+            share: 'Share',
+            close: 'Close',
+          },
+          statusBar: {
+            idle: 'Idle',
+            connecting: 'Connecting...',
+            ready: 'Ready',
+            error: 'Error',
+            status: 'Status',
+            time: 'Time',
+            size: 'Size',
+          },
+        },
+      },
+    },
+    interpolation: {
+      escapeValue: false,
+    },
+  });
 
 // Mock Tauri API
 (globalThis as Record<string, unknown>).__TAURI__ = {

@@ -3,7 +3,7 @@
  * 用于查看和管理应用日志
  */
 
-import { FC, useEffect, useState, useCallback } from 'react';
+import React, { FC, useEffect, useState, useCallback } from 'react';
 import * as logService from '../services/logService';
 import type { LogStats } from '../services/logService';
 
@@ -84,8 +84,8 @@ export const LogViewer: FC = () => {
     try {
       const removed = await logService.cleanupLogs(7);
       alert(`Cleaned up ${removed} old log files`);
-      loadFiles();
-      loadStats();
+      void loadFiles();
+      void loadStats();
     } catch (err) {
       console.error('Failed to cleanup logs:', err);
     }
@@ -110,9 +110,9 @@ export const LogViewer: FC = () => {
   };
 
   useEffect(() => {
-    loadStats();
-    loadFiles();
-    loadCurrentLogs();
+    void loadStats();
+    void loadFiles();
+    void loadCurrentLogs();
   }, [loadStats, loadFiles, loadCurrentLogs]);
 
   // 解析日志条目用于显示

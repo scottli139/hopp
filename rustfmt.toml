@@ -1,0 +1,22 @@
+# Hopp Rust 代码格式化配置
+edition = "2021"
+max_width = 100
+tab_spaces = 4
+newline_style = "Unix"
+imports_granularity = "Module"
+group_imports = "StdExternalCrate"
+reorder_imports = true
+struct_lit_width = 30
+struct_variant_width = 30
+wrap_comments = true
+format_code_in_doc_comments = true
+fn_params_layout = "Tall"
+fn_call_width = 60
+chain_width = 60
+array_width = 60
+attr_fn_like_width = 70
+normalize_doc_attributes = true
+remove_nested_parens = true
+reorder_impl_items = true
+use_field_init_shorthand = true
+use_try_shorthand = true

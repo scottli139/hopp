@@ -1,4 +1,5 @@
-import React, { FC, useState } from 'react';
+import type { FC, ReactNode } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -18,11 +19,11 @@ export interface SidebarProps {
  * SidebarItem interface
  */
 interface SidebarItemProps {
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   label: string;
   active?: boolean;
   onClick?: () => void;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 /**
@@ -77,7 +78,7 @@ const SidebarItem: FC<SidebarItemProps> = ({ icon, label, active, onClick, child
  */
 interface SidebarSectionProps {
   title?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 const SidebarSection: FC<SidebarSectionProps> = ({ title, children }) => (

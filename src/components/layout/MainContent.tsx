@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Header } from './Header';
@@ -12,7 +12,7 @@ export interface MainContentProps {
   /** Additional CSS classes */
   className?: string;
   /** Content to render */
-  children: React.ReactNode;
+  children: ReactNode;
   /** Header title */
   headerTitle?: string;
   /** On header close */

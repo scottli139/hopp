@@ -3,7 +3,8 @@
  * 用于查看和管理应用日志
  */
 
-import React, { FC, useEffect, useState, useCallback } from 'react';
+import type { FC, CSSProperties, ReactNode } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import * as logService from '../services/logService';
 import type { LogStats } from '../services/logService';
 
@@ -247,7 +248,7 @@ export const LogViewer: FC = () => {
 };
 
 // 按钮样式
-const buttonStyle: React.CSSProperties = {
+const buttonStyle: CSSProperties = {
   padding: '6px 12px',
   fontSize: '12px',
   backgroundColor: '#424242',
@@ -258,7 +259,7 @@ const buttonStyle: React.CSSProperties = {
 };
 
 // 文件按钮样式
-const fileButtonStyle: React.CSSProperties = {
+const fileButtonStyle: CSSProperties = {
   padding: '4px 10px',
   fontSize: '11px',
   color: '#fff',
@@ -278,7 +279,7 @@ function getLogLineColor(line: string): string {
 }
 
 // 高亮日志级别
-function highlightLogLevel(line: string): React.ReactNode {
+function highlightLogLevel(line: string): ReactNode {
   const levelMatch = line.match(/\s(ERROR|WARN|INFO|DEBUG|TRACE)\s/);
   if (!levelMatch) return line;
 

@@ -1,4 +1,5 @@
-import React, { FC, useEffect, useState } from 'react';
+import type { FC } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Language } from './i18n';
 import logger from './utils/logger';

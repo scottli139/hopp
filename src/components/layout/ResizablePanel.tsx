@@ -1,4 +1,5 @@
-import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
+import type { FC, ReactNode, MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -25,7 +26,7 @@ export interface ResizablePanelProps {
   /** Callback when resizing ends */
   onResizeEnd?: (width: number) => void;
   /** Panel content */
-  children: React.ReactNode;
+  children: ReactNode;
   /** Additional CSS classes */
   className?: string;
   /** Resizer position */
@@ -83,7 +84,7 @@ export const ResizablePanel: FC<ResizablePanelProps> = ({
   const width = controlledWidth ?? internalWidth;
 
   const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+    (e: ReactMouseEvent) => {
       e.preventDefault();
       setIsResizing(true);
       onResizeStart?.();
@@ -131,7 +132,7 @@ export const ResizablePanel: FC<ResizablePanelProps> = ({
 
   // Handle touch events for mobile
   const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
+    (e: ReactTouchEvent) => {
       const touch = e.touches[0];
       setIsResizing(true);
       onResizeStart?.();

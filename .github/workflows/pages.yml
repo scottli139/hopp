@@ -1,0 +1,140 @@
+# GitHub Pages 部署工作流
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Build documentation site
+        run: |
+          mkdir -p _site
+          cp README.md _site/
+          cp -r docs _site/
+          
+          cat > _site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="zh-CN">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Hopp - API Testing Tool</title>
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+              }
+              .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 40px 20px;
+              }
+              .hero {
+                text-align: center;
+                padding: 60px 20px;
+                color: white;
+              }
+              .hero h1 {
+                font-size: 4rem;
+                margin-bottom: 20px;
+              }
+              .hero p {
+                font-size: 1.5rem;
+                opacity: 0.9;
+                margin-bottom: 30px;
+              }
+              .badges {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                flex-wrap: wrap;
+              }
+              .badges img {
+                height: 20px;
+              }
+              .btn {
+                display: inline-block;
+                background: white;
+                color: #667eea;
+                padding: 15px 30px;
+                border-radius: 30px;
+                text-decoration: none;
+                font-weight: 600;
+                margin: 10px;
+              }
+              .btn-primary {
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                color: white;
+              }
+              footer {
+                text-align: center;
+                padding: 40px;
+                color: white;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="hero">
+                <h1>🐰 Hopp</h1>
+                <p>轻量级、跨平台的 API 请求测试工具</p>
+                <div class="badges">
+                  <img src="https://github.com/scottli139/hopp/actions/workflows/ci.yml/badge.svg" alt="CI">
+                  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
+                </div>
+                <br><br>
+                <a href="https://github.com/scottli139/hopp/releases" class="btn btn-primary">下载安装</a>
+                <a href="https://github.com/scottli139/hopp" class="btn">GitHub</a>
+              </div>
+              <footer>
+                <p>Built with ❤️ by Hopp Team</p>
+              </footer>
+            </div>
+          </body>
+          </html>
+          EOF
+          
+          cp LICENSE _site/ 2>/dev/null || true
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

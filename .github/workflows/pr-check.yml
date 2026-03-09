@@ -1,0 +1,64 @@
+# PR 检查工作流
+name: PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, develop]
+
+jobs:
+  pr-title-check:
+    name: PR Title Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            chore
+            ci
+          scopes: |
+            frontend
+            backend
+            api
+            ui
+            deps
+            ci
+            docs
+          requireScope: false
+
+  code-quality-check:
+    name: Quick Code Quality Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Quick lint check
+        run: pnpm lint
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: '1.75'
+          components: rustfmt, clippy
+      - name: Check Rust formatting
+        working-directory: ./src-tauri
+        run: cargo fmt -- --check
+      - name: Quick Clippy check
+        working-directory: ./src-tauri
+        run: cargo clippy -- -D warnings

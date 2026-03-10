@@ -8,10 +8,10 @@
 
 **Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Flutter 构建，注重性能和用户体验。
 
-**当前状态**: ✅ **Session End - 测试完成 + 日志规范，405+测试全部通过，macOS网络修复**  
+**当前状态**: ✅ **Session End - UI/UX问题记录，下次优先修复**  
 **技术栈**: Flutter 3.27.x + Dart + Riverpod  
 **目标平台**: macOS 10.15+ / Windows 10+ / Linux  
-**下次会话重点**: 环境变量、Postman导入/导出、请求历史功能
+**下次会话重点**: 🔴 **UI数据一致性BUG修复**、JSON语法高亮、错误信息优化
 
 ---
 
@@ -842,6 +842,74 @@ fvm flutter test test/widgets/request_tabs_test.dart
 | 2026-03-11 | v0.2.1-unit-tests | **M6 单元测试完成**: 317个测试全部通过，Models 152个 + Services 73个 + Providers 92个 |
 | 2026-03-11 | v0.2.2-widget-tests | **Widget 测试完成**: 88个测试全部通过，Sidebar/RequestEditor/ResponseViewer/RequestTabs |
 | 2026-03-11 | v0.2.3-logging-std | **日志规范完成**: 新增日志规范到 CODING_STANDARDS.md，所有关键模块添加日志，macOS 网络权限修复 |
+| 2026-03-11 | v0.2.4-ui-ux-review | **UI/UX 问题记录**: 用户截图反馈分析，发现 Method 显示不一致等 P0 BUG，已记录到开发计划 |
+
+---
+
+## UI/UX 问题跟踪
+
+### 2026-03-11 用户反馈问题
+
+**来源**: 用户截图 `/Users/build/Desktop/Screenshot 2026-03-10 at 19.59.18.png`
+
+#### 🔴 P0 - 数据一致性 BUG
+
+**问题**: Method 显示不一致
+- 顶部标签显示: POST (绿色)
+- 侧边栏显示: GET (蓝色)  
+- 请求编辑器显示: POST
+
+**原因分析**:
+1. 创建请求时默认 Method 是 GET
+2. 但标签页显示的是请求被创建时的 Method
+3. 用户在编辑器中修改 Method 后，侧边栏和标签页没有同步更新
+
+**修复方案**:
+1. 检查 `requestTabProvider` 是否正确同步 Method 变化
+2. 确保 `collectionProvider` 中的请求数据与 tab 数据同步
+3. 考虑使用统一的请求数据源
+
+#### 🟡 P1 - 错误信息展示
+
+**问题**: 错误信息被截断
+- 当前显示: "This indicates an error which most likely cannot be solved by th..."
+- 缺少展开/查看更多功能
+
+**修复方案**:
+1. 错误条支持多行显示
+2. 或添加点击展开详情功能
+3. 错误信息可复制
+
+#### 🟡 P1 - Body 编辑器体验
+
+**问题**: JSON Body 缺少语法高亮
+- 当前是普通 TextField
+- 没有 JSON 格式化功能
+
+**修复方案**:
+1. 集成 `flutter_code_editor` 包
+2. 或自定义 JSON 编辑器组件
+3. 支持语法高亮、自动缩进
+
+#### 🟢 P2 - 布局优化
+
+**问题**: 错误状态下响应区显示空状态
+- 错误条已显示连接错误
+- 响应区仍显示 "Send a request to see the response"
+
+**修复方案**:
+1. 错误状态下隐藏空状态提示
+2. 或在响应区显示错误详情
+
+#### 🟢 P2 - 标签页标题优化
+
+**问题**: 标签页标题统一显示 "New Request"
+- 无法区分不同请求
+
+**修复方案**:
+1. 显示 URL path (如 GET /api/users)
+2. 或显示自定义请求名称
+3. 标题过长时截断并显示省略号
 
 ---
 

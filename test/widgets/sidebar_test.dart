@@ -42,7 +42,8 @@ void main() {
 
       // Initialize collection provider with data
       if (collections.isNotEmpty) {
-        container.read(collectionProvider.notifier).state = AsyncValue.data(collections);
+        container.read(collectionProvider.notifier).state =
+            AsyncValue.data(collections);
       }
 
       // Set active tab
@@ -54,7 +55,8 @@ void main() {
     }
 
     group('rendering', () {
-      testWidgets('should render header with Collections title', (tester) async {
+      testWidgets('should render header with Collections title',
+          (tester) async {
         final container = createContainer();
 
         await tester.pumpWidget(buildTestWidget(container: container));
@@ -76,7 +78,8 @@ void main() {
         expect(textField.decoration?.hintText, 'Filter...');
       });
 
-      testWidgets('should show loading indicator when collections are loading', (tester) async {
+      testWidgets('should show loading indicator when collections are loading',
+          (tester) async {
         final container = ProviderContainer(
           overrides: [
             storageServiceProvider.overrideWithValue(mockStorageService),
@@ -84,7 +87,8 @@ void main() {
         );
 
         // Keep provider in loading state
-        container.read(collectionProvider.notifier).state = const AsyncValue.loading();
+        container.read(collectionProvider.notifier).state =
+            const AsyncValue.loading();
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pump();
@@ -92,7 +96,8 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('should show error message when collections fail to load', (tester) async {
+      testWidgets('should show error message when collections fail to load',
+          (tester) async {
         final container = ProviderContainer(
           overrides: [
             storageServiceProvider.overrideWithValue(mockStorageService),
@@ -108,17 +113,20 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.textContaining('Error:'), findsOneWidget);
-        expect(find.textContaining('Failed to load collections'), findsOneWidget);
+        expect(
+            find.textContaining('Failed to load collections'), findsOneWidget);
       });
 
-      testWidgets('should show empty state when no collections', (tester) async {
+      testWidgets('should show empty state when no collections',
+          (tester) async {
         final container = ProviderContainer(
           overrides: [
             storageServiceProvider.overrideWithValue(mockStorageService),
           ],
         );
         // Set empty data state explicitly
-        container.read(collectionProvider.notifier).state = const AsyncValue.data([]);
+        container.read(collectionProvider.notifier).state =
+            const AsyncValue.data([]);
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -144,7 +152,8 @@ void main() {
         expect(find.byIcon(Icons.folder), findsOneWidget);
       });
 
-      testWidgets('should show expanded collection with folder_open icon', (tester) async {
+      testWidgets('should show expanded collection with folder_open icon',
+          (tester) async {
         final collections = [
           Collection.empty().copyWith(
             id: 'col1',
@@ -240,9 +249,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Find the container that represents the active request
-        final containerWidget = tester.widgetList<Container>(find.byType(Container)).firstWhere(
-          (c) => c.decoration is BoxDecoration,
-        );
+        final containerWidget =
+            tester.widgetList<Container>(find.byType(Container)).firstWhere(
+                  (c) => c.decoration is BoxDecoration,
+                );
         final decoration = containerWidget.decoration as BoxDecoration;
         expect(decoration.border, isNotNull);
       });
@@ -277,7 +287,8 @@ void main() {
         // Note: The actual toggle effect depends on the provider implementation
       });
 
-      testWidgets('should open request tab when request is tapped', (tester) async {
+      testWidgets('should open request tab when request is tapped',
+          (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',
           name: 'Test Request',
@@ -390,7 +401,8 @@ void main() {
     });
 
     group('refresh', () {
-      testWidgets('should trigger refresh when refresh button is tapped', (tester) async {
+      testWidgets('should trigger refresh when refresh button is tapped',
+          (tester) async {
         final container = createContainer();
 
         await tester.pumpWidget(buildTestWidget(container: container));
@@ -438,7 +450,8 @@ void main() {
         expect(find.text('Level 3'), findsOneWidget);
       });
 
-      testWidgets('should render multiple top-level collections', (tester) async {
+      testWidgets('should render multiple top-level collections',
+          (tester) async {
         final collections = [
           Collection.empty().copyWith(
             id: 'col1',

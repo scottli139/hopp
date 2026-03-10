@@ -151,7 +151,8 @@ void main() {
     });
 
     group('Params tab', () {
-      testWidgets('should render empty params list with add button', (tester) async {
+      testWidgets('should render empty params list with add button',
+          (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',
           name: 'Test Request',
@@ -181,7 +182,8 @@ void main() {
           name: 'Test Request',
           method: HttpMethod.get,
           params: [
-            KeyValuePair.empty().copyWith(key: 'page', value: '1', enabled: true),
+            KeyValuePair.empty()
+                .copyWith(key: 'page', value: '1', enabled: true),
           ],
         );
 
@@ -210,7 +212,8 @@ void main() {
           name: 'Test Request',
           method: HttpMethod.get,
           params: [
-            KeyValuePair.empty().copyWith(key: 'search', value: 'test', enabled: true),
+            KeyValuePair.empty()
+                .copyWith(key: 'search', value: 'test', enabled: true),
           ],
         );
 
@@ -231,14 +234,17 @@ void main() {
         expect(find.text('test'), findsOneWidget);
       });
 
-      testWidgets('should show checkbox for param enabled state', (tester) async {
+      testWidgets('should show checkbox for param enabled state',
+          (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',
           name: 'Test Request',
           method: HttpMethod.get,
           params: [
-            KeyValuePair.empty().copyWith(key: 'enabled', value: 'yes', enabled: true),
-            KeyValuePair.empty().copyWith(key: 'disabled', value: 'no', enabled: false),
+            KeyValuePair.empty()
+                .copyWith(key: 'enabled', value: 'yes', enabled: true),
+            KeyValuePair.empty()
+                .copyWith(key: 'disabled', value: 'no', enabled: false),
           ],
         );
 
@@ -256,7 +262,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Find checkboxes
-        final checkboxes = tester.widgetList<Checkbox>(find.byType(Checkbox)).toList();
+        final checkboxes =
+            tester.widgetList<Checkbox>(find.byType(Checkbox)).toList();
         expect(checkboxes.length, greaterThanOrEqualTo(2));
         expect(checkboxes[0].value, true);
         expect(checkboxes[1].value, false);
@@ -296,7 +303,8 @@ void main() {
           name: 'Test Request',
           method: HttpMethod.get,
           headers: [
-            KeyValuePair.empty().copyWith(key: 'Content-Type', value: 'application/json'),
+            KeyValuePair.empty()
+                .copyWith(key: 'Content-Type', value: 'application/json'),
           ],
         );
 
@@ -354,7 +362,8 @@ void main() {
         expect(find.text('Form'), findsOneWidget);
       });
 
-      testWidgets('should render body editor when body type is not none', (tester) async {
+      testWidgets('should render body editor when body type is not none',
+          (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',
           name: 'Test Request',
@@ -384,7 +393,8 @@ void main() {
         expect(find.text('{\"key\": \"value\"}'), findsOneWidget);
       });
 
-      testWidgets('should not render body editor when body type is none', (tester) async {
+      testWidgets('should not render body editor when body type is none',
+          (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',
           name: 'Test Request',
@@ -419,7 +429,8 @@ void main() {
     });
 
     group('Auth tab', () {
-      testWidgets('should show coming soon message in Auth tab', (tester) async {
+      testWidgets('should show coming soon message in Auth tab',
+          (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',
           name: 'Test Request',
@@ -471,7 +482,8 @@ void main() {
         expect(find.text('GET'), findsOneWidget);
       });
 
-      testWidgets('should display POST method with green color', (tester) async {
+      testWidgets('should display POST method with green color',
+          (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',
           name: 'Test',
@@ -491,7 +503,8 @@ void main() {
         expect(find.text('POST'), findsOneWidget);
       });
 
-      testWidgets('should display DELETE method with red color', (tester) async {
+      testWidgets('should display DELETE method with red color',
+          (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',
           name: 'Test',
@@ -537,7 +550,8 @@ void main() {
     });
 
     group('complex scenarios', () {
-      testWidgets('should handle request with multiple params and headers', (tester) async {
+      testWidgets('should handle request with multiple params and headers',
+          (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',
           name: 'Complex Request',
@@ -549,8 +563,10 @@ void main() {
             KeyValuePair.empty().copyWith(key: 'limit', value: '10'),
           ],
           headers: [
-            KeyValuePair.empty().copyWith(key: 'Authorization', value: 'Bearer token123'),
-            KeyValuePair.empty().copyWith(key: 'Accept', value: 'application/json'),
+            KeyValuePair.empty()
+                .copyWith(key: 'Authorization', value: 'Bearer token123'),
+            KeyValuePair.empty()
+                .copyWith(key: 'Accept', value: 'application/json'),
           ],
         );
 

@@ -46,7 +46,8 @@ void main() {
         container.read(requestTabProvider.notifier).state = [
           RequestTab(
             id: activeTabId,
-            request: HttpRequest.empty().copyWith(id: 'req_$activeTabId', name: 'Test'),
+            request: HttpRequest.empty()
+                .copyWith(id: 'req_$activeTabId', name: 'Test'),
           ),
         ];
         container.read(activeTabIdProvider.notifier).state = activeTabId;
@@ -70,7 +71,8 @@ void main() {
         expect(find.text('Cookies'), findsOneWidget);
       });
 
-      testWidgets('should show "No response yet" when no response', (tester) async {
+      testWidgets('should show "No response yet" when no response',
+          (tester) async {
         final container = createContainer();
 
         await tester.pumpWidget(buildTestWidget(container: container));
@@ -91,7 +93,8 @@ void main() {
     });
 
     group('response info bar', () {
-      testWidgets('should display status code for successful response', (tester) async {
+      testWidgets('should display status code for successful response',
+          (tester) async {
         final response = HttpResponse(
           statusCode: 200,
           statusText: 'OK',
@@ -101,7 +104,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -111,14 +115,16 @@ void main() {
         expect(find.text('1.0 KB'), findsOneWidget);
       });
 
-      testWidgets('should display status code for 404 response', (tester) async {
+      testWidgets('should display status code for 404 response',
+          (tester) async {
         // For error responses, the error message is shown instead of status code
         final response = HttpResponse.error('Not Found').copyWith(
           statusCode: 404,
           durationMs: 80,
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -133,7 +139,8 @@ void main() {
           durationMs: 5000,
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -142,7 +149,8 @@ void main() {
         expect(find.text('Connection timeout'), findsOneWidget);
       });
 
-      testWidgets('should show correct size formatting for bytes', (tester) async {
+      testWidgets('should show correct size formatting for bytes',
+          (tester) async {
         final response = HttpResponse(
           statusCode: 200,
           body: 'small',
@@ -151,7 +159,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -159,7 +168,8 @@ void main() {
         expect(find.text('500 B'), findsOneWidget);
       });
 
-      testWidgets('should show correct size formatting for megabytes', (tester) async {
+      testWidgets('should show correct size formatting for megabytes',
+          (tester) async {
         final response = HttpResponse(
           statusCode: 200,
           body: 'large data',
@@ -168,7 +178,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -183,7 +194,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -201,7 +213,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -219,7 +232,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -235,7 +249,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -252,7 +267,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -272,7 +288,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -289,7 +306,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -299,7 +317,8 @@ void main() {
     });
 
     group('Headers tab', () {
-      testWidgets('should show "No headers" when headers are empty', (tester) async {
+      testWidgets('should show "No headers" when headers are empty',
+          (tester) async {
         final response = HttpResponse(
           statusCode: 200,
           body: '{}',
@@ -308,7 +327,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -325,15 +345,19 @@ void main() {
           statusCode: 200,
           body: '{}',
           headers: [
-            KeyValuePair.empty().copyWith(key: 'Content-Type', value: 'application/json'),
-            KeyValuePair.empty().copyWith(key: 'Cache-Control', value: 'no-cache'),
-            KeyValuePair.empty().copyWith(key: 'X-Request-Id', value: 'abc-123'),
+            KeyValuePair.empty()
+                .copyWith(key: 'Content-Type', value: 'application/json'),
+            KeyValuePair.empty()
+                .copyWith(key: 'Cache-Control', value: 'no-cache'),
+            KeyValuePair.empty()
+                .copyWith(key: 'X-Request-Id', value: 'abc-123'),
           ],
           durationMs: 100,
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -350,18 +374,21 @@ void main() {
         expect(find.text('abc-123'), findsOneWidget);
       });
 
-      testWidgets('should display headers with primary color for keys', (tester) async {
+      testWidgets('should display headers with primary color for keys',
+          (tester) async {
         final response = HttpResponse(
           statusCode: 200,
           body: '{}',
           headers: [
-            KeyValuePair.empty().copyWith(key: 'Authorization', value: 'Bearer token'),
+            KeyValuePair.empty()
+                .copyWith(key: 'Authorization', value: 'Bearer token'),
           ],
           durationMs: 100,
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -376,7 +403,8 @@ void main() {
     });
 
     group('Cookies tab', () {
-      testWidgets('should show coming soon message in Cookies tab', (tester) async {
+      testWidgets('should show coming soon message in Cookies tab',
+          (tester) async {
         final container = createContainer();
 
         await tester.pumpWidget(buildTestWidget(container: container));
@@ -401,7 +429,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -417,7 +446,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -433,13 +463,15 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
         // Find IconButton with copy icon
-        final iconButtons = tester.widgetList<IconButton>(find.byType(IconButton));
+        final iconButtons =
+            tester.widgetList<IconButton>(find.byType(IconButton));
         final copyIconButton = iconButtons.firstWhere(
           (ib) => (ib.icon as Icon).icon == Icons.copy,
         );
@@ -454,13 +486,15 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
         // Find IconButton with save icon
-        final iconButtons = tester.widgetList<IconButton>(find.byType(IconButton));
+        final iconButtons =
+            tester.widgetList<IconButton>(find.byType(IconButton));
         final saveIconButton = iconButtons.firstWhere(
           (ib) => (ib.icon as Icon).icon == Icons.save,
         );
@@ -491,7 +525,8 @@ void main() {
           statusCode: 200,
           body: largeBody,
           headers: [
-            KeyValuePair.empty().copyWith(key: 'Content-Type', value: 'application/json'),
+            KeyValuePair.empty()
+                .copyWith(key: 'Content-Type', value: 'application/json'),
             KeyValuePair.empty().copyWith(key: 'X-Total-Count', value: '100'),
           ],
           durationMs: 250,
@@ -499,7 +534,8 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -515,14 +551,16 @@ void main() {
           statusCode: 200,
           body: htmlBody,
           headers: [
-            KeyValuePair.empty().copyWith(key: 'Content-Type', value: 'text/html'),
+            KeyValuePair.empty()
+                .copyWith(key: 'Content-Type', value: 'text/html'),
           ],
           durationMs: 80,
           sizeBytes: htmlBody.length,
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
@@ -535,20 +573,26 @@ void main() {
           statusCode: 200,
           body: '{}',
           headers: [
-            KeyValuePair.empty().copyWith(key: 'Content-Type', value: 'application/json'),
+            KeyValuePair.empty()
+                .copyWith(key: 'Content-Type', value: 'application/json'),
             KeyValuePair.empty().copyWith(key: 'Content-Length', value: '1234'),
-            KeyValuePair.empty().copyWith(key: 'Cache-Control', value: 'max-age=3600'),
+            KeyValuePair.empty()
+                .copyWith(key: 'Cache-Control', value: 'max-age=3600'),
             KeyValuePair.empty().copyWith(key: 'ETag', value: '"abc123"'),
-            KeyValuePair.empty().copyWith(key: 'Last-Modified', value: 'Mon, 01 Jan 2024 00:00:00 GMT'),
+            KeyValuePair.empty().copyWith(
+                key: 'Last-Modified', value: 'Mon, 01 Jan 2024 00:00:00 GMT'),
             KeyValuePair.empty().copyWith(key: 'Server', value: 'nginx/1.18.0'),
-            KeyValuePair.empty().copyWith(key: 'X-Frame-Options', value: 'DENY'),
-            KeyValuePair.empty().copyWith(key: 'X-Content-Type-Options', value: 'nosniff'),
+            KeyValuePair.empty()
+                .copyWith(key: 'X-Frame-Options', value: 'DENY'),
+            KeyValuePair.empty()
+                .copyWith(key: 'X-Content-Type-Options', value: 'nosniff'),
           ],
           durationMs: 100,
           timestamp: DateTime.now(),
         );
 
-        final container = createContainer(response: response, activeTabId: 'tab1');
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();

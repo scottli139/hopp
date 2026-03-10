@@ -141,7 +141,8 @@ void main() {
         expect(find.byIcon(Icons.add), findsOneWidget);
       });
 
-      testWidgets('should show active tab with different styling', (tester) async {
+      testWidgets('should show active tab with different styling',
+          (tester) async {
         final tabs = [
           RequestTab(
             id: 'tab1',
@@ -275,7 +276,8 @@ void main() {
     });
 
     group('dirty indicator', () {
-      testWidgets('should show dirty indicator for unsaved tab', (tester) async {
+      testWidgets('should show dirty indicator for unsaved tab',
+          (tester) async {
         final tabs = [
           RequestTab(
             id: 'tab1',
@@ -373,7 +375,8 @@ void main() {
         expect(container.read(activeTabIdProvider), 'tab2');
       });
 
-      testWidgets('should close tab when close button is tapped', (tester) async {
+      testWidgets('should close tab when close button is tapped',
+          (tester) async {
         final tabs = [
           RequestTab(
             id: 'tab1',
@@ -408,7 +411,8 @@ void main() {
         expect(remainingTabs.length, 1);
       });
 
-      testWidgets('should switch to another tab when closing active tab', (tester) async {
+      testWidgets('should switch to another tab when closing active tab',
+          (tester) async {
         final tabs = [
           RequestTab(
             id: 'tab1',
@@ -450,7 +454,8 @@ void main() {
         expect(container.read(activeTabIdProvider), 'tab3');
       });
 
-      testWidgets('should create new tab when plus button is tapped', (tester) async {
+      testWidgets('should create new tab when plus button is tapped',
+          (tester) async {
         final tabs = [
           RequestTab(
             id: 'tab1',
@@ -476,7 +481,8 @@ void main() {
         expect(updatedTabs.length, greaterThanOrEqualTo(1));
       });
 
-      testWidgets('should clear active tab when closing last tab', (tester) async {
+      testWidgets('should clear active tab when closing last tab',
+          (tester) async {
         final tabs = [
           RequestTab(
             id: 'tab1',
@@ -543,7 +549,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Text should be truncated with ellipsis
-        final textWidget = tester.widget<Text>(find.text('Very Long Tab Name That Should Be Truncated'));
+        final textWidget = tester.widget<Text>(
+            find.text('Very Long Tab Name That Should Be Truncated'));
         expect(textWidget.overflow, TextOverflow.ellipsis);
       });
     });
@@ -555,7 +562,8 @@ void main() {
             id: 'tab1',
             request: HttpRequest.empty().copyWith(
               id: 'req1',
-              name: 'This is a very long request name that should be truncated with ellipsis',
+              name:
+                  'This is a very long request name that should be truncated with ellipsis',
               method: HttpMethod.get,
             ),
           ),
@@ -567,12 +575,16 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tab should still render without overflow error
-        expect(find.text('This is a very long request name that should be truncated with ellipsis'), findsOneWidget);
+        expect(
+            find.text(
+                'This is a very long request name that should be truncated with ellipsis'),
+            findsOneWidget);
       });
     });
 
     group('many tabs', () {
-      testWidgets('should render many tabs horizontally scrollable', (tester) async {
+      testWidgets('should render many tabs horizontally scrollable',
+          (tester) async {
         final tabs = List.generate(5, (index) {
           return RequestTab(
             id: 'tab$index',

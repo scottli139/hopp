@@ -91,6 +91,7 @@ pub struct KeyValue {
     pub enabled: bool,
 }
 
+#[allow(dead_code)]
 impl KeyValue {
     pub fn new(key: impl Into<String>, value: impl Into<String>) -> Self {
         Self {
@@ -124,6 +125,7 @@ pub struct HttpResponse {
 
 /// HTTP error types
 #[derive(Debug, thiserror::Error, Serialize)]
+#[allow(dead_code)]
 pub enum HttpError {
     #[error("Invalid URL: {0}")]
     InvalidUrl(String),

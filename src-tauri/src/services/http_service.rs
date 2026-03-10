@@ -229,6 +229,7 @@ impl HttpService {
     }
 
     /// Send a simple POST request with JSON body
+    #[allow(dead_code)]
     pub async fn post(
         &self,
         url: impl Into<String>,

@@ -1,7 +1,7 @@
 use crate::models::http::{HttpError, HttpRequest, HttpResponse};
 use crate::services::http_service::HttpService;
-use tauri::State;
 use std::sync::Arc;
+use tauri::State;
 use tokio::sync::Mutex;
 
 /// HTTP service state for Tauri
@@ -25,11 +25,11 @@ impl Default for HttpServiceState {
 }
 
 /// Send an HTTP request
-/// 
+///
 /// # Arguments
 /// * `request` - The HTTP request to send
 /// * `state` - The HTTP service state
-/// 
+///
 /// # Returns
 /// The HTTP response or an error
 #[tauri::command]
@@ -42,11 +42,11 @@ pub async fn send_http_request(
 }
 
 /// Send a simple GET request
-/// 
+///
 /// # Arguments
 /// * `url` - The URL to send the request to
 /// * `state` - The HTTP service state
-/// 
+///
 /// # Returns
 /// The HTTP response or an error
 #[tauri::command]
@@ -59,12 +59,12 @@ pub async fn http_get(
 }
 
 /// Send a POST request with JSON body
-/// 
+///
 /// # Arguments
 /// * `url` - The URL to send the request to
 /// * `body` - The JSON body as a string
 /// * `state` - The HTTP service state
-/// 
+///
 /// # Returns
 /// The HTTP response or an error
 #[tauri::command]

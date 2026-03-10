@@ -4,15 +4,34 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
-  "editor.rulers": [100],
+  "editor.rulers": [
+    100
+  ],
   "typescript.preferences.importModuleSpecifier": "non-relative",
-  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
   "rust-analyzer.checkOnSave.command": "clippy",
-  "rust-analyzer.checkOnSave.extraArgs": ["--", "-D", "warnings"],
+  "rust-analyzer.checkOnSave.extraArgs": [
+    "--",
+    "-D",
+    "warnings"
+  ],
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer",
     "editor.formatOnSave": true,
     "editor.tabSize": 4
   },
-  "cSpell.words": ["hopp", "tauri", "zustand", "reqwest", "rusqlite", "tokio"]
+  "cSpell.words": [
+    "hopp",
+    "tauri",
+    "zustand",
+    "reqwest",
+    "rusqlite",
+    "tokio"
+  ],
+  "dart.flutterSdkPath": ".fvm/versions/3.27.4"
 }

@@ -1,510 +1,528 @@
-# 代码规范与风格指南
+# Hopp 代码规范与风格指南
 
-> 本规范确保所有代码风格一致、质量统一，所有提交必须通过自动化检查。
-
----
-
-## 🎯 核心原则
-
-1. **可读性优先** - 代码是写给人看的，机器只是顺便执行
-2. **显式优于隐式** - 避免魔法值、隐式转换
-3. **DRY (Don't Repeat Yourself)** - 提取重复逻辑
-4. **单一职责** - 函数/组件只做一件事
-5. **类型安全** - 充分利用 TypeScript 和 Rust 的类型系统
+> 本文档定义 Flutter/Dart 项目的代码规范，确保代码一致性、可维护性和高质量。
 
 ---
 
-## 📁 前端规范 (TypeScript/React)
+## 📋 目录
 
-### 目录与文件命名
+- [Dart 代码规范](#dart-代码规范)
+- [Flutter 代码规范](#flutter-代码规范)
+- [项目结构规范](#项目结构规范)
+- [命名规范](#命名规范)
+- [状态管理规范](#状态管理规范)
+- [UI/UX 规范](#uiux-规范)
+- [文档规范](#文档规范)
+- [Git 提交规范](#git-提交规范)
 
-```
-✅ 正确                    ❌ 错误
-─────────────────────────────────────────
-src/components/           src/Components/
-my-component/             MyComponent/
-use-api.ts                useApi.ts
-api-service.ts            apiService.ts
-types/                    type/
-```
+---
 
-| 类型 | 命名规范 | 示例 |
-|------|----------|------|
-| 组件目录 | kebab-case | `request-editor/` |
-| 组件文件 | PascalCase | `RequestEditor.tsx` |
-| 工具函数 | camelCase | `formatDate.ts` |
-| 自定义 Hook | camelCase (use 前缀) | `useRequest.ts` |
-| 类型定义 | PascalCase | `Request.types.ts` |
-| 常量 | UPPER_SNAKE_CASE | `API_CONSTANTS.ts` |
-| 样式文件 | 同名 + `.css` | `RequestEditor.css` |
+## Dart 代码规范
 
-### 组件规范
+### 1. 基础规范
 
-```typescript
-// ✅ 正确示例
-import { FC, useCallback, useState } from 'react';
-import { cn } from '@/utils/cn';
+遵循 [Effective Dart](https://dart.dev/effective-dart) 官方指南：
 
-// Props 接口必须显式命名
-interface RequestEditorProps {
-  /** 请求ID */
-  requestId: string;
-  /** 是否只读 */
-  readOnly?: boolean;
-  /** 保存回调 */
-  onSave?: (data: RequestData) => void;
-}
+- **DO** 使用 `dart format` 格式化代码
+- **DO** 使用 `dart analyze` 静态分析
+- **AVOID** 使用 `dynamic` 类型
+- **PREFER** 使用 `final` 而非 `var`
+- **PREFER** 使用 `const` 构造函数
 
-/**
- * 请求编辑器组件
- * 用于编辑 HTTP 请求的各项参数
- */
-export const RequestEditor: FC<RequestEditorProps> = ({
-  requestId,
-  readOnly = false,
-  onSave,
-}) => {
-  const [isLoading, setIsLoading] = useState(false);
+### 2. 代码风格
 
-  const handleSave = useCallback(() => {
-    if (readOnly) return;
-    // 保存逻辑
-  }, [readOnly]);
-
-  return (
-    <div className="flex flex-col gap-4">
-      {/* JSX */}
-    </div>
-  );
-};
-
-// ❌ 错误示例
-// 不要使用默认导出
-export default function requestEditor(props: any) {
-  const [loading, setLoading] = useState(false); // 状态命名不清晰
-  // ...
-}
-```
-
-#### 组件规则
-
-1. **必须显式声明返回类型** - `FC<Props>` 或 `: ReactElement`
-2. **Props 接口必须带 JSDoc 注释**
-3. **默认使用命名导出** - 禁用 `export default`
-4. **hooks 必须放在组件顶部**
-5. **事件处理函数使用 useCallback**
-6. **复杂逻辑提取到自定义 Hook**
-
-### TypeScript 规范
-
-```typescript
-// ✅ 正确使用类型
-
-// 1. 优先使用 interface 定义对象类型
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
-// 2. 使用 type 定义联合类型、元组
-type Status = 'idle' | 'loading' | 'success' | 'error';
-type Point = [number, number];
-
-// 3. 泛型命名要有意义
-interface ApiResponse<TData> {
-  data: TData;
-  status: number;
-  message: string;
-}
-
-// 4. 使用 satisfies 进行类型检查
-const config = {
-  timeout: 5000,
-  retries: 3,
-} satisfies RequestConfig;
-
-// 5. 避免使用 any，使用 unknown
-function parseData(input: unknown): Data {
-  if (typeof input === 'string') {
-    return JSON.parse(input);
+```dart
+// ✅ Good
+class UserRepository {
+  final HttpClient _client;
+  
+  const UserRepository(this._client);
+  
+  Future<User> getUser(String id) async {
+    final response = await _client.get('/users/$id');
+    return User.fromJson(response.data);
   }
-  throw new Error('Invalid input');
 }
 
-// ❌ 错误示例
-let data: any; // 禁止使用 any
-function process(input: any): any { // 参数和返回值都要明确类型
-  // ...
-}
-```
-
-#### TS 规则
-
-1. **严格模式开启** - `strict: true`
-2. **禁止 any** - 特殊情况需注释说明
-3. **显式返回类型** - 公共函数必须声明
-4. **使用可选链** - `obj?.prop` 替代 `obj && obj.prop`
-5. **使用空值合并** - `value ?? default` 替代 `||`
-
-### 状态管理规范 (Zustand)
-
-```typescript
-// ✅ 正确的 Store 结构
-import { create } from 'zustand';
-import { immer } from 'zustand/middleware/immer';
-import { devtools } from 'zustand/middleware';
-
-// 1. 定义状态接口
-interface RequestState {
-  // State
-  requests: Request[];
-  activeRequestId: string | null;
-  isLoading: boolean;
+// ❌ Bad
+class user_repository {
+  var client;
   
-  // Computed (使用 selector)
-  getActiveRequest: () => Request | null;
+  user_repository(c) {
+    client = c;
+  }
   
-  // Actions
-  addRequest: (request: Request) => void;
-  setActiveRequest: (id: string) => void;
-  updateRequest: (id: string, updates: Partial<Request>) => void;
+  getUser(id) async {
+    var res = await client.get('/users/' + id);
+    return User.fromJson(res.data);
+  }
 }
-
-// 2. 使用 immer 和 devtools
-export const useRequestStore = create<RequestState>()(
-  devtools(
-    immer((set, get) => ({
-      // Initial state
-      requests: [],
-      activeRequestId: null,
-      isLoading: false,
-      
-      // Computed
-      getActiveRequest: () => {
-        const { requests, activeRequestId } = get();
-        return requests.find(r => r.id === activeRequestId) ?? null;
-      },
-      
-      // Actions
-      addRequest: (request) => set((state) => {
-        state.requests.push(request);
-      }),
-      
-      setActiveRequest: (id) => set((state) => {
-        state.activeRequestId = id;
-      }),
-      
-      updateRequest: (id, updates) => set((state) => {
-        const request = state.requests.find(r => r.id === id);
-        if (request) {
-          Object.assign(request, updates);
-        }
-      }),
-    })),
-    { name: 'RequestStore' }
-  )
-);
-
-// 3. 使用 Selector 优化重渲染
-// ✅ 正确
-const activeRequest = useRequestStore(state => state.getActiveRequest());
-
-// ❌ 错误 - 会导致不必要的重渲染
-const { requests, activeRequestId } = useRequestStore();
 ```
 
-### 样式规范 (Tailwind CSS)
+### 3. 导入排序
 
-```tsx
-// ✅ 正确使用 Tailwind
-import { cn } from '@/utils/cn';
+```dart
+// 1. Dart SDK 导入
+import 'dart:async';
+import 'dart:convert';
 
-export const Button: FC<ButtonProps> = ({ 
-  variant = 'primary', 
-  size = 'md',
-  className,
-  children 
-}) => {
-  return (
-    <button
-      className={cn(
-        // 基础样式
-        'inline-flex items-center justify-center rounded-md font-medium',
-        'transition-colors focus-visible:outline-none focus-visible:ring-2',
-        'disabled:pointer-events-none disabled:opacity-50',
-        
-        // 变体样式
-        variant === 'primary' && 'bg-blue-600 text-white hover:bg-blue-700',
-        variant === 'secondary' && 'bg-gray-100 text-gray-900 hover:bg-gray-200',
-        variant === 'danger' && 'bg-red-600 text-white hover:bg-red-700',
-        
-        // 尺寸样式
-        size === 'sm' && 'h-8 px-3 text-sm',
-        size === 'md' && 'h-10 px-4 text-sm',
-        size === 'lg' && 'h-12 px-6 text-base',
-        
-        // 外部传入的 className
-        className
-      )}
-    >
-      {children}
-    </button>
-  );
-};
+// 2. Flutter 包导入
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// 3. 第三方包导入
+import 'package:dio/dio.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+// 4. 项目内导入
+import '../models/user.dart';
+import '../services/api_service.dart';
 ```
 
-#### Tailwind 规则
+### 4. 空安全规范
 
-1. **使用 cn() 工具函数** - 合并 className，处理条件
-2. **按逻辑分组** - 布局/颜色/交互/尺寸
-3. **提取重复模式** - 使用 `@apply` 或组件封装
-4. **避免任意值** - 尽量使用预设值
-5. **响应式前缀有序** - `sm: md: lg: xl:`
+```dart
+// ✅ Good
+String? nullableString;
+late String initializedLater;
+final String nonNullable = 'value';
+
+// 使用 ?? 提供默认值
+final name = user.name ?? 'Anonymous';
+
+// 使用 ?. 进行安全调用
+final length = nullableString?.length;
+
+// ❌ Bad
+String couldBeNull = null; // 编译错误
+```
 
 ---
 
-## ⚙️ 后端规范 (Rust)
+## Flutter 代码规范
 
-### 目录与文件命名
+### 1. Widget 规范
+
+```dart
+// ✅ Good - 使用 const 构造函数
+class MyWidget extends StatelessWidget {
+  const MyWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Text('Hello');
+  }
+}
+
+// ✅ Good - 状态类使用下划线前缀
+class MyStatefulWidget extends ConsumerStatefulWidget {
+  const MyStatefulWidget({super.key});
+
+  @override
+  ConsumerState<MyStatefulWidget> createState() => _MyStatefulWidgetState();
+}
+
+class _MyStatefulWidgetState extends ConsumerState<MyStatefulWidget> {
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox.shrink();
+  }
+}
+```
+
+### 2. Build 方法规范
+
+```dart
+// ✅ Good - 保持 build 方法简洁
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: _buildAppBar(),
+    body: _buildBody(),
+    bottomNavigationBar: _buildBottomBar(),
+  );
+}
+
+Widget _buildAppBar() {
+  return AppBar(
+    title: const Text('Title'),
+  );
+}
+
+// ❌ Bad - build 方法过于臃肿
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Title'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: () {
+            // 大量逻辑代码...
+          },
+        ),
+        // 更多代码...
+      ],
+    ),
+    // 更多代码...
+  );
+}
+```
+
+### 3. 状态管理规范
+
+```dart
+// ✅ Good - 使用 Riverpod
+final userProvider = StateNotifierProvider<UserNotifier, AsyncValue<User>>((ref) {
+  return UserNotifier(ref);
+});
+
+class UserNotifier extends StateNotifier<AsyncValue<User>> {
+  UserNotifier(this._ref) : super(const AsyncValue.loading()) {
+    loadUser();
+  }
+
+  final Ref _ref;
+
+  Future<void> loadUser() async {
+    state = const AsyncValue.loading();
+    try {
+      final service = _ref.read(userServiceProvider);
+      final user = await service.getCurrentUser();
+      state = AsyncValue.data(user);
+    } catch (err, stack) {
+      state = AsyncValue.error(err, stack);
+    }
+  }
+}
+
+// ✅ Good - 使用 ConsumerWidget
+class UserProfile extends ConsumerWidget {
+  const UserProfile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(userProvider);
+    
+    return userAsync.when(
+      data: (user) => _buildUserView(user),
+      loading: () => const CircularProgressIndicator(),
+      error: (err, _) => ErrorWidget(err),
+    );
+  }
+}
+```
+
+---
+
+## 项目结构规范
+
+### 目录结构
 
 ```
-✅ 正确                    ❌ 错误
-─────────────────────────────────────────
-src/commands/             src/Commands/
-http_client.rs            HttpClient.rs
-models/                   Models/
+lib/
+├── main.dart                    # 应用入口
+├── app.dart                     # 应用配置
+├── models/                      # 数据模型
+│   ├── user.dart
+│   ├── user.freezed.dart        # 生成的代码
+│   └── user.g.dart              # 生成的代码
+├── providers/                   # Riverpod Providers
+│   ├── core/                    # 核心服务 Provider
+│   ├── user/                    # 功能模块 Provider
+│   └── providers.dart           # 导出文件
+├── services/                    # 业务服务
+│   ├── api_service.dart
+│   └── storage_service.dart
+├── widgets/                     # UI 组件
+│   ├── common/                  # 通用组件
+│   ├── layout/                  # 布局组件
+│   └── features/                # 功能组件
+├── screens/                     # 页面
+│   ├── home_screen.dart
+│   └── settings_screen.dart
+├── utils/                       # 工具类
+│   ├── extensions/              # 扩展方法
+│   ├── constants.dart           # 常量
+│   └── logger.dart              # 日志
+└── l10n/                        # 国际化
+    ├── app_en.arb
+    └── app_zh.arb
 ```
+
+### 文件命名
 
 | 类型 | 命名规范 | 示例 |
-|------|----------|------|
-| 模块文件 | snake_case | `http_client.rs` |
-| 结构体/枚举 | PascalCase | `HttpRequest` |
-| trait | PascalCase | `RequestHandler` |
-| 函数/变量 | snake_case | `send_request` |
-| 常量 | UPPER_SNAKE_CASE | `MAX_RETRY_COUNT` |
-| 类型别名 | PascalCase | `RequestId` |
+|-----|---------|------|
+| Dart 文件 | snake_case.dart | `user_profile.dart` |
+| 模型文件 | snake_case.dart | `http_request.dart` |
+| Widget 文件 | snake_case.dart | `custom_button.dart` |
+| Provider 文件 | snake_case.dart | `user_provider.dart` |
+| 测试文件 | snake_case_test.dart | `user_service_test.dart` |
 
-### 代码组织
+---
 
-```rust
-// ✅ 正确的模块结构
-// src/services/http_client.rs
+## 命名规范
 
-use std::time::Duration;
-use reqwest::{Client, Method};
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
+### 类命名
 
-// 1. 错误定义在前
-#[derive(Debug, Error)]
-pub enum HttpError {
-    #[error("Request failed: {0}")]
-    RequestFailed(String),
-    #[error("Timeout after {0:?}")]
-    Timeout(Duration),
-    #[error("Invalid URL: {0}")]
-    InvalidUrl(String),
-}
+```dart
+// ✅ Good - PascalCase
+class HttpRequest { }
+class UserRepository { }
+class CustomButton extends StatelessWidget { }
 
-// 2. 类型定义
-pub type Result<T> = std::result::Result<T, HttpError>;
+// 抽象类
+abstract class ApiClient { }
 
-// 3. 数据结构
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HttpRequest {
-    pub method: Method,
-    pub url: String,
-    pub headers: Vec<(String, String)>,
-    pub body: Option<String>,
-    pub timeout: Duration,
-}
+// Mixin
+mixin Loggable { }
 
-// 4. 实现块
-pub struct HttpClient {
-    client: Client,
-    default_timeout: Duration,
-}
-
-impl HttpClient {
-    /// 创建新的 HTTP 客户端
-    pub fn new() -> Self {
-        Self {
-            client: Client::new(),
-            default_timeout: Duration::from_secs(30),
-        }
-    }
-    
-    /// 发送 HTTP 请求
-    ///
-    /// # Arguments
-    /// * `request` - HTTP 请求配置
-    ///
-    /// # Returns
-    /// 成功返回 HttpResponse，失败返回 HttpError
-    pub async fn send(&self, request: HttpRequest) -> Result<HttpResponse> {
-        // 实现...
-        todo!()
-    }
-}
-
-// 5. 单元测试在最后
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[tokio::test]
-    async fn test_send_request() {
-        // 测试代码
-    }
-}
+// 扩展
+extension StringExtension on String { }
 ```
 
-### 错误处理
+### 变量和函数命名
 
-```rust
-// ✅ 使用 thiserror 定义错误
-#[derive(Debug, Error)]
-pub enum AppError {
-    #[error("HTTP error: {0}")]
-    Http(#[from] reqwest::Error),
-    
-    #[error("Database error: {0}")]
-    Database(#[from] rusqlite::Error),
-    
-    #[error("Not found: {entity} with id {id}")]
-    NotFound { entity: String, id: String },
-    
-    #[error("Validation error: {0}")]
-    Validation(String),
-}
+```dart
+// ✅ Good - camelCase
+final userName = 'John';
+final isLoading = false;
+final httpClient = Dio();
 
-// ✅ 函数返回 Result
-pub async fn fetch_user(id: &str) -> Result<User, AppError> {
-    let user = db::find_user(id)
-        .await?
-        .ok_or_else(|| AppError::NotFound {
-            entity: "User".to_string(),
-            id: id.to_string(),
-        })?;
-    
-    Ok(user)
-}
+Future<User> fetchUser(String id) async { }
+void handleSubmit() { }
+bool get isValid => true;
 
-// ✅ 转换错误类型
-let result = operation.map_err(|e| AppError::Validation(e.to_string()))?;
+// ❌ Bad
+final user_name = 'John';
+final IsLoading = false;
+final HTTPClient = Dio();
+
+Future<User> FetchUser(String ID) async { }
 ```
 
-### 异步编程
+### 常量命名
 
-```rust
-// ✅ 正确使用 async/await
+```dart
+// ✅ Good - camelCase for constants
+const defaultTimeout = Duration(seconds: 30);
+const maxRetryCount = 3;
+const apiBaseUrl = 'https://api.example.com';
 
-// 1. async fn 返回 impl Future
-pub async fn process_request(req: Request) -> Result<Response> {
-    let client = HttpClient::new();
-    let response = client.send(req).await?;
-    Ok(response)
+// 枚举
+enum HttpMethod {
+  get,
+  post,
+  put,
+  delete,
 }
 
-// 2. 使用 tokio::spawn 并发
-let handles: Vec<_> = requests
-    .into_iter()
-    .map(|req| tokio::spawn(process_request(req)))
-    .collect();
-
-let results = futures::future::join_all(handles).await;
-
-// 3. 使用 tokio::select! 处理超时
-tokio::select! {
-    result = send_request(req) => {
-        result?
-    }
-    _ = tokio::time::sleep(Duration::from_secs(30)) => {
-        return Err(HttpError::Timeout(Duration::from_secs(30)));
-    }
-}
+// ❌ Bad - 不要使用 SCREAMING_SNAKE_CASE
+const DEFAULT_TIMEOUT = Duration(seconds: 30);
 ```
 
-### 文档注释
+---
 
-```rust
-/// HTTP 客户端封装
-///
-/// 提供便捷的 HTTP 请求发送功能，支持超时、重试等特性。
-///
-/// # 示例
-/// ```
-/// use hopp::services::HttpClient;
-///
-/// let client = HttpClient::new();
-/// let response = client.get("https://api.example.com").await?;
-/// ```
-pub struct HttpClient {
-    // ...
-}
+## 状态管理规范
 
-impl HttpClient {
-    /// 发送 GET 请求
-    ///
-    /// # 参数
-    /// - `url`: 请求 URL
-    ///
-    /// # 返回
-    /// 成功返回 `HttpResponse`，失败返回 `HttpError`
-    ///
-    /// # 错误
-    /// - `HttpError::InvalidUrl`: URL 格式不正确
-    /// - `HttpError::Timeout`: 请求超时
-    pub async fn get(&self, url: &str) -> Result<HttpResponse> {
-        // ...
+### 1. Provider 组织
+
+```dart
+// core/providers.dart - 核心服务
+final dioProvider = Provider<Dio>((ref) => Dio());
+final storageProvider = Provider<StorageService>((ref) => StorageService());
+
+// features/user/user_provider.dart - 功能模块
+final userProvider = StateNotifierProvider<UserNotifier, AsyncValue<User>>((ref) {
+  return UserNotifier(ref);
+});
+
+// 导出文件 providers.dart
+export 'core/providers.dart';
+export 'features/user/user_provider.dart';
+```
+
+### 2. StateNotifier 规范
+
+```dart
+class UserNotifier extends StateNotifier<AsyncValue<User>> {
+  UserNotifier(this._ref) : super(const AsyncValue.loading()) {
+    _init();
+  }
+
+  final Ref _ref;
+
+  void _init() {
+    // 初始化逻辑
+  }
+
+  // ✅ Good - 使用 AsyncValue.guard 处理异步
+  Future<void> fetchUser(String id) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final service = _ref.read(userServiceProvider);
+      return await service.getUser(id);
+    });
+  }
+
+  // ✅ Good - 明确的错误处理
+  Future<void> updateUser(User user) async {
+    try {
+      final service = _ref.read(userServiceProvider);
+      final updated = await service.updateUser(user);
+      state = AsyncValue.data(updated);
+    } on NetworkException catch (e) {
+      // 处理特定异常
+      state = AsyncValue.error(e, StackTrace.current);
+    } catch (e, stack) {
+      // 处理其他异常
+      state = AsyncValue.error(e, stack);
     }
+  }
 }
 ```
 
 ---
 
-## 🔒 安全规范
+## UI/UX 规范
 
-### 敏感数据处理
+### 1. 设计原则
 
-```typescript
-// ✅ 前端 - 不存储敏感信息明文
-// 使用 Tauri 的 secure storage API
-import { secureStore } from '@tauri-apps/plugin-store';
+- **一致性**：使用统一的颜色、字体、间距
+- **反馈**：用户操作后提供即时反馈
+- **简洁性**：避免视觉混乱，保持界面清晰
+- **可访问性**：支持键盘导航、屏幕阅读器
 
-await secureStore.set('apiKey', encryptedValue);
-```
+### 2. 颜色和主题
 
-```rust
-// ✅ 后端 - 使用 keyring 存储
-use keyring::Entry;
+```dart
+// ✅ Good - 使用 Theme
+class AppTheme {
+  static const primaryColor = Color(0xFF6366F1);
+  static const secondaryColor = Color(0xFF8B5CF6);
+  static const successColor = Color(0xFF10B981);
+  static const warningColor = Color(0xFFF59E0B);
+  static const errorColor = Color(0xFFEF4444);
 
-let entry = Entry::new("hopp", "api_key")?;
-entry.set_password(&api_key)?;
-```
-
-### 输入验证
-
-```rust
-// ✅ 后端验证所有输入
-#[derive(Debug, Validate, Deserialize)]
-pub struct CreateRequest {
-    #[validate(length(min = 1, max = 100))]
-    pub name: String,
-    #[validate(url)]
-    pub url: String,
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryColor,
+        brightness: Brightness.light,
+      ),
+      // ... 其他配置
+    );
+  }
 }
 
-pub fn create_request(data: CreateRequest) -> Result<()> {
-    data.validate()?;
-    // ...
+// 使用
+Container(
+  color: Theme.of(context).colorScheme.primary,
+  child: Text(
+    'Title',
+    style: Theme.of(context).textTheme.headlineSmall,
+  ),
+)
+```
+
+### 3. 间距规范
+
+```dart
+// ✅ Good - 使用一致的间距
+const kSpaceXS = 4.0;
+const kSpaceS = 8.0;
+const kSpaceM = 12.0;
+const kSpaceL = 16.0;
+const kSpaceXL = 24.0;
+const kSpaceXXL = 32.0;
+
+// 使用
+Padding(
+  padding: const EdgeInsets.all(kSpaceM),
+  child: Column(
+    children: [
+      const SizedBox(height: kSpaceS),
+      const Text('Title'),
+      const SizedBox(height: kSpaceL),
+    ],
+  ),
+)
+```
+
+### 4. Widget 尺寸规范
+
+```dart
+// 按钮高度
+const kButtonHeightS = 28.0;
+const kButtonHeightM = 36.0;
+const kButtonHeightL = 44.0;
+
+// 输入框高度
+const kInputHeightS = 28.0;
+const kInputHeightM = 36.0;
+const kInputHeightL = 44.0;
+
+// 圆角
+const kRadiusS = 4.0;
+const kRadiusM = 6.0;
+const kRadiusL = 8.0;
+const kRadiusXL = 12.0;
+```
+
+---
+
+## 文档规范
+
+### 1. 文件头注释
+
+```dart
+/// 用户数据模型
+/// 
+/// 用于表示应用中的用户信息，包含基本资料、联系方式等。
+/// 
+/// 使用示例：
+/// ```dart
+/// final user = User(
+///   id: '123',
+///   name: 'John Doe',
+///   email: 'john@example.com',
+/// );
+/// ```
+@freezed
+class User with _$User {
+  const factory User({
+    required String id,
+    required String name,
+    required String email,
+  }) = _User;
+}
+```
+
+### 2. 函数注释
+
+```dart
+/// 获取用户信息
+/// 
+/// [id] 用户唯一标识
+/// 
+/// 成功返回 [User] 对象，失败抛出 [UserNotFoundException]
+/// 
+/// 使用示例：
+/// ```dart
+/// final user = await getUser('123');
+/// print(user.name);
+/// ```
+Future<User> getUser(String id) async {
+  // 实现
 }
 ```
 
 ---
 
-## 📝 提交规范
+## Git 提交规范
 
 ### 提交信息格式
 
@@ -516,233 +534,155 @@ pub fn create_request(data: CreateRequest) -> Result<()> {
 <footer>
 ```
 
-#### Type
+### Type 类型
 
 | 类型 | 说明 |
-|------|------|
+|-----|------|
 | `feat` | 新功能 |
 | `fix` | 修复 Bug |
 | `docs` | 文档更新 |
 | `style` | 代码格式调整（不影响功能） |
-| `refactor` | 重构（非 feat/fix） |
+| `refactor` | 代码重构 |
 | `perf` | 性能优化 |
 | `test` | 测试相关 |
-| `chore` | 构建/工具链/依赖更新 |
-| `ci` | CI/CD 配置 |
+| `chore` | 构建/工具链更新 |
 
-#### 示例
+### 示例
 
 ```
 feat(request): add support for multipart form data
 
-- Add FileUpload component
-- Update HTTP client to handle multipart
-- Add progress tracking for uploads
+- Implement multipart request builder
+- Add file picker integration
+- Update UI for file upload
 
-Closes #123
+Fixes #123
 ```
 
 ```
-fix(http-client): resolve timeout not working for large files
+fix(http): resolve timeout issue on slow networks
 
-The timeout was not being applied to the entire request duration,
-only to the initial connection. Fixed by wrapping the entire
-request future with tokio::time::timeout.
+Increase default timeout from 10s to 30s
+Add retry logic for timeout errors
 
-Fixes #456
+Closes #456
 ```
-
-### 分支策略
-
-```
-main ............ 生产分支，只接受合并
-  ↑
-release/v0.1.0 .. 发布分支
-  ↑
-develop ......... 开发分支，功能合并至此
-  ↑
-feature/M1-1 .... 功能分支
-```
-
-| 分支类型 | 命名规范 | 来源 | 合并目标 |
-|----------|----------|------|----------|
-| 功能分支 | `feature/M1-x-<desc>` | develop | develop |
-| 修复分支 | `fix/issue-<number>` | main | main + develop |
-| 发布分支 | `release/vx.x.x` | develop | main |
 
 ---
 
-## ✅ 检查清单
+## 工具配置
 
-### 提交前检查
+### 1. analysis_options.yaml
 
-- [ ] 代码通过 ESLint/Prettier 检查
-- [ ] 代码通过 rustfmt/clippy 检查
-- [ ] TypeScript 类型检查通过
-- [ ] 单元测试通过
-- [ ] 提交信息符合规范
-- [ ] 没有 console.log/debug 残留
-- [ ] 敏感信息未提交
+```yaml
+include: package:flutter_lints/flutter.yaml
 
-### PR 检查
-
-- [ ] 关联 Issue
-- [ ] 代码审查通过
-- [ ] CI 检查通过
-- [ ] 功能测试通过
-- [ ] 文档已更新
-- [ ] 必要的日志已添加
-
----
-
-## 📝 日志规范
-
-### 基本原则
-
-**每个新功能必须添加适当的日志**，以便：
-- 排查用户问题
-- 自动化测试验证
-- 运行时行为追踪
-
-### 前端日志规范
-
-```typescript
-// ✅ 正确的日志使用
-import logger from '@/utils/logger';
-
-// 1. 用户操作 - 使用 info
-const handleSendRequest = async () => {
-  logger.info('Sending HTTP request', { 
-    method: request.method, 
-    url: request.url 
-  });
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.mocks.dart"
   
-  try {
-    const response = await sendRequest(request);
-    logger.info('Request succeeded', { 
-      status: response.status,
-      duration: response.duration 
-    });
-  } catch (error) {
-    logger.error('Request failed', error as Error, {
-      method: request.method,
-      url: request.url
-    });
-  }
-};
+  language:
+    strict-casts: true
+    strict-raw-types: true
 
-// 2. 状态变化 - 使用 debug
-useEffect(() => {
-  logger.debug('Active request changed', { requestId: activeRequestId });
-}, [activeRequestId]);
-
-// 3. 关键配置变更 - 使用 info
-const updateSettings = (settings: Settings) => {
-  logger.info('Settings updated', { 
-    theme: settings.theme,
-    language: settings.language 
-  });
-  saveSettings(settings);
-};
+linter:
+  rules:
+    # 代码风格
+    - always_declare_return_types
+    - always_put_control_body_on_new_line
+    - always_specify_types
+    - annotate_overrides
+    - avoid_empty_else
+    - avoid_init_to_null
+    - avoid_returning_null_for_void
+    - avoid_unused_constructor_parameters
+    - camel_case_types
+    - constant_identifier_names
+    - empty_constructor_bodies
+    - file_names
+    - library_names
+    - library_prefixes
+    - non_constant_identifier_names
+    - prefer_const_constructors
+    - prefer_const_declarations
+    - prefer_final_fields
+    - prefer_final_locals
+    - prefer_single_quotes
+    - public_member_api_docs
+    - sort_constructors_first
+    - type_annotate_public_apis
+    - unnecessary_this
+    - use_super_parameters
 ```
 
-#### 日志级别使用指南
+### 2. VS Code 配置
 
-| 级别 | 使用场景 | 示例 |
-|------|----------|------|
-| `trace` | 详细执行流程 | 函数进入/退出、循环迭代 |
-| `debug` | 开发调试信息 | 状态变化、配置值 |
-| `info` | 关键业务事件 | 用户操作、请求发送/完成 |
-| `warn` | 警告/预期外情况 | 降级处理、重试 |
-| `error` | 错误/异常 | 请求失败、操作失败 |
-
-#### 日志内容规范
-
-```typescript
-// ✅ 好 - 包含上下文
-logger.info('Collection imported', { 
-  name: collection.name,
-  requestCount: collection.requests.length,
-  source: 'postman'
-});
-
-// ❌ 差 - 信息不足
-logger.info('Import done');
-```
-
-### 后端日志规范
-
-```rust
-// ✅ 正确的日志使用
-use tracing::{info, debug, error, warn};
-
-// 1. 命令/请求处理 - 使用 info
-#[tauri::command]
-pub async fn send_http_request(request: HttpRequest) -> Result<HttpResponse, String> {
-    info!(method = %request.method, url = %request.url, "Sending HTTP request");
-    
-    let client = HttpClient::new();
-    match client.send(request).await {
-        Ok(response) => {
-            info!(status = response.status, "Request completed");
-            Ok(response)
-        }
-        Err(e) => {
-            error!(error = %e, "Request failed");
-            Err(e.to_string())
-        }
+```json
+// .vscode/settings.json
+{
+  "editor.formatOnSave": true,
+  "editor.formatOnType": true,
+  "editor.rulers": [80, 120],
+  "dart.lineLength": 100,
+  "dart.previewFlutterUiGuides": true,
+  "dart.previewFlutterUiGuidesCustomTracking": true,
+  "[dart]": {
+    "editor.defaultFormatter": "Dart-Code.dart-code",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
     }
+  }
 }
-
-// 2. 内部处理 - 使用 debug
-debug!(request_id = %id, "Processing request");
-
-// 3. 警告情况 - 使用 warn
-warn!(retry_count = retry, "Request timeout, retrying...");
 ```
 
-#### Rust 日志属性规范
+### 3. Git Hooks
 
-```rust
-// ✅ 使用结构化字段
-info!(
-    user_id = %user.id,
-    action = "create_collection",
-    collection_name = %name,
-    "User created collection"
-);
+```bash
+#!/bin/bash
+# .git/hooks/pre-commit
 
-// ❌ 避免字符串拼接
-info!("User {} created collection {}", user.id, name);
+# 运行 Dart 分析
+echo "Running dart analyze..."
+dart analyze
+
+if [ $? -ne 0 ]; then
+  echo "❌ Dart analysis failed"
+  exit 1
+fi
+
+# 运行测试
+echo "Running tests..."
+flutter test
+
+if [ $? -ne 0 ]; then
+  echo "❌ Tests failed"
+  exit 1
+fi
+
+echo "✅ Pre-commit checks passed"
 ```
 
-### 日志检查清单
+---
 
-新增功能时，确保：
+## 附录
 
-- [ ] **关键操作**有 `info` 级别日志（创建、更新、删除、发送）
-- [ ] **错误处理**有 `error` 级别日志，包含错误对象和上下文
-- [ ] **状态变化**有 `debug` 级别日志
-- [ ] **用户交互**有日志记录（按钮点击、表单提交）
-- [ ] **外部调用**有开始和结束的日志对（请求/响应）
-- [ ] **敏感信息**已脱敏（密码、Token 等不记录）
+### 推荐工具
 
-### 敏感信息处理
+| 工具 | 用途 |
+|-----|------|
+| `dart format` | 代码格式化 |
+| `dart analyze` | 静态分析 |
+| `flutter_test` | 单元测试 |
+| `build_runner` | 代码生成 |
+| `freezed` | 不可变类生成 |
+| `riverpod_generator` | Provider 生成 |
 
-```typescript
-// ✅ 脱敏处理
-logger.info('API key configured', { 
-  keyId: apiKey.id,
-  // ❌ 不要记录: key: apiKey.value
-  maskedValue: maskString(apiKey.value, 4) // 只显示后4位
-});
-```
+### 参考资源
 
-```rust
-// ✅ 脱敏处理
-info!(
-    api_key_id = %key_id,
-    "API key configured"
-    // ❌ 不要记录实际 key 值
-);
-```
+- [Effective Dart](https://dart.dev/effective-dart)
+- [Flutter Style Guide](https://github.com/flutter/flutter/blob/master/docs/contributing/Style-guide-for-Flutter-repo.md)
+- [Material Design 3](https://m3.material.io/)
+- [Riverpod Documentation](https://riverpod.dev/)

@@ -1,76 +1,26 @@
-# Dependencies
-node_modules
-.pnp
-.pnp.js
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+*.g.dart
+*.freezed.dart
+*.mocks.dart
 
-# Build outputs
-dist
-dist-ssr
-*.local
-
-# Logs
-logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Editor directories
+# IDE
+.idea/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
 !.vscode/launch.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Testing
-coverage
-.nyc_output
-
-# Cache
-.cache
-.parcel-cache
-.eslintcache
-*.tsbuildinfo
-
-# Rust
-target/
-**/*.rs.bk
-*.pdb
-Cargo.lock
-
-# Tauri
-src-tauri/target
-src-tauri/gen
-
-# Signing keys
-src-tauri/*.key
-src-tauri/*.key.pub
-src-tauri/*.pfx
-
-# Database
-*.db
-*.db-journal
-*.db-wal
-*.db-shm
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Private keys
-*.pem
-*.key
-*.crt
-*.p12
+*.iml
+*.ipr
+*.iws
 
 # macOS
+.DS_Store
 .AppleDouble
 .LSOverride
 Icon
@@ -81,10 +31,63 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# Playwright
-test-results/
-playwright-report/
-playwright/.cache/
+# Linux
+.directory
 
-# Vite
-.vite
+# FVM Version Cache (keep config, ignore versions)
+.fvm/flutter_sdk
+.fvm/versions
+
+# Android
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+
+# iOS
+ios/.generated/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Private keys
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Coverage
+coverage/
+*.lcov
+
+# Temporary files
+*.swp
+*.swo
+*~
+
+# Backup directory (keep structure, ignore build artifacts)
+backup_tauri/node_modules/
+backup_tauri/.pnpm-store/
+backup_tauri/dist/
+backup_tauri/src-tauri/target/

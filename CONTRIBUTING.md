@@ -7,8 +7,21 @@
 ```bash
 git clone https://github.com/scottli139/hopp.git
 cd hopp
-pnpm install
-pnpm tauri dev
+
+# 安装 FVM (Flutter Version Management)
+dart pub global activate fvm
+
+# 使用项目指定的 Flutter 版本
+fvm use
+
+# 安装依赖
+fvm flutter pub get
+
+# 生成代码 (Freezed, Hive, Riverpod)
+fvm dart run build_runner build --delete-conflicting-outputs
+
+# 运行开发
+fvm flutter run -d macos
 ```
 
 ## 提交规范
@@ -36,10 +49,17 @@ chore: 构建/依赖
 
 ## 代码规范
 
-- TypeScript 严格模式
-- ESLint + Prettier 自动格式化
-- Rust: clippy + rustfmt
+- Dart 严格类型检查
+- 使用 `dart format` 格式化代码
+- 使用 `dart analyze` 静态分析
+- 遵循 Effective Dart 指南
 - 单元测试覆盖率 ≥ 80%
+
+## 开发环境要求
+
+- Flutter 3.27+
+- Dart 3.6+
+- FVM (推荐)
 
 ## 许可证
 

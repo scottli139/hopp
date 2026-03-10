@@ -10,23 +10,23 @@
 
 **简短描述（适合 GitHub 主页显示）：**
 ```
-🐰 Hopp - A lightweight, cross-platform API testing tool built with Tauri + React. 100% AI-developed by Kimi.
+🐰 Hopp - A lightweight, cross-platform API testing tool built with Flutter. 100% AI-developed by Kimi.
 ```
 
 **完整描述（项目 About 区域）：**
 ```
 🐰 Hopp - A lightweight, cross-platform API testing tool and open-source alternative to Postman.
 
-Built with ❤️ using Tauri 2.x + React 18 + TypeScript + Rust. 
-🤖 100% AI-developed: Frontend by Kimi Code CLI | Backend by Kimi 2.5 Model
+Built with ❤️ using Flutter 3.27.x + Dart + Riverpod. 
+🤖 100% AI-developed by Kimi Code CLI & Kimi 2.5 Model
 
 Features:
-• 🚀 Lightweight (< 5MB, starts in < 2s)
+• 🚀 Lightweight & Fast - Native performance with Flutter
 • 💻 Cross-platform (macOS, Windows, Linux)
-• 🔧 Full-featured (HTTP/HTTPS, WebSocket, Environments, Collections)
+• 🔧 Full-featured (HTTP/HTTPS, Collections, Environments)
 • 🌍 Multi-language (English & 简体中文)
-• 📊 Request history & collections management
-• 🎨 Dark/Light theme support
+• 📊 Collections management with nested folders
+• 🎨 Material Design 3 with Dark/Light theme support
 ```
 
 ### 中文描述（备用）
@@ -34,8 +34,8 @@ Features:
 ```
 🐰 Hopp - 轻量级跨平台 API 测试工具，Postman 的开源替代品。
 
-使用 Tauri 2.x + React 18 + TypeScript + Rust 构建。
-🤖 100% AI 开发：前端 Kimi Code CLI | 后端 Kimi 2.5 Model
+使用 Flutter 3.27.x + Dart + Riverpod 构建。
+🤖 100% AI 开发：由 Kimi Code CLI 和 Kimi 2.5 Model 共同开发
 ```
 
 ---
@@ -51,10 +51,9 @@ Features:
 | `postman-alternative` | Postman 替代品 - 用户搜索词 |
 | `http-client` | HTTP 客户端 |
 | `rest-api` | REST API 测试 |
-| `tauri` | Tauri 框架 |
-| `rust` | Rust 后端语言 |
-| `react` | React 前端框架 |
-| `typescript` | TypeScript 语言 |
+| `flutter` | Flutter 框架 |
+| `dart` | Dart 语言 |
+| `riverpod` | Riverpod 状态管理 |
 
 #### 功能特性
 | Topic | 说明 |
@@ -80,8 +79,8 @@ Features:
 
 ```
 api-testing, postman-alternative, http-client, rest-api, developer-tools, 
-tauri, rust, react, typescript, desktop-app, cross-platform, 
-websocket, ai-developed, open-source
+flutter, dart, riverpod, desktop-app, cross-platform, 
+ai-developed, open-source
 ```
 
 **GitHub 限制**：最多 20 个 topics，建议选择最相关的 10-15 个
@@ -115,7 +114,7 @@ websocket, ai-developed, open-source
 
 1. **api-testing** - 月搜索量最高的相关词
 2. **postman-alternative** - 用户寻找替代品时的常用搜索词
-3. **tauri** + **rust** - Tauri 社区用户可能会关注
+3. **flutter** + **dart** - Flutter 社区用户可能会关注
 4. **ai-developed** - 突出项目特色，吸引关注 AI 开发的用户
 
 ### Description 关键词优化
@@ -123,7 +122,7 @@ websocket, ai-developed, open-source
 确保 description 包含以下关键词：
 - ✅ API testing tool
 - ✅ Postman alternative
-- ✅ Tauri
+- ✅ Flutter
 - ✅ Cross-platform
 - ✅ Open source
 - ✅ AI developed (突出特色)
@@ -135,9 +134,9 @@ websocket, ai-developed, open-source
 设置完成后，GitHub 仓库首页将显示：
 
 ```
-🐰 Hopp - A lightweight, cross-platform API testing tool built with Tauri + React. 100% AI-developed by Kimi.
+🐰 Hopp - A lightweight, cross-platform API testing tool built with Flutter. 100% AI-developed by Kimi.
 
-🏷️ api-testing · postman-alternative · http-client · rest-api · tauri · rust · react · typescript · desktop-app · ai-developed
+🏷️ api-testing · postman-alternative · http-client · rest-api · flutter · dart · riverpod · desktop-app · ai-developed
 
 🌐 https://scottli139.github.io/hopp
 ```

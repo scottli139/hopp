@@ -198,11 +198,13 @@ jobs:
                 <h1>🐰 Hopp</h1>
                 <p>Lightweight, cross-platform API testing tool</p>
                 <div class="ai-badge">
-                  🤖 100% AI Developed · Frontend by <a href="https://www.moonshot.cn/" target="_blank">Kimi Code CLI</a> · Backend by <a href="https://www.moonshot.cn/" target="_blank">Kimi 2.5</a>
+                  🤖 100% AI Developed · Built with <a href="https://www.moonshot.cn/" target="_blank">Kimi Code CLI</a> · Powered by <a href="https://www.moonshot.cn/" target="_blank">Kimi 2.5</a>
                 </div>
                 <div class="badges">
                   <img src="https://github.com/scottli139/hopp/actions/workflows/ci.yml/badge.svg" alt="CI">
                   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
+                  <img src="https://img.shields.io/badge/Flutter-3.27.x-02569B?logo=flutter" alt="Flutter">
+                  <img src="https://img.shields.io/badge/Dart-3.6.x-0175C2?logo=dart" alt="Dart">
                 </div>
                 <a href="https://github.com/scottli139/hopp/releases" class="btn btn-primary">Download</a>
                 <a href="https://github.com/scottli139/hopp" class="btn">GitHub</a>
@@ -210,7 +212,7 @@ jobs:
                 <div class="features">
                   <div class="feature-card">
                     <h3>🚀 Lightweight</h3>
-                    <p>Built with Tauri, starts in &lt; 2s, memory &lt; 200MB</p>
+                    <p>Built with Flutter, native performance experience</p>
                   </div>
                   <div class="feature-card">
                     <h3>💻 Cross-Platform</h3>
@@ -218,7 +220,7 @@ jobs:
                   </div>
                   <div class="feature-card">
                     <h3>🔧 Full-Featured</h3>
-                    <p>HTTP/HTTPS, WebSocket, environments, collections</p>
+                    <p>HTTP/HTTPS, Collections, Environment variables</p>
                   </div>
                   <div class="feature-card">
                     <h3>🌍 Multi-Language</h3>
@@ -385,11 +387,13 @@ jobs:
                 <h1>🐰 Hopp</h1>
                 <p>轻量级、跨平台的 API 请求测试工具</p>
                 <div class="ai-badge">
-                  🤖 100% AI 开发 · 前端 <a href="https://www.moonshot.cn/" target="_blank">Kimi Code CLI</a> · 后端 <a href="https://www.moonshot.cn/" target="_blank">Kimi 2.5</a>
+                  🤖 100% AI 开发 · 使用 <a href="https://www.moonshot.cn/" target="_blank">Kimi Code CLI</a> 构建 · 基于 <a href="https://www.moonshot.cn/" target="_blank">Kimi 2.5</a>
                 </div>
                 <div class="badges">
                   <img src="https://github.com/scottli139/hopp/actions/workflows/ci.yml/badge.svg" alt="CI">
                   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
+                  <img src="https://img.shields.io/badge/Flutter-3.27.x-02569B?logo=flutter" alt="Flutter">
+                  <img src="https://img.shields.io/badge/Dart-3.6.x-0175C2?logo=dart" alt="Dart">
                 </div>
                 <a href="https://github.com/scottli139/hopp/releases" class="btn btn-primary">下载安装</a>
                 <a href="https://github.com/scottli139/hopp" class="btn">GitHub</a>
@@ -397,7 +401,7 @@ jobs:
                 <div class="features">
                   <div class="feature-card">
                     <h3>🚀 轻量快速</h3>
-                    <p>基于 Tauri 构建，启动 &lt; 2s，内存 &lt; 200MB</p>
+                    <p>基于 Flutter 构建，原生性能体验</p>
                   </div>
                   <div class="feature-card">
                     <h3>💻 跨平台</h3>
@@ -405,7 +409,7 @@ jobs:
                   </div>
                   <div class="feature-card">
                     <h3>🔧 完整功能</h3>
-                    <p>HTTP/HTTPS、WebSocket、环境变量、集合</p>
+                    <p>HTTP/HTTPS、Collections、环境变量</p>
                   </div>
                   <div class="feature-card">
                     <h3>🌍 多语言</h3>

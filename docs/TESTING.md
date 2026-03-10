@@ -1,599 +1,728 @@
 # Hopp 自动化测试方案
 
-> 确保代码质量和功能正确性的测试策略与实施指南。
+> 本文档定义 Flutter 项目的测试策略、工具配置和最佳实践。
 
 ---
 
-## 🎯 测试目标
+## 📋 目录
 
-| 指标 | 目标值 | 说明 |
-|------|--------|------|
-| 单元测试覆盖率 | ≥ 80% | 核心业务逻辑 |
-| 集成测试覆盖率 | ≥ 60% | 关键流程 |
-| E2E 测试通过率 | 100% | 核心用户场景 |
-| 测试执行时间 | < 5 min | CI 流水线 |
-
----
-
-## 🧪 测试分层
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  E2E Tests (Playwright)                                 │
-│  - 用户场景测试                                          │
-│  - 跨平台测试                                            │
-│  - 耗时: ~2 min                                         │
-├─────────────────────────────────────────────────────────┤
-│  Integration Tests                                      │
-│  - Frontend: Component Testing (Vitest + RTL)           │
-│  - Backend: Integration Tests (Rust)                    │
-│  - 耗时: ~1 min                                         │
-├─────────────────────────────────────────────────────────┤
-│  Unit Tests                                             │
-│  - Frontend: Vitest (Utils/Hooks/Stores)                │
-│  - Backend: cargo test                                  │
-│  - 耗时: ~1 min                                         │
-└─────────────────────────────────────────────────────────┘
-```
+- [测试策略](#测试策略)
+- [单元测试](#单元测试)
+- [Widget 测试](#widget-测试)
+- [集成测试](#集成测试)
+- [测试覆盖率](#测试覆盖率)
+- [CI/CD 集成](#cicd-集成)
+- [测试工具](#测试工具)
 
 ---
 
-## 📝 测试策略
+## 测试策略
 
-### 1. 单元测试 (Unit Tests)
+### 测试金字塔
 
-#### 前端 (Vitest)
-
-**测试范围:**
-- 工具函数 (`src/utils/`)
-- 自定义 Hooks (`src/hooks/`)
-- Store 逻辑 (`src/stores/`)
-- 纯函数组件
-
-**文件命名:**
 ```
-src/
-├── utils/
-│   ├── formatDate.ts
-│   └── formatDate.test.ts      # 测试文件
-├── hooks/
-│   ├── useRequest.ts
-│   └── useRequest.test.ts
-└── stores/
-    ├── requestStore.ts
-    └── requestStore.test.ts
+    /\
+   /  \  E2E 测试 (5%)
+  /----\ 
+ /      \ 集成测试 (15%)
+/--------\
+          单元测试 (80%)
 ```
 
-**示例:**
+### 测试目标
 
-```typescript
-// src/utils/variableResolver.test.ts
-import { describe, it, expect } from 'vitest';
-import { resolveVariables } from './variableResolver';
+| 层级 | 目标覆盖率 | 测试类型 |
+|-----|-----------|---------|
+| Models | 100% | 单元测试 |
+| Services | 90%+ | 单元测试 + Mock |
+| Providers | 80%+ | 单元测试 |
+| Widgets | 70%+ | Widget 测试 |
+| Integration | 60%+ | 集成测试 |
 
-describe('resolveVariables', () => {
-  it('should replace simple variables', () => {
-    const template = 'https://api.{{domain}}.com/users/{{id}}';
-    const variables = { domain: 'example', id: '123' };
-    
-    const result = resolveVariables(template, variables);
-    
-    expect(result).toBe('https://api.example.com/users/123');
+---
+
+## 单元测试
+
+### 1. 模型测试
+
+```dart
+// test/models/http_request_test.dart
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hopp/models/http_request.dart';
+import 'package:hopp/models/http_method.dart';
+import 'package:hopp/models/key_value_pair.dart';
+
+void main() {
+  group('HttpRequest', () {
+    test('should create HttpRequest with default values', () {
+      final request = HttpRequest.empty();
+      
+      expect(request.method, HttpMethod.get);
+      expect(request.url, 'https://api.example.com');
+      expect(request.params, isEmpty);
+      expect(request.headers, isEmpty);
+      expect(request.body, '');
+    });
+
+    test('should copy with new values', () {
+      final request = HttpRequest.empty();
+      final updated = request.copyWith(
+        method: HttpMethod.post,
+        url: 'https://api.new.com',
+        body: '{"key": "value"}',
+      );
+      
+      expect(updated.method, HttpMethod.post);
+      expect(updated.url, 'https://api.new.com');
+      expect(updated.body, '{"key": "value"}');
+    });
+
+    test('should serialize to JSON', () {
+      final request = HttpRequest.empty().copyWith(
+        id: 'test-id',
+        name: 'Test Request',
+      );
+      
+      final json = request.toJson();
+      expect(json['id'], 'test-id');
+      expect(json['name'], 'Test Request');
+    });
   });
-  
-  it('should handle missing variables gracefully', () => {
-    const template = '{{missing}}';
-    const variables = {};
-    
-    const result = resolveVariables(template, variables);
-    
-    expect(result).toBe('{{missing}}');
-  });
-  
-  it('should escape special regex characters in values', () => {
-    const template = '{{path}}';
-    const variables = { path: 'api/v1/users' };
-    
-    const result = resolveVariables(template, variables);
-    
-    expect(result).toBe('api/v1/users');
-  });
-});
-```
-
-#### 后端 (Rust)
-
-**测试范围:**
-- 业务逻辑函数
-- 数据结构序列化/反序列化
-- 工具函数
-
-**文件组织:**
-```rust
-// 内联测试
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn test_parse_url_with_variables() {
-        let url = "https://api.{{domain}}.com/users/{{id}}";
-        let vars = vec![
-            ("domain".to_string(), "example".to_string()),
-            ("id".to_string(), "123".to_string()),
-        ];
-        
-        let result = parse_url_with_variables(url, &vars);
-        
-        assert_eq!(result, "https://api.example.com/users/123");
-    }
 }
 ```
 
-**集成测试:**
-```
-src-tauri/tests/
-├── integration/
-│   ├── http_client_tests.rs
-│   ├── storage_tests.rs
-│   └── mod.rs
-└── common/
-    ├── mod.rs
-    └── test_utils.rs
-```
+### 2. Service 测试
 
-### 2. 集成测试 (Integration Tests)
+```dart
+// test/services/http_service_test.dart
+import 'package:flutter_test/flutter_test.dart';
+import 'package:dio/dio.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
-#### 前端组件测试
+import 'package:hopp/services/http_service.dart';
+import 'package:hopp/models/http_request.dart';
+import 'package:hopp/models/http_method.dart';
 
-**使用:** Vitest + React Testing Library
+@GenerateNiceMocks([MockSpec<Dio>()])
+import 'http_service_test.mocks.dart';
 
-```typescript
-// src/components/request/MethodSelector.test.tsx
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { MethodSelector } from './MethodSelector';
+void main() {
+  late HttpService httpService;
+  late MockDio mockDio;
 
-describe('MethodSelector', () => {
-  it('should render all HTTP methods', () => {
-    render(<MethodSelector value="GET" onChange={vi.fn()} />);
-    
-    expect(screen.getByText('GET')).toBeInTheDocument();
-    expect(screen.getByText('POST')).toBeInTheDocument();
-    // ...
+  setUp(() {
+    mockDio = MockDio();
+    httpService = HttpService(dio: mockDio);
   });
-  
-  it('should call onChange when selecting different method', () => {
-    const onChange = vi.fn();
-    render(<MethodSelector value="GET" onChange={onChange} />);
-    
-    fireEvent.click(screen.getByText('POST'));
-    
-    expect(onChange).toHaveBeenCalledWith('POST');
+
+  group('HttpService', () {
+    test('should send GET request successfully', () async {
+      // Arrange
+      final request = HttpRequest.empty().copyWith(
+        method: HttpMethod.get,
+        url: 'https://api.example.com/users',
+      );
+
+      when(mockDio.request<any>(
+        any,
+        data: anyNamed('data'),
+        options: anyNamed('options'),
+      )).thenAnswer((_) async => Response(
+        data: Uint8List.fromList(utf8.encode('{"id": 1}')),
+        statusCode: 200,
+        requestOptions: RequestOptions(path: ''),
+      ));
+
+      // Act
+      final response = await httpService.sendRequest(request);
+
+      // Assert
+      expect(response.statusCode, 200);
+      expect(response.error, isNull);
+    });
+
+    test('should handle network error', () async {
+      // Arrange
+      final request = HttpRequest.empty();
+
+      when(mockDio.request<any>(
+        any,
+        data: anyNamed('data'),
+        options: anyNamed('options'),
+      )).thenThrow(DioException(
+        requestOptions: RequestOptions(path: ''),
+        type: DioExceptionType.connectionTimeout,
+      ));
+
+      // Act
+      final response = await httpService.sendRequest(request);
+
+      // Assert
+      expect(response.error, contains('timeout'));
+      expect(response.statusCode, isNull);
+    });
   });
-  
-  it('should highlight selected method', () => {
-    render(<MethodSelector value="POST" onChange={vi.fn()} />);
-    
-    const postButton = screen.getByText('POST');
-    expect(postButton).toHaveClass('bg-blue-600');
-  });
-});
-```
-
-#### 后端集成测试
-
-```rust
-// src-tauri/tests/integration/http_client_tests.rs
-use hopp::services::HttpClient;
-use hopp::models::{HttpRequest, Method};
-
-#[tokio::test]
-async fn test_send_get_request() {
-    // 启动 mock server
-    let mut server = mockito::Server::new_async().await;
-    let mock = server.mock("GET", "/test")
-        .with_status(200)
-        .with_header("content-type", "application/json")
-        .with_body(r#"{"message": "success"}"#)
-        .create();
-    
-    let client = HttpClient::new();
-    let request = HttpRequest {
-        method: Method::GET,
-        url: format!("{}/test", server.url()),
-        headers: vec![],
-        body: None,
-        timeout: Duration::from_secs(5),
-    };
-    
-    let response = client.send(request).await.unwrap();
-    
-    assert_eq!(response.status, 200);
-    mock.assert();
 }
 ```
 
-### 3. E2E 测试 (End-to-End)
+### 3. Provider 测试
 
-**使用:** Playwright + Tauri Driver
+```dart
+// test/providers/request_tab_provider_test.dart
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hopp/providers/request/request_tab_provider.dart';
+import 'package:hopp/models/http_request.dart';
 
-**测试范围:**
-- 核心用户流程
-- 跨平台兼容性
-- 性能基准
+void main() {
+  group('RequestTabNotifier', () {
+    late RequestTabNotifier notifier;
 
-**测试文件:**
-```
-e2e/
-├── fixtures/
-│   └── sample-collection.json
-├── tests/
-│   ├── auth.setup.ts
-│   ├── request.spec.ts
-│   ├── collection.spec.ts
-│   └── environment.spec.ts
-├── pages/
-│   ├── RequestPage.ts
-│   ├── SidebarPage.ts
-│   └── index.ts
-└── playwright.config.ts
-```
+    setUp(() {
+      notifier = RequestTabNotifier();
+    });
 
-**示例:**
+    test('should add new tab', () {
+      // Arrange
+      final request = HttpRequest.empty();
 
-```typescript
-// e2e/tests/request.spec.ts
-import { test, expect } from '@playwright/test';
-import { RequestPage } from '../pages/RequestPage';
+      // Act
+      notifier.openTab(request);
 
-test.describe('Request Flow', () => {
-  test('should send a GET request and display response', async ({ page }) => {
-    const requestPage = new RequestPage(page);
-    
-    // 1. 打开新标签页
-    await requestPage.newTab();
-    
-    // 2. 输入 URL
-    await requestPage.setUrl('https://httpbin.org/get');
-    
-    // 3. 点击发送
-    await requestPage.clickSend();
-    
-    // 4. 验证响应
-    await expect(requestPage.responseStatus).toContainText('200');
-    await expect(requestPage.responseBody).toContainText('"url"');
+      // Assert
+      expect(notifier.tabCount, 1);
+      expect(notifier.getTab(request.id)?.request.id, request.id);
+    });
+
+    test('should close tab', () {
+      // Arrange
+      final request = HttpRequest.empty();
+      notifier.openTab(request);
+
+      // Act
+      notifier.closeTab(request.id);
+
+      // Assert
+      expect(notifier.tabCount, 0);
+    });
+
+    test('should mark tab as dirty when updating request', () {
+      // Arrange
+      final request = HttpRequest.empty();
+      notifier.openTab(request);
+      final updatedRequest = request.copyWith(url: 'https://new.com');
+
+      // Act
+      notifier.updateRequest(request.id, updatedRequest);
+
+      // Assert
+      expect(notifier.getTab(request.id)?.isDirty, true);
+    });
   });
-  
-  test('should save request to collection', async ({ page }) => {
-    const requestPage = new RequestPage(page);
-    
-    await requestPage.newTab();
-    await requestPage.setUrl('https://httpbin.org/post');
-    await requestPage.setMethod('POST');
-    await requestPage.setBody('{"test": "data"}');
-    
-    // 保存到集合
-    await requestPage.saveToCollection('Test Collection', 'My Request');
-    
-    // 验证侧边栏显示
-    await expect(page.locator('[data-testid="sidebar"]')).toContainText('My Request');
+}
+```
+
+---
+
+## Widget 测试
+
+### 1. 基础 Widget 测试
+
+```dart
+// test/widgets/custom_button_test.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hopp/widgets/common/custom_button.dart';
+
+void main() {
+  group('CustomButton', () {
+    testWidgets('should render with text', (tester) async {
+      // Arrange
+      const buttonText = 'Click Me';
+
+      // Act
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: CustomButton(
+              text: buttonText,
+              onPressed: null,
+            ),
+          ),
+        ),
+      );
+
+      // Assert
+      expect(find.text(buttonText), findsOneWidget);
+    });
+
+    testWidgets('should call onPressed when tapped', (tester) async {
+      // Arrange
+      var wasPressed = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CustomButton(
+              text: 'Press',
+              onPressed: () => wasPressed = true,
+            ),
+          ),
+        ),
+      );
+
+      // Act
+      await tester.tap(find.byType(CustomButton));
+      await tester.pump();
+
+      // Assert
+      expect(wasPressed, true);
+    });
+
+    testWidgets('should show loading state', (tester) async {
+      // Arrange & Act
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: CustomButton(
+              text: 'Loading',
+              isLoading: true,
+              onPressed: null,
+            ),
+          ),
+        ),
+      );
+
+      // Assert
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
   });
-});
+}
+```
+
+### 2. 带 Riverpod 的 Widget 测试
+
+```dart
+// test/widgets/user_profile_test.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mockito/mockito.dart';
+
+import 'package:hopp/widgets/user_profile.dart';
+import 'package:hopp/providers/user_provider.dart';
+import 'package:hopp/models/user.dart';
+
+class MockUserNotifier extends Mock implements UserNotifier {}
+
+void main() {
+  group('UserProfile', () {
+    testWidgets('should show loading state', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            userProvider.overrideWith((ref) => 
+              AsyncValue<User>.loading()),
+          ],
+          child: const MaterialApp(
+            home: UserProfile(),
+          ),
+        ),
+      );
+
+      // Assert
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('should show user data', (tester) async {
+      // Arrange
+      final user = User(
+        id: '1',
+        name: 'John Doe',
+        email: 'john@example.com',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            userProvider.overrideWith((ref) => 
+              AsyncValue<User>.data(user)),
+          ],
+          child: const MaterialApp(
+            home: UserProfile(),
+          ),
+        ),
+      );
+
+      // Assert
+      expect(find.text('John Doe'), findsOneWidget);
+      expect(find.text('john@example.com'), findsOneWidget);
+    });
+
+    testWidgets('should show error state', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            userProvider.overrideWith((ref) => 
+              AsyncValue<User>.error('Failed to load', StackTrace.empty)),
+          ],
+          child: const MaterialApp(
+            home: UserProfile(),
+          ),
+        ),
+      );
+
+      // Assert
+      expect(find.text('Failed to load'), findsOneWidget);
+    });
+  });
+}
 ```
 
 ---
 
-## 🔧 测试工具配置
+## 集成测试
 
-### 前端测试 (Vitest)
+### 1. 配置集成测试
 
-```typescript
-// vitest.config.ts
-import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'src/test/',
-        '**/*.d.ts',
-        '**/*.config.*',
-      ],
-      thresholds: {
-        statements: 80,
-        branches: 80,
-        functions: 80,
-        lines: 80,
-      },
-    },
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
-});
+```yaml
+# pubspec.yaml
+dev_dependencies:
+  integration_test:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
 ```
 
-```typescript
-// src/test/setup.ts
-import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+### 2. 编写集成测试
 
-// Mock Tauri API
-global.__TAURI__ = {
-  invoke: vi.fn(),
-  event: {
-    listen: vi.fn(),
-  },
-};
+```dart
+// integration_test/app_test.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:hopp/main.dart' as app;
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  group('End-to-End Test', () {
+    testWidgets('should create and send a request', (tester) async {
+      // Launch app
+      app.main();
+      await tester.pumpAndSettle();
+
+      // Create new collection
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      // Enter collection name
+      await tester.enterText(
+        find.byType(TextField).first,
+        'Test Collection',
+      );
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      // Create new request
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add Request'));
+      await tester.pumpAndSettle();
+
+      // Enter URL
+      await tester.enterText(
+        find.byType(TextField).last,
+        'https://api.example.com/users',
+      );
+
+      // Send request
+      await tester.tap(find.text('Send'));
+      await tester.pump(const Duration(seconds: 2));
+
+      // Verify response is shown
+      expect(find.text('Response'), findsOneWidget);
+    });
+
+    testWidgets('should switch between tabs', (tester) async {
+      // Launch app
+      app.main();
+      await tester.pumpAndSettle();
+
+      // Create multiple requests...
+      // Switch between tabs...
+    });
+  });
+}
 ```
 
-### 后端测试 (Cargo)
+### 3. 运行集成测试
 
-```toml
-# Cargo.toml [dev-dependencies]
-[dev-dependencies]
-tokio-test = "0.4"
-mockito = "1.0"
-tempfile = "3.8"
-assert_fs = "1.0"
-predicates = "3.0"
-```
+```bash
+# macOS
+flutter test integration_test/app_test.dart -d macos
 
-### E2E 测试 (Playwright)
+# Windows
+flutter test integration_test/app_test.dart -d windows
 
-```typescript
-// e2e/playwright.config.ts
-import { defineConfig, devices } from '@playwright/test';
-
-export default defineConfig({
-  testDir: './tests',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
-  use: {
-    baseURL: 'http://localhost:1420',
-    trace: 'on-first-retry',
-  },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-  ],
-  webServer: {
-    command: 'pnpm tauri dev',
-    url: 'http://localhost:1420',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
-});
+# Linux
+flutter test integration_test/app_test.dart -d linux
 ```
 
 ---
 
-## 📊 测试用例设计
+## 测试覆盖率
 
-### 按模块划分
+### 生成覆盖率报告
 
-| 模块 | 单元测试 | 集成测试 | E2E 测试 |
-|------|----------|----------|----------|
-| HTTP 请求 | ✅ | ✅ | ✅ |
-| 集合管理 | ✅ | ✅ | ✅ |
-| 环境变量 | ✅ | ✅ | ✅ |
-| 历史记录 | ✅ | ✅ | ❌ |
-| 导入/导出 | ✅ | ✅ | ✅ |
-| WebSocket | ✅ | ✅ | ✅ |
-| UI 交互 | ❌ | ✅ | ✅ |
+```bash
+# 运行测试并收集覆盖率
+flutter test --coverage
 
-### 核心测试场景
+# 生成 HTML 报告
+genhtml coverage/lcov.info -o coverage/html
 
-#### HTTP 请求模块
-
-```gherkin
-Feature: HTTP Request
-
-  Scenario: Send GET request
-    Given a valid GET request to "https://httpbin.org/get"
-    When I send the request
-    Then I should receive a 200 response
-    And the response body should contain JSON data
-
-  Scenario: Send POST request with JSON body
-    Given a POST request to "https://httpbin.org/post"
-    And the body is '{"key": "value"}'
-    When I send the request
-    Then I should receive a 200 response
-    And the response should echo the request body
-
-  Scenario: Handle timeout
-    Given a request with 1ms timeout
-    When I send the request to a slow endpoint
-    Then I should see a timeout error
+# 打开报告
+open coverage/html/index.html
 ```
 
-#### 环境变量模块
-
-```gherkin
-Feature: Environment Variables
-
-  Scenario: Replace variables in URL
-    Given an environment with variable "baseUrl" = "api.example.com"
-    And a request to "https://{{baseUrl}}/users"
-    When I send the request
-    Then the actual URL should be "https://api.example.com/users"
-
-  Scenario: Switch environments
-    Given multiple environments (dev, prod)
-    And I'm currently using "dev" environment
-    When I switch to "prod" environment
-    Then subsequent requests should use "prod" variables
-```
-
----
-
-## 🚀 CI/CD 集成
-
-### GitHub Actions Workflow
+### 覆盖率配置
 
 ```yaml
 # .github/workflows/test.yml
-name: Test
+- name: Run tests with coverage
+  run: |
+    flutter test --coverage
+    
+- name: Upload coverage
+  uses: codecov/codecov-action@v3
+  with:
+    files: coverage/lcov.info
+```
+
+### 忽略文件
+
+```yaml
+# analysis_options.yaml
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.mocks.dart"
+    - "test/**"
+```
+
+---
+
+## CI/CD 集成
+
+### GitHub Actions 配置
+
+```yaml
+# .github/workflows/test.yml
+name: Tests
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, develop ]
   pull_request:
-    branches: [main, develop]
+    branches: [ main ]
 
 jobs:
-  frontend-test:
+  test:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-      
-      - name: Install dependencies
-        run: pnpm install
-      
-      - name: Lint
-        run: pnpm lint
-      
-      - name: Type check
-        run: pnpm type-check
-      
-      - name: Unit tests
-        run: pnpm test:unit --coverage
-      
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.x'
+        channel: 'stable'
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Generate code
+      run: dart run build_runner build --delete-conflicting-outputs
+    
+    - name: Run analyzer
+      run: flutter analyze
+    
+    - name: Run tests
+      run: flutter test --coverage
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        files: coverage/lcov.info
+        fail_ci_if_error: true
 
-  backend-test:
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.x'
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Build macOS
+      run: flutter build macos --release
+
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.x'
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Build Windows
+      run: flutter build windows --release
+
+  build-linux:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-action@stable
-      
-      - name: Check formatting
-        run: cargo fmt -- --check
-      
-      - name: Clippy
-        run: cargo clippy -- -D warnings
-      
-      - name: Unit tests
-        run: cargo test --lib
-      
-      - name: Integration tests
-        run: cargo test --test '*'
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.x'
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Build Linux
+      run: flutter build linux --release
 ```
 
 ---
 
-## 📈 覆盖率报告
+## 测试工具
 
-### 生成报告
+### 1. Mock 生成
 
 ```bash
-# 前端
-pnpm test:unit --coverage
-
-# 后端
-cargo tarpaulin --out Html
+# 生成 Mock 类
+dart run build_runner build --delete-conflicting-outputs
 ```
 
-### 覆盖率阈值
+### 2. 黄金测试 (Golden Tests)
 
-```yaml
-# codecov.yml
-coverage:
-  status:
-    project:
-      default:
-        target: 80%
-        threshold: 2%
-    patch:
-      default:
-        target: 80%
+```dart
+// test/goldens/home_screen_test.dart
+testWidgets('HomeScreen golden test', (tester) async {
+  await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+  await tester.pumpAndSettle();
+  
+  await expectLater(
+    find.byType(HomeScreen),
+    matchesGoldenFile('goldens/home_screen.png'),
+  );
+});
+```
+
+### 3. 性能测试
+
+```dart
+testWidgets('Scrolling performance', (tester) async {
+  await tester.pumpWidget(const MyApp());
+  
+  final list = find.byType(ListView);
+  
+  await tester.fling(list, const Offset(0, -300), 1000);
+  await tester.pumpAndSettle();
+  
+  // 检查帧率
+  expect(tester.binding.hasScheduledFrame, isFalse);
+});
 ```
 
 ---
 
-## 🐛 调试技巧
+## 最佳实践
 
-### 前端测试调试
+### 1. 测试命名规范
 
-```bash
-# 交互式调试
-pnpm vitest --reporter=verbose
+```dart
+// ✅ Good
+group('UserService', () {
+  test('should return user when found', () {});
+  test('should throw exception when user not found', () {});
+  test('should cache user after first fetch', () {});
+});
 
-# 特定测试文件
-pnpm vitest src/utils/variableResolver.test.ts
-
-# 带 UI
-pnpm vitest --ui
+// ❌ Bad
+group('UserService', () {
+  test('test1', () {});
+  test('test2', () {});
+});
 ```
 
-### 后端测试调试
+### 2. AAA 模式
 
-```bash
-# 显示输出
-cargo test -- --nocapture
-
-# 特定测试
-cargo test test_parse_url
-
-# 集成测试
-cargo test --test integration
+```dart
+test('should calculate total', () {
+  // Arrange
+  final calculator = Calculator();
+  
+  // Act
+  final result = calculator.add(2, 3);
+  
+  // Assert
+  expect(result, 5);
+});
 ```
 
-### E2E 调试
+### 3. 测试独立性
 
-```bash
-# headed 模式
-pnpm exec playwright test --headed
-
-# 特定测试
-pnpm exec playwright test request.spec.ts
-
-# 调试模式
-pnpm exec playwright test --debug
-
-# 查看报告
-pnpm exec playwright show-report
+```dart
+// ✅ Good
+group('Counter', () {
+  late Counter counter;
+  
+  setUp(() {
+    counter = Counter();
+  });
+  
+  test('increment', () {
+    counter.increment();
+    expect(counter.value, 1);
+  });
+  
+  test('decrement', () {
+    counter.decrement();
+    expect(counter.value, -1);
+  });
+});
 ```
 
 ---
 
-## ✅ 测试检查清单
+## 参考资源
 
-### 新增功能时
-
-- [ ] 编写对应的单元测试
-- [ ] 复杂逻辑补充集成测试
-- [ ] 用户流程补充 E2E 测试
-- [ ] 测试覆盖率不降低
-- [ ] 所有测试通过
-
-### PR 提交时
-
-- [ ] 本地测试通过
-- [ ] CI 测试通过
-- [ ] 覆盖率报告达标
-- [ ] 无 flaky tests
+- [Flutter Testing](https://docs.flutter.dev/testing)
+- [Dart Test](https://pub.dev/packages/test)
+- [Mockito](https://pub.dev/packages/mockito)
+- [Riverpod Testing](https://riverpod.dev/docs/cookbooks/testing)

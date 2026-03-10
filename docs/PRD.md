@@ -2,7 +2,7 @@
 
 ## 产品概述
 
-**Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Tauri 构建，注重性能和用户体验。
+**Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Flutter 构建，注重性能和用户体验。
 
 **口号**: *Hop to your APIs*（跃向你的 API）
 
@@ -68,7 +68,7 @@
 
 | ID | 功能 | 需求描述 | 验收标准 |
 |----|------|----------|----------|
-| F6.1 | 本地存储 | SQLite/文件存储数据 | 数据持久化，应用重启不丢失 |
+| F6.1 | 本地存储 | Hive/SharedPreferences 存储数据 | 数据持久化，应用重启不丢失 |
 | F6.4 | 数据备份 | 自动/手动备份 | 可导出完整数据备份 |
 
 **Backlog：**
@@ -113,13 +113,13 @@
 
 | 层级 | 技术 | 用途 |
 |------|------|------|
-| 前端框架 | React 18 + TypeScript | UI 组件开发 |
-| UI 组件库 | Radix UI + Tailwind CSS | 基础组件和样式 |
-| 状态管理 | Zustand | 全局状态管理 |
-| 后端框架 | Tauri (Rust) | 桌面应用框架 |
-| HTTP 客户端 | reqwest (Rust) | 底层 HTTP 请求 |
-| 数据存储 | SQLite (via rusqlite) | 本地数据持久化 |
-| 代码编辑器 | Monaco Editor | JSON/代码编辑 |
+| 跨平台框架 | Flutter 3.27.x | UI 开发和跨平台支持 |
+| 编程语言 | Dart 3.6+ | 业务逻辑实现 |
+| UI 设计 | Material Design 3 | 设计系统和组件 |
+| 状态管理 | Riverpod 2.x | 全局状态管理 |
+| HTTP 客户端 | Dio 5.x | HTTP 请求处理 |
+| 数据存储 | Hive + SharedPreferences | 本地数据持久化 |
+| 代码生成 | Freezed + json_serializable | 模型类生成 |
 
 ---
 

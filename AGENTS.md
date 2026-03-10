@@ -6,11 +6,73 @@
 
 ## 项目概述
 
-**Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Tauri 构建，注重性能和用户体验。
+**Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Flutter 构建，注重性能和用户体验。
 
-**当前状态**: ✅ **M1.1-M1.4 已完成，M1.8 本地存储待开始**  
-**技术栈**: Tauri 2.x + React 18 + TypeScript + Rust  
-**目标平台**: macOS 10.15+ / Windows 10+ / Linux
+**当前状态**: ✅ **Session End - Flutter 迁移完成，文档和规范已更新**  
+**技术栈**: Flutter 3.27.x + Dart + Riverpod  
+**目标平台**: macOS 10.15+ / Windows 10+ / Linux  
+**下次会话重点**: 单元测试实现 (Models + Services)
+
+---
+
+## 🔧 Flutter 开发环境配置
+
+### FVM (Flutter Version Management)
+
+项目使用 FVM 管理 Flutter 版本，确保团队协作时 Flutter 版本一致。
+
+**当前版本**: `3.27.4`
+
+**配置文件**:
+- `.fvmrc` - FVM 配置文件
+- `.fvm/fvm_config.json` - FVM 内部配置
+
+**常用命令**:
+```bash
+# 安装 FVM (如果尚未安装)
+dart pub global activate fvm
+
+# 使用项目指定的 Flutter 版本
+fvm use
+
+# 运行 Flutter 命令
+fvm flutter run
+fvm flutter build macos
+
+# 安装依赖
+fvm flutter pub get
+```
+
+### 国内镜像配置
+
+由于网络原因，中国大陆开发者需要配置国内镜像以加速 Flutter 和 Dart 包的下载。
+
+**推荐镜像**: Flutter 中国社区 (CFUG)
+
+**环境变量配置** (添加到 `~/.zshrc` 或 `~/.bashrc`):
+```bash
+# Flutter 中国社区镜像
+export PUB_HOSTED_URL=https://pub.flutter-io.cn
+export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
+```
+
+**其他可用镜像**:
+
+| 镜像提供商 | PUB_HOSTED_URL | FLUTTER_STORAGE_BASE_URL |
+|-----------|----------------|-------------------------|
+| **CFUG (推荐)** | `https://pub.flutter-io.cn` | `https://storage.flutter-io.cn` |
+| 上海交通大学 | `https://mirror.sjtu.edu.cn/dart-pub` | `https://mirror.sjtu.edu.cn` |
+| 清华大学 TUNA | `https://mirrors.tuna.tsinghua.edu.cn/dart-pub` | `https://mirrors.tuna.tsinghua.edu.cn/flutter` |
+
+**安装 Flutter SDK (使用国内镜像)**:
+```bash
+export PUB_HOSTED_URL=https://pub.flutter-io.cn
+export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
+fvm install 3.27.4
+fvm use 3.27.4
+```
+
+**注意**: 如需发布 package 到 pub.dev，需要临时取消 `PUB_HOSTED_URL` 环境变量并配置代理。
 
 ---
 
@@ -42,14 +104,74 @@
 
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| UI 精细化调整 | - | 尺寸、间距、对齐仍需继续优化 |
+| **Flutter 架构迁移** | 🔄 | 从 Tauri+React 迁移至 Flutter |
 
-### 待办 📋
+### Flutter 迁移任务清单 📋
 
-| 任务 | 优先级 | 预计工时 | 说明 |
+| 任务 | 优先级 | 预计工时 | 状态 |
 |------|--------|----------|------|
-| M1.8 基础本地存储 | 🟡 P1 | 8h | Settings 配置持久化 |
-| UI 精细化调整 | 🟢 P2 | 4h | 继续优化各组件尺寸、间距、对齐，达到生产级水准 |
+| FVM 环境配置 | 🟢 P0 | 1h | ✅ 完成 |
+| Flutter 项目结构 | 🟢 P0 | 2h | ✅ 完成 |
+| 核心模型迁移 | 🟢 P0 | 3h | ✅ 完成 |
+| Riverpod 状态管理 | 🟢 P0 | 4h | ✅ 完成 |
+| Dio HTTP 服务 | 🟢 P0 | 3h | ✅ 完成 |
+| 本地存储 (Hive+SP) | 🟡 P1 | 3h | ✅ 完成 |
+| 侧边栏组件 | 🟡 P1 | 4h | ✅ 完成 |
+| 标签页组件 | 🟡 P1 | 3h | ✅ 完成 |
+| 请求编辑器 UI | 🟡 P1 | 4h | ✅ 完成 |
+| 响应展示 UI | 🟡 P1 | 4h | ✅ 完成 |
+| 国际化 (i18n) | 🟢 P2 | 2h | ✅ 完成 |
+| 日志系统 | 🟢 P2 | 2h | ✅ 完成 |
+| 代码规范配置 | 🟢 P0 | 2h | ✅ 完成 |
+| 文档更新 | 🟡 P1 | 4h | ✅ 完成 |
+| CI/CD 更新 (Flutter) | 🟢 P2 | 3h | ✅ 完成 |
+| 旧代码清理 | 🟢 P2 | 2h | ✅ 完成 |
+
+### UI/UX 优化任务 📋
+
+| 任务 | 优先级 | 预计工时 | 状态 |
+|------|--------|----------|------|
+| UI/UX 设计规范 | 🟢 P0 | 4h | ✅ 完成 |
+| 色彩系统设计 | 🟢 P0 | 2h | ✅ 完成 |
+| 字体系统规范 | 🟢 P0 | 2h | ✅ 完成 |
+| 间距系统统一 | 🟢 P0 | 2h | ✅ 完成 |
+| 组件样式优化 | 🟡 P1 | 6h | ✅ 完成 (Sidebar 已优化) |
+| 动画效果添加 | 🟢 P2 | 4h | ⏳ 待开始 |
+| 暗黑模式完善 | 🟡 P1 | 4h | ⏳ 待开始 |
+| 快捷键支持 | 🟢 P2 | 4h | ⏳ 待开始 |
+
+### 质量保障任务 📋
+
+| 任务 | 优先级 | 预计工时 | 状态 |
+|------|--------|----------|------|
+| 单元测试 (Models) | 🟢 P0 | 4h | ⏳ **下次会话** |
+| 单元测试 (Services) | 🟢 P0 | 4h | ⏳ **下次会话** |
+| Widget 测试 | 🟡 P1 | 6h | ⏳ **下次会话** |
+| 集成测试 | 🟢 P2 | 4h | ⏳ 待开始 |
+| 代码覆盖率 80%+ | 🟡 P1 | - | ⏳ 待开始 |
+
+### 下次会话计划 (Next Session) 📋
+
+**建议优先级**：
+
+1. **🟢 P0 - 单元测试实现** (8h)
+   - Models 测试 (HttpRequest, HttpResponse, Collection 等)
+   - Services 测试 (HttpService, StorageService)
+   - 使用 Mockito 进行 mock
+
+2. **🟡 P1 - Widget 测试** (6h)
+   - Sidebar 组件测试
+   - RequestEditor 组件测试
+   - ResponseViewer 组件测试
+
+3. **🟢 P2 - 主题/国际化完善** (4h)
+   - 主题切换功能
+   - 暗黑模式完善
+   - 语言切换功能
+
+4. **🟢 P2 - 快捷键支持** (4h)
+   - 常用操作快捷键
+   - 快捷键配置
 
 ---
 
@@ -57,7 +179,84 @@
 
 ### 技术决策记录
 
+#### 1. 架构变更：从 Tauri 迁移到 Flutter
+
+**为什么从 Tauri + React 迁移到 Flutter？**
+
+原项目使用 Tauri 2.x + React 18 + TypeScript + Rust 技术栈，现决定全面迁移至 Flutter 架构。主要考虑因素：
+
+- **统一技术栈**: Flutter 使用 Dart 单一语言，前后端逻辑都在 Dart 中实现，减少语言切换成本
+- **更成熟的桌面支持**: Flutter 3.x 对桌面端（macOS/Windows/Linux）的支持日益成熟
+- **UI 一致性**: Flutter 自绘引擎确保跨平台 UI 完全一致，不受系统 WebView 差异影响
+- **性能**: Dart AOT 编译为原生代码，性能接近原生应用
+- **热重载**: Flutter 的热重载在桌面端开发体验优秀
+- **未来扩展**: 如果未来需要支持移动端（iOS/Android），Flutter 可以无缝迁移
+
+**技术栈变更对比**:
+
+| 功能 | 原技术栈 (Tauri) | 新技术栈 (Flutter) |
+|------|-----------------|-------------------|
+| UI 框架 | React 18 | Flutter Widgets |
+| 编程语言 | TypeScript + Rust | Dart |
+| 状态管理 | Zustand | Riverpod |
+| HTTP 客户端 | Axios + reqwest | Dio |
+| 本地存储 | localStorage + SQLite | Hive + SharedPreferences |
+| 国际化 | i18next | flutter_localizations |
+| 构建工具 | Vite | Flutter SDK |
+
+#### 2. Flutter 状态管理选择 Riverpod 的原因
+- **编译时安全**: 相比 Provider，Riverpod 在编译时就能捕获错误
+- **类型安全**: 完全支持泛型，无需手动指定类型
+- **可测试性**: 不依赖 BuildContext，易于单元测试
+- **代码生成**: 支持 `@riverpod` 注解生成代码，减少样板代码
+- ** Scoped 状态**: 支持覆盖（override）provider，便于测试和复用
+- **生态成熟**: 与 Flutter 社区紧密结合，文档丰富
+
+#### 3. HTTP 客户端选择 Dio 的原因
+- **功能丰富**: 支持拦截器、取消请求、文件上传下载、FormData 等
+- **插件生态**: 有 retry、cache、smart_retry 等丰富的插件
+- **错误处理**: 内置完善的错误处理机制
+- **类型安全**: 支持泛型，响应数据可以轻松类型化
+- **社区活跃**: 是国内 Flutter 社区最广泛使用的 HTTP 客户端
+
+#### 4. 本地存储选择 SharedPreferences + Hive 的原因
+- **SharedPreferences**: 适合存储简单的键值对配置（如主题、语言设置）
+- **Hive**: 高性能 NoSQL 数据库，适合存储复杂数据结构（如请求历史、Collection）
+- **纯 Dart 实现**: 无需原生代码，跨平台一致性更好
+- **性能优异**: Hive 使用二进制存储，读写速度快
+- **类型安全**: 支持 Dart 对象直接存储，通过 TypeAdapter 实现
+
+#### (已归档) 原技术栈决策
+
+<details>
+<summary>点击查看原 Tauri 技术栈决策记录</summary>
+
 #### 1. 为什么选择 Tauri 而不是 Electron?
+- **包体积小**: Tauri ~5MB vs Electron ~100MB+
+- **内存占用低**: Tauri 使用系统 WebView，内存占用显著降低
+- **安全性**: Rust 后端提供更安全的内存管理
+- **性能**: 原生 Rust 代码执行效率高
+
+#### 2. 前端状态管理选择 Zustand 的原因
+- 轻量级，无需 Provider 包裹
+- TypeScript 支持好
+- 中间件生态丰富（immer、devtools、persist）
+- 学习成本低，API 简洁
+
+#### 3. UI 组件库选择 Radix UI 的原因
+- 无样式组件，完全可控样式
+- 可访问性（a11y）支持好
+- 与 Tailwind CSS 配合良好
+- 官方维护，质量可靠
+
+#### 4. 国际化方案选择 i18next 的原因
+- 功能成熟，社区活跃
+- 支持语言自动检测和本地存储
+- React 集成简单（react-i18next）
+- TypeScript 支持良好
+- 支持命名空间和复数等高级特性
+
+</details>
 - **包体积小**: Tauri ~5MB vs Electron ~100MB+
 - **内存占用低**: Tauri 使用系统 WebView，内存占用显著降低
 - **安全性**: Rust 后端提供更安全的内存管理
@@ -509,15 +708,183 @@ docs: update DEVELOPMENT_PLAN.md with M1 completion status
 | 2026-03-09 | v0.1.0-layout | **M1.3 完成**: 基础布局组件 (ResizablePanel, Sidebar, Header, StatusBar, MainContent)，31个单元测试，CI通过 |
 | 2026-03-10 | v0.1.0-http | **M1.4-M1.7 & M1.9 完成**: HTTP 核心功能、请求编辑器、响应展示、多标签页，54个单元测试，CI通过 |
 | 2026-03-10 | v0.1.0-ui-refresh | **UI 重构**: Sidebar/RequestTabs/RequestEditor/ResponseViewer 样式优化，修复 Tailwind v4 配置和 React Hooks 顺序问题 |
+| 2026-03-10 | v0.2.0-flutter | **Flutter 迁移完成**: 全面迁移至 Flutter 架构，更新所有文档，配置 Dart 代码规范，设置 Flutter CI/CD |
 
 ---
 
 ## 参考资源
 
+### 当前技术栈 (Flutter)
+- [Flutter 官方文档](https://docs.flutter.dev/)
+- [Dart 官方文档](https://dart.dev/guides)
+- [Riverpod 文档](https://riverpod.dev/)
+- [Material Design 3](https://m3.material.io/)
+- [Flutter 中国社区](https://flutter.cn/)
+
+### 已归档 (Tauri - 历史参考)
 - [Tauri 官方文档](https://tauri.app/)
 - [React 官方文档](https://react.dev/)
 - [Rust 官方文档](https://www.rust-lang.org/)
-- [Tailwind CSS 文档](https://tailwindcss.com/)
-- [Zustand 文档](https://docs.pmnd.rs/zustand)
-- [reqwest 文档](https://docs.rs/reqwest/)
-- [ESLint Flat Config](https://eslint.org/docs/latest/use/configure/configuration-files)
+
+---
+
+## Flutter 开发知识积累
+
+### 1. 代码规范与 lint 配置
+
+项目使用 `analysis_options.yaml` 配置 Dart 代码规范：
+
+```yaml
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+  language:
+    strict-casts: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    - prefer_single_quotes: true
+    - prefer_final_locals: true
+    - prefer_const_constructors: true
+    - avoid_print: true
+```
+
+**VS Code 配置**:
+
+```json
+{
+  "editor.formatOnSave": true,
+  "[dart]": {
+    "editor.defaultFormatter": "Dart-Code.dart-code",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  }
+}
+```
+
+### 2. UI/UX 设计规范
+
+#### 色彩系统
+
+```dart
+class AppColors {
+  static const primary = Color(0xFF6366F1);
+  static const success = Color(0xFF10B981);
+  static const warning = Color(0xFFF59E0B);
+  static const error = Color(0xFFEF4444);
+}
+```
+
+#### 间距系统
+
+```dart
+const kSpaceXS = 4.0;
+const kSpaceS = 8.0;
+const kSpaceM = 12.0;
+const kSpaceL = 16.0;
+const kSpaceXL = 24.0;
+```
+
+#### 字体规范
+
+| 样式 | 字号 | 字重 | 用途 |
+|-----|------|------|------|
+| Display | 24px | 600 | 页面标题 |
+| Headline | 18px | 600 | 区块标题 |
+| Title | 16px | 600 | 卡片标题 |
+| Body | 14px | 400 | 正文 |
+| Caption | 12px | 500 | 标签 |
+
+### 3. 状态管理最佳实践
+
+```dart
+// ✅ Good - 使用 AsyncValue 处理异步状态
+class UserNotifier extends StateNotifier<AsyncValue<User>> {
+  UserNotifier() : super(const AsyncValue.loading());
+
+  Future<void> loadUser() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      return await api.getUser();
+    });
+  }
+}
+
+// Widget 中使用
+userAsync.when(
+  data: (user) => UserView(user: user),
+  loading: () => const CircularProgressIndicator(),
+  error: (err, stack) => ErrorView(error: err),
+);
+```
+
+### 4. 代码生成命令
+
+```bash
+# 生成 Freezed 模型
+dart run build_runner build --delete-conflicting-outputs
+
+# 监听模式（开发时使用）
+dart run build_runner watch --delete-conflicting-outputs
+
+# 格式化代码
+dart format lib/ test/
+
+# 运行静态分析
+dart analyze
+```
+
+### 5. 测试命令
+
+```bash
+# 运行所有测试
+flutter test
+
+# 运行特定测试文件
+flutter test test/models/user_test.dart
+
+# 运行测试并生成覆盖率报告
+flutter test --coverage
+
+# 生成 HTML 覆盖率报告
+genhtml coverage/lcov.info -o coverage/html
+```
+
+### 6. 构建命令
+
+```bash
+# macOS
+flutter build macos --release
+
+# Windows
+flutter build windows --release
+
+# Linux
+flutter build linux --release
+```
+
+---
+
+## 参考资源
+
+### Flutter 生态
+- [Flutter 官方文档](https://docs.flutter.dev/)
+- [Dart 官方文档](https://dart.dev/guides)
+- [Riverpod 文档](https://riverpod.dev/)
+- [Material Design 3](https://m3.material.io/)
+- [Flutter 中国社区](https://flutter.cn/)
+
+### 第三方库
+- [Dio Documentation](https://github.com/cfug/dio)
+- [Hive Documentation](https://docs.hivedb.dev/)
+- [Freezed Documentation](https://pub.dev/packages/freezed)
+
+---
+
+<p align="center">Built with ❤️ by AI · Powered by Kimi</p>

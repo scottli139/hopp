@@ -1,467 +1,477 @@
-# 架构说明文档
+# Hopp 架构设计文档
 
-## 整体架构
+> 本文档描述 Hopp 项目的整体架构、技术选型和设计决策。
+
+---
+
+## 📋 目录
+
+- [架构概览](#架构概览)
+- [技术栈](#技术栈)
+- [项目结构](#项目结构)
+- [数据流](#数据流)
+- [状态管理](#状态管理)
+- [存储层](#存储层)
+- [网络层](#网络层)
+- [UI 层](#ui-层)
+- [设计决策](#设计决策)
+
+---
+
+## 架构概览
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      Presentation Layer                      │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │
-│  │   React UI  │ │  Zustand    │ │  Monaco     │           │
-│  │  Components │ │    Store    │ │   Editor    │           │
-│  └──────┬──────┘ └──────┬──────┘ └──────┬──────┘           │
-└─────────┼───────────────┼───────────────┼───────────────────┘
-          │               │               │
-          │         ┌─────┴─────┐         │
-          │         │   Tauri   │         │
-          │         │   Bridge  │         │
-          │         │ (IPC/API) │         │
-          │         └─────┬─────┘         │
-          │               │               │
-┌─────────┼───────────────┼───────────────┼───────────────────┐
-│         │    Core Service Layer (Rust)  │                   │
-│  ┌──────┴──────┐ ┌──────┴──────┐ ┌──────┴──────┐          │
-│  │ HTTP Client │ │   Storage   │ │  WebSocket  │          │
-│  │  (reqwest)  │ │  (SQLite)   │ │   Manager   │          │
-│  └─────────────┘ └─────────────┘ └─────────────┘          │
-│                                                             │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │
-│  │ Environment │ │   Import/   │ │   Code      │           │
-│  │   Manager   │ │   Export    │ │  Generator  │           │
-│  └─────────────┘ └─────────────┘ └─────────────┘           │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   Screens   │  │   Widgets   │  │   UI Components     │  │
+│  │  (Pages)    │  │  (Reusable) │  │   (Common)          │  │
+│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
+└─────────┼────────────────┼────────────────────┼─────────────┘
+          │                │                    │
+          └────────────────┴────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       State Layer                            │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │  Providers  │  │  Notifiers  │  │   State Models      │  │
+│  │  (Riverpod) │  │ (StateNtf)  │  │   (AsyncValue)      │  │
+│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
+└─────────┼────────────────┼────────────────────┼─────────────┘
+          │                │                    │
+          └────────────────┴────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Domain Layer                            │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   Models    │  │  Services   │  │   Repositories      │  │
+│  │  (Freezed)  │  │  (Business) │  │   (Data Access)     │  │
+│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
+└─────────┼────────────────┼────────────────────┼─────────────┘
+          │                │                    │
+          └────────────────┴────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Data Layer                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │    Hive     │  │ SharedPrefs │  │   Dio (HTTP)        │  │
+│  │  (NoSQL)    │  │  (Config)   │  │   (Network)         │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 技术栈选型
+## 技术栈
 
-### 前端 (Frontend)
-
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| React | 18.x | UI 框架 |
-| TypeScript | 5.x | 类型安全 |
-| Vite | 5.x | 构建工具 |
-| Tailwind CSS | 3.x | 原子化 CSS |
-| Radix UI | 1.x | 无样式 UI 组件库 |
-| Zustand | 4.x | 状态管理 |
-| React Query | 5.x | 服务端状态管理 |
-| Monaco Editor | latest | 代码编辑器 |
-
-### 后端 (Backend - Tauri)
+### 核心框架
 
 | 技术 | 版本 | 用途 |
-|------|------|------|
-| Tauri | 2.x | 桌面应用框架 |
-| Rust | 1.75+ | 系统编程语言 |
-| reqwest | 0.11+ | HTTP 客户端 |
-| tokio | 1.x | 异步运行时 |
-| rusqlite | 0.30+ | SQLite 数据库 |
-| serde | 1.x | 序列化/反序列化 |
-| tauri-plugin-store | latest | 本地存储插件 |
+|-----|------|-----|
+| Flutter | 3.27.x | UI 框架 |
+| Dart | 3.6.x | 编程语言 |
+| Riverpod | 2.6.x | 状态管理 |
+| Dio | 5.8.x | HTTP 客户端 |
+
+### 代码生成
+
+| 工具 | 用途 |
+|-----|------|
+| Freezed | 不可变数据类 |
+| json_serializable | JSON 序列化 |
+| Hive Generator | Hive Adapter 生成 |
+| Riverpod Generator | Provider 生成 |
+
+### 存储
+
+| 存储 | 用途 |
+|-----|------|
+| Hive | Collection、Request 等复杂数据 |
+| SharedPreferences | 设置、主题等简单配置 |
 
 ---
 
-## 模块划分
-
-### 1. 前端模块 (src/)
+## 项目结构
 
 ```
-src/
-├── components/           # UI 组件
-│   ├── common/          # 通用组件
-│   ├── request/         # 请求相关组件
-│   ├── response/        # 响应相关组件
-│   ├── sidebar/         # 侧边栏组件
-│   └── layout/          # 布局组件
-├── pages/               # 页面
-├── stores/              # Zustand 状态管理
-│   ├── requestStore.ts
-│   ├── collectionStore.ts
-│   ├── environmentStore.ts
-│   └── uiStore.ts
-├── hooks/               # 自定义 Hooks
-├── services/            # Tauri API 调用封装
-├── types/               # TypeScript 类型定义
-├── utils/               # 工具函数
-└── styles/              # 全局样式
-```
-
-### 2. 后端模块 (src-tauri/src/)
-
-```
-src-tauri/src/
-├── main.rs              # 应用入口
-├── lib.rs               # 库入口
-├── commands/            # Tauri 命令
-│   ├── http.rs          # HTTP 请求命令
-│   ├── storage.rs       # 数据存储命令
-│   ├── environment.rs   # 环境管理命令
-│   └── websocket.rs     # WebSocket 命令
-├── services/            # 业务服务
-│   ├── http_client.rs   # HTTP 客户端封装
-│   ├── storage/         # 存储服务
-│   │   ├── mod.rs
-│   │   ├── sqlite.rs
-│   │   └── models.rs
-│   ├── environment.rs   # 环境变量服务
-│   ├── websocket.rs     # WebSocket 服务
-│   └── import_export.rs # 导入导出服务
-├── models/              # 数据模型
-│   ├── request.rs
-│   ├── response.rs
-│   ├── collection.rs
-│   └── environment.rs
-└── utils/               # 工具函数
-    ├── curl_parser.rs   # cURL 解析
-    └── code_gen.rs      # 代码生成
+lib/
+├── main.dart                    # 应用入口
+├── models/                      # 数据模型
+│   ├── http_method.dart         # HTTP 方法枚举
+│   ├── http_request.dart        # HTTP 请求模型
+│   ├── http_response.dart       # HTTP 响应模型
+│   ├── key_value_pair.dart      # 键值对模型
+│   ├── collection.dart          # Collection 模型
+│   ├── app_settings.dart        # 应用设置模型
+│   ├── request_tab.dart         # 标签页模型
+│   └── models.dart              # 导出文件
+├── providers/                   # 状态管理
+│   ├── core/                    # 核心服务 Provider
+│   │   └── providers.dart
+│   ├── request/                 # 请求相关 Provider
+│   │   ├── request_tab_provider.dart
+│   │   └── request_response_provider.dart
+│   ├── collection/              # Collection Provider
+│   │   └── collection_provider.dart
+│   ├── settings/                # 设置 Provider
+│   │   └── settings_provider.dart
+│   └── providers.dart           # 导出文件
+├── services/                    # 业务服务
+│   ├── http_service.dart        # HTTP 服务
+│   ├── storage_service.dart     # 存储服务
+│   └── services.dart            # 导出文件
+├── widgets/                     # UI 组件
+│   ├── layout/                  # 布局组件
+│   │   ├── sidebar.dart
+│   │   └── request_tabs.dart
+│   ├── request/                 # 请求组件
+│   │   ├── request_editor.dart
+│   │   └── response_viewer.dart
+│   └── widgets.dart             # 导出文件
+├── screens/                     # 页面
+│   └── main_screen.dart
+├── utils/                       # 工具类
+│   ├── app_logger.dart          # 日志工具
+│   └── utils.dart               # 导出文件
+└── l10n/                        # 国际化
+    ├── app_en.arb
+    ├── app_zh.arb
+    └── l10n.dart
 ```
 
 ---
 
 ## 数据流
 
-### HTTP 请求流程
+### 单向数据流
 
 ```
-┌─────────┐    ┌─────────────┐    ┌─────────────┐    ┌───────────┐
-│  User   │───▶│  React UI   │───▶│ Tauri Invoke│───▶│  Rust     │
-│ Action  │    │   (State)   │    │   (IPC)     │    │  Command  │
-└─────────┘    └─────────────┘    └─────────────┘    └─────┬─────┘
-                                                            │
-                              ┌──────────────────────────────┘
-                              ▼
-┌─────────┐    ┌─────────────┐    ┌─────────────┐    ┌───────────┐
-│ Display │◀───│ Update Store│◀───│ Tauri Event │◀───│  reqwest  │
-│ Response│    │             │    │   (IPC)     │    │  Request  │
-└─────────┘    └─────────────┘    └─────────────┘    └───────────┘
+User Action → Provider → Service → Repository → Data Source
+                   ↓
+              UI Update ← State Change ← AsyncValue
 ```
 
-### 数据持久化流程
+### 请求发送流程
 
 ```
-┌──────────┐     ┌───────────┐     ┌─────────────┐     ┌──────────┐
-│ UI State │────▶│  Tauri    │────▶│ Rust Storage│────▶│ SQLite   │
-│ Change   │     │  Invoke   │     │   Service   │     │ Database │
-└──────────┘     └───────────┘     └─────────────┘     └──────────┘
+1. 用户点击 Send 按钮
+2. RequestEditor Widget 调用 Provider 方法
+3. RequestResponseNotifier 调用 HttpService
+4. HttpService 使用 Dio 发送 HTTP 请求
+5. 返回结果包装为 AsyncValue
+6. UI 根据 AsyncValue 状态更新
 ```
 
 ---
 
-## 数据库设计
+## 状态管理
 
-### SQLite 表结构
+### Riverpod 架构
 
-```sql
--- 请求集合表
-CREATE TABLE collections (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    description TEXT,
-    parent_id TEXT,
-    sort_order INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (parent_id) REFERENCES collections(id)
-);
+```dart
+// 1. 定义 StateNotifier
+class UserNotifier extends StateNotifier<AsyncValue<User>> {
+  UserNotifier(this._ref) : super(const AsyncValue.loading()) {
+    _init();
+  }
 
--- 请求表
-CREATE TABLE requests (
-    id TEXT PRIMARY KEY,
-    collection_id TEXT,
-    name TEXT NOT NULL,
-    method TEXT NOT NULL,
-    url TEXT NOT NULL,
-    headers TEXT, -- JSON
-    body_type TEXT, -- none/json/form-data/x-www-form-urlencoded/raw/binary
-    body_content TEXT,
-    body_raw_type TEXT, -- json/text/xml/html
-    params TEXT, -- JSON array
-    description TEXT,
-    sort_order INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (collection_id) REFERENCES collections(id)
-);
+  final Ref _ref;
 
--- 请求历史表
-CREATE TABLE history (
-    id TEXT PRIMARY KEY,
-    request_id TEXT,
-    method TEXT NOT NULL,
-    url TEXT NOT NULL,
-    headers TEXT,
-    body TEXT,
-    response_status INTEGER,
-    response_time_ms INTEGER,
-    response_size INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+  Future<void> _init() async {
+    await loadUser();
+  }
 
--- 环境表
-CREATE TABLE environments (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    is_global BOOLEAN DEFAULT FALSE,
-    variables TEXT, -- JSON array
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 设置表
-CREATE TABLE settings (
-    key TEXT PRIMARY KEY,
-    value TEXT,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Cookie 表
-CREATE TABLE cookies (
-    id TEXT PRIMARY KEY,
-    domain TEXT NOT NULL,
-    name TEXT NOT NULL,
-    value TEXT,
-    path TEXT DEFAULT '/',
-    expires TIMESTAMP,
-    secure BOOLEAN DEFAULT FALSE,
-    http_only BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
----
-
-## IPC 接口设计
-
-### 前端调用 Rust 命令
-
-```typescript
-// HTTP 相关
-interface HttpCommands {
-  sendRequest(request: HttpRequest): Promise<HttpResponse>;
-  cancelRequest(requestId: string): Promise<void>;
-}
-
-// 集合相关
-interface CollectionCommands {
-  getCollections(): Promise<Collection[]>;
-  createCollection(data: CreateCollectionData): Promise<Collection>;
-  updateCollection(id: string, data: UpdateCollectionData): Promise<Collection>;
-  deleteCollection(id: string): Promise<void>;
-  moveCollection(id: string, parentId: string | null, sortOrder: number): Promise<void>;
-}
-
-// 请求相关
-interface RequestCommands {
-  getRequests(collectionId?: string): Promise<Request[]>;
-  getRequest(id: string): Promise<Request>;
-  createRequest(data: CreateRequestData): Promise<Request>;
-  updateRequest(id: string, data: UpdateRequestData): Promise<Request>;
-  deleteRequest(id: string): Promise<void>;
-  duplicateRequest(id: string): Promise<Request>;
-}
-
-// 历史相关
-interface HistoryCommands {
-  getHistory(limit?: number, offset?: number): Promise<HistoryItem[]>;
-  clearHistory(): Promise<void>;
-  deleteHistoryItem(id: string): Promise<void>;
-}
-
-// 环境相关
-interface EnvironmentCommands {
-  getEnvironments(): Promise<Environment[]>;
-  getGlobalEnvironment(): Promise<Environment>;
-  createEnvironment(data: CreateEnvironmentData): Promise<Environment>;
-  updateEnvironment(id: string, data: UpdateEnvironmentData): Promise<Environment>;
-  deleteEnvironment(id: string): Promise<void>;
-  getActiveEnvironmentId(): Promise<string | null>;
-  setActiveEnvironment(id: string | null): Promise<void>;
-}
-
-// 导入导出
-interface ImportExportCommands {
-  importFromPostman(filePath: string): Promise<ImportResult>;
-  exportToPostman(collectionId?: string): Promise<string>;
-  exportBackup(): Promise<string>;
-  importBackup(filePath: string): Promise<void>;
-}
-
-// WebSocket
-interface WebSocketCommands {
-  connect(url: string, headers?: Record<string, string>): Promise<string>;
-  disconnect(connectionId: string): Promise<void>;
-  send(connectionId: string, data: string): Promise<void>;
-  onMessage(callback: (data: { connectionId: string; message: string }) => void): UnlistenFn;
-}
-
-// 代码生成
-interface CodeGenCommands {
-  generateCode(request: HttpRequest, language: string): Promise<string>;
-}
-
-// cURL
-interface CurlCommands {
-  parseCurl(curlCommand: string): Promise<HttpRequest>;
-  generateCurl(request: HttpRequest): Promise<string>;
-}
-
-// 设置
-interface SettingsCommands {
-  getSettings(): Promise<Settings>;
-  updateSettings(settings: Partial<Settings>): Promise<void>;
-  getProxySettings(): Promise<ProxySettings>;
-  updateProxySettings(settings: ProxySettings): Promise<void>;
-}
-```
-
----
-
-## 状态管理设计
-
-### Zustand Store 结构
-
-```typescript
-// 请求状态
-interface RequestState {
-  // 当前标签页
-  tabs: Tab[];
-  activeTabId: string | null;
-  
-  // 当前请求
-  currentRequest: Request;
-  requestLoading: boolean;
-  response: Response | null;
-  
-  // Actions
-  addTab: (request?: Request) => void;
-  closeTab: (tabId: string) => void;
-  setActiveTab: (tabId: string) => void;
-  updateCurrentRequest: (updates: Partial<Request>) => void;
-  sendRequest: () => Promise<void>;
-  cancelRequest: () => void;
-}
-
-// 集合状态
-interface CollectionState {
-  collections: Collection[];
-  expandedIds: Set<string>;
-  selectedRequestId: string | null;
-  
-  // Actions
-  loadCollections: () => Promise<void>;
-  createCollection: (data: CreateCollectionData) => Promise<void>;
-  updateCollection: (id: string, data: UpdateCollectionData) => Promise<void>;
-  deleteCollection: (id: string) => Promise<void>;
-  toggleExpanded: (id: string) => void;
-  selectRequest: (id: string) => void;
-}
-
-// 环境状态
-interface EnvironmentState {
-  environments: Environment[];
-  activeEnvironmentId: string | null;
-  globalVariables: Variable[];
-  
-  // Actions
-  loadEnvironments: () => Promise<void>;
-  setActiveEnvironment: (id: string | null) => void;
-  updateVariable: (envId: string, key: string, value: string) => void;
-  resolveVariables: (text: string) => string;
-}
-
-// UI 状态
-interface UIState {
-  theme: 'light' | 'dark' | 'system';
-  sidebarVisible: boolean;
-  sidebarWidth: number;
-  responseViewMode: 'pretty' | 'raw' | 'preview';
-  layoutDirection: 'horizontal' | 'vertical';
-  fontSize: number;
-  
-  // Actions
-  setTheme: (theme: UIState['theme']) => void;
-  toggleSidebar: () => void;
-  setSidebarWidth: (width: number) => void;
-  setResponseViewMode: (mode: UIState['responseViewMode']) => void;
-  setLayoutDirection: (direction: UIState['layoutDirection']) => void;
-  setFontSize: (size: number) => void;
-}
-```
-
----
-
-## 错误处理策略
-
-### 前端错误处理
-
-```typescript
-// 错误类型
-enum ErrorType {
-  NETWORK_ERROR = 'NETWORK_ERROR',
-  TIMEOUT_ERROR = 'TIMEOUT_ERROR',
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  NOT_FOUND_ERROR = 'NOT_FOUND_ERROR',
-  SERVER_ERROR = 'SERVER_ERROR',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
-}
-
-// 错误处理流程
-1. Rust 命令返回 Result<T, Error>
-2. 前端封装统一错误处理 Hook
-3. 根据错误类型显示 Toast/Modal
-4. 网络错误支持重试
-```
-
-### Rust 错误处理
-
-```rust
-// 统一错误类型
-#[derive(Debug, thiserror::Error, Serialize)]
-enum AppError {
-    #[error("Network error: {0}")]
-    Network(String),
-    #[error("Timeout")]
-    Timeout,
-    #[error("Invalid URL: {0}")]
-    InvalidUrl(String),
-    #[error("Database error: {0}")]
-    Database(String),
-    #[error("Not found: {0}")]
-    NotFound(String),
-}
-
-// 自动转换到前端错误
-impl serde::Serialize for AppError {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        serializer.serialize_str(self.to_string().as_ref())
+  Future<void> loadUser() async {
+    state = const AsyncValue.loading();
+    try {
+      final service = _ref.read(userServiceProvider);
+      final user = await service.getCurrentUser();
+      state = AsyncValue.data(user);
+    } catch (err, stack) {
+      state = AsyncValue.error(err, stack);
     }
+  }
+}
+
+// 2. 定义 Provider
+final userProvider = StateNotifierProvider<UserNotifier, AsyncValue<User>>((ref) {
+  return UserNotifier(ref);
+});
+
+// 3. 在 Widget 中使用
+class UserProfile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(userProvider);
+    
+    return userAsync.when(
+      data: (user) => _buildUserView(user),
+      loading: () => const CircularProgressIndicator(),
+      error: (err, _) => ErrorView(err),
+    );
+  }
 }
 ```
+
+### Provider 分类
+
+| 类型 | 用途 | 示例 |
+|-----|------|------|
+| Provider | 不可变依赖 | `dioProvider` |
+| StateProvider | 简单状态 | `activeTabIdProvider` |
+| StateNotifierProvider | 复杂状态 | `collectionProvider` |
+| FutureProvider | 异步数据 | `userFutureProvider` |
+| StreamProvider | 流数据 | `logsStreamProvider` |
+
+---
+
+## 存储层
+
+### 存储策略
+
+```
+┌─────────────────┬─────────────────┬─────────────────┐
+│   SharedPrefs   │      Hive       │     Memory      │
+├─────────────────┼─────────────────┼─────────────────┤
+│ 主题设置        │ Collections     │ HTTP 响应缓存   │
+│ 语言设置        │ Requests        │ 临时计算结果    │
+│ 编辑器配置      │ History         │                 │
+│ API 配置        │ Environments    │                 │
+└─────────────────┴─────────────────┴─────────────────┘
+```
+
+### Hive 数据模型
+
+```dart
+@freezed
+@HiveType(typeId: 2)
+class HttpRequest with _$HttpRequest {
+  const factory HttpRequest({
+    @HiveField(0) required String id,
+    @HiveField(1) required String name,
+    @HiveField(2) @Default(HttpMethod.get) HttpMethod method,
+    @HiveField(3) @Default('') String url,
+    @HiveField(4) @Default([]) List<KeyValuePair> params,
+    @HiveField(5) @Default([]) List<KeyValuePair> headers,
+    @HiveField(6) @Default('') String body,
+    @HiveField(7) @Default('none') String bodyType,
+    @HiveField(8) String? parentId,
+    @HiveField(9) @Default(0) int sortOrder,
+  }) = _HttpRequest;
+}
+```
+
+---
+
+## 网络层
+
+### Dio 配置
+
+```dart
+class HttpService {
+  final Dio _dio;
+
+  HttpService({Dio? dio}) : _dio = dio ?? _createDio();
+
+  static Dio _createDio() {
+    return Dio(BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+      validateStatus: (status) => status != null && status < 600,
+    ));
+  }
+
+  Future<HttpResponse> sendRequest(HttpRequest request) async {
+    final stopwatch = Stopwatch()..start();
+    
+    try {
+      final response = await _dio.request(
+        request.url,
+        options: Options(method: request.method.value),
+        data: request.body,
+        queryParameters: _buildQueryParams(request.params),
+      );
+
+      return HttpResponse(
+        body: response.data,
+        statusCode: response.statusCode,
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+    } on DioException catch (e) {
+      return HttpResponse.error(_formatError(e));
+    }
+  }
+}
+```
+
+---
+
+## UI 层
+
+### 组件层次
+
+```
+App
+└── MaterialApp
+    └── MainScreen
+        ├── MultiSplitView
+        │   ├── Sidebar
+        │   │   └── CollectionTree
+        │   └── RequestArea
+        │       ├── RequestTabs
+        │       ├── RequestEditor
+        │       │   ├── UrlBar
+        │       │   └── TabBar (Params/Headers/Body/Auth)
+        │       └── ResponseViewer
+        │           ├── InfoBar
+        │           └── TabBar (Body/Headers/Cookies)
+        └── StatusBar
+```
+
+### 响应式布局
+
+```dart
+class MainScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MultiSplitView(
+      axis: Axis.horizontal,
+      builder: (context, area) {
+        switch (area.index) {
+          case 0:
+            return const Sidebar(flex: 0.22);
+          case 1:
+            return const RequestArea(flex: 0.78);
+          default:
+            return const SizedBox.shrink();
+        }
+      },
+    );
+  }
+}
+```
+
+---
+
+## 设计决策
+
+### 1. 为什么选择 Flutter？
+
+| 因素 | 考虑 |
+|-----|------|
+| 跨平台 | 一套代码支持 macOS/Windows/Linux |
+| 性能 | AOT 编译，接近原生性能 |
+| UI 一致性 | 自绘引擎，不受系统差异影响 |
+| 生态 | 丰富的包生态，活跃的社区 |
+| 未来扩展 | 可无缝扩展到移动端 |
+
+### 2. 为什么选择 Riverpod？
+
+| 因素 | 考虑 |
+|-----|------|
+| 编译时安全 | 相比 Provider 更安全的依赖注入 |
+| 类型安全 | 完全支持泛型 |
+| 可测试性 | 不依赖 BuildContext |
+| 代码生成 | 支持 @riverpod 注解 |
+| Scoped | 支持覆盖 Provider |
+
+### 3. 为什么选择 Hive？
+
+| 因素 | 考虑 |
+|-----|------|
+| 性能 | 二进制存储，读写速度快 |
+| 纯 Dart | 无需原生代码 |
+| 类型安全 | 支持 Dart 对象直接存储 |
+| 轻量级 | 包体积小 |
+
+### 4. 为什么选择 Dio？
+
+| 因素 | 考虑 |
+|-----|------|
+| 功能丰富 | 拦截器、取消请求、文件上传等 |
+| 插件生态 | retry、cache 等丰富插件 |
+| 错误处理 | 完善的错误处理机制 |
+| 社区活跃 | 国内 Flutter 社区最广泛使用 |
+
+---
+
+## 性能考虑
+
+### 优化策略
+
+1. **Widget 优化**
+   - 使用 `const` 构造函数
+   - 使用 `Consumer` 局部刷新
+   - 避免不必要的 rebuild
+
+2. **列表优化**
+   - 使用 `ListView.builder`
+   - 实现 `RepaintBoundary`
+
+3. **图片优化**
+   - 使用 `cached_network_image`
+   - 适当压缩图片资源
+
+4. **内存优化**
+   - 及时释放资源
+   - 使用 `WeakReference`
 
 ---
 
 ## 安全考虑
 
-| 方面 | 措施 |
-|------|------|
-| 敏感数据 | Token/密码使用 keyring 存储 |
-| HTTPS | 默认验证 SSL 证书，可配置忽略 |
-| 文件访问 | 使用 Tauri 的 Scoped FS API |
-| 代码执行 | 禁止执行任意用户代码 |
-| 更新机制 | 使用 Tauri 官方更新方案 |
+1. **数据安全**
+   - 敏感数据加密存储
+   - HTTPS 强制使用
+
+2. **网络安全**
+   - 证书验证可配置
+   - 请求超时设置
+
+3. **代码安全**
+   - 静态分析检查
+   - 依赖安全扫描
 
 ---
 
-## 性能优化
+## 扩展性设计
 
-| 优化点 | 方案 |
-|--------|------|
-| 大数据响应 | 虚拟滚动 + 流式显示 |
-| 历史记录 | 分页加载 + 本地缓存 |
-| 启动速度 | 延迟加载非核心模块 |
-| 内存管理 | 大响应体不存储在状态 |
-| 数据库查询 | 索引优化 + 连接池 |
+### 插件系统 (未来)
+
+```dart
+abstract class HoppPlugin {
+  String get name;
+  String get version;
+  
+  void initialize(PluginContext context);
+  void registerWidgets(WidgetRegistry registry);
+  void registerProviders(ProviderRegistry registry);
+}
+```
+
+### 主题系统
+
+```dart
+abstract class ThemeExtension {
+  Color get primaryColor;
+  TextTheme get textTheme;
+  // ...
+}
+```
+
+---
+
+## 参考资源
+
+- [Flutter Architecture Samples](https://github.com/brianegan/flutter_architecture_samples)
+- [Riverpod Documentation](https://riverpod.dev/)
+- [Dio Documentation](https://github.com/cfug/dio)
+- [Hive Documentation](https://docs.hivedb.dev/)
+
+---
+
+<p align="center">Built with ❤️ by AI · Powered by Kimi</p>

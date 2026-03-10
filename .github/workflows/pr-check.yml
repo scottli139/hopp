@@ -26,47 +26,37 @@ jobs:
             chore
             ci
           scopes: |
-            frontend
-            backend
-            api
             ui
+            model
+            provider
+            service
+            widget
             deps
             ci
             docs
           requireScope: false
 
   code-quality-check:
-    name: Quick Code Quality Check
+    name: Code Quality Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
-      - uses: pnpm/action-setup@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          version: 8
-          run_install: false
+          flutter-version: '3.27.x'
+          channel: 'stable'
+          cache: true
       
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
+      - name: Get dependencies
+        run: flutter pub get
       
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
       
-      - name: Quick lint check
-        run: pnpm lint
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib/ test/
       
-      - name: Install Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
-      
-      - name: Check Rust formatting
-        working-directory: ./src-tauri
-        run: cargo fmt -- --check
-      
-      - name: Quick Clippy check
-        working-directory: ./src-tauri
-        run: cargo clippy -- -D warnings
+      - name: Analyze code
+        run: flutter analyze --fatal-infos

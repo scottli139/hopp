@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 
-import '../models/http_method.dart';
+
 import '../models/http_request.dart';
 import '../models/http_response.dart';
 import '../models/key_value_pair.dart';
@@ -210,7 +210,6 @@ class HttpService {
       case DioExceptionType.connectionError:
         return 'Connection error: ${error.message}';
       case DioExceptionType.unknown:
-      default:
         return 'Network error: ${error.message}';
     }
   }

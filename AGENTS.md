@@ -8,10 +8,10 @@
 
 **Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Flutter 构建，注重性能和用户体验。
 
-**当前状态**: ✅ **Session End - Flutter 迁移完成，文档和规范已更新**  
+**当前状态**: ✅ **Session End - M6 单元测试完成，317个测试全部通过**  
 **技术栈**: Flutter 3.27.x + Dart + Riverpod  
 **目标平台**: macOS 10.15+ / Windows 10+ / Linux  
-**下次会话重点**: 单元测试实现 (Models + Services)
+**下次会话重点**: Widget 测试实现、M3 用户体验功能
 
 ---
 
@@ -144,8 +144,9 @@ fvm use 3.27.4
 
 | 任务 | 优先级 | 预计工时 | 状态 |
 |------|--------|----------|------|
-| 单元测试 (Models) | 🟢 P0 | 4h | ⏳ **下次会话** |
-| 单元测试 (Services) | 🟢 P0 | 4h | ⏳ **下次会话** |
+| 单元测试 (Models) | 🟢 P0 | 4h | ✅ 完成 (152个测试) |
+| 单元测试 (Services) | 🟢 P0 | 4h | ✅ 完成 (73个测试) |
+| 单元测试 (Providers) | 🟢 P0 | 4h | ✅ 完成 (92个测试) |
 | Widget 测试 | 🟡 P1 | 6h | ⏳ **下次会话** |
 | 集成测试 | 🟢 P2 | 4h | ⏳ 待开始 |
 | 代码覆盖率 80%+ | 🟡 P1 | - | ⏳ 待开始 |
@@ -688,6 +689,71 @@ docs: update DEVELOPMENT_PLAN.md with M1 completion status
 
 ---
 
+### 2026-03-11 会话 - M6 单元测试完成
+
+**本次会话完成的工作**:
+1. ✅ 完成 M6 单元测试实现 (P0)
+2. ✅ Models 单元测试 - 152个测试 (7个模型类)
+3. ✅ Services 单元测试 - 73个测试 (HttpService + StorageService)
+4. ✅ Providers 单元测试 - 92个测试 (所有 StateNotifier 和 Provider)
+5. ✅ 创建 mock 类和 fixtures 辅助工具
+6. ✅ 使用 mockito 生成 Dio、Hive、SharedPreferences 的 mock
+7. ✅ 所有 317 个测试全部通过
+
+**创建的测试文件**:
+
+| 类别 | 文件 | 测试数 |
+|------|------|--------|
+| Models | test/models/http_method_test.dart | 12 |
+| Models | test/models/key_value_pair_test.dart | 18 |
+| Models | test/models/http_request_test.dart | 26 |
+| Models | test/models/http_response_test.dart | 24 |
+| Models | test/models/collection_test.dart | 28 |
+| Models | test/models/request_tab_test.dart | 22 |
+| Models | test/models/app_settings_test.dart | 32 |
+| Services | test/services/http_service_test.dart | 28 |
+| Services | test/services/storage_service_test.dart | 45 |
+| Providers | test/providers/core_providers_test.dart | 6 |
+| Providers | test/providers/request_tab_provider_test.dart | 27 |
+| Providers | test/providers/request_response_provider_test.dart | 15 |
+| Providers | test/providers/collection_provider_test.dart | 19 |
+| Providers | test/providers/settings_provider_test.dart | 25 |
+
+**Mock 和 Fixtures**:
+- test/mocks/dio.mocks.dart - Dio mock 配置
+- test/mocks/hive.mocks.dart - Hive mock 配置
+- test/mocks/service_mocks.dart - Service mock 配置
+- test/fixtures/request_fixtures.dart - 请求测试数据
+- test/fixtures/response_fixtures.dart - 响应测试数据
+
+**测试覆盖范围**:
+- **Models**: 创建、copyWith、JSON 序列化、相等性、边界条件、自定义 getter
+- **HttpService**: configure、sendRequest 成功/错误场景、query params、headers、body 处理、cancel token
+- **StorageService**: Settings/Collections/Requests CRUD、SharedPreferences、clear/close
+- **Providers**: 所有 StateNotifier 方法、状态转换、错误处理、衍生 Provider
+
+**运行命令**:
+```bash
+# 运行所有测试
+fvm flutter test
+
+# 运行特定类别测试
+fvm flutter test test/models/
+fvm flutter test test/services/
+fvm flutter test test/providers/
+
+# 生成覆盖率报告
+fvm flutter test --coverage
+genhtml coverage/lcov.info -o coverage/html
+```
+
+**下次会话重点**:
+- Widget 测试 (Sidebar, RequestEditor, ResponseViewer)
+- 主题切换功能完善
+- 快捷键支持
+
+---
+
 ## 🔗 重要链接
 
 - **GitHub 仓库**: https://github.com/scottli139/hopp
@@ -709,6 +775,7 @@ docs: update DEVELOPMENT_PLAN.md with M1 completion status
 | 2026-03-10 | v0.1.0-http | **M1.4-M1.7 & M1.9 完成**: HTTP 核心功能、请求编辑器、响应展示、多标签页，54个单元测试，CI通过 |
 | 2026-03-10 | v0.1.0-ui-refresh | **UI 重构**: Sidebar/RequestTabs/RequestEditor/ResponseViewer 样式优化，修复 Tailwind v4 配置和 React Hooks 顺序问题 |
 | 2026-03-10 | v0.2.0-flutter | **Flutter 迁移完成**: 全面迁移至 Flutter 架构，更新所有文档，配置 Dart 代码规范，设置 Flutter CI/CD |
+| 2026-03-11 | v0.2.1-unit-tests | **M6 单元测试完成**: 317个测试全部通过，Models 152个 + Services 73个 + Providers 92个 |
 
 ---
 
@@ -840,7 +907,124 @@ dart format lib/ test/
 dart analyze
 ```
 
-### 5. 测试命令
+### 5. 测试最佳实践
+
+#### 5.1 测试结构
+
+```dart
+// test/models/user_test.dart
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hopp/models/user.dart';
+
+void main() {
+  group('User', () {
+    group('creation', () {
+      test('should create user with required fields', () {
+        // Arrange
+        const id = '123';
+        const name = 'John';
+        
+        // Act
+        final user = User(id: id, name: name);
+        
+        // Assert
+        expect(user.id, equals(id));
+        expect(user.name, equals(name));
+      });
+    });
+    
+    group('serialization', () {
+      test('should serialize to JSON', () {
+        // ...
+      });
+    });
+  });
+}
+```
+
+#### 5.2 使用 Mockito 进行 Mock
+
+```dart
+// 1. 添加注解
+@GenerateMocks([Dio])
+import 'http_service_test.mocks.dart';
+
+// 2. 在测试中使用
+void main() {
+  late MockDio mockDio;
+  late HttpService httpService;
+
+  setUp(() {
+    mockDio = MockDio();
+    httpService = HttpService(dio: mockDio);
+  });
+
+  test('should make HTTP request', () async {
+    // Arrange
+    when(mockDio.get(any())).thenAnswer(
+      (_) async => Response(
+        data: {'id': '1'},
+        statusCode: 200,
+        requestOptions: RequestOptions(),
+      ),
+    );
+
+    // Act
+    final result = await httpService.fetchUser('1');
+
+    // Assert
+    verify(mockDio.get('/users/1')).called(1);
+    expect(result.id, equals('1'));
+  });
+}
+```
+
+#### 5.3 Riverpod Provider 测试
+
+```dart
+void main() {
+  test('should update state', () async {
+    // 使用 ProviderContainer 覆盖依赖
+    final container = ProviderContainer(
+      overrides: [
+        storageServiceProvider.overrideWithValue(MockStorageService()),
+      ],
+    );
+
+    // 读取 provider
+    final notifier = container.read(userProvider.notifier);
+    
+    // 执行操作
+    await notifier.loadUser();
+
+    // 验证状态
+    expect(
+      container.read(userProvider),
+      isA<AsyncData<User>>(),
+    );
+  });
+}
+```
+
+#### 5.4 Fixtures 测试数据
+
+```dart
+// test/fixtures/user_fixtures.dart
+class UserFixtures {
+  static User get defaultUser => User(
+    id: '1',
+    name: 'John Doe',
+    email: 'john@example.com',
+  );
+
+  static List<User> get userList => [
+    defaultUser,
+    User(id: '2', name: 'Jane', email: 'jane@example.com'),
+  ];
+}
+```
+
+#### 5.5 测试命令
 
 ```bash
 # 运行所有测试
@@ -849,12 +1033,23 @@ flutter test
 # 运行特定测试文件
 flutter test test/models/user_test.dart
 
+# 运行特定组测试
+flutter test --name "User creation"
+
 # 运行测试并生成覆盖率报告
 flutter test --coverage
 
 # 生成 HTML 覆盖率报告
 genhtml coverage/lcov.info -o coverage/html
+open coverage/html/index.html
 ```
+
+#### 5.6 测试检查清单
+
+- [ ] 模型测试: 创建、copyWith、JSON 序列化、相等性
+- [ ] Service 测试: 成功场景、错误处理、边界条件
+- [ ] Provider 测试: 状态转换、异步操作、错误状态
+- [ ] Widget 测试: 渲染、交互、状态变化 (下次实现)
 
 ### 6. 构建命令
 

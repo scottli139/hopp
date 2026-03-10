@@ -124,7 +124,7 @@ class RequestTabs extends ConsumerWidget {
     return InkWell(
       onTap: () {
         // Create a new empty request
-        final newRequest = ref.read(requestTabProvider.notifier).getTab('');
+        ref.read(requestTabProvider.notifier).getTab('');
       },
       child: Container(
         width: 36,

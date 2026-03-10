@@ -156,7 +156,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       ref,
       request,
       request.params,
-      (params) => request.copyWith(params: params as List<KeyValuePair>),
+      (params) => request.copyWith(params: params),
     );
   }
 
@@ -166,7 +166,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       ref,
       request,
       request.headers,
-      (headers) => request.copyWith(headers: headers as List<KeyValuePair>),
+      (headers) => request.copyWith(headers: headers),
     );
   }
 

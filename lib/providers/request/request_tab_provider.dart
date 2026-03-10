@@ -12,7 +12,8 @@ class RequestTabNotifier extends StateNotifier<List<RequestTab>> {
 
     if (existingIndex != -1) {
       // Update last accessed and move to end
-      AppLogger.debug('[RequestTabNotifier] Tab already open, updating: ${request.id}');
+      AppLogger.debug(
+          '[RequestTabNotifier] Tab already open, updating: ${request.id}');
       final updatedTabs = [...state];
       updatedTabs[existingIndex] = updatedTabs[existingIndex].copyWith(
         lastAccessed: DateTime.now(),
@@ -20,7 +21,8 @@ class RequestTabNotifier extends StateNotifier<List<RequestTab>> {
       state = updatedTabs;
     } else {
       // Add new tab
-      AppLogger.info('[RequestTabNotifier] Opening new tab: ${request.name} (${request.id})');
+      AppLogger.info(
+          '[RequestTabNotifier] Opening new tab: ${request.name} (${request.id})');
       state = [...state, RequestTab.fromRequest(request)];
       AppLogger.debug('[RequestTabNotifier] Total tabs: ${state.length}');
     }

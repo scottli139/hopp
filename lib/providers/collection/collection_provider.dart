@@ -20,22 +20,26 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
       final storage = _ref.read(storageServiceProvider);
       final collections = await storage.getCollections();
       state = AsyncValue.data(collections);
-      AppLogger.info('[CollectionNotifier] Loaded ${collections.length} collections');
+      AppLogger.info(
+          '[CollectionNotifier] Loaded ${collections.length} collections');
     } catch (e, stack) {
-      AppLogger.error('[CollectionNotifier] Failed to load collections', e, stack);
+      AppLogger.error(
+          '[CollectionNotifier] Failed to load collections', e, stack);
       state = AsyncValue.error(e, stack);
     }
   }
 
   Future<void> addCollection(Collection collection) async {
-    AppLogger.info('[CollectionNotifier] Adding collection: ${collection.name}');
+    AppLogger.info(
+        '[CollectionNotifier] Adding collection: ${collection.name}');
     try {
       final storage = _ref.read(storageServiceProvider);
       await storage.saveCollection(collection);
       await loadCollections();
       AppLogger.info('[CollectionNotifier] Collection added: ${collection.id}');
     } catch (e, stack) {
-      AppLogger.error('[CollectionNotifier] Failed to add collection', e, stack);
+      AppLogger.error(
+          '[CollectionNotifier] Failed to add collection', e, stack);
     }
   }
 
@@ -80,7 +84,8 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
 
   Future<void> addRequestToCollection(
       String collectionId, HttpRequest request) async {
-    AppLogger.info('[CollectionNotifier] Adding request ${request.name} to collection $collectionId');
+    AppLogger.info(
+        '[CollectionNotifier] Adding request ${request.name} to collection $collectionId');
     final currentState = state;
     if (currentState case AsyncData(:final value)) {
       final updated = value.map((c) {
@@ -99,7 +104,8 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
       final storage = _ref.read(storageServiceProvider);
       await storage.saveCollection(collection);
       await storage.saveRequest(request);
-      AppLogger.info('[CollectionNotifier] Request added to collection: ${request.id}');
+      AppLogger.info(
+          '[CollectionNotifier] Request added to collection: ${request.id}');
     }
   }
 }

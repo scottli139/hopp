@@ -23,7 +23,7 @@ class StorageService {
     AppLogger.info('[StorageService] Initializing...');
     final appDir = await getApplicationDocumentsDirectory();
     AppLogger.debug('[StorageService] App directory: ${appDir.path}');
-    
+
     Hive.init('${appDir.path}/hopp');
 
     // Register adapters
@@ -37,9 +37,10 @@ class StorageService {
     _requestsBox = await Hive.openBox<HttpRequest>(_requestsBoxName);
     _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
     _prefs = await SharedPreferences.getInstance();
-    
+
     AppLogger.info('[StorageService] Initialized successfully');
-    AppLogger.debug('[StorageService] Collections: ${_collectionsBox?.length}, Requests: ${_requestsBox?.length}');
+    AppLogger.debug(
+        '[StorageService] Collections: ${_collectionsBox?.length}, Requests: ${_requestsBox?.length}');
   }
 
   // Settings
@@ -66,7 +67,8 @@ class StorageService {
   }
 
   Future<void> saveCollection(Collection collection) async {
-    AppLogger.debug('[StorageService] Saving collection: ${collection.id} (${collection.name})');
+    AppLogger.debug(
+        '[StorageService] Saving collection: ${collection.id} (${collection.name})');
     await _collectionsBox?.put(collection.id, collection);
     AppLogger.debug('[StorageService] Collection saved: ${collection.id}');
   }
@@ -89,7 +91,8 @@ class StorageService {
   }
 
   Future<void> saveRequest(HttpRequest request) async {
-    AppLogger.debug('[StorageService] Saving request: ${request.id} (${request.name})');
+    AppLogger.debug(
+        '[StorageService] Saving request: ${request.id} (${request.name})');
     await _requestsBox?.put(request.id, request);
     AppLogger.debug('[StorageService] Request saved: ${request.id}');
   }

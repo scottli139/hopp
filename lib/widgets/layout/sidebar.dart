@@ -317,7 +317,8 @@ class Sidebar extends ConsumerWidget {
       onSelected: (value) {
         switch (value) {
           case 'add_request':
-            AppLogger.info('[Sidebar] Adding new request to collection: ${collection.name}');
+            AppLogger.info(
+                '[Sidebar] Adding new request to collection: ${collection.name}');
             final newRequest = HttpRequest.empty().copyWith(
               parentId: collection.id,
             );
@@ -328,7 +329,8 @@ class Sidebar extends ConsumerWidget {
             // Set active tab ID first, then open tab to ensure proper state sync
             ref.read(activeTabIdProvider.notifier).state = newRequest.id;
             ref.read(requestTabProvider.notifier).openTab(newRequest);
-            AppLogger.info('[Sidebar] New request created and tab opened: ${newRequest.name}');
+            AppLogger.info(
+                '[Sidebar] New request created and tab opened: ${newRequest.name}');
             break;
           case 'delete':
             _showDeleteConfirmation(context, ref, collection);

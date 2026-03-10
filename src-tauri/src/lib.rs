@@ -1,14 +1,18 @@
 mod commands;
+mod models;
+mod services;
 mod utils;
 
+use commands::http::HttpServiceState;
 use tauri::Manager;
 use tracing::info;
 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .manage(HttpServiceState::new().expect("Failed to create HTTP service state"))
         .setup(|app| {
-            // 初始化日志系统
+            // Initialize logging system
             let app_handle = app.handle();
             let app_dir = app_handle.path().app_data_dir()?;
             std::fs::create_dir_all(&app_dir)?;
@@ -32,6 +36,9 @@ pub fn run() {
             commands::log::export_logs,
             commands::log::get_log_stats,
             commands::log::write_log,
+            commands::http::send_http_request,
+            commands::http::http_get,
+            commands::http::http_post,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

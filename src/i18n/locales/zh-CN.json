@@ -40,15 +40,32 @@
     "send": "发送",
     "sending": "发送中...",
     "url": "请求地址",
+    "urlPlaceholder": "输入请求 URL",
     "method": "请求方法",
     "params": "参数",
     "headers": "请求头",
     "body": "请求体",
+    "bodyType": "请求体类型",
+    "bodyPlaceholder": "请求体内容...",
     "auth": "认证",
     "response": "响应",
     "status": "状态",
     "time": "耗时",
-    "size": "大小"
+    "size": "大小",
+    "preview": "预览",
+    "noUrl": "无 URL",
+    "noActiveTab": "没有活动的请求",
+    "addParam": "添加参数",
+    "addHeader": "添加请求头"
+  },
+  "response": {
+    "noResponse": "点击发送按钮获取响应",
+    "noActiveTab": "没有活动的请求",
+    "loading": "加载中...",
+    "body": "响应体",
+    "headers": "响应头",
+    "headerName": "响应头名称",
+    "headerValue": "值"
   },
   "http": {
     "methods": {

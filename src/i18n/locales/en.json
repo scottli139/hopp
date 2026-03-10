@@ -40,15 +40,32 @@
     "send": "Send",
     "sending": "Sending...",
     "url": "URL",
+    "urlPlaceholder": "Enter request URL",
     "method": "Method",
     "params": "Params",
     "headers": "Headers",
     "body": "Body",
+    "bodyType": "Body Type",
+    "bodyPlaceholder": "Request body...",
     "auth": "Auth",
     "response": "Response",
     "status": "Status",
     "time": "Time",
-    "size": "Size"
+    "size": "Size",
+    "preview": "Preview",
+    "noUrl": "No URL",
+    "noActiveTab": "No active request",
+    "addParam": "Add Parameter",
+    "addHeader": "Add Header"
+  },
+  "response": {
+    "noResponse": "Click Send to get a response",
+    "noActiveTab": "No active request",
+    "loading": "Loading...",
+    "body": "Body",
+    "headers": "Headers",
+    "headerName": "Header Name",
+    "headerValue": "Value"
   },
   "http": {
     "methods": {

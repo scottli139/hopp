@@ -8,7 +8,7 @@
 
 **Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Tauri 构建，注重性能和用户体验。
 
-**当前状态**: ✅ **M1.1 项目初始化已完成，多语言 & 日志系统已完成，等待 M1.3 基础布局组件**  
+**当前状态**: ✅ **M1.3 已完成，M1.4 HTTP 核心功能进行中**  
 **技术栈**: Tauri 2.x + React 18 + TypeScript + Rust  
 **目标平台**: macOS 10.15+ / Windows 10+ / Linux
 
@@ -30,25 +30,25 @@
 | 日志系统 | ✅ | 2026-03-09 | 前端 loglevel + 后端 tracing，支持日志查看/导出/清理 |
 | AI 开发标识 | ✅ | 2026-03-09 | README 和 GitHub Pages 添加 Kimi AI 开发标识 |
 | GitHub 设置指南 | ✅ | 2026-03-09 | 创建 GitHub 仓库 description 和 topics 推荐文档 |
+| **M1.3 基础布局组件** | ✅ | 2026-03-09 | ResizablePanel/Sidebar/Header/StatusBar/MainContent 完成，31个单元测试通过 |
 
 ### 进行中 🔄
 
-| 任务 | 状态 | 预计开始 | 说明 |
-|------|------|----------|------|
-| M1.3 基础布局组件 | ⏸️ 待开始 | - | 侧边栏、主内容区、响应式布局 |
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| M1.4 HTTP 核心请求功能 | 🔄 进行中 | Rust reqwest 封装，模型定义，服务实现 |
 
 ### 待办 📋
 
 | 任务 | 优先级 | 预计工时 |
 |------|--------|----------|
-| M1.4 HTTP 核心请求功能 (Rust) | 🔴 P0 | 16h |
 | M1.5 请求编辑器 UI | 🔴 P0 | 16h |
 | M1.6 响应展示 UI | 🔴 P0 | 12h |
 | M1.7 前后端集成 | 🔴 P0 | 8h |
 | M1.8 基础本地存储 | 🟡 P1 | 8h |
 | M1.9 多标签页功能 | 🟡 P1 | 8h |
-| M1.10 日志系统 | ✅ | 2026-03-09 | 支持前端/后端日志、日志文件管理、问题排查 |
-| M1.11 AI 标识 & GitHub 优化 | ✅ | 2026-03-09 | README 优化、GitHub 设置指南 |
+| M1.10 日志系统 | ✅ | 已完成 |
+| M1.11 AI 标识 & GitHub 优化 | ✅ | 已完成 |
 
 ---
 
@@ -101,6 +101,26 @@
 - 服务: `src/services/logService.ts` - 前端调用后端命令的封装
 - 组件: `src/components/LogViewer.tsx` - 日志查看器 UI
 
+#### 6. ESLint v10 Flat Config 配置
+ESLint v10 使用新的 Flat Config 格式，需要在 `eslint.config.mjs` 中配置：
+- 使用 `@eslint/js` 提供基础规则
+- TypeScript 规则通过 `@typescript-eslint` 插件提供
+- React 插件暂时禁用（与 ESLint v10 兼容性 issues）
+- 需要在测试设置中初始化 i18n
+
+#### 7. TypeScript React 类型导入最佳实践
+在 ESLint 严格模式下，避免 `React` 命名空间导入导致的 `no-undef` 错误：
+```typescript
+// ❌ 不推荐
+import React, { FC } from 'react';
+const handleClick = (e: React.MouseEvent) => {};
+
+// ✅ 推荐
+import type { FC, MouseEvent } from 'react';
+import { useState } from 'react';
+const handleClick = (e: MouseEvent) => {};
+```
+
 ### 遇到的问题与解决方案
 
 #### 问题 1: CI 中 Rust Action 找不到
@@ -127,6 +147,16 @@
 **现象**: `Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature`
 **原因**: TypeScript 严格模式下不能直接给 globalThis 添加属性
 **解决**: 使用类型断言 `(globalThis as Record<string, unknown>).__TAURI__`
+
+#### 问题 6: ESLint v10 与 React 插件兼容性
+**现象**: `TypeError: contextOrFilename.getFilename is not a function`
+**原因**: `eslint-plugin-react` 与 ESLint v10 不兼容
+**解决**: 暂时禁用 React 插件，仅使用 TypeScript ESLint 规则
+
+#### 问题 7: TypeScript TS6133 未使用变量错误
+**现象**: CI 构建失败，`error TS6133: 'React' is declared but its value is never read`
+**原因**: TypeScript 严格模式要求导入的变量必须使用
+**解决**: 使用 `import type { FC } from 'react'` 分离类型导入和运行时导入
 
 ### 关键配置要点
 
@@ -179,6 +209,10 @@ git config commit.template .gitmessage
 # 代理（如果需要）
 git config --global http.proxy http://127.0.0.1:7897
 git config --global https.proxy http://127.0.0.1:7897
+
+# 当前项目用户配置已更新为
+# user.name: zhongmou
+# user.email: zhongmou@beeuc.com
 ```
 
 ---
@@ -207,7 +241,7 @@ docs/
 | React | 18.x | UI 框架 |
 | TypeScript | 5.x | 类型安全 |
 | Vite | 5.x | 构建工具 |
-| Tailwind CSS | 3.x | 原子化 CSS |
+| Tailwind CSS | 4.x | 原子化 CSS (v4) |
 | Radix UI | 1.x | 无样式 UI 组件库 |
 | Zustand | 4.x | 全局状态管理 |
 | Monaco Editor | latest | JSON/代码编辑 |
@@ -224,6 +258,8 @@ docs/
 | tokio | 1.x | 异步运行时 |
 | rusqlite | 0.30+ | SQLite 数据库 |
 | serde | 1.x | 序列化/反序列化 |
+| thiserror | 1.x | 错误处理 |
+| urlencoding | 2.x | URL 编码 |
 
 ---
 
@@ -236,33 +272,29 @@ hopp/
 │   ├── pr-check.yml            # PR 检查
 │   └── pages.yml               # GitHub Pages 部署
 ├── .vscode/                    # VS Code 配置
-│   ├── extensions.json         # 推荐插件
-│   ├── settings.json           # 编辑器设置
-│   └── launch.json             # 调试配置
 ├── .husky/                     # Git hooks
-│   └── pre-commit              # 提交前检查
 ├── docs/                       # 项目文档
 ├── e2e/                        # E2E 测试
-│   ├── pages/                  # Page Object
-│   └── tests/                  # 测试用例
 ├── src/                        # 前端源码
 │   ├── components/             # UI 组件
+│   │   ├── layout/             # 布局组件 (ResizablePanel, Sidebar, Header, StatusBar, MainContent)
+│   │   └── LogViewer.tsx       # 日志查看器
 │   ├── hooks/                  # 自定义 Hooks
 │   ├── stores/                 # Zustand 状态管理
 │   ├── services/               # API 服务
 │   ├── types/                  # TypeScript 类型
 │   ├── utils/                  # 工具函数
 │   ├── i18n/                   # 国际化配置
-│   │   ├── locales/            # 翻译文件
-│   │   │   ├── en.json         # 英文翻译
-│   │   │   └── zh-CN.json      # 中文翻译
-│   │   └── index.ts            # i18n 配置
 │   └── test/                   # 测试配置
 ├── src-tauri/                  # Rust 后端
 │   ├── src/
 │   │   ├── commands/           # Tauri 命令
+│   │   │   ├── log.rs          # 日志相关命令
+│   │   │   └── http.rs         # HTTP 请求命令 (M1.4)
 │   │   ├── services/           # 业务服务
+│   │   │   └── http_service.rs # HTTP 服务 (M1.4)
 │   │   ├── models/             # 数据模型
+│   │   │   └── http.rs         # HTTP 模型 (M1.4)
 │   │   └── utils/              # 工具函数
 │   ├── icons/                  # 应用图标
 │   ├── Cargo.toml              # Rust 依赖
@@ -271,12 +303,11 @@ hopp/
 ├── vite.config.ts              # Vite 配置
 ├── vitest.config.ts            # Vitest 配置
 ├── playwright.config.ts        # Playwright 配置
-├── .eslintrc.cjs               # ESLint 配置
+├── eslint.config.mjs           # ESLint Flat Config (v10)
 ├── .prettierrc                 # Prettier 配置
 ├── rustfmt.toml                # Rust 格式化配置
 ├── .clippy.toml                # Clippy 配置
-├── tsconfig.json               # TypeScript 配置
-└── README.md                   # 项目说明
+└── tsconfig.json               # TypeScript 配置
 ```
 
 ---
@@ -313,29 +344,35 @@ pnpm tauri build            # 构建生产版本
 
 ---
 
-## 🎯 下一步任务 (M1.3)
+## 🎯 下一步任务 (M1.4 - HTTP 核心功能)
 
-### 目标
-搭建应用的主界面布局框架
+### 当前进度
+已完成：
+- ✅ HTTP 请求/响应模型定义 (`src-tauri/src/models/http.rs`)
+- ✅ HTTP 服务实现 (`src-tauri/src/services/http_service.rs`)
+- ✅ HTTP 命令定义 (`src-tauri/src/commands/http.rs`)
+- ✅ Cargo.toml 依赖更新 (添加 urlencoding)
 
-### 具体工作
-1. 创建布局组件
-   - `Sidebar` - 左侧边栏
-   - `MainContent` - 主内容区
-   - `ResizablePanel` - 可调整宽度的面板
-   - `Header` - 顶部工具栏
-   - `StatusBar` - 底部状态栏
+待完成：
+- [ ] 前端 HTTP 服务封装
+- [ ] 请求编辑器 UI 组件
+- [ ] 响应展示 UI 组件
+- [ ] 前后端集成测试
 
-2. 实现响应式布局
-   - 侧边栏可拖拽调整宽度 (200px - 400px)
-   - 布局在窗口大小变化时自适应
-   - 配置 Tailwind 主题变量
+### 已创建/修改的文件
 
-3. 验收标准
-   - [ ] 侧边栏可拖拽调整宽度
-   - [ ] 布局自适应窗口大小
-   - [ ] 主题变量配置完成
-   - [ ] 组件有 TypeScript 类型定义
+#### M1.3 布局组件
+- `src/components/layout/ResizablePanel.tsx` - 可拖拽调整宽度的面板
+- `src/components/layout/Sidebar.tsx` - 左侧边栏导航
+- `src/components/layout/Header.tsx` - 顶部工具栏
+- `src/components/layout/StatusBar.tsx` - 底部状态栏
+- `src/components/layout/MainContent.tsx` - 主内容区容器
+- `src/components/layout/__tests__/*.test.tsx` - 31个单元测试
+
+#### M1.4 HTTP 核心功能 (进行中)
+- `src-tauri/src/models/http.rs` - HTTP 模型定义
+- `src-tauri/src/services/http_service.rs` - HTTP 服务
+- `src-tauri/src/commands/http.rs` - Tauri 命令
 
 ---
 
@@ -356,6 +393,8 @@ pnpm tauri build            # 构建生产版本
 | 2026-03-09 | v0.1.0-logging | 日志系统完成，新增日志规范到 CODING_STANDARDS.md |
 | 2026-03-09 | v0.1.0-ai-badge | README 和 GitHub Pages 添加 AI 开发标识 (Kimi Code CLI + Kimi 2.5 Model) |
 | 2026-03-09 | v0.1.0-github-settings | 创建 GitHub 仓库设置指南 (description + topics 推荐) |
+| 2026-03-09 | v0.1.0-layout | **M1.3 完成**: 基础布局组件 (ResizablePanel, Sidebar, Header, StatusBar, MainContent)，31个单元测试，CI通过 |
+| 2026-03-09 | v0.1.0-http-wip | **M1.4 进行中**: Rust HTTP 核心功能模型和服务实现 |
 
 ---
 
@@ -366,3 +405,5 @@ pnpm tauri build            # 构建生产版本
 - [Rust 官方文档](https://www.rust-lang.org/)
 - [Tailwind CSS 文档](https://tailwindcss.com/)
 - [Zustand 文档](https://docs.pmnd.rs/zustand)
+- [reqwest 文档](https://docs.rs/reqwest/)
+- [ESLint Flat Config](https://eslint.org/docs/latest/use/configure/configuration-files)

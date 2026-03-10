@@ -1,4 +1,6 @@
-use crate::models::http::{BodyType, HttpClientConfig, HttpError, HttpMethod, HttpRequest, HttpResponse, KeyValue};
+use crate::models::http::{
+    BodyType, HttpClientConfig, HttpError, HttpMethod, HttpRequest, HttpResponse, KeyValue,
+};
 use reqwest::{Client, Response};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -38,9 +40,7 @@ impl HttpService {
         let url = self.build_url(&request)?;
 
         // Build request
-        let mut req_builder = self
-            .client
-            .request(request.method.to_reqwest(), &url);
+        let mut req_builder = self.client.request(request.method.to_reqwest(), &url);
 
         // Add default headers
         for (key, value) in &self.config.default_headers {
@@ -59,10 +59,7 @@ impl HttpService {
 
         // Send request and measure time
         let start = Instant::now();
-        let response = req_builder
-            .send()
-            .await
-            .map_err(HttpError::from)?;
+        let response = req_builder.send().await.map_err(HttpError::from)?;
         let elapsed = start.elapsed().as_millis() as u64;
 
         // Convert response
@@ -72,7 +69,7 @@ impl HttpService {
     /// Build final URL with query parameters
     fn build_url(&self, request: &HttpRequest) -> Result<String, HttpError> {
         let base_url = &request.url;
-        
+
         // Validate URL
         if base_url.is_empty() {
             return Err(HttpError::InvalidUrl("URL is empty".to_string()));
@@ -95,7 +92,13 @@ impl HttpService {
         if !enabled_params.is_empty() {
             let query: Vec<String> = enabled_params
                 .iter()
-                .map(|p| format!("{}={}", urlencoding::encode(&p.key), urlencoding::encode(&p.value)))
+                .map(|p| {
+                    format!(
+                        "{}={}",
+                        urlencoding::encode(&p.key),
+                        urlencoding::encode(&p.value)
+                    )
+                })
                 .collect();
             url = format!("{}?{}", url, query.join("&"));
         }
@@ -116,14 +119,18 @@ impl HttpService {
                     // Validate JSON
                     serde_json::from_str::<serde_json::Value>(body)
                         .map_err(|e| HttpError::BodyParseError(e.to_string()))?;
-                    Ok(builder.header("Content-Type", "application/json").body(body.clone()))
+                    Ok(builder
+                        .header("Content-Type", "application/json")
+                        .body(body.clone()))
                 } else {
                     Ok(builder)
                 }
             }
             BodyType::Text => {
                 if let Some(body) = &request.body {
-                    Ok(builder.header("Content-Type", "text/plain").body(body.clone()))
+                    Ok(builder
+                        .header("Content-Type", "text/plain")
+                        .body(body.clone()))
                 } else {
                     Ok(builder)
                 }
@@ -171,7 +178,11 @@ impl HttpService {
         elapsed_ms: u64,
     ) -> Result<HttpResponse, HttpError> {
         let status = response.status().as_u16();
-        let status_text = response.status().canonical_reason().unwrap_or("Unknown").to_string();
+        let status_text = response
+            .status()
+            .canonical_reason()
+            .unwrap_or("Unknown")
+            .to_string();
 
         // Extract headers
         let mut headers = HashMap::new();
@@ -223,9 +234,9 @@ impl HttpService {
         url: impl Into<String>,
         body: impl Serialize,
     ) -> Result<HttpResponse, HttpError> {
-        let body_json = serde_json::to_string(&body)
-            .map_err(|e| HttpError::BodyParseError(e.to_string()))?;
-        
+        let body_json =
+            serde_json::to_string(&body).map_err(|e| HttpError::BodyParseError(e.to_string()))?;
+
         let request = HttpRequest {
             method: HttpMethod::Post,
             url: url.into(),
@@ -266,7 +277,7 @@ mod tests {
             ],
             ..Default::default()
         };
-        
+
         let url = service.build_url(&request).unwrap();
         assert!(url.contains("key1=value1"));
         assert!(url.contains("key2=value%20with%20spaces"));
@@ -279,7 +290,7 @@ mod tests {
             url: "".to_string(),
             ..Default::default()
         };
-        
+
         let result = service.build_url(&request);
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), HttpError::InvalidUrl(_)));

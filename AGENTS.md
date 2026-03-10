@@ -36,18 +36,20 @@
 | **M1.6 响应展示 UI** | ✅ | 2026-03-10 | 响应体/响应头展示，状态码/时间/大小 |
 | **M1.7 前后端集成** | ✅ | 2026-03-10 | Tauri 命令封装，前端调用 |
 | **M1.9 多标签页功能** | ✅ | 2026-03-10 | 标签页管理，Zustand store |
+| **UI 优化** | 🔄 | 2026-03-10 | 重构 Sidebar/RequestTabs/RequestEditor/ResponseViewer 样式，改进间距和尺寸 |
 
 ### 进行中 🔄
 
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| 无 | - | - |
+| UI 精细化调整 | - | 尺寸、间距、对齐仍需继续优化 |
 
 ### 待办 📋
 
 | 任务 | 优先级 | 预计工时 | 说明 |
 |------|--------|----------|------|
 | M1.8 基础本地存储 | 🟡 P1 | 8h | Settings 配置持久化 |
+| UI 精细化调整 | 🟢 P2 | 4h | 继续优化各组件尺寸、间距、对齐，达到生产级水准 |
 
 ---
 
@@ -450,6 +452,43 @@ docs: update DEVELOPMENT_PLAN.md with M1 completion status
 
 ---
 
+### 2026-03-10 会话 - UI 优化与 Bug 修复
+
+**本次会话完成的工作**:
+1. ✅ 添加 MIT LICENSE 文件
+2. ✅ 修复 Tailwind CSS v4 配置（添加 @tailwindcss/vite 插件）
+3. ✅ 重构全局样式系统（colors, shadows, transitions）
+4. ✅ 重构 Sidebar 组件（新的 Logo、树形结构、图标优化）
+5. ✅ 重构 RequestTabs 组件（现代化标签设计、Method badge）
+6. ✅ 重构 RequestEditor 组件（URL 栏、Section Tabs、KeyValue 编辑器）
+7. ✅ 重构 ResponseViewer 组件（响应信息栏、空状态、Headers 表格）
+8. ✅ 修复 React Hooks 调用顺序问题（useMemo 放在条件返回前）
+9. ✅ 所有测试通过 (54/54)
+
+**创建/修改的文件**:
+- `LICENSE` - MIT 许可证
+- `vite.config.ts` - 添加 @tailwindcss/vite 插件
+- `src/styles.css` - 重构全局样式系统
+- `src/components/layout/Sidebar.tsx` - 全新设计
+- `src/components/request/RequestTabs.tsx` - 现代化标签页
+- `src/components/request/RequestEditor.tsx` - 改进布局和间距
+- `src/components/request/ResponseViewer.tsx` - 改进布局和修复 Hooks 错误
+- `src/App.tsx` - 更新布局结构
+
+**遇到的问题与解决**:
+- **问题**: React Hooks 调用顺序错误导致 "Rendered more hooks than during the previous render"
+- **原因**: useMemo 被放在了条件返回语句之后
+- **解决**: 把所有 Hooks 移到组件顶部，在任何条件判断之前调用
+
+**测试状态**:
+- 单元测试: 54 个全部通过
+- Lint: 无错误
+
+**待继续任务**:
+- UI 精细化调整（尺寸、间距、对齐）
+
+---
+
 ## 🔗 重要链接
 
 - **GitHub 仓库**: https://github.com/scottli139/hopp
@@ -469,6 +508,7 @@ docs: update DEVELOPMENT_PLAN.md with M1 completion status
 | 2026-03-09 | v0.1.0-github-settings | 创建 GitHub 仓库设置指南 (description + topics 推荐) |
 | 2026-03-09 | v0.1.0-layout | **M1.3 完成**: 基础布局组件 (ResizablePanel, Sidebar, Header, StatusBar, MainContent)，31个单元测试，CI通过 |
 | 2026-03-10 | v0.1.0-http | **M1.4-M1.7 & M1.9 完成**: HTTP 核心功能、请求编辑器、响应展示、多标签页，54个单元测试，CI通过 |
+| 2026-03-10 | v0.1.0-ui-refresh | **UI 重构**: Sidebar/RequestTabs/RequestEditor/ResponseViewer 样式优化，修复 Tailwind v4 配置和 React Hooks 顺序问题 |
 
 ---
 

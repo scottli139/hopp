@@ -8,7 +8,7 @@ import 'request_tab_provider.dart';
 
 class RequestResponseNotifier extends StateNotifier<Map<String, HttpResponse>> {
   final HttpService _httpService;
-  
+
   RequestResponseNotifier(this._httpService) : super({});
 
   Future<void> sendRequest(String tabId, HttpRequest request) async {
@@ -18,7 +18,7 @@ class RequestResponseNotifier extends StateNotifier<Map<String, HttpResponse>> {
     };
 
     final response = await _httpService.sendRequest(request);
-    
+
     state = {
       ...state,
       tabId: response,
@@ -26,7 +26,7 @@ class RequestResponseNotifier extends StateNotifier<Map<String, HttpResponse>> {
   }
 
   HttpResponse? getResponse(String tabId) => state[tabId];
-  
+
   void clearResponse(String tabId) {
     final newState = {...state};
     newState.remove(tabId);
@@ -38,7 +38,9 @@ class RequestResponseNotifier extends StateNotifier<Map<String, HttpResponse>> {
   }
 }
 
-final requestResponseProvider = StateNotifierProvider<RequestResponseNotifier, Map<String, HttpResponse>>((ref) {
+final requestResponseProvider =
+    StateNotifierProvider<RequestResponseNotifier, Map<String, HttpResponse>>(
+        (ref) {
   final httpService = ref.watch(httpServiceProvider);
   return RequestResponseNotifier(httpService);
 });
@@ -46,7 +48,7 @@ final requestResponseProvider = StateNotifierProvider<RequestResponseNotifier, M
 final currentResponseProvider = Provider<HttpResponse?>((ref) {
   final responses = ref.watch(requestResponseProvider);
   final activeTabId = ref.watch(activeTabIdProvider);
-  
+
   if (activeTabId == null) return null;
   return responses[activeTabId];
 });

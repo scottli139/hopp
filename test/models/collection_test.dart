@@ -54,7 +54,8 @@ void main() {
         expect(collection.isExpanded, isFalse);
       });
 
-      test('should generate unique ids for multiple empty collections', () async {
+      test('should generate unique ids for multiple empty collections',
+          () async {
         final collection1 = Collection.empty();
         await Future<void>.delayed(const Duration(milliseconds: 2));
         final collection2 = Collection.empty();
@@ -180,7 +181,8 @@ void main() {
         expect(collection.isFolder, isTrue);
       });
 
-      test('should return true when collection has no children and no requests', () {
+      test('should return true when collection has no children and no requests',
+          () {
         final collection = Collection(
           id: 'col-1',
           name: 'Empty Folder',
@@ -191,7 +193,8 @@ void main() {
         expect(collection.isFolder, isTrue);
       });
 
-      test('should return false when collection has requests but no children', () {
+      test('should return false when collection has requests but no children',
+          () {
         final collection = Collection(
           id: 'col-1',
           name: 'Request Container',
@@ -204,7 +207,8 @@ void main() {
         expect(collection.isFolder, isFalse);
       });
 
-      test('should return false when collection has both children and requests', () {
+      test('should return false when collection has both children and requests',
+          () {
         final collection = Collection(
           id: 'col-1',
           name: 'Mixed Container',

@@ -18,7 +18,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   late TabController _tabController;
   final _urlController = TextEditingController();
   final _nameController = TextEditingController();
-  
+
   @override
   void initState() {
     super.initState();
@@ -36,7 +36,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   @override
   Widget build(BuildContext context) {
     final activeTab = ref.watch(activeTabProvider);
-    
+
     if (activeTab == null) {
       return const Center(child: Text('Select a request'));
     }
@@ -67,7 +67,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     );
   }
 
-  Widget _buildUrlBar(BuildContext context, WidgetRef ref, HttpRequest request) {
+  Widget _buildUrlBar(
+      BuildContext context, WidgetRef ref, HttpRequest request) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -117,7 +118,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               decoration: const InputDecoration(
                 hintText: 'Enter URL',
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               ),
               style: const TextStyle(fontSize: 13),
               onChanged: (value) {
@@ -150,7 +152,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     );
   }
 
-  Widget _buildParamsTab(BuildContext context, WidgetRef ref, HttpRequest request) {
+  Widget _buildParamsTab(
+      BuildContext context, WidgetRef ref, HttpRequest request) {
     return _buildKeyValueEditor(
       context,
       ref,
@@ -160,7 +163,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     );
   }
 
-  Widget _buildHeadersTab(BuildContext context, WidgetRef ref, HttpRequest request) {
+  Widget _buildHeadersTab(
+      BuildContext context, WidgetRef ref, HttpRequest request) {
     return _buildKeyValueEditor(
       context,
       ref,
@@ -189,11 +193,23 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           ),
           child: const Row(
             children: [
-              SizedBox(width: 40, child: Text('Enable', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600))),
+              SizedBox(
+                  width: 40,
+                  child: Text('Enable',
+                      style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w600))),
               SizedBox(width: 16),
-              Expanded(flex: 2, child: Text('Key', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600))),
+              Expanded(
+                  flex: 2,
+                  child: Text('Key',
+                      style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w600))),
               SizedBox(width: 16),
-              Expanded(flex: 3, child: Text('Value', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600))),
+              Expanded(
+                  flex: 3,
+                  child: Text('Value',
+                      style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w600))),
               SizedBox(width: 40),
             ],
           ),
@@ -206,14 +222,16 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               if (index == items.length) {
                 return ListTile(
                   leading: const SizedBox(width: 40),
-                  title: const Text('Add new', style: TextStyle(color: Colors.grey)),
+                  title: const Text('Add new',
+                      style: TextStyle(color: Colors.grey)),
                   onTap: () {
                     final newItems = [...items, _createEmptyKeyValue()];
                     _updateRequest(ref, updateFn(newItems));
                   },
                 );
               }
-              return _buildKeyValueRow(context, ref, request, items, index, updateFn);
+              return _buildKeyValueRow(
+                  context, ref, request, items, index, updateFn);
             },
           ),
         ),
@@ -256,7 +274,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               decoration: const InputDecoration(
                 hintText: 'Key',
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               ),
               style: const TextStyle(fontSize: 13),
               onChanged: (value) {
@@ -274,7 +293,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               decoration: const InputDecoration(
                 hintText: 'Value',
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               ),
               style: const TextStyle(fontSize: 13),
               onChanged: (value) {
@@ -299,7 +319,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     );
   }
 
-  Widget _buildBodyTab(BuildContext context, WidgetRef ref, HttpRequest request) {
+  Widget _buildBodyTab(
+      BuildContext context, WidgetRef ref, HttpRequest request) {
     return Column(
       children: [
         // Body type selector
@@ -378,9 +399,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     final activeTabId = ref.read(activeTabIdProvider);
     if (activeTabId != null) {
       ref.read(requestTabProvider.notifier).updateRequest(
-        activeTabId,
-        updatedRequest,
-      );
+            activeTabId,
+            updatedRequest,
+          );
     }
   }
 
@@ -388,9 +409,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     final activeTabId = ref.read(activeTabIdProvider);
     if (activeTabId != null) {
       ref.read(requestResponseProvider.notifier).sendRequest(
-        activeTabId,
-        request,
-      );
+            activeTabId,
+            request,
+          );
     }
   }
 

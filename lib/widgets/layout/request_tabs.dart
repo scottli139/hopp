@@ -146,9 +146,9 @@ class RequestTabs extends ConsumerWidget {
   void _closeTab(WidgetRef ref, RequestTab tab) {
     final tabs = ref.read(requestTabProvider);
     final activeId = ref.read(activeTabIdProvider);
-    
+
     ref.read(requestTabProvider.notifier).closeTab(tab.id);
-    
+
     // If we're closing the active tab, activate another one
     if (activeId == tab.id) {
       final remainingTabs = tabs.where((t) => t.id != tab.id).toList();

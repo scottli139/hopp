@@ -6,14 +6,14 @@ import '../core/providers.dart';
 
 class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
   final Ref _ref;
-  
+
   CollectionNotifier(this._ref) : super(const AsyncValue.loading()) {
     loadCollections();
   }
 
   Future<void> loadCollections() async {
     state = const AsyncValue.loading();
-    
+
     try {
       final storage = _ref.read(storageServiceProvider);
       final collections = await storage.getCollections();
@@ -62,9 +62,9 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
         }
         return c;
       }).toList();
-      
+
       state = AsyncValue.data(updated);
-      
+
       // Persist change
       final collection = updated.firstWhere((c) => c.id == collectionId);
       final storage = _ref.read(storageServiceProvider);
@@ -72,7 +72,8 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
     }
   }
 
-  Future<void> addRequestToCollection(String collectionId, HttpRequest request) async {
+  Future<void> addRequestToCollection(
+      String collectionId, HttpRequest request) async {
     final currentState = state;
     if (currentState case AsyncData(:final value)) {
       final updated = value.map((c) {
@@ -83,9 +84,9 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
         }
         return c;
       }).toList();
-      
+
       state = AsyncValue.data(updated);
-      
+
       // Persist change
       final collection = updated.firstWhere((c) => c.id == collectionId);
       final storage = _ref.read(storageServiceProvider);
@@ -95,13 +96,15 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
   }
 }
 
-final collectionProvider = StateNotifierProvider<CollectionNotifier, AsyncValue<List<Collection>>>((ref) {
+final collectionProvider =
+    StateNotifierProvider<CollectionNotifier, AsyncValue<List<Collection>>>(
+        (ref) {
   return CollectionNotifier(ref);
 });
 
 final flattenedCollectionsProvider = Provider<List<Collection>>((ref) {
   final collectionsAsync = ref.watch(collectionProvider);
-  
+
   return collectionsAsync.when(
     data: (collections) {
       final result = <Collection>[];
@@ -111,6 +114,7 @@ final flattenedCollectionsProvider = Provider<List<Collection>>((ref) {
           flatten(child, depth + 1);
         }
       }
+
       for (final c in collections) {
         flatten(c, 0);
       }

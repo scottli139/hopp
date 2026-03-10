@@ -79,8 +79,14 @@ void main() {
         final after = DateTime.now();
 
         expect(tab.lastAccessed, isNotNull);
-        expect(tab.lastAccessed!.isAfter(before) || tab.lastAccessed!.isAtSameMomentAs(before), isTrue);
-        expect(tab.lastAccessed!.isBefore(after) || tab.lastAccessed!.isAtSameMomentAs(after), isTrue);
+        expect(
+            tab.lastAccessed!.isAfter(before) ||
+                tab.lastAccessed!.isAtSameMomentAs(before),
+            isTrue);
+        expect(
+            tab.lastAccessed!.isBefore(after) ||
+                tab.lastAccessed!.isAtSameMomentAs(after),
+            isTrue);
       });
     });
 
@@ -236,7 +242,8 @@ void main() {
           };
 
           final tab = RequestTab.fromJson(json);
-          expect(tab.request.method, equals(method), reason: 'Failed for ${method.name}');
+          expect(tab.request.method, equals(method),
+              reason: 'Failed for ${method.name}');
         }
       });
     });

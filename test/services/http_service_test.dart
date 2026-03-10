@@ -59,8 +59,10 @@ void main() {
         // Assert
         final captured = verify(mockDio.options = captureAny).captured;
         final options = captured.first as BaseOptions;
-        expect(options.connectTimeout, equals(const Duration(milliseconds: 5000)));
-        expect(options.receiveTimeout, equals(const Duration(milliseconds: 5000)));
+        expect(
+            options.connectTimeout, equals(const Duration(milliseconds: 5000)));
+        expect(
+            options.receiveTimeout, equals(const Duration(milliseconds: 5000)));
         expect(options.sendTimeout, equals(const Duration(milliseconds: 5000)));
       });
 
@@ -86,21 +88,21 @@ void main() {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
         final responseData = utf8.encode('{"id": 1, "name": "Test"}');
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List.fromList(responseData),
-          statusCode: 200,
-          statusMessage: 'OK',
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers.fromMap({
-            'content-type': ['application/json'],
-            'content-length': [responseData.length.toString()],
-          }),
-        ));
+              data: Uint8List.fromList(responseData),
+              statusCode: 200,
+              statusMessage: 'OK',
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers.fromMap({
+                'content-type': ['application/json'],
+                'content-length': [responseData.length.toString()],
+              }),
+            ));
 
         // Act
         final response = await httpService.sendRequest(request);
@@ -120,20 +122,20 @@ void main() {
         // Arrange
         final request = RequestFixtures.postWithJson();
         final responseData = utf8.encode('{"id": 1, "created": true}');
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List.fromList(responseData),
-          statusCode: 201,
-          statusMessage: 'Created',
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers.fromMap({
-            'content-type': ['application/json'],
-          }),
-        ));
+              data: Uint8List.fromList(responseData),
+              statusCode: 201,
+              statusMessage: 'Created',
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers.fromMap({
+                'content-type': ['application/json'],
+              }),
+            ));
 
         // Act
         final response = await httpService.sendRequest(request);
@@ -146,18 +148,18 @@ void main() {
       test('should handle 204 No Content response', () async {
         // Arrange
         final request = RequestFixtures.deleteRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: null,
-          statusCode: 204,
-          statusMessage: 'No Content',
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers(),
-        ));
+              data: null,
+              statusCode: 204,
+              statusMessage: 'No Content',
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers(),
+            ));
 
         // Act
         final response = await httpService.sendRequest(request);
@@ -173,20 +175,20 @@ void main() {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
         final responseText = 'Hello, World!';
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List.fromList(utf8.encode(responseText)),
-          statusCode: 200,
-          statusMessage: 'OK',
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers.fromMap({
-            'content-type': ['text/plain'],
-          }),
-        ));
+              data: Uint8List.fromList(utf8.encode(responseText)),
+              statusCode: 200,
+              statusMessage: 'OK',
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers.fromMap({
+                'content-type': ['text/plain'],
+              }),
+            ));
 
         // Act
         final response = await httpService.sendRequest(request);
@@ -201,7 +203,7 @@ void main() {
       test('should handle connection timeout error', () async {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
@@ -224,7 +226,7 @@ void main() {
       test('should handle receive timeout error', () async {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
@@ -245,7 +247,7 @@ void main() {
       test('should handle bad response error (4xx)', () async {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
@@ -272,7 +274,7 @@ void main() {
       test('should handle bad response error (5xx)', () async {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
@@ -299,7 +301,7 @@ void main() {
       test('should handle connection error', () async {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
@@ -320,7 +322,7 @@ void main() {
       test('should handle cancelled request', () async {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
@@ -341,7 +343,7 @@ void main() {
       test('should handle bad certificate error', () async {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
@@ -362,7 +364,7 @@ void main() {
       test('should handle unexpected errors', () async {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
@@ -381,17 +383,17 @@ void main() {
       test('should include enabled query parameters in URL', () async {
         // Arrange
         final request = RequestFixtures.requestWithDisabledParams();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List(0),
-          statusCode: 200,
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers(),
-        ));
+              data: Uint8List(0),
+              statusCode: 200,
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers(),
+            ));
 
         // Act
         await httpService.sendRequest(request);
@@ -426,17 +428,17 @@ void main() {
           body: '',
           bodyType: 'none',
         );
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List(0),
-          statusCode: 200,
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers(),
-        ));
+              data: Uint8List(0),
+              statusCode: 200,
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers(),
+            ));
 
         // Act
         await httpService.sendRequest(request);
@@ -457,17 +459,17 @@ void main() {
       test('should include enabled headers only', () async {
         // Arrange
         final request = RequestFixtures.requestWithDisabledHeaders();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List(0),
-          statusCode: 200,
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers(),
-        ));
+              data: Uint8List(0),
+              statusCode: 200,
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers(),
+            ));
 
         // Act
         await httpService.sendRequest(request);
@@ -486,17 +488,17 @@ void main() {
       test('should send null headers when no enabled headers', () async {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List(0),
-          statusCode: 200,
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers(),
-        ));
+              data: Uint8List(0),
+              statusCode: 200,
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers(),
+            ));
 
         // Act
         await httpService.sendRequest(request);
@@ -516,17 +518,17 @@ void main() {
       test('should send JSON body as parsed object', () async {
         // Arrange
         final request = RequestFixtures.postWithJson();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List(0),
-          statusCode: 201,
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers(),
-        ));
+              data: Uint8List(0),
+              statusCode: 201,
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers(),
+            ));
 
         // Act
         await httpService.sendRequest(request);
@@ -546,17 +548,17 @@ void main() {
       test('should send text body as string', () async {
         // Arrange
         final request = RequestFixtures.postWithText();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List(0),
-          statusCode: 200,
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers(),
-        ));
+              data: Uint8List(0),
+              statusCode: 200,
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers(),
+            ));
 
         // Act
         await httpService.sendRequest(request);
@@ -574,17 +576,17 @@ void main() {
       test('should send null body when body is empty', () async {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List(0),
-          statusCode: 200,
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers(),
-        ));
+              data: Uint8List(0),
+              statusCode: 200,
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers(),
+            ));
 
         // Act
         await httpService.sendRequest(request);
@@ -625,17 +627,17 @@ void main() {
       test('should use correct method for GET request', () async {
         // Arrange
         final request = RequestFixtures.simpleGetRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List(0),
-          statusCode: 200,
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers(),
-        ));
+              data: Uint8List(0),
+              statusCode: 200,
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers(),
+            ));
 
         // Act
         await httpService.sendRequest(request);
@@ -653,17 +655,17 @@ void main() {
       test('should use correct method for POST request', () async {
         // Arrange
         final request = RequestFixtures.postWithJson();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List(0),
-          statusCode: 201,
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers(),
-        ));
+              data: Uint8List(0),
+              statusCode: 201,
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers(),
+            ));
 
         // Act
         await httpService.sendRequest(request);
@@ -681,17 +683,17 @@ void main() {
       test('should use correct method for PUT request', () async {
         // Arrange
         final request = RequestFixtures.putRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List(0),
-          statusCode: 200,
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers(),
-        ));
+              data: Uint8List(0),
+              statusCode: 200,
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers(),
+            ));
 
         // Act
         await httpService.sendRequest(request);
@@ -709,17 +711,17 @@ void main() {
       test('should use correct method for DELETE request', () async {
         // Arrange
         final request = RequestFixtures.deleteRequest();
-        
+
         when(mockDio.request<Uint8List>(
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response<Uint8List>(
-          data: Uint8List(0),
-          statusCode: 204,
-          requestOptions: RequestOptions(path: request.url),
-          headers: Headers(),
-        ));
+              data: Uint8List(0),
+              statusCode: 204,
+              requestOptions: RequestOptions(path: request.url),
+              headers: Headers(),
+            ));
 
         // Act
         await httpService.sendRequest(request);

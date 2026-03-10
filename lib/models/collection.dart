@@ -10,7 +10,7 @@ part 'collection.g.dart';
 @HiveType(typeId: 3)
 class Collection with _$Collection {
   const Collection._();
-  
+
   const factory Collection({
     @HiveField(0) required String id,
     @HiveField(1) required String name,

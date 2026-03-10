@@ -8,7 +8,7 @@ class RequestTabNotifier extends StateNotifier<List<RequestTab>> {
 
   void openTab(HttpRequest request) {
     final existingIndex = state.indexWhere((tab) => tab.id == request.id);
-    
+
     if (existingIndex != -1) {
       // Update last accessed and move to end
       final updatedTabs = [...state];
@@ -66,7 +66,8 @@ class RequestTabNotifier extends StateNotifier<List<RequestTab>> {
   int get tabCount => state.length;
 }
 
-final requestTabProvider = StateNotifierProvider<RequestTabNotifier, List<RequestTab>>((ref) {
+final requestTabProvider =
+    StateNotifierProvider<RequestTabNotifier, List<RequestTab>>((ref) {
   return RequestTabNotifier();
 });
 
@@ -75,9 +76,9 @@ final activeTabIdProvider = StateProvider<String?>((ref) => null);
 final activeTabProvider = Provider<RequestTab?>((ref) {
   final tabs = ref.watch(requestTabProvider);
   final activeId = ref.watch(activeTabIdProvider);
-  
+
   if (activeId == null) return null;
-  
+
   try {
     return tabs.firstWhere((tab) => tab.id == activeId);
   } catch (e) {

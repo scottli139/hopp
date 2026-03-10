@@ -278,7 +278,8 @@ void main() {
         expect(settings1, isNot(equals(settings2)));
       });
 
-      test('settings with different certificate validation should not be equal', () {
+      test('settings with different certificate validation should not be equal',
+          () {
         const settings1 = AppSettings(validateCertificates: true);
         const settings2 = AppSettings(validateCertificates: false);
 

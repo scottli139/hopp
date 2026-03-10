@@ -194,13 +194,13 @@ class Sidebar extends ConsumerWidget {
                 (child) => _buildCollectionItem(context, ref, child, depth + 1),
               ),
               ...collection.requests.map(
-                (request) => _buildRequestItem(context, ref, request, depth + 1),
+                (request) =>
+                    _buildRequestItem(context, ref, request, depth + 1),
               ),
             ],
           ),
-          crossFadeState: isExpanded
-              ? CrossFadeState.showSecond
-              : CrossFadeState.showFirst,
+          crossFadeState:
+              isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
           duration: AppConstants.animFast,
         ),
       ],
@@ -320,9 +320,9 @@ class Sidebar extends ConsumerWidget {
               parentId: collection.id,
             );
             ref.read(collectionProvider.notifier).addRequestToCollection(
-              collection.id,
-              newRequest,
-            );
+                  collection.id,
+                  newRequest,
+                );
             ref.read(requestTabProvider.notifier).openTab(newRequest);
             ref.read(activeTabIdProvider.notifier).state = newRequest.id;
             break;
@@ -357,8 +357,8 @@ class Sidebar extends ConsumerWidget {
             onPressed: () {
               if (controller.text.isNotEmpty) {
                 ref.read(collectionProvider.notifier).addCollection(
-                  Collection.empty().copyWith(name: controller.text),
-                );
+                      Collection.empty().copyWith(name: controller.text),
+                    );
                 Navigator.pop(context);
               }
             },
@@ -392,8 +392,8 @@ class Sidebar extends ConsumerWidget {
             ),
             onPressed: () {
               ref.read(collectionProvider.notifier).deleteCollection(
-                collection.id,
-              );
+                    collection.id,
+                  );
               Navigator.pop(context);
             },
             child: const Text('Delete'),

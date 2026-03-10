@@ -47,8 +47,7 @@ void main() {
       });
 
       test('should handle empty collections', () async {
-        when(mockStorageService.getCollections())
-            .thenAnswer((_) async => []);
+        when(mockStorageService.getCollections()).thenAnswer((_) async => []);
 
         await container.read(collectionProvider.notifier).loadCollections();
 
@@ -81,7 +80,9 @@ void main() {
         when(mockStorageService.getCollections())
             .thenAnswer((_) async => [...existingCollections, newCollection]);
 
-        await container.read(collectionProvider.notifier).addCollection(newCollection);
+        await container
+            .read(collectionProvider.notifier)
+            .addCollection(newCollection);
 
         verify(mockStorageService.saveCollection(newCollection)).called(1);
 
@@ -140,8 +141,7 @@ void main() {
       test('should delete collection and reload', () async {
         when(mockStorageService.deleteCollection('col-1'))
             .thenAnswer((_) async {});
-        when(mockStorageService.getCollections())
-            .thenAnswer((_) async => []);
+        when(mockStorageService.getCollections()).thenAnswer((_) async => []);
 
         await container
             .read(collectionProvider.notifier)
@@ -164,8 +164,8 @@ void main() {
 
     group('toggleExpanded', () {
       test('should toggle isExpanded state', () async {
-        final collection =
-            Collection.empty().copyWith(id: 'col-1', name: 'Test', isExpanded: false);
+        final collection = Collection.empty()
+            .copyWith(id: 'col-1', name: 'Test', isExpanded: false);
 
         when(mockStorageService.getCollections())
             .thenAnswer((_) async => [collection]);
@@ -183,8 +183,8 @@ void main() {
       });
 
       test('should persist toggled state', () async {
-        final collection =
-            Collection.empty().copyWith(id: 'col-1', name: 'Test', isExpanded: false);
+        final collection = Collection.empty()
+            .copyWith(id: 'col-1', name: 'Test', isExpanded: false);
 
         when(mockStorageService.getCollections())
             .thenAnswer((_) async => [collection]);
@@ -235,8 +235,8 @@ void main() {
 
     group('addRequestToCollection', () {
       test('should add request to collection', () async {
-        final collection =
-            Collection.empty().copyWith(id: 'col-1', name: 'Test', requests: []);
+        final collection = Collection.empty()
+            .copyWith(id: 'col-1', name: 'Test', requests: []);
         final newRequest = HttpRequest.empty().copyWith(
           id: 'req-1',
           name: 'New Request',
@@ -262,8 +262,8 @@ void main() {
       });
 
       test('should persist collection and request', () async {
-        final collection =
-            Collection.empty().copyWith(id: 'col-1', name: 'Test', requests: []);
+        final collection = Collection.empty()
+            .copyWith(id: 'col-1', name: 'Test', requests: []);
         final newRequest = HttpRequest.empty().copyWith(id: 'req-1');
 
         when(mockStorageService.getCollections())
@@ -284,8 +284,8 @@ void main() {
       });
 
       test('should not add when collection does not exist', () async {
-        final collection =
-            Collection.empty().copyWith(id: 'col-1', name: 'Test', requests: []);
+        final collection = Collection.empty()
+            .copyWith(id: 'col-1', name: 'Test', requests: []);
         final newRequest = HttpRequest.empty().copyWith(id: 'req-1');
 
         when(mockStorageService.getCollections())
@@ -308,8 +308,7 @@ void main() {
   group('flattenedCollectionsProvider', () {
     test('should return empty list when loading', () {
       final mockStorageService = MockStorageService();
-      when(mockStorageService.getCollections())
-          .thenAnswer((_) async => []);
+      when(mockStorageService.getCollections()).thenAnswer((_) async => []);
 
       final container = ProviderContainer(
         overrides: [
@@ -368,8 +367,8 @@ void main() {
           Collection.empty().copyWith(id: 'grandchild', name: 'Grandchild');
       final child = Collection.empty()
           .copyWith(id: 'child', name: 'Child', children: [grandChild]);
-      final parent =
-          Collection.empty().copyWith(id: 'parent', name: 'Parent', children: [child]);
+      final parent = Collection.empty()
+          .copyWith(id: 'parent', name: 'Parent', children: [child]);
 
       when(mockStorageService.getCollections())
           .thenAnswer((_) async => [parent]);

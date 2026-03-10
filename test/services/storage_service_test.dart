@@ -20,14 +20,12 @@ import 'storage_service_test.mocks.dart';
 ])
 void main() {
   group('StorageService', () {
-
     late MockBox<Collection> mockCollectionsBox;
     late MockBox<HttpRequest> mockRequestsBox;
     late MockBox<dynamic> mockSettingsBox;
     late MockSharedPreferences mockPrefs;
 
     setUp(() {
-
       mockCollectionsBox = MockBox<Collection>();
       mockRequestsBox = MockBox<HttpRequest>();
       mockSettingsBox = MockBox<dynamic>();
@@ -106,7 +104,8 @@ void main() {
         await mockSettingsBox.put('app_settings', settings.toJson());
 
         // Assert
-        verify(mockSettingsBox.put('app_settings', settings.toJson())).called(1);
+        verify(mockSettingsBox.put('app_settings', settings.toJson()))
+            .called(1);
       });
 
       test('should retrieve settings from mock box', () async {
@@ -124,8 +123,8 @@ void main() {
         when(mockSettingsBox.get('app_settings')).thenReturn(settingsJson);
 
         // Act
-        final result = mockSettingsBox.get('app_settings')
-            as Map<dynamic, dynamic>;
+        final result =
+            mockSettingsBox.get('app_settings') as Map<dynamic, dynamic>;
 
         // Assert
         expect(result['themeMode'], equals('dark'));
@@ -297,9 +296,21 @@ void main() {
       test('should retrieve all requests from mock box', () async {
         // Arrange
         final requests = [
-          HttpRequest(id: 'req-1', name: 'Request 1', method: HttpMethod.get, url: 'https://api1.com'),
-          HttpRequest(id: 'req-2', name: 'Request 2', method: HttpMethod.post, url: 'https://api2.com'),
-          HttpRequest(id: 'req-3', name: 'Request 3', method: HttpMethod.put, url: 'https://api3.com'),
+          HttpRequest(
+              id: 'req-1',
+              name: 'Request 1',
+              method: HttpMethod.get,
+              url: 'https://api1.com'),
+          HttpRequest(
+              id: 'req-2',
+              name: 'Request 2',
+              method: HttpMethod.post,
+              url: 'https://api2.com'),
+          HttpRequest(
+              id: 'req-3',
+              name: 'Request 3',
+              method: HttpMethod.put,
+              url: 'https://api3.com'),
         ];
         when(mockRequestsBox.values).thenReturn(requests);
 
@@ -316,15 +327,31 @@ void main() {
       test('should filter requests by parentId', () async {
         // Arrange
         final requests = [
-          HttpRequest(id: 'req-1', name: 'Request 1', method: HttpMethod.get, url: 'https://api1.com', parentId: 'col-1'),
-          HttpRequest(id: 'req-2', name: 'Request 2', method: HttpMethod.get, url: 'https://api2.com', parentId: 'col-1'),
-          HttpRequest(id: 'req-3', name: 'Request 3', method: HttpMethod.get, url: 'https://api3.com', parentId: 'col-2'),
+          HttpRequest(
+              id: 'req-1',
+              name: 'Request 1',
+              method: HttpMethod.get,
+              url: 'https://api1.com',
+              parentId: 'col-1'),
+          HttpRequest(
+              id: 'req-2',
+              name: 'Request 2',
+              method: HttpMethod.get,
+              url: 'https://api2.com',
+              parentId: 'col-1'),
+          HttpRequest(
+              id: 'req-3',
+              name: 'Request 3',
+              method: HttpMethod.get,
+              url: 'https://api3.com',
+              parentId: 'col-2'),
         ];
         when(mockRequestsBox.values).thenReturn(requests);
 
         // Act
         final allRequests = mockRequestsBox.values.toList();
-        final filteredRequests = allRequests.where((r) => r.parentId == 'col-1').toList();
+        final filteredRequests =
+            allRequests.where((r) => r.parentId == 'col-1').toList();
 
         // Assert
         expect(filteredRequests, hasLength(2));
@@ -343,7 +370,11 @@ void main() {
             KeyValuePair(id: 'p2', key: 'page', value: '1', enabled: true),
           ],
           headers: [
-            KeyValuePair(id: 'h1', key: 'Authorization', value: 'Bearer token', enabled: true),
+            KeyValuePair(
+                id: 'h1',
+                key: 'Authorization',
+                value: 'Bearer token',
+                enabled: true),
           ],
         );
         when(mockRequestsBox.get('req-params')).thenReturn(request);
@@ -410,7 +441,8 @@ void main() {
     group('Clear Operations', () {
       test('should clear collections box', () async {
         // Arrange
-        when(mockCollectionsBox.clear()).thenAnswer((_) async => 5); // Returns count of deleted items
+        when(mockCollectionsBox.clear())
+            .thenAnswer((_) async => 5); // Returns count of deleted items
 
         // Act
         final deleted = await mockCollectionsBox.clear();
@@ -578,8 +610,16 @@ void main() {
           id: 'col-requests',
           name: 'API Collection',
           requests: [
-            HttpRequest(id: 'req-1', name: 'Get Users', method: HttpMethod.get, url: 'https://api.com/users'),
-            HttpRequest(id: 'req-2', name: 'Create User', method: HttpMethod.post, url: 'https://api.com/users'),
+            HttpRequest(
+                id: 'req-1',
+                name: 'Get Users',
+                method: HttpMethod.get,
+                url: 'https://api.com/users'),
+            HttpRequest(
+                id: 'req-2',
+                name: 'Create User',
+                method: HttpMethod.post,
+                url: 'https://api.com/users'),
           ],
         );
 
@@ -595,7 +635,8 @@ void main() {
         final collection = Collection.empty();
 
         // Assert
-        expect(collection.isFolder, isTrue); // Empty collections are considered folders
+        expect(collection.isFolder,
+            isTrue); // Empty collections are considered folders
       });
 
       test('should convert collection to JSON', () {
@@ -662,13 +703,20 @@ void main() {
 
       test('should support all HTTP methods', () {
         // Arrange & Act
-        final get = HttpRequest(id: '1', name: 'GET', method: HttpMethod.get, url: '');
-        final post = HttpRequest(id: '2', name: 'POST', method: HttpMethod.post, url: '');
-        final put = HttpRequest(id: '3', name: 'PUT', method: HttpMethod.put, url: '');
-        final delete = HttpRequest(id: '4', name: 'DELETE', method: HttpMethod.delete, url: '');
-        final patch = HttpRequest(id: '5', name: 'PATCH', method: HttpMethod.patch, url: '');
-        final head = HttpRequest(id: '6', name: 'HEAD', method: HttpMethod.head, url: '');
-        final options = HttpRequest(id: '7', name: 'OPTIONS', method: HttpMethod.options, url: '');
+        final get =
+            HttpRequest(id: '1', name: 'GET', method: HttpMethod.get, url: '');
+        final post = HttpRequest(
+            id: '2', name: 'POST', method: HttpMethod.post, url: '');
+        final put =
+            HttpRequest(id: '3', name: 'PUT', method: HttpMethod.put, url: '');
+        final delete = HttpRequest(
+            id: '4', name: 'DELETE', method: HttpMethod.delete, url: '');
+        final patch = HttpRequest(
+            id: '5', name: 'PATCH', method: HttpMethod.patch, url: '');
+        final head = HttpRequest(
+            id: '6', name: 'HEAD', method: HttpMethod.head, url: '');
+        final options = HttpRequest(
+            id: '7', name: 'OPTIONS', method: HttpMethod.options, url: '');
 
         // Assert
         expect(get.method.value, equals('GET'));

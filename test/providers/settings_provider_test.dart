@@ -123,11 +123,12 @@ void main() {
 
         // Constructor calls loadSettings, so state becomes AsyncError
         await Future.delayed(Duration.zero);
-        
+
         // When in error state, state.value throws, so updateThemeMode will fail
         // This is expected behavior based on the current implementation
         expect(
-          () => container.read(settingsProvider.notifier).updateThemeMode('dark'),
+          () =>
+              container.read(settingsProvider.notifier).updateThemeMode('dark'),
           throwsA(isA<Exception>()),
         );
 
@@ -144,7 +145,9 @@ void main() {
         when(mockStorageService.saveSettings(any)).thenAnswer((_) async {});
 
         await container.read(settingsProvider.notifier).loadSettings();
-        await container.read(settingsProvider.notifier).updateThemeMode('light');
+        await container
+            .read(settingsProvider.notifier)
+            .updateThemeMode('light');
 
         final captured = verify(mockStorageService.saveSettings(captureAny))
             .captured
@@ -336,8 +339,7 @@ void main() {
 
     test('should return system theme on error', () async {
       final mockStorageService = MockStorageService();
-      when(mockStorageService.getSettings())
-          .thenThrow(Exception('Load error'));
+      when(mockStorageService.getSettings()).thenThrow(Exception('Load error'));
 
       final container = ProviderContainer(
         overrides: [
@@ -352,8 +354,8 @@ void main() {
 
     test('should return light theme', () async {
       final mockStorageService = MockStorageService();
-      when(mockStorageService.getSettings())
-          .thenAnswer((_) async => AppSettings.defaults().copyWith(themeMode: 'light'));
+      when(mockStorageService.getSettings()).thenAnswer(
+          (_) async => AppSettings.defaults().copyWith(themeMode: 'light'));
 
       final container = ProviderContainer(
         overrides: [
@@ -368,8 +370,8 @@ void main() {
 
     test('should return dark theme', () async {
       final mockStorageService = MockStorageService();
-      when(mockStorageService.getSettings())
-          .thenAnswer((_) async => AppSettings.defaults().copyWith(themeMode: 'dark'));
+      when(mockStorageService.getSettings()).thenAnswer(
+          (_) async => AppSettings.defaults().copyWith(themeMode: 'dark'));
 
       final container = ProviderContainer(
         overrides: [
@@ -384,8 +386,8 @@ void main() {
 
     test('should return system theme for unknown value', () async {
       final mockStorageService = MockStorageService();
-      when(mockStorageService.getSettings())
-          .thenAnswer((_) async => AppSettings.defaults().copyWith(themeMode: 'unknown'));
+      when(mockStorageService.getSettings()).thenAnswer(
+          (_) async => AppSettings.defaults().copyWith(themeMode: 'unknown'));
 
       final container = ProviderContainer(
         overrides: [
@@ -416,8 +418,7 @@ void main() {
 
     test('should return English locale on error', () async {
       final mockStorageService = MockStorageService();
-      when(mockStorageService.getSettings())
-          .thenThrow(Exception('Load error'));
+      when(mockStorageService.getSettings()).thenThrow(Exception('Load error'));
 
       final container = ProviderContainer(
         overrides: [
@@ -432,8 +433,8 @@ void main() {
 
     test('should return Chinese locale', () async {
       final mockStorageService = MockStorageService();
-      when(mockStorageService.getSettings())
-          .thenAnswer((_) async => AppSettings.defaults().copyWith(language: 'zh'));
+      when(mockStorageService.getSettings()).thenAnswer(
+          (_) async => AppSettings.defaults().copyWith(language: 'zh'));
 
       final container = ProviderContainer(
         overrides: [
@@ -448,8 +449,8 @@ void main() {
 
     test('should return English locale for unknown language', () async {
       final mockStorageService = MockStorageService();
-      when(mockStorageService.getSettings())
-          .thenAnswer((_) async => AppSettings.defaults().copyWith(language: 'unknown'));
+      when(mockStorageService.getSettings()).thenAnswer(
+          (_) async => AppSettings.defaults().copyWith(language: 'unknown'));
 
       final container = ProviderContainer(
         overrides: [

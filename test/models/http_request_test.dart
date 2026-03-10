@@ -59,7 +59,8 @@ void main() {
     });
 
     group('empty factory', () {
-      test('should create empty HttpRequest with generated id and defaults', () {
+      test('should create empty HttpRequest with generated id and defaults',
+          () {
         final request = HttpRequest.empty();
 
         expect(request.id, isNotEmpty);
@@ -297,7 +298,8 @@ void main() {
           };
 
           final request = HttpRequest.fromJson(json);
-          expect(request.method, equals(method), reason: 'Failed for ${method.name}');
+          expect(request.method, equals(method),
+              reason: 'Failed for ${method.name}');
         }
       });
     });

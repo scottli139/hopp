@@ -23,5 +23,3 @@ class AppSettings with _$AppSettings {
 
   factory AppSettings.defaults() => const AppSettings();
 }
-
-

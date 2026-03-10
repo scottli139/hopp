@@ -108,7 +108,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     }
 
     final statusColor = _getStatusColor(response.statusCode);
-    
+
     return Container(
       height: 36,
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -135,19 +135,23 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           ),
           const SizedBox(width: 16),
           // Time
-          Icon(Icons.timer_outlined, size: 14, color: Theme.of(context).colorScheme.outline),
+          Icon(Icons.timer_outlined,
+              size: 14, color: Theme.of(context).colorScheme.outline),
           const SizedBox(width: 4),
           Text(
             '${response.durationMs ?? 0} ms',
-            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
+            style: TextStyle(
+                fontSize: 12, color: Theme.of(context).colorScheme.outline),
           ),
           const SizedBox(width: 16),
           // Size
-          Icon(Icons.storage_outlined, size: 14, color: Theme.of(context).colorScheme.outline),
+          Icon(Icons.storage_outlined,
+              size: 14, color: Theme.of(context).colorScheme.outline),
           const SizedBox(width: 4),
           Text(
             _formatSize(response.sizeBytes),
-            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
+            style: TextStyle(
+                fontSize: 12, color: Theme.of(context).colorScheme.outline),
           ),
           const Spacer(),
           // Copy button

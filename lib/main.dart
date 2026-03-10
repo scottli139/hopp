@@ -8,11 +8,11 @@ import 'services/storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize storage
   final storage = StorageService();
   await storage.initialize();
-  
+
   runApp(
     const ProviderScope(
       child: HoppApp(),
@@ -26,7 +26,7 @@ class HoppApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
-    
+
     return MaterialApp(
       title: 'Hopp',
       debugShowCheckedModeBanner: false,
@@ -77,7 +77,8 @@ class HoppApp extends ConsumerWidget {
           borderRadius: BorderRadius.circular(6),
           borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       ),
       tabBarTheme: const TabBarTheme(
         labelColor: Color(0xFF6366F1),
@@ -118,7 +119,8 @@ class HoppApp extends ConsumerWidget {
           borderRadius: BorderRadius.circular(6),
           borderSide: const BorderSide(color: Color(0xFF818CF8), width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       ),
       tabBarTheme: const TabBarTheme(
         labelColor: Color(0xFF818CF8),

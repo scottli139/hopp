@@ -12,7 +12,7 @@ class StorageService {
   static const String _collectionsBoxName = 'collections';
   static const String _requestsBoxName = 'requests';
   static const String _settingsKey = 'app_settings';
-  
+
   Box<Collection>? _collectionsBox;
   Box<HttpRequest>? _requestsBox;
   Box<dynamic>? _settingsBox;
@@ -38,7 +38,7 @@ class StorageService {
   Future<AppSettings> getSettings() async {
     final json = _settingsBox?.get(_settingsKey) as Map<dynamic, dynamic>?;
     if (json == null) return AppSettings.defaults();
-    
+
     return AppSettings.fromJson(
       json.map((k, v) => MapEntry(k.toString(), v)),
     );

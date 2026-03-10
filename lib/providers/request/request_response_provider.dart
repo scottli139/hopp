@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/http_request.dart';
 import '../../models/http_response.dart';
 import '../../services/http_service.dart';
+import '../../utils/app_logger.dart';
 import '../core/providers.dart';
 import 'request_tab_provider.dart';
 
@@ -12,12 +13,19 @@ class RequestResponseNotifier extends StateNotifier<Map<String, HttpResponse>> {
   RequestResponseNotifier(this._httpService) : super({});
 
   Future<void> sendRequest(String tabId, HttpRequest request) async {
+    AppLogger.info('[RequestResponseNotifier] Sending request for tab $tabId: ${request.method.value} ${request.url}');
     state = {
       ...state,
       tabId: HttpResponse.empty(),
     };
 
     final response = await _httpService.sendRequest(request);
+    
+    if (response.error != null) {
+      AppLogger.warning('[RequestResponseNotifier] Request failed: ${response.error}');
+    } else {
+      AppLogger.info('[RequestResponseNotifier] Request completed: ${response.statusCode} in ${response.durationMs}ms');
+    }
 
     state = {
       ...state,

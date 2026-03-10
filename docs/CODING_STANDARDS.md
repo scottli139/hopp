@@ -10,6 +10,7 @@
 - [Flutter 代码规范](#flutter-代码规范)
 - [项目结构规范](#项目结构规范)
 - [命名规范](#命名规范)
+- [日志规范](#日志规范)
 - [状态管理规范](#状态管理规范)
 - [UI/UX 规范](#uiux-规范)
 - [文档规范](#文档规范)
@@ -321,6 +322,152 @@ enum HttpMethod {
 
 // ❌ Bad - 不要使用 SCREAMING_SNAKE_CASE
 const DEFAULT_TIMEOUT = Duration(seconds: 30);
+```
+
+---
+
+## 日志规范
+
+### 1. 基本原则
+
+**所有代码必须包含适当的日志记录**，以便快速定位和分析问题。日志是生产环境调试的重要手段。
+
+### 2. 日志级别规范
+
+| 级别 | 使用场景 | 示例 |
+|-----|---------|------|
+| `trace` | 最详细的跟踪信息，进入/退出函数 | 进入某个处理方法 |
+| `debug` | 调试信息，开发环境使用 | 变量值、状态变化 |
+| `info` | 关键业务流程记录 | 用户操作、请求开始/完成 |
+| `warning` | 警告，非致命问题 | 网络重试、缓存失效 |
+| `error` | 错误，业务逻辑失败 | 请求失败、保存失败 |
+| `fatal` | 致命错误，应用无法继续 | 初始化失败、数据库崩溃 |
+
+### 3. 必须记录日志的场景
+
+```dart
+// ✅ 服务初始化
+Future<void> initialize() async {
+  AppLogger.info('[StorageService] Initializing...');
+  // ... 初始化逻辑
+  AppLogger.info('[StorageService] Initialized successfully');
+}
+
+// ✅ 数据持久化操作
+Future<void> saveCollection(Collection collection) async {
+  AppLogger.debug('[StorageService] Saving collection: ${collection.id}');
+  await _box?.put(collection.id, collection);
+  AppLogger.debug('[StorageService] Collection saved: ${collection.id}');
+}
+
+// ✅ 用户操作
+void openTab(HttpRequest request) {
+  AppLogger.info('[RequestTabNotifier] Opening new tab: ${request.name}');
+  // ... 逻辑
+}
+
+// ✅ 网络请求
+Future<HttpResponse> sendRequest(HttpRequest request) async {
+  AppLogger.info('[HttpService] Sending ${request.method.value} to ${request.url}');
+  try {
+    final response = await _dio.request(...);
+    AppLogger.info('[HttpService] Request completed: ${response.statusCode}');
+    return response;
+  } catch (e, stack) {
+    AppLogger.error('[HttpService] Request failed', e, stack);
+    rethrow;
+  }
+}
+
+// ✅ 状态变化
+Future<void> loadCollections() async {
+  AppLogger.debug('[CollectionNotifier] Loading collections...');
+  try {
+    final collections = await storage.getCollections();
+    AppLogger.info('[CollectionNotifier] Loaded ${collections.length} collections');
+  } catch (e, stack) {
+    AppLogger.error('[CollectionNotifier] Failed to load collections', e, stack);
+  }
+}
+```
+
+### 4. 日志格式规范
+
+```dart
+// ✅ Good - 带类名前缀，清晰标识来源
+AppLogger.info('[ClassName] Message');
+
+// ✅ Good - 包含关键上下文信息
+AppLogger.info('[HttpService] Request completed: 200 in 824ms');
+AppLogger.info('[CollectionNotifier] Adding request ${request.name} to collection $collectionId');
+
+// ❌ Bad - 缺少上下文，无法定位问题
+AppLogger.info('Success');
+AppLogger.info('Done');
+
+// ❌ Bad - 使用 print
+print('Debug info'); // 禁止！
+```
+
+### 5. 禁止的日志实践
+
+```dart
+// ❌ 禁止在生产代码中保留 print
+defaultConfig() {
+  print('Loading config...'); // 禁止！
+}
+
+// ❌ 禁止记录敏感信息
+AppLogger.info('User password: ${user.password}'); // 禁止！
+AppLogger.info('Token: ${authToken}'); // 禁止！
+
+// ❌ 禁止记录大量数据
+AppLogger.debug('Response body: ${largeJson.toString()}'); // 可能超过几MB！
+
+// ❌ 禁止在循环中记录 info 级别日志
+for (final item in items) {
+  AppLogger.info('Processing item: ${item.id}'); // 如果是1000个items，会产生大量日志
+}
+
+// ✅ 应该在循环外记录
+AppLogger.info('Processing ${items.length} items');
+for (final item in items) {
+  // 使用 debug 级别
+  AppLogger.debug('Processing item: ${item.id}');
+}
+```
+
+### 6. 错误日志必须包含堆栈
+
+```dart
+// ✅ Good - 错误日志必须包含异常和堆栈
+try {
+  await riskyOperation();
+} catch (e, stack) {
+  AppLogger.error('[ClassName] Operation failed', e, stack);
+}
+
+// ❌ Bad - 缺少堆栈信息
+try {
+  await riskyOperation();
+} catch (e) {
+  AppLogger.error('[ClassName] Operation failed: $e'); // 堆栈丢失！
+}
+```
+
+### 7. 使用 LogMixin 简化日志
+
+```dart
+import '../utils/app_logger.dart';
+
+// ✅ 使用 mixin 自动添加类名前缀
+class MyService with LogMixin {
+  void doSomething() {
+    logInfo('Doing something'); // 自动输出 [MyService] Doing something
+    logDebug('Debug info');
+    logError('Error occurred', error, stack);
+  }
+}
 ```
 
 ---

@@ -22,10 +22,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       Area(flex: 0.78),
     ],
   );
+  final MultiSplitViewController _verticalSplitController =
+      MultiSplitViewController(
+    areas: [
+      Area(flex: 0.6),
+      Area(flex: 0.4),
+    ],
+  );
 
   @override
   void dispose() {
     _splitController.dispose();
+    _verticalSplitController.dispose();
     super.dispose();
   }
 
@@ -108,6 +116,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget _buildRequestResponseArea() {
     return MultiSplitView(
       axis: Axis.vertical,
+      controller: _verticalSplitController,
       builder: (context, area) {
         if (area.index == 0) {
           return const RequestEditor();

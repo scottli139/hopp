@@ -841,6 +841,7 @@ fvm flutter test test/widgets/request_tabs_test.dart
 | 2026-03-10 | v0.2.0-flutter | **Flutter 迁移完成**: 全面迁移至 Flutter 架构，更新所有文档，配置 Dart 代码规范，设置 Flutter CI/CD |
 | 2026-03-11 | v0.2.1-unit-tests | **M6 单元测试完成**: 317个测试全部通过，Models 152个 + Services 73个 + Providers 92个 |
 | 2026-03-11 | v0.2.2-widget-tests | **Widget 测试完成**: 88个测试全部通过，Sidebar/RequestEditor/ResponseViewer/RequestTabs |
+| 2026-03-11 | v0.2.3-logging-std | **日志规范完成**: 新增日志规范到 CODING_STANDARDS.md，所有关键模块添加日志，macOS 网络权限修复 |
 
 ---
 
@@ -1163,7 +1164,60 @@ void main() {
 }
 ```
 
-### 6. 构建命令
+### 6. 日志最佳实践
+
+#### 6.1 日志级别选择
+
+```dart
+// trace - 最详细的跟踪，用于开发调试
+AppLogger.trace('[ClassName] Entering method foo()');
+
+// debug - 调试信息
+AppLogger.debug('[ClassName] Variable value: $value');
+
+// info - 关键业务流程
+AppLogger.info('[ClassName] User logged in: ${user.id}');
+
+// warning - 非致命问题
+AppLogger.warning('[ClassName] Cache miss for key: $key');
+
+// error - 业务逻辑失败，必须包含异常和堆栈
+AppLogger.error('[ClassName] Request failed', error, stackTrace);
+
+// fatal - 致命错误
+AppLogger.fatal('[ClassName] Database connection lost', error, stackTrace);
+```
+
+#### 6.2 使用 LogMixin
+
+```dart
+import '../utils/app_logger.dart';
+
+class MyService with LogMixin {
+  void doSomething() {
+    logInfo('Doing something'); // 输出: [MyService] Doing something
+    logDebug('Debug info');
+    logError('Error occurred', error, stack);
+  }
+}
+```
+
+#### 6.3 必须记录的场景
+
+1. **服务初始化** - 记录启动状态和关键配置
+2. **数据操作** - 记录保存、删除、更新的关键信息
+3. **用户操作** - 记录按钮点击、页面跳转等
+4. **网络请求** - 记录请求开始、完成、失败
+5. **状态变化** - 记录重要的状态转换
+
+#### 6.4 禁止事项
+
+- ❌ 使用 `print()` - 统一使用 `AppLogger`
+- ❌ 记录敏感信息（密码、Token、个人隐私）
+- ❌ 在循环中使用 `info` 级别（使用 `debug` 或批量记录）
+- ❌ 错误日志缺少堆栈信息
+
+### 7. 构建命令
 
 ```bash
 # macOS

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/http_request.dart';
 import '../../models/request_tab.dart';
+import '../../utils/app_logger.dart';
 
 class RequestTabNotifier extends StateNotifier<List<RequestTab>> {
   RequestTabNotifier() : super([]);
@@ -11,6 +12,7 @@ class RequestTabNotifier extends StateNotifier<List<RequestTab>> {
 
     if (existingIndex != -1) {
       // Update last accessed and move to end
+      AppLogger.debug('[RequestTabNotifier] Tab already open, updating: ${request.id}');
       final updatedTabs = [...state];
       updatedTabs[existingIndex] = updatedTabs[existingIndex].copyWith(
         lastAccessed: DateTime.now(),
@@ -18,12 +20,16 @@ class RequestTabNotifier extends StateNotifier<List<RequestTab>> {
       state = updatedTabs;
     } else {
       // Add new tab
+      AppLogger.info('[RequestTabNotifier] Opening new tab: ${request.name} (${request.id})');
       state = [...state, RequestTab.fromRequest(request)];
+      AppLogger.debug('[RequestTabNotifier] Total tabs: ${state.length}');
     }
   }
 
   void closeTab(String tabId) {
+    AppLogger.debug('[RequestTabNotifier] Closing tab: $tabId');
     state = state.where((tab) => tab.id != tabId).toList();
+    AppLogger.debug('[RequestTabNotifier] Total tabs: ${state.length}');
   }
 
   void closeAllTabs() {

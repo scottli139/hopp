@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../providers/providers.dart';
+import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
 
 class Sidebar extends ConsumerWidget {
@@ -316,6 +317,7 @@ class Sidebar extends ConsumerWidget {
       onSelected: (value) {
         switch (value) {
           case 'add_request':
+            AppLogger.info('[Sidebar] Adding new request to collection: ${collection.name}');
             final newRequest = HttpRequest.empty().copyWith(
               parentId: collection.id,
             );
@@ -323,8 +325,10 @@ class Sidebar extends ConsumerWidget {
                   collection.id,
                   newRequest,
                 );
-            ref.read(requestTabProvider.notifier).openTab(newRequest);
+            // Set active tab ID first, then open tab to ensure proper state sync
             ref.read(activeTabIdProvider.notifier).state = newRequest.id;
+            ref.read(requestTabProvider.notifier).openTab(newRequest);
+            AppLogger.info('[Sidebar] New request created and tab opened: ${newRequest.name}');
             break;
           case 'delete':
             _showDeleteConfirmation(context, ref, collection);

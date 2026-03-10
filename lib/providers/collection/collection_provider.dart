@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
+import '../../utils/app_logger.dart';
 import '../core/providers.dart';
 
 class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
@@ -12,24 +13,29 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
   }
 
   Future<void> loadCollections() async {
+    AppLogger.debug('[CollectionNotifier] Loading collections...');
     state = const AsyncValue.loading();
 
     try {
       final storage = _ref.read(storageServiceProvider);
       final collections = await storage.getCollections();
       state = AsyncValue.data(collections);
+      AppLogger.info('[CollectionNotifier] Loaded ${collections.length} collections');
     } catch (e, stack) {
+      AppLogger.error('[CollectionNotifier] Failed to load collections', e, stack);
       state = AsyncValue.error(e, stack);
     }
   }
 
   Future<void> addCollection(Collection collection) async {
+    AppLogger.info('[CollectionNotifier] Adding collection: ${collection.name}');
     try {
       final storage = _ref.read(storageServiceProvider);
       await storage.saveCollection(collection);
       await loadCollections();
-    } catch (e) {
-      // Handle error
+      AppLogger.info('[CollectionNotifier] Collection added: ${collection.id}');
+    } catch (e, stack) {
+      AppLogger.error('[CollectionNotifier] Failed to add collection', e, stack);
     }
   }
 
@@ -74,6 +80,7 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
 
   Future<void> addRequestToCollection(
       String collectionId, HttpRequest request) async {
+    AppLogger.info('[CollectionNotifier] Adding request ${request.name} to collection $collectionId');
     final currentState = state;
     if (currentState case AsyncData(:final value)) {
       final updated = value.map((c) {
@@ -92,6 +99,7 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
       final storage = _ref.read(storageServiceProvider);
       await storage.saveCollection(collection);
       await storage.saveRequest(request);
+      AppLogger.info('[CollectionNotifier] Request added to collection: ${request.id}');
     }
   }
 }

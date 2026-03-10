@@ -6,6 +6,7 @@ import '../models/app_settings.dart';
 import '../models/collection.dart';
 import '../models/http_request.dart';
 import '../models/key_value_pair.dart';
+import '../utils/app_logger.dart';
 
 class StorageService {
   static const String _settingsBoxName = 'settings';
@@ -19,19 +20,26 @@ class StorageService {
   SharedPreferences? _prefs;
 
   Future<void> initialize() async {
+    AppLogger.info('[StorageService] Initializing...');
     final appDir = await getApplicationDocumentsDirectory();
+    AppLogger.debug('[StorageService] App directory: ${appDir.path}');
+    
     Hive.init('${appDir.path}/hopp');
 
     // Register adapters
     Hive.registerAdapter(KeyValuePairAdapter());
     Hive.registerAdapter(HttpRequestAdapter());
     Hive.registerAdapter(CollectionAdapter());
+    AppLogger.debug('[StorageService] Hive adapters registered');
 
     // Open boxes
     _collectionsBox = await Hive.openBox<Collection>(_collectionsBoxName);
     _requestsBox = await Hive.openBox<HttpRequest>(_requestsBoxName);
     _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
     _prefs = await SharedPreferences.getInstance();
+    
+    AppLogger.info('[StorageService] Initialized successfully');
+    AppLogger.debug('[StorageService] Collections: ${_collectionsBox?.length}, Requests: ${_requestsBox?.length}');
   }
 
   // Settings
@@ -58,11 +66,15 @@ class StorageService {
   }
 
   Future<void> saveCollection(Collection collection) async {
+    AppLogger.debug('[StorageService] Saving collection: ${collection.id} (${collection.name})');
     await _collectionsBox?.put(collection.id, collection);
+    AppLogger.debug('[StorageService] Collection saved: ${collection.id}');
   }
 
   Future<void> deleteCollection(String id) async {
+    AppLogger.debug('[StorageService] Deleting collection: $id');
     await _collectionsBox?.delete(id);
+    AppLogger.debug('[StorageService] Collection deleted: $id');
   }
 
   // Requests
@@ -77,7 +89,9 @@ class StorageService {
   }
 
   Future<void> saveRequest(HttpRequest request) async {
+    AppLogger.debug('[StorageService] Saving request: ${request.id} (${request.name})');
     await _requestsBox?.put(request.id, request);
+    AppLogger.debug('[StorageService] Request saved: ${request.id}');
   }
 
   Future<void> deleteRequest(String id) async {

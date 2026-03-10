@@ -14,8 +14,12 @@ void main() async {
   await storage.initialize();
 
   runApp(
-    const ProviderScope(
-      child: HoppApp(),
+    ProviderScope(
+      overrides: [
+        // Override storageServiceProvider with initialized instance
+        storageServiceProvider.overrideWithValue(storage),
+      ],
+      child: const HoppApp(),
     ),
   );
 }

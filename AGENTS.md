@@ -8,10 +8,10 @@
 
 **Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Flutter 构建，注重性能和用户体验。
 
-**当前状态**: ✅ **Session End - M6 单元测试完成，317个测试全部通过**  
+**当前状态**: ✅ **Session End - Widget 测试完成，405个测试全部通过**  
 **技术栈**: Flutter 3.27.x + Dart + Riverpod  
 **目标平台**: macOS 10.15+ / Windows 10+ / Linux  
-**下次会话重点**: Widget 测试实现、M3 用户体验功能
+**下次会话重点**: 主题/国际化完善、快捷键支持、M3 用户体验功能
 
 ---
 
@@ -147,7 +147,7 @@ fvm use 3.27.4
 | 单元测试 (Models) | 🟢 P0 | 4h | ✅ 完成 (152个测试) |
 | 单元测试 (Services) | 🟢 P0 | 4h | ✅ 完成 (73个测试) |
 | 单元测试 (Providers) | 🟢 P0 | 4h | ✅ 完成 (92个测试) |
-| Widget 测试 | 🟡 P1 | 6h | ⏳ **下次会话** |
+| **Widget 测试** | 🟡 P1 | 6h | ✅ 完成 (88个测试) |
 | 集成测试 | 🟢 P2 | 4h | ⏳ 待开始 |
 | 代码覆盖率 80%+ | 🟡 P1 | - | ⏳ 待开始 |
 
@@ -754,6 +754,70 @@ genhtml coverage/lcov.info -o coverage/html
 
 ---
 
+### 2026-03-11 会话 - Widget 测试完成
+
+**本次会话完成的工作**:
+1. ✅ 完成 P1 Widget 测试实现
+2. ✅ Sidebar Widget 测试 - 25个测试
+   - 渲染测试：header、search、loading、error、empty state、collection tree
+   - 交互测试：toggle expand、open tab、context menu、dialogs
+   - 嵌套集合和 HTTP 方法 badge 测试
+3. ✅ RequestEditor Widget 测试 - 32个测试
+   - 渲染测试：empty state、URL bar、method dropdown、all tabs
+   - Params/Headers/Body/Auth tab 内容测试
+   - 复杂场景：多个 params/headers、JSON body
+4. ✅ ResponseViewer Widget 测试 - 25个测试
+   - 渲染测试：tabs、empty state、info bar
+   - Body/Headers/Cookies tab 内容测试
+   - 状态码颜色、action buttons 状态测试
+5. ✅ RequestTabs Widget 测试 - 28个测试
+   - 渲染测试：single/multiple tabs、method badges、dirty indicator
+   - 交互测试：activate tab、close tab、new tab button
+   - Tab constraints 和长名称处理测试
+6. ✅ 所有 88 个 Widget 测试全部通过
+
+**创建的测试文件**:
+
+| 类别 | 文件 | 测试数 |
+|------|------|--------|
+| Widgets | test/widgets/sidebar_test.dart | 25 |
+| Widgets | test/widgets/request_editor_test.dart | 32 |
+| Widgets | test/widgets/response_viewer_test.dart | 25 |
+| Widgets | test/widgets/request_tabs_test.dart | 28 |
+
+**Widget 测试覆盖范围**:
+- **Sidebar**: 集合树渲染、展开/折叠、请求项点击、新建/删除对话框、HTTP 方法 badge
+- **RequestEditor**: URL 栏、Method 选择器、Params/Headers/Body/Auth Tabs、KeyValue 编辑器
+- **ResponseViewer**: 响应信息栏、Body/ Headers/Cookies Tabs、状态码颜色、复制/保存按钮
+- **RequestTabs**: 标签页渲染、激活/关闭标签、新建标签、脏标记、滚动行为
+
+**测试技术要点**:
+- 使用 `ProviderContainer` + `UncontrolledProviderScope` 覆盖 provider 依赖
+- 使用 mockito 生成的 mock 类模拟 StorageService
+- 使用 `tester.pumpAndSettle()` 等待动画完成
+- 使用 `find.textContaining()` 处理模糊文本匹配
+
+**运行命令**:
+```bash
+# 运行所有 Widget 测试
+fvm flutter test test/widgets/
+
+# 运行特定 Widget 测试
+fvm flutter test test/widgets/sidebar_test.dart
+fvm flutter test test/widgets/request_editor_test.dart
+fvm flutter test test/widgets/response_viewer_test.dart
+fvm flutter test test/widgets/request_tabs_test.dart
+```
+
+**测试总计**: 317 (单元测试) + 88 (Widget 测试) = **405 个测试全部通过** ✅
+
+**下次会话重点**:
+- 主题切换功能完善
+- 暗黑模式完善
+- 快捷键支持
+
+---
+
 ## 🔗 重要链接
 
 - **GitHub 仓库**: https://github.com/scottli139/hopp
@@ -776,6 +840,7 @@ genhtml coverage/lcov.info -o coverage/html
 | 2026-03-10 | v0.1.0-ui-refresh | **UI 重构**: Sidebar/RequestTabs/RequestEditor/ResponseViewer 样式优化，修复 Tailwind v4 配置和 React Hooks 顺序问题 |
 | 2026-03-10 | v0.2.0-flutter | **Flutter 迁移完成**: 全面迁移至 Flutter 架构，更新所有文档，配置 Dart 代码规范，设置 Flutter CI/CD |
 | 2026-03-11 | v0.2.1-unit-tests | **M6 单元测试完成**: 317个测试全部通过，Models 152个 + Services 73个 + Providers 92个 |
+| 2026-03-11 | v0.2.2-widget-tests | **Widget 测试完成**: 88个测试全部通过，Sidebar/RequestEditor/ResponseViewer/RequestTabs |
 
 ---
 
@@ -1030,8 +1095,15 @@ class UserFixtures {
 # 运行所有测试
 flutter test
 
+# 运行特定类别测试
+flutter test test/models/
+flutter test test/services/
+flutter test test/providers/
+flutter test test/widgets/
+
 # 运行特定测试文件
 flutter test test/models/user_test.dart
+flutter test test/widgets/sidebar_test.dart
 
 # 运行特定组测试
 flutter test --name "User creation"
@@ -1046,10 +1118,50 @@ open coverage/html/index.html
 
 #### 5.6 测试检查清单
 
-- [ ] 模型测试: 创建、copyWith、JSON 序列化、相等性
-- [ ] Service 测试: 成功场景、错误处理、边界条件
-- [ ] Provider 测试: 状态转换、异步操作、错误状态
-- [ ] Widget 测试: 渲染、交互、状态变化 (下次实现)
+- [x] 模型测试: 创建、copyWith、JSON 序列化、相等性 (152个测试)
+- [x] Service 测试: 成功场景、错误处理、边界条件 (73个测试)
+- [x] Provider 测试: 状态转换、异步操作、错误状态 (92个测试)
+- [x] Widget 测试: 渲染、交互、状态变化 (88个测试)
+
+#### 5.7 Widget 测试最佳实践
+
+```dart
+// Widget 测试基本结构
+void main() {
+  group('MyWidget', () {
+    late MockStorageService mockStorageService;
+
+    setUp(() {
+      mockStorageService = MockStorageService();
+    });
+
+    Widget buildTestWidget({required ProviderContainer container}) {
+      return UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: Scaffold(body: MyWidget()),
+        ),
+      );
+    }
+
+    ProviderContainer createContainer() {
+      return ProviderContainer(
+        overrides: [
+          storageServiceProvider.overrideWithValue(mockStorageService),
+        ],
+      );
+    }
+
+    testWidgets('should render correctly', (tester) async {
+      final container = createContainer();
+      await tester.pumpWidget(buildTestWidget(container: container));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Expected Text'), findsOneWidget);
+    });
+  });
+}
+```
 
 ### 6. 构建命令
 

@@ -51,7 +51,7 @@
 
 ---
 
-### M3: 用户体验 🔄 IN PROGRESS
+### M3: 用户体验 ✅ COMPLETED (基础部分)
 
 | 任务 | 状态 | 优先级 | 预计工时 |
 |-----|------|--------|---------|
@@ -257,6 +257,33 @@ const kSpaceXXL = 32.0;
 ---
 
 ## 📝 更新日志
+
+### 2026-03-11 - 测试完成 + 日志规范 (Session End)
+
+**已完成工作**:
+- ✅ 317个单元测试全部通过 (Models 152 + Services 73 + Providers 92)
+- ✅ 88个 Widget 测试全部通过
+- ✅ 集成测试框架搭建，HTTP E2E 测试通过
+- ✅ 日志规范添加到 CODING_STANDARDS.md（强制要求）
+- ✅ 所有关键模块补充日志 (StorageService, CollectionNotifier, RequestTabNotifier等)
+- ✅ macOS 网络权限修复 (DebugProfile.entitlements)
+
+**代码提交**:
+```
+docs(logging): add logging standards to CODING_STANDARDS.md
+- Add comprehensive logging guidelines
+- Add LogMixin usage examples
+- Require appropriate logging in all code
+- Add logging to all key modules
+- Fix macOS network client entitlements
+```
+
+**测试总计**: 405个测试全部通过 ✅
+- 单元测试: 317个
+- Widget 测试: 88个
+- 集成测试: 6个 (HTTP E2E)
+
+---
 
 ### 2026-03-10 - Flutter 迁移完成 (Session End)
 

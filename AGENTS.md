@@ -405,6 +405,51 @@ pnpm tauri build            # 构建生产版本
 
 ---
 
+## 📝 会话记录
+
+### 2026-03-10 会话 - M1.4 HTTP 核心功能完成
+
+**本次会话完成的工作**:
+1. ✅ 完成 M1.4 HTTP 核心请求功能（Rust 后端）
+2. ✅ 完成 M1.5 请求编辑器 UI
+3. ✅ 完成 M1.6 响应展示 UI
+4. ✅ 完成 M1.7 前后端集成
+5. ✅ 完成 M1.9 多标签页功能
+6. ✅ 添加 23 个 httpService 单元测试
+7. ✅ 更新 DEVELOPMENT_PLAN.md 任务状态
+8. ✅ 所有 CI 检查通过
+
+**创建/修改的文件**:
+- `src-tauri/src/models/http.rs` - HTTP 模型
+- `src-tauri/src/services/http_service.rs` - HTTP 服务
+- `src-tauri/src/commands/http.rs` - Tauri 命令
+- `src/services/httpService.ts` - 前端 HTTP 服务
+- `src/stores/requestStore.ts` - Zustand 状态管理
+- `src/components/request/RequestEditor.tsx` - 请求编辑器
+- `src/components/request/ResponseViewer.tsx` - 响应展示
+- `src/components/request/RequestTabs.tsx` - 多标签页
+- `src/App.tsx` - 主应用集成
+
+**测试状态**:
+- 单元测试: 54 个全部通过
+- CI/CD: 全平台构建通过 ✅
+
+**Git 提交记录**:
+```
+feat(M1.4): implement HTTP core functionality (20 files, +2164/-103)
+fix: add http module declaration and format Rust code
+style: format http.rs with cargo fmt
+fix: remove unused vi import in test file
+fix: add #[allow(dead_code)] to suppress Rust warnings in CI
+docs: update AGENTS.md with M1.4 completion status
+docs: update DEVELOPMENT_PLAN.md with M1 completion status
+```
+
+**待开始任务**:
+- M1.8 基础本地存储 (Settings 配置持久化)
+
+---
+
 ## 🔗 重要链接
 
 - **GitHub 仓库**: https://github.com/scottli139/hopp

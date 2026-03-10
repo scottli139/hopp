@@ -8,7 +8,7 @@
 
 **Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Tauri 构建，注重性能和用户体验。
 
-**当前状态**: ✅ **M1.3 已完成，M1.4 HTTP 核心功能进行中**  
+**当前状态**: ✅ **M1.1-M1.4 已完成，M1.8 本地存储待开始**  
 **技术栈**: Tauri 2.x + React 18 + TypeScript + Rust  
 **目标平台**: macOS 10.15+ / Windows 10+ / Linux
 
@@ -31,24 +31,23 @@
 | AI 开发标识 | ✅ | 2026-03-09 | README 和 GitHub Pages 添加 Kimi AI 开发标识 |
 | GitHub 设置指南 | ✅ | 2026-03-09 | 创建 GitHub 仓库 description 和 topics 推荐文档 |
 | **M1.3 基础布局组件** | ✅ | 2026-03-09 | ResizablePanel/Sidebar/Header/StatusBar/MainContent 完成，31个单元测试通过 |
+| **M1.4 HTTP 核心请求功能** | ✅ | 2026-03-10 | Rust reqwest 封装，前端 HTTP 服务，54个单元测试通过 |
+| **M1.5 请求编辑器 UI** | ✅ | 2026-03-10 | Method/URL/Params/Headers/Body 编辑器 |
+| **M1.6 响应展示 UI** | ✅ | 2026-03-10 | 响应体/响应头展示，状态码/时间/大小 |
+| **M1.7 前后端集成** | ✅ | 2026-03-10 | Tauri 命令封装，前端调用 |
+| **M1.9 多标签页功能** | ✅ | 2026-03-10 | 标签页管理，Zustand store |
 
 ### 进行中 🔄
 
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| M1.4 HTTP 核心请求功能 | 🔄 进行中 | Rust reqwest 封装，模型定义，服务实现 |
+| 无 | - | - |
 
 ### 待办 📋
 
-| 任务 | 优先级 | 预计工时 |
-|------|--------|----------|
-| M1.5 请求编辑器 UI | 🔴 P0 | 16h |
-| M1.6 响应展示 UI | 🔴 P0 | 12h |
-| M1.7 前后端集成 | 🔴 P0 | 8h |
-| M1.8 基础本地存储 | 🟡 P1 | 8h |
-| M1.9 多标签页功能 | 🟡 P1 | 8h |
-| M1.10 日志系统 | ✅ | 已完成 |
-| M1.11 AI 标识 & GitHub 优化 | ✅ | 已完成 |
+| 任务 | 优先级 | 预计工时 | 说明 |
+|------|--------|----------|------|
+| M1.8 基础本地存储 | 🟡 P1 | 8h | Settings 配置持久化 |
 
 ---
 
@@ -101,14 +100,27 @@
 - 服务: `src/services/logService.ts` - 前端调用后端命令的封装
 - 组件: `src/components/LogViewer.tsx` - 日志查看器 UI
 
-#### 6. ESLint v10 Flat Config 配置
+#### 6. HTTP 请求功能架构
+**后端 (Rust)**:
+- `models/http.rs` - HTTP 请求/响应模型定义
+- `services/http_service.rs` - reqwest 客户端封装
+- `commands/http.rs` - Tauri 命令暴露给前端
+
+**前端 (React)**:
+- `services/httpService.ts` - 调用 Tauri 命令的封装
+- `stores/requestStore.ts` - Zustand store 管理请求状态
+- `components/request/RequestEditor.tsx` - 请求编辑器
+- `components/request/ResponseViewer.tsx` - 响应展示
+- `components/request/RequestTabs.tsx` - 多标签页管理
+
+#### 7. ESLint v10 Flat Config 配置
 ESLint v10 使用新的 Flat Config 格式，需要在 `eslint.config.mjs` 中配置：
 - 使用 `@eslint/js` 提供基础规则
 - TypeScript 规则通过 `@typescript-eslint` 插件提供
 - React 插件暂时禁用（与 ESLint v10 兼容性 issues）
 - 需要在测试设置中初始化 i18n
 
-#### 7. TypeScript React 类型导入最佳实践
+#### 8. TypeScript React 类型导入最佳实践
 在 ESLint 严格模式下，避免 `React` 命名空间导入导致的 `no-undef` 错误：
 ```typescript
 // ❌ 不推荐
@@ -157,6 +169,11 @@ const handleClick = (e: MouseEvent) => {};
 **现象**: CI 构建失败，`error TS6133: 'React' is declared but its value is never read`
 **原因**: TypeScript 严格模式要求导入的变量必须使用
 **解决**: 使用 `import type { FC } from 'react'` 分离类型导入和运行时导入
+
+#### 问题 8: Rust CI 中 -D warnings 导致构建失败
+**现象**: `error: associated function 'new' is never used`
+**原因**: CI 使用 `RUSTFLAGS: -D warnings` 将警告视为错误
+**解决**: 对未使用的代码添加 `#[allow(dead_code)]` 属性
 
 ### 关键配置要点
 
@@ -244,6 +261,7 @@ docs/
 | Tailwind CSS | 4.x | 原子化 CSS (v4) |
 | Radix UI | 1.x | 无样式 UI 组件库 |
 | Zustand | 4.x | 全局状态管理 |
+| Immer | 11.x | 不可变数据更新 |
 | Monaco Editor | latest | JSON/代码编辑 |
 | i18next | 25.x | 国际化框架 |
 | react-i18next | 16.x | React i18n 集成 |
@@ -278,7 +296,7 @@ hopp/
 ├── src/                        # 前端源码
 │   ├── components/             # UI 组件
 │   │   ├── layout/             # 布局组件 (ResizablePanel, Sidebar, Header, StatusBar, MainContent)
-│   │   └── LogViewer.tsx       # 日志查看器
+│   │   └── request/            # 请求组件 (RequestEditor, ResponseViewer, RequestTabs)
 │   ├── hooks/                  # 自定义 Hooks
 │   ├── stores/                 # Zustand 状态管理
 │   ├── services/               # API 服务
@@ -290,11 +308,11 @@ hopp/
 │   ├── src/
 │   │   ├── commands/           # Tauri 命令
 │   │   │   ├── log.rs          # 日志相关命令
-│   │   │   └── http.rs         # HTTP 请求命令 (M1.4)
+│   │   │   └── http.rs         # HTTP 请求命令
 │   │   ├── services/           # 业务服务
-│   │   │   └── http_service.rs # HTTP 服务 (M1.4)
+│   │   │   └── http_service.rs # HTTP 服务
 │   │   ├── models/             # 数据模型
-│   │   │   └── http.rs         # HTTP 模型 (M1.4)
+│   │   │   └── http.rs         # HTTP 模型
 │   │   └── utils/              # 工具函数
 │   ├── icons/                  # 应用图标
 │   ├── Cargo.toml              # Rust 依赖
@@ -344,22 +362,18 @@ pnpm tauri build            # 构建生产版本
 
 ---
 
-## 🎯 下一步任务 (M1.4 - HTTP 核心功能)
+## 🎯 下一步任务 (M1.8 - 基础本地存储)
 
-### 当前进度
-已完成：
-- ✅ HTTP 请求/响应模型定义 (`src-tauri/src/models/http.rs`)
-- ✅ HTTP 服务实现 (`src-tauri/src/services/http_service.rs`)
-- ✅ HTTP 命令定义 (`src-tauri/src/commands/http.rs`)
-- ✅ Cargo.toml 依赖更新 (添加 urlencoding)
+### 目标
+实现 Settings 配置持久化
 
-待完成：
-- [ ] 前端 HTTP 服务封装
-- [ ] 请求编辑器 UI 组件
-- [ ] 响应展示 UI 组件
-- [ ] 前后端集成测试
+### 具体工作
+1. 设计 Settings 数据模型
+2. 实现本地存储服务
+3. 创建设置 UI 页面
+4. 集成到应用启动流程
 
-### 已创建/修改的文件
+### 已创建/修改的文件汇总
 
 #### M1.3 布局组件
 - `src/components/layout/ResizablePanel.tsx` - 可拖拽调整宽度的面板
@@ -369,10 +383,25 @@ pnpm tauri build            # 构建生产版本
 - `src/components/layout/MainContent.tsx` - 主内容区容器
 - `src/components/layout/__tests__/*.test.tsx` - 31个单元测试
 
-#### M1.4 HTTP 核心功能 (进行中)
+#### M1.4 HTTP 核心功能
 - `src-tauri/src/models/http.rs` - HTTP 模型定义
 - `src-tauri/src/services/http_service.rs` - HTTP 服务
 - `src-tauri/src/commands/http.rs` - Tauri 命令
+- `src/services/httpService.ts` - 前端 HTTP 服务
+- `src/services/__tests__/httpService.test.ts` - 23个单元测试
+
+#### M1.5 请求编辑器 UI
+- `src/components/request/RequestEditor.tsx` - 请求编辑器
+
+#### M1.6 响应展示 UI
+- `src/components/request/ResponseViewer.tsx` - 响应展示
+
+#### M1.7 前后端集成
+- `src/App.tsx` - 集成所有组件
+
+#### M1.9 多标签页功能
+- `src/stores/requestStore.ts` - Zustand store
+- `src/components/request/RequestTabs.tsx` - 标签页组件
 
 ---
 
@@ -394,7 +423,7 @@ pnpm tauri build            # 构建生产版本
 | 2026-03-09 | v0.1.0-ai-badge | README 和 GitHub Pages 添加 AI 开发标识 (Kimi Code CLI + Kimi 2.5 Model) |
 | 2026-03-09 | v0.1.0-github-settings | 创建 GitHub 仓库设置指南 (description + topics 推荐) |
 | 2026-03-09 | v0.1.0-layout | **M1.3 完成**: 基础布局组件 (ResizablePanel, Sidebar, Header, StatusBar, MainContent)，31个单元测试，CI通过 |
-| 2026-03-09 | v0.1.0-http-wip | **M1.4 进行中**: Rust HTTP 核心功能模型和服务实现 |
+| 2026-03-10 | v0.1.0-http | **M1.4-M1.7 & M1.9 完成**: HTTP 核心功能、请求编辑器、响应展示、多标签页，54个单元测试，CI通过 |
 
 ---
 

@@ -17,45 +17,45 @@ class ResponseViewer extends ConsumerStatefulWidget {
 }
 
 class _ResponseViewerState extends ConsumerState<ResponseViewer>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   TabController? _tabController;
-  int _tabLength = 3;
   bool _isErrorExpanded = false;
+  String? _lastResponseId;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabLength, vsync: this);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final response = ref.read(currentResponseProvider);
-    final newLength = response?.certificateInfo != null ? 4 : 3;
-    if (newLength != _tabLength) {
-      _tabLength = newLength;
-      _tabController?.dispose();
-      _tabController = TabController(length: _tabLength, vsync: this);
-    }
+    // Initialize with default length, will be updated on first build
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
   void didUpdateWidget(ResponseViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Reset error expansion when response changes
     final currentResponse = ref.read(currentResponseProvider);
+
+    // Reset error expansion when response changes
     if (currentResponse?.error != null) {
       // Keep expansion state if error is the same
     } else {
       _isErrorExpanded = false;
     }
-    // Update tab controller length if certificate info changes
-    final newLength = currentResponse?.certificateInfo != null ? 4 : 3;
-    if (newLength != _tabLength) {
-      _tabLength = newLength;
+
+    // Update TabController when certificate info changes
+    _updateTabController(currentResponse);
+  }
+
+  /// 根据响应获取 Tab 长度
+  int _getTabLength(HttpResponse? response) {
+    return response?.certificateInfo != null ? 4 : 3;
+  }
+
+  /// 更新 TabController 以匹配当前响应
+  void _updateTabController(HttpResponse? response) {
+    final newLength = _getTabLength(response);
+    if (_tabController == null || _tabController!.length != newLength) {
       _tabController?.dispose();
-      _tabController = TabController(length: _tabLength, vsync: this);
+      _tabController = TabController(length: newLength, vsync: this);
     }
   }
 

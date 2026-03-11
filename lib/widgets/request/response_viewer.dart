@@ -3,7 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/http_response.dart';
+import '../../models/key_value_pair.dart';
 import '../../providers/providers.dart';
+import '../../utils/constants.dart';
+import '../common/code_editor.dart';
 
 class ResponseViewer extends ConsumerStatefulWidget {
   const ResponseViewer({super.key});
@@ -85,13 +88,27 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     if (response == null) {
       return Container(
         height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          border: Border(
+            bottom: BorderSide(color: Theme.of(context).dividerColor),
+          ),
         ),
-        child: const Row(
+        child: Row(
           children: [
-            Text('No response yet', style: TextStyle(fontSize: 12)),
+            Icon(
+              Icons.hourglass_empty,
+              size: 12,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'No response yet',
+              style: AppTextStyles.tiny.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
           ],
         ),
       );
@@ -112,14 +129,14 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           constraints: BoxConstraints(
-            maxHeight: _isErrorExpanded ? 150 : 40,
+            maxHeight: _isErrorExpanded ? 150 : 44,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
+            color: AppColors.errorLight,
             border: Border(
               bottom: BorderSide(
-                color: Colors.red.withOpacity(0.2),
+                color: AppColors.error.withOpacity(0.2),
               ),
             ),
           ),
@@ -128,25 +145,36 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 ? CrossAxisAlignment.start
                 : CrossAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 16, color: Colors.red),
-              const SizedBox(width: 8),
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                ),
+                child: const Icon(
+                  Icons.error_outline,
+                  size: 14,
+                  color: AppColors.error,
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: _isErrorExpanded
                     ? SingleChildScrollView(
                         child: SelectableText(
                           errorText,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.red,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.error,
                             height: 1.4,
                           ),
                         ),
                       )
                     : Text(
                         errorText,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.red,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w500,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -157,21 +185,33 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                   _isErrorExpanded
                       ? Icons.keyboard_arrow_up
                       : Icons.keyboard_arrow_down,
-                  size: 16,
-                  color: Colors.red.withOpacity(0.7),
+                  size: 18,
+                  color: AppColors.error.withOpacity(0.7),
                 ),
-              if (isLongError) const SizedBox(width: 4),
+              if (isLongError) const SizedBox(width: 8),
               // Copy error button
-              IconButton(
-                icon: const Icon(Icons.copy, size: 14),
-                color: Colors.red.withOpacity(0.7),
-                tooltip: 'Copy error',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 24,
-                  minHeight: 24,
+              Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                  onTap: () => _copyToClipboard(errorText),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                      border: Border.all(
+                        color: AppColors.error.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.copy,
+                      size: 14,
+                      color: AppColors.error.withOpacity(0.7),
+                    ),
+                  ),
                 ),
-                onPressed: () => _copyToClipboard(errorText),
               ),
             ],
           ),
@@ -186,61 +226,117 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Status
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(3),
+              color: statusColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(AppConstants.radiusS),
+              border: Border.all(color: statusColor.withOpacity(0.3), width: 1),
             ),
             child: Text(
               '${response.statusCode} ${response.statusText ?? ''}',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+              style: AppTextStyles.tiny.copyWith(
+                fontWeight: FontWeight.w700,
                 color: statusColor,
               ),
             ),
           ),
           const SizedBox(width: 16),
           // Time
-          Icon(Icons.timer_outlined,
-              size: 14, color: Theme.of(context).colorScheme.outline),
+          Icon(
+            Icons.timer_outlined,
+            size: 12,
+            color: Theme.of(context).colorScheme.outline,
+          ),
           const SizedBox(width: 4),
           Text(
             '${response.durationMs ?? 0} ms',
-            style: TextStyle(
-                fontSize: 12, color: Theme.of(context).colorScheme.outline),
+            style: AppTextStyles.tiny.copyWith(
+              color: Theme.of(context).colorScheme.outline,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(width: 16),
           // Size
-          Icon(Icons.storage_outlined,
-              size: 14, color: Theme.of(context).colorScheme.outline),
+          Icon(
+            Icons.storage_outlined,
+            size: 12,
+            color: Theme.of(context).colorScheme.outline,
+          ),
           const SizedBox(width: 4),
           Text(
             _formatSize(response.sizeBytes),
-            style: TextStyle(
-                fontSize: 12, color: Theme.of(context).colorScheme.outline),
+            style: AppTextStyles.tiny.copyWith(
+              color: Theme.of(context).colorScheme.outline,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const Spacer(),
           // Copy button
-          IconButton(
-            icon: const Icon(Icons.copy, size: 16),
+          _buildActionButton(
+            context: context,
+            icon: Icons.copy,
             tooltip: 'Copy response',
             onPressed: response.body != null
                 ? () => _copyToClipboard(response.body!)
                 : null,
           ),
+          const SizedBox(width: 8),
           // Save button
-          IconButton(
-            icon: const Icon(Icons.save, size: 16),
+          _buildActionButton(
+            context: context,
+            icon: Icons.save,
             tooltip: 'Save response',
             onPressed: response.body != null ? () {} : null,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required BuildContext context,
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback? onPressed,
+  }) {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppConstants.radiusM),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppConstants.radiusM),
+        onTap: onPressed,
+        child: Tooltip(
+          message: tooltip,
+          child: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppConstants.radiusM),
+              border: Border.all(
+                color: onPressed != null
+                    ? theme.colorScheme.outline.withOpacity(0.3)
+                    : Colors.transparent,
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 16,
+              color: onPressed != null
+                  ? theme.colorScheme.onSurfaceVariant
+                  : theme.colorScheme.outline.withOpacity(0.5),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -268,95 +364,210 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       );
     }
 
+    // Detect content type and use appropriate language
+    final language = _detectLanguage(response!);
+
     return Container(
       color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.all(12),
-      child: SelectableText(
-        response!.body!,
-        style: const TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 12,
-        ),
+      child: CodeEditor(
+        code: response.body!,
+        language: language,
+        readOnly: true,
+        expands: true,
       ),
     );
+  }
+
+  CodeLanguage _detectLanguage(HttpResponse response) {
+    final contentType = response.headers
+        .firstWhere(
+          (h) => h.key.toLowerCase() == 'content-type',
+          orElse: () => KeyValuePair.empty(),
+        )
+        .value
+        .toLowerCase();
+
+    if (contentType.contains('json')) return CodeLanguage.json;
+    if (contentType.contains('xml')) return CodeLanguage.xml;
+    if (contentType.contains('html')) return CodeLanguage.html;
+
+    // Try to detect JSON by content
+    final body = response.body?.trim() ?? '';
+    if ((body.startsWith('{') && body.endsWith('}')) ||
+        (body.startsWith('[') && body.endsWith(']'))) {
+      return CodeLanguage.json;
+    }
+
+    return CodeLanguage.text;
   }
 
   Widget _buildHeadersTab(BuildContext context, HttpResponse? response) {
     if (response?.headers.isEmpty ?? true) {
       return Center(
-        child: Text(
-          'No headers',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.list_alt_outlined,
+              size: 48,
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No headers',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+            ),
+          ],
         ),
       );
     }
 
     return Container(
       color: Theme.of(context).colorScheme.surface,
-      child: ListView.builder(
-        itemCount: response!.headers.length,
-        itemBuilder: (context, index) {
-          final header = response.headers[index];
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        children: [
+          // Header row
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               border: Border(
                 bottom: BorderSide(color: Theme.of(context).dividerColor),
               ),
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
                   width: 200,
                   child: Text(
-                    header.key,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.primary,
+                    'Name',
+                    style: AppTextStyles.caption.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
                 Expanded(
                   child: Text(
-                    header.value,
-                    style: const TextStyle(fontSize: 12),
+                    'Value',
+                    style: AppTextStyles.caption.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
             ),
-          );
-        },
+          ),
+          // Headers list
+          Expanded(
+            child: ListView.builder(
+              itemCount: response!.headers.length,
+              itemBuilder: (context, index) {
+                final header = response.headers[index];
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Theme.of(context).dividerColor.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 200,
+                        child: SelectableText(
+                          header.key,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: SelectableText(
+                          header.value,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildCookiesTab(BuildContext context) {
+    return _buildEmptyState(
+      context: context,
+      icon: Icons.cookie_outlined,
+      title: 'Cookies',
+      subtitle: 'Cookie management coming soon',
+    );
+  }
+
+  Widget _buildEmptyState({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.cookie_outlined,
-            size: 48,
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(AppConstants.radiusXL),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withOpacity(0.5),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Cookies',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Coming soon...',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-          ),
-        ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppConstants.radiusL),
+              ),
+              child: Icon(
+                icon,
+                size: 32,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: AppTextStyles.title.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: AppTextStyles.body.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

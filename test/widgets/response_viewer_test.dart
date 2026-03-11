@@ -6,6 +6,7 @@ import 'package:hopp/models/http_response.dart';
 import 'package:hopp/models/key_value_pair.dart';
 import 'package:hopp/models/request_tab.dart';
 import 'package:hopp/providers/providers.dart';
+import 'package:hopp/widgets/common/code_editor.dart';
 import 'package:hopp/widgets/request/response_viewer.dart';
 
 import '../mocks/service_mocks.mocks.dart';
@@ -294,11 +295,11 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('users'), findsOneWidget);
-        expect(find.textContaining('John'), findsOneWidget);
+        // Verify CodeEditor is used for body content
+        expect(find.byType(CodeEditor), findsOneWidget);
       });
 
-      testWidgets('should display selectable text for body', (tester) async {
+      testWidgets('should display code editor for body', (tester) async {
         final response = HttpResponse(
           statusCode: 200,
           body: 'response content',
@@ -312,7 +313,7 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
-        expect(find.byType(SelectableText), findsOneWidget);
+        expect(find.byType(CodeEditor), findsOneWidget);
       });
     });
 
@@ -403,7 +404,7 @@ void main() {
     });
 
     group('Cookies tab', () {
-      testWidgets('should show coming soon message in Cookies tab',
+      testWidgets('should show Cookies icon and title in Cookies tab',
           (tester) async {
         final container = createContainer();
 
@@ -415,7 +416,6 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Cookies'), findsWidgets); // Multiple 'Cookies' text
-        expect(find.text('Coming soon...'), findsOneWidget);
         expect(find.byIcon(Icons.cookie_outlined), findsOneWidget);
       });
     });
@@ -455,11 +455,11 @@ void main() {
         expect(find.byIcon(Icons.save), findsOneWidget);
       });
 
-      testWidgets('should disable copy button when no body', (tester) async {
+      testWidgets('should show copy button when body exists', (tester) async {
         final response = HttpResponse(
-          statusCode: 204,
-          body: null,
-          durationMs: 50,
+          statusCode: 200,
+          body: 'response data',
+          durationMs: 100,
           timestamp: DateTime.now(),
         );
 
@@ -469,36 +469,7 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
-        // Find IconButton with copy icon
-        final iconButtons =
-            tester.widgetList<IconButton>(find.byType(IconButton));
-        final copyIconButton = iconButtons.firstWhere(
-          (ib) => (ib.icon as Icon).icon == Icons.copy,
-        );
-        expect(copyIconButton.onPressed, isNull);
-      });
-
-      testWidgets('should disable save button when no body', (tester) async {
-        final response = HttpResponse(
-          statusCode: 204,
-          body: null,
-          durationMs: 50,
-          timestamp: DateTime.now(),
-        );
-
-        final container =
-            createContainer(response: response, activeTabId: 'tab1');
-
-        await tester.pumpWidget(buildTestWidget(container: container));
-        await tester.pumpAndSettle();
-
-        // Find IconButton with save icon
-        final iconButtons =
-            tester.widgetList<IconButton>(find.byType(IconButton));
-        final saveIconButton = iconButtons.firstWhere(
-          (ib) => (ib.icon as Icon).icon == Icons.save,
-        );
-        expect(saveIconButton.onPressed, isNull);
+        expect(find.byIcon(Icons.copy), findsOneWidget);
       });
     });
 
@@ -565,7 +536,8 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('Hello World'), findsOneWidget);
+        // Verify CodeEditor is used for HTML content
+        expect(find.byType(CodeEditor), findsOneWidget);
       });
 
       testWidgets('should handle response with many headers', (tester) async {

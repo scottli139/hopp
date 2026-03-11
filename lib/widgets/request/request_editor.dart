@@ -21,6 +21,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   late TabController _tabController;
   final _urlController = TextEditingController();
   final _nameController = TextEditingController();
+  String? _lastTabId;
 
   @override
   void initState() {
@@ -44,9 +45,12 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       return const Center(child: Text('Select a request'));
     }
 
-    // Update controllers when tab changes
-    _urlController.text = activeTab.request.url;
-    _nameController.text = activeTab.request.name;
+    // Only update controllers when tab changes, not on every build
+    if (_lastTabId != activeTab.id) {
+      _lastTabId = activeTab.id;
+      _urlController.text = activeTab.request.url;
+      _nameController.text = activeTab.request.name;
+    }
 
     return Column(
       children: [
@@ -72,35 +76,54 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
   Widget _buildUrlBar(
       BuildContext context, WidgetRef ref, HttpRequest request) {
+    final theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppConstants.spaceL),
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         border: Border(
-          bottom: BorderSide(color: Theme.of(context).dividerColor),
+          bottom: BorderSide(color: theme.dividerColor),
         ),
       ),
       child: Row(
         children: [
-          // Method dropdown
+          // Method dropdown with improved styling
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: AppConstants.spaceS),
             decoration: BoxDecoration(
-              border: Border.all(color: Theme.of(context).dividerColor),
-              borderRadius: BorderRadius.circular(4),
+              color: theme.colorScheme.surfaceContainerHighest,
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(AppConstants.radiusM),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<HttpMethod>(
                 value: request.method,
                 isDense: true,
+                icon: Icon(
+                  Icons.arrow_drop_down,
+                  color: theme.colorScheme.outline,
+                  size: 20,
+                ),
                 items: HttpMethod.values.map((method) {
+                  final color = _getMethodColor(method.value);
                   return DropdownMenuItem(
                     value: method,
-                    child: Text(
-                      method.value,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: _getMethodColor(method.value),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppConstants.spaceXS,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                      ),
+                      child: Text(
+                        method.value,
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
                       ),
                     ),
                   );
@@ -113,58 +136,217 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          // URL input
+          const SizedBox(width: AppConstants.spaceM),
+          // URL input with improved styling
           Expanded(
-            child: TextField(
-              controller: _urlController,
-              decoration: const InputDecoration(
-                hintText: 'Enter URL',
-                isDense: true,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(AppConstants.radiusM),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
               ),
-              style: const TextStyle(fontSize: 13),
-              onChanged: (value) {
-                _updateRequest(ref, request.copyWith(url: value));
-              },
+              child: TextField(
+                controller: _urlController,
+                decoration: InputDecoration(
+                  hintText: 'Enter URL',
+                  hintStyle: AppTextStyles.bodySmall.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppConstants.spaceM,
+                    vertical: 12,
+                  ),
+                  border: InputBorder.none,
+                ),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+                onChanged: (value) {
+                  _updateRequest(ref, request.copyWith(url: value));
+                },
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-          // Save button
-          Consumer(
-            builder: (context, ref, child) {
-              final isDirty = ref.watch(activeTabProvider)?.isDirty ?? false;
-              return IconButton(
-                onPressed: isDirty ? () => _saveRequest(ref, request) : null,
-                icon: const Icon(Icons.save, size: 18),
-                tooltip: 'Save to collection',
-                color: isDirty ? AppColors.primary : null,
-              );
+          const SizedBox(width: AppConstants.spaceM),
+          // Save button with hover effect
+          _buildIconButton(
+            context: context,
+            icon: Icons.save,
+            tooltip: 'Save to collection',
+            onPressed: () {
+              final isDirty = ref.read(activeTabProvider)?.isDirty ?? false;
+              if (isDirty) _saveRequest(ref, request);
             },
+            isActive: ref.watch(activeTabProvider)?.isDirty ?? false,
+            activeColor: AppColors.primary,
           ),
-          const SizedBox(width: 4),
-          // Send button
-          FilledButton.icon(
-            onPressed: () => _sendRequest(ref, request),
-            icon: const Icon(Icons.send, size: 16),
-            label: const Text('Send'),
-          ),
+          const SizedBox(width: AppConstants.spaceS),
+          // Send button with improved styling
+          _buildSendButton(context, ref, request),
         ],
       ),
     );
   }
 
+  Widget _buildIconButton({
+    required BuildContext context,
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback? onPressed,
+    bool isActive = false,
+    Color? activeColor,
+  }) {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppConstants.radiusM),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppConstants.radiusM),
+        onTap: onPressed,
+        child: Tooltip(
+          message: tooltip,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isActive
+                  ? (activeColor ?? theme.colorScheme.primary).withOpacity(0.1)
+                  : theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(AppConstants.radiusM),
+              border: Border.all(
+                color: isActive
+                    ? (activeColor ?? theme.colorScheme.primary).withOpacity(0.3)
+                    : theme.colorScheme.outlineVariant,
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: isActive
+                  ? activeColor ?? theme.colorScheme.primary
+                  : theme.colorScheme.outline,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSendButton(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    return Material(
+      color: AppColors.primary,
+      borderRadius: BorderRadius.circular(AppConstants.radiusM),
+      elevation: 2,
+      shadowColor: AppColors.primary.withOpacity(0.4),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppConstants.radiusM),
+        onTap: () => _sendRequest(ref, request),
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.spaceM,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.send,
+                size: 14,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Send',
+                style: AppTextStyles.caption.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildTabs(BuildContext context) {
-    return TabBar(
-      controller: _tabController,
-      isScrollable: true,
-      tabs: const [
-        Tab(text: 'Params'),
-        Tab(text: 'Headers'),
-        Tab(text: 'Body'),
-        Tab(text: 'Auth'),
-      ],
+    final theme = Theme.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(color: theme.dividerColor),
+        ),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        dividerColor: Colors.transparent,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicatorWeight: 2,
+        indicatorColor: AppColors.primary,
+        labelStyle: AppTextStyles.tiny.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: AppTextStyles.tiny.copyWith(
+          fontWeight: FontWeight.w500,
+        ),
+        labelColor: AppColors.primary,
+        unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+        tabs: const [
+          Tab(
+            height: 40,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.tune, size: 14),
+                SizedBox(width: 4),
+                Text('Params'),
+              ],
+            ),
+          ),
+          Tab(
+            height: 40,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.http, size: 14),
+                SizedBox(width: 4),
+                Text('Headers'),
+              ],
+            ),
+          ),
+          Tab(
+            height: 40,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.code, size: 14),
+                SizedBox(width: 4),
+                Text('Body'),
+              ],
+            ),
+          ),
+          Tab(
+            height: 40,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_outline, size: 14),
+                SizedBox(width: 4),
+                Text('Auth'),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -203,30 +385,34 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
             border: Border(
               bottom: BorderSide(color: Theme.of(context).dividerColor),
             ),
           ),
-          child: const Row(
+          child: Row(
             children: [
               SizedBox(
                   width: 40,
-                  child: Text('Enable',
-                      style: TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.w600))),
-              SizedBox(width: 16),
+                  child: Text('',
+                      style: AppTextStyles.tiny.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant))),
+              const SizedBox(width: 16),
               Expanded(
                   flex: 2,
                   child: Text('Key',
-                      style: TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.w600))),
-              SizedBox(width: 16),
+                      style: AppTextStyles.tiny.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant))),
+              const SizedBox(width: 16),
               Expanded(
                   flex: 3,
                   child: Text('Value',
-                      style: TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.w600))),
-              SizedBox(width: 40),
+                      style: AppTextStyles.tiny.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant))),
+              const SizedBox(width: 40),
             ],
           ),
         ),
@@ -337,35 +523,117 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
   Widget _buildBodyTab(
       BuildContext context, WidgetRef ref, HttpRequest request) {
+    final theme = Theme.of(context);
+
     return Column(
       children: [
-        // Body type selector
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'none', label: Text('None')),
-              ButtonSegment(value: 'json', label: Text('JSON')),
-              ButtonSegment(value: 'text', label: Text('Text')),
-              ButtonSegment(value: 'form', label: Text('Form')),
+        // Body type selector with improved styling
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.spaceL,
+            vertical: AppConstants.spaceM,
+          ),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: theme.dividerColor),
+            ),
+          ),
+          child: Row(
+            children: [
+              Text(
+                'Content Type',
+                style: AppTextStyles.caption.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: AppConstants.spaceL),
+              Expanded(
+                child: SegmentedButton<String>(
+                  segments: [
+                    _buildSegment('none', 'None', Icons.block),
+                    _buildSegment('json', 'JSON', Icons.data_object),
+                    _buildSegment('text', 'Text', Icons.text_fields),
+                    _buildSegment('form', 'Form', Icons.format_list_bulleted),
+                  ],
+                  selected: {request.bodyType},
+                  onSelectionChanged: (value) {
+                    if (value.isNotEmpty) {
+                      _updateRequest(ref, request.copyWith(bodyType: value.first));
+                    }
+                  },
+                  style: SegmentedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    selectedBackgroundColor: AppColors.primary,
+                    selectedForegroundColor: Colors.white,
+                    foregroundColor: theme.colorScheme.onSurface,
+                    side: BorderSide.none,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppConstants.radiusM),
+                    ),
+                  ),
+                ),
+              ),
             ],
-            selected: {request.bodyType},
-            onSelectionChanged: (value) {
-              if (value.isNotEmpty) {
-                _updateRequest(ref, request.copyWith(bodyType: value.first));
-              }
-            },
           ),
         ),
         // Body editor with syntax highlighting
         if (request.bodyType != 'none')
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(AppConstants.spaceL),
               child: _buildBodyEditor(context, ref, request),
+            ),
+          )
+        else
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(AppConstants.radiusL),
+                    ),
+                    child: Icon(
+                      Icons.block,
+                      size: 32,
+                      color: theme.colorScheme.outline.withOpacity(0.5),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No body content',
+                    style: AppTextStyles.body.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Select a content type to add body',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: theme.colorScheme.outline.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
       ],
+    );
+  }
+
+  ButtonSegment<String> _buildSegment(String value, String label, IconData icon) {
+    return ButtonSegment(
+      value: value,
+      label: Text(
+        label,
+        style: AppTextStyles.tiny,
+      ),
+      icon: Icon(icon, size: 14),
     );
   }
 

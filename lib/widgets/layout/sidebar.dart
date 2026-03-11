@@ -54,21 +54,29 @@ class Sidebar extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppConstants.spaceM),
       child: Row(
         children: [
-          Text(
-            'Collections',
-            style: AppTextStyles.title.copyWith(
-              color: theme.colorScheme.onSurface,
+          Expanded(
+            child: Text(
+              'Collections',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Spacer(),
           IconButton(
-            icon: const Icon(Icons.add, size: 18),
+            icon: const Icon(Icons.add, size: 16),
             tooltip: 'New Collection',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: () => _showNewCollectionDialog(context, ref),
           ),
+          const SizedBox(width: 4),
           IconButton(
-            icon: const Icon(Icons.refresh, size: 18),
+            icon: const Icon(Icons.refresh, size: 16),
             tooltip: 'Refresh',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: () {
               ref.read(collectionProvider.notifier).loadCollections();
             },
@@ -143,47 +151,54 @@ class Sidebar extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          onTap: () {
-            ref.read(collectionProvider.notifier).toggleExpanded(collection.id);
-          },
-          child: Container(
-            height: AppConstants.sidebarItemHeight,
-            padding: EdgeInsets.only(
-              left: AppConstants.spaceM + depth * AppConstants.spaceL,
-              right: AppConstants.spaceS,
-            ),
-            child: Row(
-              children: [
-                AnimatedRotation(
-                  turns: isExpanded ? 0.25 : 0,
-                  duration: AppConstants.animFast,
-                  child: Icon(
-                    Icons.chevron_right,
-                    size: 16,
-                    color: collection.children.isEmpty
-                        ? Colors.transparent
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(width: AppConstants.spaceXS),
-                Icon(
-                  isExpanded ? Icons.folder_open : Icons.folder,
-                  size: 16,
-                  color: AppColors.primary.withOpacity(0.8),
-                ),
-                const SizedBox(width: AppConstants.spaceS),
-                Expanded(
-                  child: Text(
-                    collection.name,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: theme.colorScheme.onSurface,
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              ref.read(collectionProvider.notifier).toggleExpanded(collection.id);
+            },
+            hoverColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            child: Container(
+              height: AppConstants.sidebarItemHeight,
+              padding: EdgeInsets.only(
+                left: AppConstants.spaceS + depth * AppConstants.spaceM,
+                right: AppConstants.spaceS,
+              ),
+              child: Row(
+                children: [
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.25 : 0,
+                    duration: AppConstants.animFast,
+                    child: Icon(
+                      Icons.chevron_right,
+                      size: 16,
+                      color: collection.children.isEmpty && collection.requests.isEmpty
+                          ? Colors.transparent
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                _buildCollectionActions(context, ref, collection),
-              ],
+                  const SizedBox(width: AppConstants.spaceXS),
+                  Icon(
+                    isExpanded ? Icons.folder_open : Icons.folder,
+                    size: 16,
+                    color: isExpanded
+                        ? AppColors.primary
+                        : AppColors.primary.withOpacity(0.7),
+                  ),
+                  const SizedBox(width: AppConstants.spaceXS),
+                  Expanded(
+                    child: Text(
+                      collection.name,
+                      style: AppTextStyles.caption.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: isExpanded ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  _buildCollectionActions(context, ref, collection),
+                ],
+              ),
             ),
           ),
         ),
@@ -217,45 +232,70 @@ class Sidebar extends ConsumerWidget {
     final theme = Theme.of(context);
     final isActive = ref.watch(activeTabIdProvider) == request.id;
 
-    return InkWell(
-      onTap: () {
-        ref.read(requestTabProvider.notifier).openTab(request);
-        ref.read(activeTabIdProvider.notifier).state = request.id;
-      },
-      child: Container(
-        height: AppConstants.sidebarItemHeight,
-        padding: EdgeInsets.only(
-          left: AppConstants.spaceM + depth * AppConstants.spaceL + 20,
-          right: AppConstants.spaceM,
-        ),
-        decoration: isActive
-            ? BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                border: Border(
-                  left: BorderSide(
-                    color: AppColors.primary,
-                    width: 2,
+    return Material(
+      color: isActive
+          ? AppColors.primary.withOpacity(0.08)
+          : Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          ref.read(requestTabProvider.notifier).openTab(request);
+          ref.read(activeTabIdProvider.notifier).state = request.id;
+        },
+        hoverColor: AppColors.primary.withOpacity(0.04),
+        splashColor: AppColors.primary.withOpacity(0.08),
+        child: Container(
+          height: AppConstants.sidebarItemHeight,
+          padding: EdgeInsets.only(
+            left: AppConstants.spaceS + depth * AppConstants.spaceM + 12,
+            right: AppConstants.spaceS,
+          ),
+          decoration: isActive
+              ? BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: AppColors.primary,
+                      width: 3,
+                    ),
+                  ),
+                )
+              : null,
+          child: Row(
+            children: [
+              // Method badge with improved contrast
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 3,
+                  vertical: 1,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.getHttpMethodColor(request.method.value)
+                      .withOpacity(isActive ? 0.15 : 0.1),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                ),
+                child: Text(
+                  request.method.value.toUpperCase(),
+                  style: AppTextStyles.tiny.copyWith(
+                    fontSize: 8,
+                    color: AppColors.getHttpMethodColor(request.method.value),
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              )
-            : null,
-        child: Row(
-          children: [
-            AppComponentStyles.httpMethodBadge(request.method.value),
-            const SizedBox(width: AppConstants.spaceS),
-            Expanded(
-              child: Text(
-                request.name,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isActive
-                      ? AppColors.primary
-                      : theme.colorScheme.onSurface,
-                  fontWeight: isActive ? FontWeight.w500 : FontWeight.normal,
-                ),
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  request.name,
+                  style: AppTextStyles.caption.copyWith(
+                    color: isActive
+                        ? AppColors.primaryDark
+                        : theme.colorScheme.onSurface,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -266,77 +306,168 @@ class Sidebar extends ConsumerWidget {
     WidgetRef ref,
     Collection collection,
   ) {
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert, size: 14),
-      itemBuilder: (context) => [
-        const PopupMenuItem(
-          value: 'add_request',
-          child: Row(
-            children: [
-              Icon(Icons.add, size: 16),
-              SizedBox(width: AppConstants.spaceS),
-              Text('Add Request'),
-            ],
+    final theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppConstants.radiusS),
+        onTap: () {}, // PopupMenuButton will handle the tap
+        child: PopupMenuButton<String>(
+          icon: Icon(
+            Icons.more_vert,
+            size: 16,
+            color: theme.colorScheme.outline,
           ),
-        ),
-        const PopupMenuItem(
-          value: 'add_folder',
-          child: Row(
-            children: [
-              Icon(Icons.create_new_folder, size: 16),
-              SizedBox(width: AppConstants.spaceS),
-              Text('Add Folder'),
-            ],
+          offset: const Offset(0, 32),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.radiusL),
           ),
-        ),
-        const PopupMenuDivider(),
-        const PopupMenuItem(
-          value: 'rename',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 16),
-              SizedBox(width: AppConstants.spaceS),
-              Text('Rename'),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              const Icon(Icons.delete, size: 16, color: AppColors.error),
-              const SizedBox(width: AppConstants.spaceS),
-              Text(
-                'Delete',
-                style: TextStyle(color: AppColors.error),
+          elevation: 8,
+          shadowColor: Colors.black.withOpacity(0.2),
+          color: theme.colorScheme.surface,
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'add_request',
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                    ),
+                    child: const Icon(
+                      Icons.add,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: AppConstants.spaceM),
+                  Text(
+                    'Add Request',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ],
-      onSelected: (value) {
-        switch (value) {
-          case 'add_request':
-            AppLogger.info(
-                '[Sidebar] Adding new request to collection: ${collection.name}');
-            final newRequest = HttpRequest.empty().copyWith(
-              parentId: collection.id,
-            );
-            ref.read(collectionProvider.notifier).addRequestToCollection(
-                  collection.id,
-                  newRequest,
+            ),
+            PopupMenuItem(
+              value: 'add_folder',
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.info.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                    ),
+                    child: Icon(
+                      Icons.create_new_folder,
+                      size: 16,
+                      color: AppColors.info,
+                    ),
+                  ),
+                  const SizedBox(width: AppConstants.spaceM),
+                  Text(
+                    'Add Folder',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const PopupMenuDivider(),
+            PopupMenuItem(
+              value: 'rename',
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                    ),
+                    child: Icon(
+                      Icons.edit,
+                      size: 16,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: AppConstants.spaceM),
+                  Text(
+                    'Rename',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'delete',
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                    ),
+                    child: const Icon(
+                      Icons.delete,
+                      size: 16,
+                      color: AppColors.error,
+                    ),
+                  ),
+                  const SizedBox(width: AppConstants.spaceM),
+                  Text(
+                    'Delete',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          onSelected: (value) {
+            switch (value) {
+              case 'add_request':
+                AppLogger.info(
+                    '[Sidebar] Adding new request to collection: ${collection.name}');
+                final newRequest = HttpRequest.empty().copyWith(
+                  parentId: collection.id,
                 );
-            // Set active tab ID first, then open tab to ensure proper state sync
-            ref.read(activeTabIdProvider.notifier).state = newRequest.id;
-            ref.read(requestTabProvider.notifier).openTab(newRequest);
-            AppLogger.info(
-                '[Sidebar] New request created and tab opened: ${newRequest.name}');
-            break;
-          case 'delete':
-            _showDeleteConfirmation(context, ref, collection);
-            break;
-        }
-      },
+                ref.read(collectionProvider.notifier).addRequestToCollection(
+                      collection.id,
+                      newRequest,
+                    );
+                // Set active tab ID first, then open tab to ensure proper state sync
+                ref.read(activeTabIdProvider.notifier).state = newRequest.id;
+                ref.read(requestTabProvider.notifier).openTab(newRequest);
+                AppLogger.info(
+                    '[Sidebar] New request created and tab opened: ${newRequest.name}');
+                break;
+              case 'delete':
+                _showDeleteConfirmation(context, ref, collection);
+                break;
+            }
+          },
+        ),
+      ),
     );
   }
 

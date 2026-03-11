@@ -585,6 +585,11 @@ void main() {
     group('many tabs', () {
       testWidgets('should render many tabs horizontally scrollable',
           (tester) async {
+        // Set a large enough viewport to accommodate all tabs
+        tester.view.physicalSize = const Size(1200, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
         final tabs = List.generate(5, (index) {
           return RequestTab(
             id: 'tab$index',
@@ -602,8 +607,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // First and last tabs should be rendered
-        expect(find.text('Request 0'), findsOneWidget);
-        expect(find.text('Request 4'), findsOneWidget);
+        expect(find.textContaining('Request 0'), findsOneWidget);
+        expect(find.textContaining('Request 4'), findsOneWidget);
 
         // Should be in a horizontal ListView
         expect(find.byType(ListView), findsOneWidget);

@@ -84,11 +84,56 @@
 - 支持浅色/深色主题自适应
 - 为 text/form 类型保留 SimpleCodeEditor
 
-**设计规范**:
-- 统一的间距系统 (4/8/12/16/24/32)
-- 一致的按钮高度 (28/36/44)
-- 标准化圆角 (4/6/8/12)
-- 专业的配色方案
+**UI/UX 精细化优化 (2026-03-11)**:
+
+✅ **P0 - 布局问题修复**:
+- 修复 Response Headers 区域底部溢出 3.4px
+- 修复 Response Body JSON 语法高亮未生效问题
+
+✅ **P1 - 视觉层次优化**:
+- Response 信息栏：高度 36px→44px，徽章添加边框，对齐更精准
+- Headers Tab：添加表头行，统一间距 10px
+- Error 信息栏：添加图标容器，改进间距和动画
+- 右键菜单：圆角 12px + 阴影 + 彩色图标背景
+
+✅ **P1 - 交互反馈优化**:
+- Send 按钮：添加阴影和 Material InkWell 效果
+- 保存按钮：添加边框和激活状态视觉反馈
+- 侧边栏选中：背景 0.08 opacity + 3px 左边框 + hover 效果
+- Request Tabs：最小宽度 140px + hover 效果
+
+✅ **P1 - 组件样式统一**:
+- Body 类型选择器：图标 + 文字 + 空状态提示
+- 请求编辑器 Tabs：添加图标，样式更现代
+- 空状态设计：Auth/Cookies 使用卡片式设计
+- 统一使用 AppConstants 间距系统
+
+**UI/UX 精细化优化 - 第二次迭代 (2026-03-11 Session End)**:
+
+✅ **P0 - 关键 Bug 修复**:
+- 修复 URL 输入框自动全选问题（添加 `_lastTabId` 跟踪）
+- 修复侧边栏右侧布局溢出 17px
+
+✅ **P1 - 文字大小比例优化**:
+- Tab 标签：14px → 11px
+- Send 按钮：14px → 12px
+- Headers 表头：统一 11px
+- Sidebar 文字：12-13px → 11-12px
+- Method badge：9px → 8px
+- Response 状态栏：全部 11px
+
+✅ **P1 - 间距和布局**:
+- 减小 Sidebar item padding
+- IconButton 添加 constraints (32x32)
+- Collection 缩进优化
+
+**测试状态**: 405 个测试全部通过 ✅
+
+**下次会话计划**:
+- 🟡 主题切换功能 (Light/Dark Mode) - P1
+- 🟡 国际化完善 (多语言切换) - P1
+- 🟢 快捷键支持 - P2
+- 🟢 请求历史记录 - P2
 
 ---
 

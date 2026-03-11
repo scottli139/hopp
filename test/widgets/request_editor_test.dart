@@ -201,7 +201,6 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
-        expect(find.text('Enable'), findsOneWidget);
         expect(find.text('Key'), findsWidgets);
         // Value header text is present
         expect(find.text('Value'), findsWidgets);
@@ -456,8 +455,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Authentication'), findsOneWidget);
-        expect(find.text('Coming soon...'), findsOneWidget);
-        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+        // Lock icon is shown in both the tab and the empty state
+        expect(find.byIcon(Icons.lock_outline), findsWidgets);
       });
     });
 

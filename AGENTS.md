@@ -807,6 +807,108 @@ genhtml coverage/lcov.info -o coverage/html
 
 ---
 
+### 2026-03-11 会话 - UI/UX 精细化优化
+
+**本次会话完成的工作**:
+1. ✅ **P0 - 修复布局溢出**: Response Headers 区域底部溢出 3.4px 问题已修复
+2. ✅ **P0 - 修复 JSON 语法高亮**: Response Body 现在正确使用 CodeEditor 显示语法高亮
+3. ✅ **P1 - 优化响应信息栏**: 高度从 36px 增加到 44px，徽章样式优化，对齐更精准
+4. ✅ **P1 - 优化错误信息栏**: 添加图标容器、更好的间距、展开/折叠动画改进
+5. ✅ **P1 - 优化右键菜单**: 圆角边框 (12px)、阴影效果、彩色图标背景
+6. ✅ **P1 - 优化 Body 类型切换**: SegmentedButton 样式改进，添加图标，空状态提示
+7. ✅ **P1 - 优化侧边栏选中状态**: 更深的背景色 (0.08 opacity)、更粗的左边框 (3px)、hover 效果
+8. ✅ **P2 - 优化按钮交互**: Send 按钮添加阴影和 Material InkWell 效果，保存按钮添加边框和激活状态
+9. ✅ **P2 - 统一间距系统**: 所有组件统一使用 AppConstants 间距值
+10. ✅ **P2 - 优化 Tabs 样式**: 请求编辑器 Tabs 添加图标，样式更现代
+11. ✅ **P2 - 优化空状态设计**: Auth/Cookies Tab 的空状态使用卡片式设计
+
+**UI 改进细节**:
+
+| 组件 | 改进前 | 改进后 |
+|------|--------|--------|
+| Response Info Bar | 高度 36px，徽章圆角 3px | 高度 44px，徽章圆角 6px，添加边框 |
+| Headers Tab | 简单 ListView | 表头 + 列表，统一间距 10px |
+| Error Bar | 简单红色背景 | 图标容器 + 可展开 + 复制按钮 |
+| Context Menu | 原生样式 | 圆角 12px + 阴影 + 彩色图标 |
+| Send Button | 简单 FilledButton | Material + 阴影 + InkWell |
+| Sidebar Selection | 背景 0.1 opacity | 背景 0.08 + 左边框 3px |
+| Body Type Selector | 纯文字 | 图标 + 文字 + 空状态提示 |
+| Request Tabs | 最小宽度 120px | 最小宽度 140px，hover 效果 |
+
+**修改的文件**:
+- `lib/widgets/request/response_viewer.dart` - 布局、样式全面优化
+- `lib/widgets/request/request_editor.dart` - URL栏、Body Tab 优化
+- `lib/widgets/layout/sidebar.dart` - 菜单、选中状态优化
+- `lib/widgets/layout/request_tabs.dart` - Tab 样式优化
+- `lib/widgets/common/code_editor.dart` - onChanged 改为可选参数
+- `test/widgets/response_viewer_test.dart` - 测试更新
+- `test/widgets/request_editor_test.dart` - 测试更新
+- `test/widgets/request_tabs_test.dart` - 测试更新
+
+**测试状态**: 405 个测试全部通过 ✅
+
+---
+
+### 2026-03-11 会话 - UI/UX 精细化优化 (Session End)
+
+**本次会话完成的工作**:
+1. ✅ **P0 - 修复 URL 输入框 Bug**: 每输入字符自动全选的问题已修复（添加 `_lastTabId` 跟踪）
+2. ✅ **P0 - 修复侧边栏布局溢出**: 右侧溢出 17px 问题已修复（减小 padding 和间距）
+3. ✅ **P1 - 优化文字大小比例**:
+   - Tab 标签：14px → 11px (tiny)
+   - Send 按钮：14px → 12px (caption)
+   - Headers 表头：11px (tiny)
+   - Body 类型选择器：14px → 11px
+   - Sidebar 集合名：14px → 12px
+   - Sidebar 请求名：13px → 11px
+   - Method badge：9px → 8px
+   - Response 状态栏：全部改为 11px
+4. ✅ **P1 - 优化组件间距**:
+   - Sidebar item padding 减小
+   - IconButton 添加 constraints 限制大小
+   - Collection item 缩进调整
+5. ✅ **所有 405 个测试通过** ✅
+
+**修复的关键 Bug**:
+
+**🔴 URL 输入框自动全选问题**:
+- 原因：每次 build 都执行 `_urlController.text = activeTab.request.url`，导致 TextField 重新赋值并全选
+- 解决：添加 `_lastTabId` 变量，只在切换 tab 时更新 controller
+
+```dart
+// 修复前（错误）
+@override
+Widget build(BuildContext context) {
+  _urlController.text = activeTab.request.url; // 每次 build 都重置
+}
+
+// 修复后（正确）
+if (_lastTabId != activeTab.id) {
+  _lastTabId = activeTab.id;
+  _urlController.text = activeTab.request.url; // 只在切换 tab 时更新
+}
+```
+
+**🔴 Sidebar 布局溢出**:
+- 减小 header 和 collection item 的 padding
+- IconButton 添加 `padding: EdgeInsets.zero` 和 `constraints` 限制
+- 减小缩进值：`depth * AppConstants.spaceL` → `depth * AppConstants.spaceM`
+
+**修改的文件**:
+- `lib/widgets/request/request_editor.dart` - 修复输入框 Bug + 文字大小调整
+- `lib/widgets/request/response_viewer.dart` - 响应栏文字大小调整
+- `lib/widgets/layout/sidebar.dart` - 布局修复 + 文字大小调整
+- `lib/widgets/layout/request_tabs.dart` - Tab 文字和间距调整
+- `test/widgets/*` - 相应测试更新
+
+**下次会话计划**:
+- 🟡 主题切换功能 (Light/Dark Mode)
+- 🟡 国际化完善 (多语言切换)
+- 🟢 快捷键支持
+- 🟢 请求历史记录
+
+---
+
 ### 2026-03-11 会话 - Widget 测试完成
 
 **本次会话完成的工作**:

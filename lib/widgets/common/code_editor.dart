@@ -21,7 +21,7 @@ class CodeEditor extends ConsumerStatefulWidget {
   const CodeEditor({
     super.key,
     required this.code,
-    required this.onChanged,
+    this.onChanged,
     this.language = CodeLanguage.json,
     this.readOnly = false,
     this.minLines,
@@ -30,7 +30,7 @@ class CodeEditor extends ConsumerStatefulWidget {
   });
 
   final String code;
-  final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onChanged;
   final CodeLanguage language;
   final bool readOnly;
   final int? minLines;
@@ -71,7 +71,7 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
   }
 
   void _onTextChanged() {
-    widget.onChanged(_controller.text);
+    widget.onChanged?.call(_controller.text);
   }
 
   Mode? _getLanguageMode() {

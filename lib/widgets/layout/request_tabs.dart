@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/request_tab.dart';
 import '../../providers/providers.dart';
+import '../../utils/constants.dart';
 
 class RequestTabs extends ConsumerWidget {
   const RequestTabs({super.key});
@@ -39,105 +40,137 @@ class RequestTabs extends ConsumerWidget {
     String? activeTabId,
   ) {
     final isActive = tab.id == activeTabId;
+    final theme = Theme.of(context);
     final methodColor = _getMethodColor(tab.request.method.value);
 
-    return GestureDetector(
-      onTap: () {
-        ref.read(activeTabIdProvider.notifier).state = tab.id;
-      },
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 120, maxWidth: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: isActive
-              ? Theme.of(context).colorScheme.surfaceContainerHighest
-              : null,
-          border: Border(
-            bottom: BorderSide(
-              color: isActive
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.transparent,
-              width: 2,
-            ),
-            right: BorderSide(
-              color: Theme.of(context).dividerColor,
+    return Material(
+      color: isActive
+          ? theme.colorScheme.surfaceContainerHighest
+          : theme.colorScheme.surface,
+      child: InkWell(
+        onTap: () {
+          ref.read(activeTabIdProvider.notifier).state = tab.id;
+        },
+        hoverColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 120, maxWidth: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: isActive ? AppColors.primary : Colors.transparent,
+                width: 2,
+              ),
+              right: BorderSide(
+                color: theme.dividerColor,
+              ),
             ),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-              decoration: BoxDecoration(
-                color: methodColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: Text(
-                tab.request.method.value,
-                style: TextStyle(
-                  fontSize: 8,
-                  fontWeight: FontWeight.w600,
-                  color: methodColor,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                tab.request.name,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isActive ? FontWeight.w500 : FontWeight.normal,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (tab.isDirty)
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Method badge with improved styling
               Container(
-                width: 6,
-                height: 6,
-                margin: const EdgeInsets.only(left: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  shape: BoxShape.circle,
+                  color: methodColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                ),
+                child: Text(
+                  tab.request.method.value,
+                  style: AppTextStyles.tiny.copyWith(
+                    fontSize: 8,
+                    color: methodColor,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            const SizedBox(width: 4),
-            InkWell(
-              onTap: () {
-                _closeTab(ref, tab);
-              },
-              child: Icon(
-                Icons.close,
-                size: 14,
-                color: Theme.of(context).colorScheme.outline,
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  tab.request.name,
+                  style: AppTextStyles.tiny.copyWith(
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    color: isActive
+                        ? theme.colorScheme.onSurface
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          ],
+              if (tab.isDirty)
+                Container(
+                  width: 5,
+                  height: 5,
+                  margin: const EdgeInsets.only(left: 4),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              const SizedBox(width: 4),
+              // Close button with hover effect
+              Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                  onTap: () => _closeTab(ref, tab),
+                  child: Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                    ),
+                    child: Icon(
+                      Icons.close,
+                      size: 12,
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildNewTabButton(BuildContext context, WidgetRef ref) {
-    return InkWell(
-      onTap: () {
-        // Create a new empty request
-        ref.read(requestTabProvider.notifier).getTab('');
-      },
-      child: Container(
-        width: 36,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          border: Border(
-            right: BorderSide(color: Theme.of(context).dividerColor),
+    final theme = Theme.of(context);
+
+    return Material(
+      color: theme.colorScheme.surface,
+      child: InkWell(
+        onTap: () {
+          // Create a new empty request
+          ref.read(requestTabProvider.notifier).getTab('');
+        },
+        hoverColor: theme.colorScheme.surfaceContainerHighest,
+        child: Container(
+          width: 44,
+          height: double.infinity,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(color: theme.dividerColor),
+            ),
           ),
-        ),
-        child: Icon(
-          Icons.add,
-          size: 16,
-          color: Theme.of(context).colorScheme.outline,
+          child: Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(AppConstants.radiusM),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Icon(
+              Icons.add,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
       ),
     );

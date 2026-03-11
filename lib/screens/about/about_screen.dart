@@ -26,7 +26,7 @@ class AboutScreen extends StatelessWidget {
                 // Logo
                 _buildLogo(colorScheme),
                 const SizedBox(height: 24),
-                
+
                 // App Name
                 Text(
                   'Hopp',
@@ -44,7 +44,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                
+
                 // Tagline
                 Text(
                   'Hop to your APIs',
@@ -54,7 +54,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Version Card
                 _buildInfoCard(
                   context,
@@ -63,28 +63,29 @@ class AboutScreen extends StatelessWidget {
                   icon: Icons.info_outline,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Description Card
                 _buildInfoCard(
                   context,
                   title: 'Description',
-                  content: 'A lightweight, cross-platform API testing tool built with Flutter. Hopp makes API testing simple, fast, and enjoyable.',
+                  content:
+                      'A lightweight, cross-platform API testing tool built with Flutter. Hopp makes API testing simple, fast, and enjoyable.',
                   icon: Icons.description_outlined,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Features Card
                 _buildFeaturesCard(context),
                 const SizedBox(height: 16),
-                
+
                 // Tech Stack Card
                 _buildTechStackCard(context),
                 const SizedBox(height: 16),
-                
+
                 // Links Card
                 _buildLinksCard(context),
                 const SizedBox(height: 32),
-                
+
                 // Brand Footer
                 _buildBrandFooter(theme, colorScheme),
               ],
@@ -225,29 +226,29 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ...features.map((feature) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      feature,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.8),
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          feature,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurface.withOpacity(0.8),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )),
+                )),
           ],
         ),
       ),
@@ -299,12 +300,15 @@ class AboutScreen extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: techStack.map((tech) => Chip(
-                avatar: Text(tech['icon']!),
-                label: Text('${tech['name']} ${tech['version']}'),
-                backgroundColor: colorScheme.primaryContainer.withOpacity(0.5),
-                side: BorderSide.none,
-              )).toList(),
+              children: techStack
+                  .map((tech) => Chip(
+                        avatar: Text(tech['icon']!),
+                        label: Text('${tech['name']} ${tech['version']}'),
+                        backgroundColor:
+                            colorScheme.primaryContainer.withOpacity(0.5),
+                        side: BorderSide.none,
+                      ))
+                  .toList(),
             ),
           ],
         ),

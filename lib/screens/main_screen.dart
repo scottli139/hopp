@@ -83,10 +83,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.api_outlined,
-            size: 64,
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+          Image.asset(
+            'assets/images/logo.svg.png',
+            width: 80,
+            height: 80,
+            opacity: const AlwaysStoppedAnimation(0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -97,7 +98,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Click "+" to create a new request',
+            'Select a request from sidebar or create a new tab',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.outline.withOpacity(0.7),
                 ),
@@ -159,10 +160,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.api_rounded,
-                  size: 10,
-                  color: Colors.white.withOpacity(0.9),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: Image.asset(
+                    'assets/images/logo.svg.png',
+                    width: 12,
+                    height: 12,
+                  ),
                 ),
                 const SizedBox(width: 4),
                 Text(

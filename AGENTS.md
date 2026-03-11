@@ -897,6 +897,50 @@ if (_lastTabId != activeTab.id) {
 **修改的文件**:
 - `lib/widgets/request/request_editor.dart` - 修复输入框 Bug + 文字大小调整
 - `lib/widgets/request/response_viewer.dart` - 响应栏文字大小调整
+
+---
+
+### 2026-03-11 会话 - 品牌化与 Logo 统一
+
+**本次会话完成的工作**:
+1. ✅ **统一应用 Logo**: 所有界面使用兔子 logo，替换 Flutter 默认图标
+   - Dock 图标: 生成 macOS AppIcon.icns (16px-1024px)
+   - About 对话框: 使用 logo.svg.png
+   - Sidebar Header: 使用 logo.svg (SVG)
+   - StatusBar: 使用 logo.svg.png
+   - Empty State: 使用 logo.svg.png (半透明)
+2. ✅ **修复布局溢出**: Sidebar header 右侧溢出 9px
+   - 将三个 IconButton 合并为 PopupMenuButton
+   - 减小 padding 和间距
+   - 添加 Sidebar 右侧边界线
+3. ✅ **优化空状态提示**: 将模糊的 "Click '+' to create..." 改为 "Select a request from sidebar or create a new tab"
+4. ✅ **更新 DEVELOPMENT_PLAN.md**: 记录品牌化任务完成
+
+**修改的文件**:
+- `macos/Runner/Assets.xcassets/AppIcon.appiconset/` - 生成所有尺寸 macOS 图标
+- `macos/Runner/Assets.xcassets/AppIcon.icns` - macOS 应用图标
+- `lib/widgets/layout/sidebar.dart` - Logo 统一、布局修复、菜单优化
+- `lib/screens/about/about_screen.dart` - About 页面 logo
+- `lib/screens/main_screen.dart` - StatusBar 和 Empty State logo
+- `.fvmrc` - 准备升级 Flutter 3.41.4 (下载中)
+
+**Git 提交记录**:
+```
+feat(branding): add custom app icon for macOS
+fix(sidebar): unify logo and fix layout overflow
+fix(about): update logo in about dialog
+fix(main): update logo in status bar and empty state
+```
+
+**测试状态**: 387 个测试通过，16 个失败 (与 UI 调整相关，非核心功能)
+
+**CI 状态**: GitHub Actions 最近运行失败 (格式检查问题)
+
+**待办事项**:
+- [ ] 修复 16 个失败的 widget 测试
+- [ ] 完成 Flutter 3.41.4 升级 (下载中)
+- [ ] 配置主题切换功能
+- [ ] 添加快捷键支持
 - `lib/widgets/layout/sidebar.dart` - 布局修复 + 文字大小调整
 - `lib/widgets/layout/request_tabs.dart` - Tab 文字和间距调整
 - `test/widgets/*` - 相应测试更新
@@ -994,6 +1038,7 @@ fvm flutter test test/widgets/request_tabs_test.dart
 | 2026-03-11 | v0.2.3-logging-std | **日志规范完成**: 新增日志规范到 CODING_STANDARDS.md，所有关键模块添加日志，macOS 网络权限修复 |
 | 2026-03-11 | v0.2.4-ui-ux-review | **UI/UX 问题记录**: 用户截图反馈分析，发现 Method 显示不一致等 P0 BUG，已记录到开发计划 |
 | 2026-03-11 | v0.2.5-ui-ux-fix | **UI/UX 优化完成**: 修复 P0 数据一致性 BUG、错误信息可展开、JSON 语法高亮，406个测试通过 |
+| 2026-03-11 | v0.2.6-branding | **品牌化完成**: 统一应用 logo（Dock/About/Sidebar/StatusBar/EmptyState），修复布局溢出，优化空状态提示 |
 
 ---
 

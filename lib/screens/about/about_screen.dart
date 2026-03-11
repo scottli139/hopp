@@ -118,10 +118,15 @@ class AboutScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(
-        Icons.api_rounded,
-        size: 64,
-        color: Colors.white,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Image.asset(
+            'assets/images/logo.svg.png',
+            fit: BoxFit.contain,
+          ),
+        ),
       ),
     );
   }

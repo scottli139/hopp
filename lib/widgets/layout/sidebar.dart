@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
@@ -17,7 +18,15 @@ class Sidebar extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Container(
-      color: theme.colorScheme.surface,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          right: BorderSide(
+            color: theme.colorScheme.outline.withOpacity(0.15),
+            width: 1,
+          ),
+        ),
+      ),
       child: Column(
         children: [
           // Header
@@ -52,48 +61,14 @@ class Sidebar extends ConsumerWidget {
 
     return Container(
       height: AppConstants.appBarHeight,
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spaceM),
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spaceS),
       child: Row(
         children: [
           // Brand Logo
           _buildBrandLogo(context),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Collections',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: theme.colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          // About button
-          IconButton(
-            icon: const Icon(Icons.info_outline, size: 16),
-            tooltip: 'About Hopp',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () => _showAboutDialog(context),
-          ),
-          const SizedBox(width: 4),
-          IconButton(
-            icon: const Icon(Icons.add, size: 16),
-            tooltip: 'New Collection',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () => _showNewCollectionDialog(context, ref),
-          ),
-          const SizedBox(width: 4),
-          IconButton(
-            icon: const Icon(Icons.refresh, size: 16),
-            tooltip: 'Refresh',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () {
-              ref.read(collectionProvider.notifier).loadCollections();
-            },
-          ),
+          const Spacer(),
+          // Actions menu
+          _buildActionsMenu(context, ref),
         ],
       ),
     );
@@ -559,39 +534,64 @@ class Sidebar extends ConsumerWidget {
 
   /// Build brand logo widget
   Widget _buildBrandLogo(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    return SvgPicture.asset(
+      'assets/images/logo.svg',
+      width: 24,
+      height: 24,
+    );
+  }
 
-    return Container(
-      width: 28,
-      height: 28,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorScheme.primary,
-            const Color(0xFF8B5CF6),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.primary.withOpacity(0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+  /// Build actions menu button
+  Widget _buildActionsMenu(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, size: 18),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      onSelected: (value) {
+        switch (value) {
+          case 'about':
+            _showAboutDialog(context);
+            break;
+          case 'new':
+            _showNewCollectionDialog(context, ref);
+            break;
+          case 'refresh':
+            ref.read(collectionProvider.notifier).loadCollections();
+            break;
+        }
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'about',
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, size: 18),
+              SizedBox(width: 8),
+              Text('About'),
+            ],
           ),
-        ],
-      ),
-      child: const Center(
-        child: Text(
-          'H',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+        ),
+        const PopupMenuItem(
+          value: 'new',
+          child: Row(
+            children: [
+              Icon(Icons.add, size: 18),
+              SizedBox(width: 8),
+              Text('New Collection'),
+            ],
           ),
         ),
-      ),
+        const PopupMenuItem(
+          value: 'refresh',
+          child: Row(
+            children: [
+              Icon(Icons.refresh, size: 18),
+              SizedBox(width: 8),
+              Text('Refresh'),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -632,10 +632,12 @@ class Sidebar extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.api_rounded,
-                  size: 32,
-                  color: Colors.white,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.asset(
+                    'assets/images/logo.svg.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

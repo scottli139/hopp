@@ -137,6 +137,27 @@
 
 ---
 
+### M3.5: 品牌化与 Logo 统一 ✅ COMPLETED (2026-03-11)
+
+| 任务 | 状态 | 优先级 | 说明 |
+|-----|------|--------|------|
+| macOS Dock 图标 | ✅ | P0 | 生成 AppIcon.icns (16-1024px) |
+| About 对话框 Logo | ✅ | P0 | 替换为兔子 logo |
+| Sidebar Header Logo | ✅ | P0 | 使用 SVG logo |
+| StatusBar Logo | ✅ | P0 | 底部状态栏兔子图标 |
+| Empty State Logo | ✅ | P1 | 空状态页面兔子图标 |
+| 布局溢出修复 | ✅ | P0 | Header 右侧溢出修复 |
+
+**修改文件**:
+- `macos/Runner/Assets.xcassets/AppIcon.appiconset/*` - macOS 图标
+- `lib/widgets/layout/sidebar.dart` - Header logo 和布局
+- `lib/screens/about/about_screen.dart` - About 页面
+- `lib/screens/main_screen.dart` - StatusBar 和 EmptyState
+
+**Git 提交**: `feat(branding): add custom app icon for macOS`
+
+---
+
 ### M4: 高级功能 📋 PLANNED
 
 | 任务 | 状态 | 优先级 | 预计工时 |

@@ -68,6 +68,9 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   @override
   Widget build(BuildContext context) {
     final response = ref.watch(currentResponseProvider);
+    
+    // Ensure TabController is synchronized with current response
+    _updateTabController(response);
 
     return Container(
       decoration: BoxDecoration(

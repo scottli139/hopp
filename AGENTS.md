@@ -8,7 +8,7 @@
 
 **Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Flutter 构建，注重性能和用户体验。
 
-**当前状态**: ✅ **UI/UX 优化完成 (M3)**  
+**当前状态**: ✅ **全部测试通过 (M6)**  
 **技术栈**: Flutter 3.27.x + Dart + Riverpod  
 **目标平台**: macOS 10.15+ / Windows 10+ / Linux  
 **下次会话重点**: 🟡 **主题切换**、🟢 **快捷键支持**
@@ -1043,6 +1043,69 @@ fvm flutter test test/widgets/request_tabs_test.dart
 
 ---
 
+### 2026-03-11 会话 - 测试修复完成
+
+**本次会话完成的工作**:
+1. ✅ 执行全部测试，识别 16 个失败的 Sidebar Widget 测试
+2. ✅ 修复 `test/widgets/sidebar_test.dart` 中的测试问题
+3. ✅ 所有 405 个测试全部通过
+
+**测试失败原因分析**:
+- `createContainer` 函数直接设置 provider state 被异步 `loadCollections()` 覆盖
+- Sidebar UI 改版后（PopupMenuButton 替代独立按钮），测试期望与实际 UI 不匹配
+- HTTP Method badge 文本查找方式需要调整
+
+**修复内容**:
+
+| 问题 | 修复方案 |
+|------|----------|
+| Provider 状态被覆盖 | 改为在创建容器前配置 mock，`getCollections()` 直接返回测试数据 |
+| Header 测试期望 | 更新为检查 `PopupMenuButton` (more_vert 图标) |
+| Action 按钮测试 | 更新为通过 header 菜单操作 |
+| Collection 操作菜单 | 更新为区分 header 菜单和 collection 菜单 |
+| HTTP Method badge | 更新为更灵活的 `find.textContaining()` |
+
+**关键代码修复**:
+```dart
+// 修复前：直接设置 state 会被异步 loadCollections 覆盖
+ProviderContainer createContainer({collections = const []}) {
+  final container = ProviderContainer(...);
+  if (collections.isNotEmpty) {
+    container.read(collectionProvider.notifier).state = AsyncValue.data(collections);
+  }
+  return container;
+}
+
+// 修复后：通过 mock 配置让 loadCollections 返回正确数据
+ProviderContainer createContainer({collections = const []}) {
+  when(mockStorageService.getCollections()).thenAnswer((_) async => collections);
+  final container = ProviderContainer(...);
+  return container;
+}
+```
+
+**测试统计**:
+| 类别 | 测试数量 | 状态 |
+|------|----------|------|
+| Models | 152 | ✅ 通过 |
+| Services | 73 | ✅ 通过 |
+| Providers | 92 | ✅ 通过 |
+| Widgets | 88 | ✅ 通过 |
+| 跳过 | 2 | ⏭️ (预期) |
+| **总计** | **407** | **405 通过, 2 跳过** |
+
+**Git 提交**:
+```
+test: fix 16 failing widget tests in sidebar_test.dart
+- Fix createContainer to use mock instead of direct state mutation
+- Update header tests for PopupMenuButton pattern
+- Update action button tests to use menu flow
+- Fix HTTP method badge text finding
+- All 405 tests now passing
+```
+
+---
+
 ## 🔗 重要链接
 
 - **GitHub 仓库**: https://github.com/scottli139/hopp
@@ -1070,6 +1133,7 @@ fvm flutter test test/widgets/request_tabs_test.dart
 | 2026-03-11 | v0.2.4-ui-ux-review | **UI/UX 问题记录**: 用户截图反馈分析，发现 Method 显示不一致等 P0 BUG，已记录到开发计划 |
 | 2026-03-11 | v0.2.5-ui-ux-fix | **UI/UX 优化完成**: 修复 P0 数据一致性 BUG、错误信息可展开、JSON 语法高亮，406个测试通过 |
 | 2026-03-11 | v0.2.6-branding | **品牌化完成**: 统一应用 logo（Dock/About/Sidebar/StatusBar/EmptyState），修复布局溢出，优化空状态提示 |
+| 2026-03-11 | v0.2.7-test-fix | **测试修复完成**: 修复 16 个 Sidebar Widget 测试，所有 405 个测试通过 |
 
 ---
 

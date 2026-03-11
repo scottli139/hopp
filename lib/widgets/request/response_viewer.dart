@@ -100,7 +100,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     if (response.error != null) {
       final errorText = response.error!;
       final isLongError = errorText.length > 80;
-      
+
       return GestureDetector(
         onTap: isLongError
             ? () {

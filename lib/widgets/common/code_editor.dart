@@ -90,7 +90,7 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return CodeTheme(
       data: _buildCodeTheme(theme),
       child: CodeField(
@@ -117,7 +117,7 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
 
   CodeThemeData _buildCodeTheme(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
-    
+
     // Light theme colors (GitHub-like)
     final lightTheme = {
       'root': TextStyle(
@@ -188,7 +188,7 @@ class SimpleCodeEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,

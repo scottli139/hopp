@@ -136,9 +136,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             builder: (context, ref, child) {
               final isDirty = ref.watch(activeTabProvider)?.isDirty ?? false;
               return IconButton(
-                onPressed: isDirty
-                    ? () => _saveRequest(ref, request)
-                    : null,
+                onPressed: isDirty ? () => _saveRequest(ref, request) : null,
                 icon: const Icon(Icons.save, size: 18),
                 tooltip: 'Save to collection',
                 color: isDirty ? AppColors.primary : null,
@@ -377,7 +375,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     HttpRequest request,
   ) {
     final language = _getLanguageForBodyType(request.bodyType);
-    
+
     // Use CodeEditor for JSON with syntax highlighting
     if (language == CodeLanguage.json) {
       return CodeEditor(
@@ -389,7 +387,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         },
       );
     }
-    
+
     // Fallback to SimpleCodeEditor for other types
     return SimpleCodeEditor(
       code: request.body,
@@ -461,7 +459,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     AppLogger.info('[RequestEditor] Saving request: ${request.id}');
     ref.read(collectionProvider.notifier).updateRequestInCollection(request);
     ref.read(requestTabProvider.notifier).markAsSaved(request.id);
-    
+
     // Show success feedback
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(

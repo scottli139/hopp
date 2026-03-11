@@ -931,6 +931,52 @@ if (_lastTabId != activeTab.id) {
 
 ---
 
+### 2026-03-11 会话 - F1.11 HTTPS 证书信息查看实现
+
+**本次会话完成的工作**:
+1. ✅ **实现 HTTPS 证书信息查看功能 (F1.11)**
+   - 创建 `CertificateInfo` 模型存储证书信息
+   - 创建 `CertificateChainEntry` 模型存储证书链
+   - 修改 `HttpResponse` 添加 `certificateInfo` 字段
+   - 修改 `ResponseViewer` 添加动态 Certificate Tab
+   - Tab 仅在 HTTPS 响应包含证书信息时显示
+   - 证书状态卡片显示有效/过期状态、剩余天数
+   - 详细信息区域展示：Subject、Issuer、有效期、签名算法、序列号、指纹等
+   - 证书链展示（如有）
+2. ✅ **修复 TabController 问题**
+   - 修复 `SingleTickerProviderStateMixin` 多次创建 ticker 错误
+   - 改为 `TickerProviderStateMixin`
+   - 修复 Tab 点击无响应问题
+3. ✅ **添加测试**
+   - 15 个单元测试验证 `CertificateInfo` 模型
+   - 1 个 Widget 测试验证 Certificate Tab 显示逻辑
+4. ✅ **添加日志记录**
+   - 使用 `AppLogger` 记录证书提取过程
+   - 符合 CODING_STANDARDS.md 日志规范
+
+**创建/修改的文件**:
+- `lib/models/certificate_info.dart` - 证书信息模型 (新建)
+- `lib/services/certificate_helper.dart` - IO 平台证书提取 (新建)
+- `lib/services/certificate_helper_stub.dart` - Web 平台 stub (新建)
+- `lib/models/http_response.dart` - 添加 `certificateInfo` 字段
+- `lib/models/models.dart` - 导出证书模型
+- `lib/services/http_service.dart` - 集成证书捕获和模拟证书生成
+- `lib/widgets/request/response_viewer.dart` - 添加 Certificate Tab UI
+- `test/models/certificate_info_test.dart` - 证书模型测试 (新建)
+
+**Git 提交记录**:
+```
+feat(certificate): implement HTTPS certificate info viewer (F1.11)
+test(certificate): add widget test and logging for certificate feature
+fix(certificate): fix TabController ticker issue and add certificate capture
+fix(certificate): ensure TabController is synchronized in build method
+docs: reorganize BACKLOG.md and DEVELOPMENT_PLAN.md
+```
+
+**测试状态**: 419 个测试全部通过 ✅
+
+---
+
 ### 2026-03-11 会话 - 品牌化与 Logo 统一
 
 **本次会话完成的工作**:

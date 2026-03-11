@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hopp/models/certificate_info.dart';
 import 'package:hopp/models/http_request.dart';
 import 'package:hopp/models/http_response.dart';
 import 'package:hopp/models/key_value_pair.dart';
@@ -474,6 +475,30 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.copy), findsOneWidget);
+      });
+    });
+
+    group('Certificate tab', () {
+      testWidgets('should not show Certificate tab when no certificate info',
+          (tester) async {
+        final response = HttpResponse(
+          statusCode: 200,
+          body: '{}',
+          durationMs: 100,
+          timestamp: DateTime.now(),
+        );
+
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        // Should only show Body, Headers, Cookies tabs (no Certificate)
+        expect(find.text('Body'), findsOneWidget);
+        expect(find.text('Headers'), findsOneWidget);
+        expect(find.text('Cookies'), findsOneWidget);
+        expect(find.text('Certificate'), findsNothing);
       });
     });
 

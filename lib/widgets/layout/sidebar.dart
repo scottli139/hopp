@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../providers/providers.dart';
+import '../../screens/about/about_screen.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
 
@@ -48,12 +49,16 @@ class Sidebar extends ConsumerWidget {
 
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Container(
       height: AppConstants.appBarHeight,
       padding: const EdgeInsets.symmetric(horizontal: AppConstants.spaceM),
       child: Row(
         children: [
+          // Brand Logo
+          _buildBrandLogo(context),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Collections',
@@ -64,6 +69,15 @@ class Sidebar extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          // About button
+          IconButton(
+            icon: const Icon(Icons.info_outline, size: 16),
+            tooltip: 'About Hopp',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            onPressed: () => _showAboutDialog(context),
+          ),
+          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.add, size: 16),
             tooltip: 'New Collection',
@@ -541,6 +555,200 @@ class Sidebar extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// Build brand logo widget
+  Widget _buildBrandLogo(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primary,
+            const Color(0xFF8B5CF6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withOpacity(0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: const Center(
+        child: Text(
+          'H',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Show about dialog
+  void _showAboutDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        contentPadding: const EdgeInsets.all(24),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Logo
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colorScheme.primary,
+                      const Color(0xFF8B5CF6),
+                      const Color(0xFFEC4899),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.primary.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.api_rounded,
+                  size: 32,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // App name
+              Text(
+                'Hopp',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  foreground: Paint()
+                    ..shader = LinearGradient(
+                      colors: [
+                        colorScheme.primary,
+                        const Color(0xFFEC4899),
+                      ],
+                    ).createShader(
+                      const Rect.fromLTWH(0, 0, 100, 30),
+                    ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              // Tagline
+              Text(
+                'Hop to your APIs',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface.withOpacity(0.6),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
+              // Version
+              _buildInfoRow(context, 'Version', '0.1.0 (Beta)'),
+              const SizedBox(height: 8),
+              _buildInfoRow(context, 'Platform', 'macOS'),
+              const SizedBox(height: 8),
+              _buildInfoRow(context, 'Flutter', '3.27.x'),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              // Footer
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 14,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Powered by AI · Built with Flutter',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '© 2026 Hopp. All rights reserved.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurface.withOpacity(0.4),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const AboutScreen(),
+                ),
+              );
+            },
+            child: const Text('More Info'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          '$label: ',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          ),
+        ),
+      ],
     );
   }
 }

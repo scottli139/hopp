@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EC4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Mini Logo Icon -->
+  <g transform="translate(8, 8) scale(0.12)">
+    <circle cx="100" cy="100" r="95" fill="url(#textGradient)"/>
+    <ellipse cx="70" cy="60" rx="25" ry="60" fill="white" transform="rotate(-15, 70, 60)"/>
+    <ellipse cx="130" cy="60" rx="25" ry="60" fill="white" transform="rotate(15, 130, 60)"/>
+    <ellipse cx="100" cy="110" rx="80" ry="70" fill="white"/>
+    <circle cx="75" cy="95" r="10" fill="#1F2937"/>
+    <circle cx="125" cy="95" r="10" fill="#1F2937"/>
+    <ellipse cx="100" cy="115" rx="6" ry="5" fill="#EC4899"/>
+  </g>
+  
+  <!-- Brand Text -->
+  <text x="38" y="28" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="url(#textGradient)">Hopp</text>
+</svg>

@@ -62,7 +62,7 @@ class HoppApp extends ConsumerWidget {
         centerTitle: false,
         elevation: 0,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -84,7 +84,7 @@ class HoppApp extends ConsumerWidget {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       ),
-      tabBarTheme: const TabBarTheme(
+      tabBarTheme: const TabBarThemeData(
         labelColor: Color(0xFF6366F1),
         unselectedLabelColor: Colors.grey,
         indicatorColor: Color(0xFF6366F1),
@@ -104,7 +104,7 @@ class HoppApp extends ConsumerWidget {
         centerTitle: false,
         elevation: 0,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -126,7 +126,7 @@ class HoppApp extends ConsumerWidget {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       ),
-      tabBarTheme: const TabBarTheme(
+      tabBarTheme: const TabBarThemeData(
         labelColor: Color(0xFF818CF8),
         unselectedLabelColor: Colors.grey,
         indicatorColor: Color(0xFF818CF8),

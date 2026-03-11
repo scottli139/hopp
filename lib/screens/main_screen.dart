@@ -128,31 +128,79 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildStatusBar() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       height: 28,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: colorScheme.surfaceContainerHighest,
         border: Border(
           top: BorderSide(
-            color: Theme.of(context).dividerColor,
+            color: theme.dividerColor,
           ),
         ),
       ),
       child: Row(
         children: [
-          Text(
-            'Hopp v0.1.0',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 11,
+          // Brand indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.primary.withOpacity(0.8),
+                  const Color(0xFF8B5CF6).withOpacity(0.8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.api_rounded,
+                  size: 10,
+                  color: Colors.white.withOpacity(0.9),
                 ),
+                const SizedBox(width: 4),
+                Text(
+                  'Hopp',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'v0.1.0',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 11,
+              color: colorScheme.onSurface.withOpacity(0.6),
+            ),
           ),
           const Spacer(),
+          // Status indicator
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: const Color(0xFF10B981),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(width: 6),
           Text(
             'Ready',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 11,
-                ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 11,
+              color: colorScheme.onSurface.withOpacity(0.8),
+            ),
           ),
         ],
       ),

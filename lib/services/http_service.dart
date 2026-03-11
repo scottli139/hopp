@@ -4,9 +4,13 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 
+import '../models/certificate_info.dart';
 import '../models/http_request.dart';
 import '../models/http_response.dart';
 import '../models/key_value_pair.dart';
+
+// Conditional import for dart:io
+import 'certificate_helper.dart' if (dart.library.html) 'certificate_helper_stub.dart';
 
 class HttpService {
   final Dio _dio;
@@ -78,6 +82,9 @@ class HttpService {
         responseBody = _decodeBody(bytes, response.headers);
       }
 
+      // 尝试获取证书信息
+      final certificateInfo = _tryGetCertificateInfo(response);
+
       _logger.i(
           'Request completed: ${response.statusCode} in ${stopwatch.elapsedMilliseconds}ms');
 
@@ -89,6 +96,7 @@ class HttpService {
         durationMs: stopwatch.elapsedMilliseconds,
         sizeBytes: bytes?.length,
         timestamp: DateTime.now(),
+        certificateInfo: certificateInfo,
       );
     } on DioException catch (e) {
       stopwatch.stop();
@@ -235,6 +243,16 @@ class HttpService {
 
   void cancelRequest(CancelToken token, [String? reason]) {
     token.cancel(reason ?? 'Cancelled by user');
+  }
+
+  /// 尝试从响应中获取证书信息
+  CertificateInfo? _tryGetCertificateInfo(Response<Uint8List> response) {
+    try {
+      return extractCertificateFromResponse(response);
+    } catch (e) {
+      _logger.d('Could not extract certificate: $e');
+      return null;
+    }
   }
 }
 

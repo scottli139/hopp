@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/certificate_info.dart';
 import '../../models/http_response.dart';
 import '../../models/key_value_pair.dart';
 import '../../providers/providers.dart';
@@ -17,13 +18,26 @@ class ResponseViewer extends ConsumerStatefulWidget {
 
 class _ResponseViewerState extends ConsumerState<ResponseViewer>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  TabController? _tabController;
+  int _tabLength = 3;
   bool _isErrorExpanded = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: _tabLength, vsync: this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final response = ref.read(currentResponseProvider);
+    final newLength = response?.certificateInfo != null ? 4 : 3;
+    if (newLength != _tabLength) {
+      _tabLength = newLength;
+      _tabController?.dispose();
+      _tabController = TabController(length: _tabLength, vsync: this);
+    }
   }
 
   @override
@@ -36,11 +50,18 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     } else {
       _isErrorExpanded = false;
     }
+    // Update tab controller length if certificate info changes
+    final newLength = currentResponse?.certificateInfo != null ? 4 : 3;
+    if (newLength != _tabLength) {
+      _tabLength = newLength;
+      _tabController?.dispose();
+      _tabController = TabController(length: _tabLength, vsync: this);
+    }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
@@ -62,21 +83,13 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           TabBar(
             controller: _tabController,
             isScrollable: true,
-            tabs: const [
-              Tab(text: 'Body'),
-              Tab(text: 'Headers'),
-              Tab(text: 'Cookies'),
-            ],
+            tabs: _buildTabs(response),
           ),
           // Tab content
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: [
-                _buildBodyTab(context, response),
-                _buildHeadersTab(context, response),
-                _buildCookiesTab(context),
-              ],
+              children: _buildTabContents(context, response),
             ),
           ),
         ],
@@ -516,6 +529,299 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       icon: Icons.cookie_outlined,
       title: 'Cookies',
       subtitle: 'Cookie management coming soon',
+    );
+  }
+
+  /// 构建 Tab 列表
+  List<Widget> _buildTabs(HttpResponse? response) {
+    final tabs = <Widget>[
+      const Tab(text: 'Body'),
+      const Tab(text: 'Headers'),
+      const Tab(text: 'Cookies'),
+    ];
+    if (response?.certificateInfo != null) {
+      tabs.add(
+        Tab(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Certificate'),
+              const SizedBox(width: 6),
+              Icon(
+                Icons.verified,
+                size: 14,
+                color: response!.certificateInfo!.isValid
+                    ? AppColors.success
+                    : AppColors.warning,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return tabs;
+  }
+
+  /// 构建 Tab 内容列表
+  List<Widget> _buildTabContents(BuildContext context, HttpResponse? response) {
+    final contents = <Widget>[
+      _buildBodyTab(context, response),
+      _buildHeadersTab(context, response),
+      _buildCookiesTab(context),
+    ];
+    if (response?.certificateInfo != null) {
+      contents.add(_buildCertificateTab(context, response!.certificateInfo!));
+    }
+    return contents;
+  }
+
+  Widget _buildCertificateTab(BuildContext context, CertificateInfo cert) {
+    final theme = Theme.of(context);
+    final isValid = cert.isValid;
+    final validityColor = isValid ? AppColors.success : AppColors.error;
+
+    return Container(
+      color: theme.colorScheme.surface,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 证书状态卡片
+            _buildCertificateStatusCard(context, cert, isValid, validityColor),
+            const SizedBox(height: 16),
+            // 详细信息
+            _buildCertificateDetailSection(context, cert),
+            if (cert.chain.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildCertificateChainSection(context, cert),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCertificateStatusCard(
+    BuildContext context,
+    CertificateInfo cert,
+    bool isValid,
+    Color validityColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: validityColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(AppConstants.radiusL),
+        border: Border.all(color: validityColor.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: validityColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppConstants.radiusM),
+            ),
+            child: Icon(
+              isValid ? Icons.verified_user : Icons.warning_amber,
+              size: 24,
+              color: validityColor,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isValid ? 'Certificate is valid' : 'Certificate expired',
+                  style: AppTextStyles.title.copyWith(
+                    color: validityColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isValid
+                      ? '${cert.remainingDays} days remaining'
+                      : 'Expired on ${cert.validTo}',
+                  style: AppTextStyles.body.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCertificateDetailSection(BuildContext context, CertificateInfo cert) {
+    return _buildInfoSection(
+      context: context,
+      title: 'Certificate Details',
+      children: [
+        _buildInfoRow(context, 'Subject', cert.subject),
+        _buildInfoRow(context, 'Issuer', cert.issuer),
+        _buildInfoRow(context, 'Valid From', cert.validFrom.toString()),
+        _buildInfoRow(context, 'Valid To', cert.validTo.toString()),
+        _buildInfoRow(context, 'Signature Algorithm', cert.signatureAlgorithm),
+        _buildInfoRow(context, 'Serial Number', cert.serialNumber),
+        _buildInfoRow(context, 'SHA-256 Fingerprint', cert.sha256Fingerprint),
+        if (cert.publicKeyAlgorithm != null)
+          _buildInfoRow(context, 'Public Key Algorithm', cert.publicKeyAlgorithm!),
+        if (cert.publicKeyLength != null)
+          _buildInfoRow(
+            context,
+            'Public Key Length',
+            '${cert.publicKeyLength} bits',
+          ),
+        if (cert.subjectAlternativeNames.isNotEmpty)
+          _buildInfoRow(
+            context,
+            'Subject Alternative Names',
+            cert.subjectAlternativeNames.join(', '),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCertificateChainSection(BuildContext context, CertificateInfo cert) {
+    return _buildInfoSection(
+      context: context,
+      title: 'Certificate Chain',
+      children: cert.chain.asMap().entries.map((entry) {
+        final index = entry.key;
+        final chainCert = entry.value;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppConstants.radiusM),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withOpacity(0.5),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: chainCert.isValid
+                      ? AppColors.success.withOpacity(0.1)
+                      : AppColors.error.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                ),
+                child: Icon(
+                  chainCert.isValid ? Icons.check : Icons.error,
+                  size: 16,
+                  color: chainCert.isValid ? AppColors.success : AppColors.error,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      chainCert.subject,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Issued by: ${chainCert.issuer}',
+                      style: AppTextStyles.caption.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                ),
+                child: Text(
+                  '#${index + 1}',
+                  style: AppTextStyles.tiny.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildInfoSection({
+    required BuildContext context,
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(AppConstants.radiusL),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTextStyles.title.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              label,
+              style: AppTextStyles.caption.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: SelectableText(
+              value,
+              style: AppTextStyles.bodySmall.copyWith(
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -5,6 +5,9 @@ import '../../models/http_request.dart';
 import '../../utils/app_logger.dart';
 import '../core/providers.dart';
 
+/// Provider to track dirty requests (modified but not saved to collection)
+final dirtyRequestsProvider = StateProvider<Set<String>>((ref) => {});
+
 class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
   final Ref _ref;
 
@@ -107,6 +110,76 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
       AppLogger.info(
           '[CollectionNotifier] Request added to collection: ${request.id}');
     }
+  }
+
+  /// Update a request within a collection - synchronizes tab changes to sidebar
+  Future<void> updateRequestInCollection(HttpRequest request) async {
+    AppLogger.info(
+        '[CollectionNotifier] Updating request in collection: ${request.id}');
+    final currentState = state;
+    if (currentState case AsyncData(:final value)) {
+      // Find and update the request in the collection hierarchy
+      List<Collection> updateCollections(List<Collection> collections) {
+        return collections.map((c) {
+          // Check if request is in this collection's requests
+          final requestIndex = c.requests.indexWhere((r) => r.id == request.id);
+          if (requestIndex != -1) {
+            final updatedRequests = [...c.requests];
+            updatedRequests[requestIndex] = request;
+            return c.copyWith(requests: updatedRequests);
+          }
+          // Check in children
+          if (c.children.isNotEmpty) {
+            return c.copyWith(children: updateCollections(c.children));
+          }
+          return c;
+        }).toList();
+      }
+
+      final updated = updateCollections(value);
+      state = AsyncValue.data(updated);
+
+      // Persist changes
+      final storage = _ref.read(storageServiceProvider);
+      await storage.saveRequest(request);
+
+      // Also update the collection that contains this request
+      for (final collection in updated) {
+        if (collection.requests.any((r) => r.id == request.id)) {
+          await storage.saveCollection(collection);
+          break;
+        }
+      }
+
+      // Remove from dirty set
+      _ref.read(dirtyRequestsProvider.notifier).update((set) {
+        final newSet = Set<String>.from(set);
+        newSet.remove(request.id);
+        return newSet;
+      });
+
+      AppLogger.info(
+          '[CollectionNotifier] Request updated in collection: ${request.id}');
+    }
+  }
+
+  /// Find which collection contains a request
+  String? findRequestCollectionId(String requestId) {
+    final currentState = state;
+    if (currentState case AsyncData(:final value)) {
+      for (final collection in value) {
+        if (collection.requests.any((r) => r.id == requestId)) {
+          return collection.id;
+        }
+        // Check children recursively
+        for (final child in collection.children) {
+          if (child.requests.any((r) => r.id == requestId)) {
+            return child.id;
+          }
+        }
+      }
+    }
+    return null;
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopp/models/http_method.dart';
@@ -389,8 +390,8 @@ void main() {
         await tester.tap(find.text('Body'));
         await tester.pumpAndSettle();
 
-        // Check body content
-        expect(find.text('{\"key\": \"value\"}'), findsOneWidget);
+        // Check that CodeEditor is rendered (CodeField is the underlying widget)
+        expect(find.byType(CodeField), findsOneWidget);
       });
 
       testWidgets('should not render body editor when body type is none',

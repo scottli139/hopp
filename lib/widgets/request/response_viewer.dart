@@ -15,11 +15,24 @@ class ResponseViewer extends ConsumerStatefulWidget {
 class _ResponseViewerState extends ConsumerState<ResponseViewer>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isErrorExpanded = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void didUpdateWidget(ResponseViewer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reset error expansion when response changes
+    final currentResponse = ref.read(currentResponseProvider);
+    if (currentResponse?.error != null) {
+      // Keep expansion state if error is the same
+    } else {
+      _isErrorExpanded = false;
+    }
   }
 
   @override
@@ -85,24 +98,83 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     }
 
     if (response.error != null) {
-      return Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.1),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.error_outline, size: 16, color: Colors.red),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                response.error!,
-                style: const TextStyle(fontSize: 12, color: Colors.red),
-                overflow: TextOverflow.ellipsis,
+      final errorText = response.error!;
+      final isLongError = errorText.length > 80;
+      
+      return GestureDetector(
+        onTap: isLongError
+            ? () {
+                setState(() {
+                  _isErrorExpanded = !_isErrorExpanded;
+                });
+              }
+            : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          constraints: BoxConstraints(
+            maxHeight: _isErrorExpanded ? 150 : 40,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.1),
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.red.withOpacity(0.2),
               ),
             ),
-          ],
+          ),
+          child: Row(
+            crossAxisAlignment: _isErrorExpanded
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 16, color: Colors.red),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _isErrorExpanded
+                    ? SingleChildScrollView(
+                        child: SelectableText(
+                          errorText,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.red,
+                            height: 1.4,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        errorText,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.red,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+              ),
+              if (isLongError)
+                Icon(
+                  _isErrorExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  size: 16,
+                  color: Colors.red.withOpacity(0.7),
+                ),
+              if (isLongError) const SizedBox(width: 4),
+              // Copy error button
+              IconButton(
+                icon: const Icon(Icons.copy, size: 14),
+                color: Colors.red.withOpacity(0.7),
+                tooltip: 'Copy error',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 24,
+                  minHeight: 24,
+                ),
+                onPressed: () => _copyToClipboard(errorText),
+              ),
+            ],
+          ),
         ),
       );
     }

@@ -5,6 +5,9 @@ import '../../models/http_method.dart';
 import '../../models/http_request.dart';
 import '../../models/key_value_pair.dart';
 import '../../providers/providers.dart';
+import '../../utils/app_logger.dart';
+import '../../utils/constants.dart';
+import '../common/code_editor.dart';
 
 class RequestEditor extends ConsumerStatefulWidget {
   const RequestEditor({super.key});
@@ -128,6 +131,21 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             ),
           ),
           const SizedBox(width: 8),
+          // Save button
+          Consumer(
+            builder: (context, ref, child) {
+              final isDirty = ref.watch(activeTabProvider)?.isDirty ?? false;
+              return IconButton(
+                onPressed: isDirty
+                    ? () => _saveRequest(ref, request)
+                    : null,
+                icon: const Icon(Icons.save, size: 18),
+                tooltip: 'Save to collection',
+                color: isDirty ? AppColors.primary : null,
+              );
+            },
+          ),
+          const SizedBox(width: 4),
           // Send button
           FilledButton.icon(
             onPressed: () => _sendRequest(ref, request),
@@ -341,31 +359,61 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             },
           ),
         ),
-        // Body editor
+        // Body editor with syntax highlighting
         if (request.bodyType != 'none')
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                controller: TextEditingController(text: request.body),
-                maxLines: null,
-                expands: true,
-                decoration: const InputDecoration(
-                  hintText: 'Request body',
-                  alignLabelWithHint: true,
-                ),
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 13,
-                ),
-                onChanged: (value) {
-                  _updateRequest(ref, request.copyWith(body: value));
-                },
-              ),
+              child: _buildBodyEditor(context, ref, request),
             ),
           ),
       ],
     );
+  }
+
+  Widget _buildBodyEditor(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    final language = _getLanguageForBodyType(request.bodyType);
+    
+    // Use CodeEditor for JSON with syntax highlighting
+    if (language == CodeLanguage.json) {
+      return CodeEditor(
+        code: request.body,
+        language: CodeLanguage.json,
+        expands: true,
+        onChanged: (value) {
+          _updateRequest(ref, request.copyWith(body: value));
+        },
+      );
+    }
+    
+    // Fallback to SimpleCodeEditor for other types
+    return SimpleCodeEditor(
+      code: request.body,
+      language: language,
+      expands: true,
+      onChanged: (value) {
+        _updateRequest(ref, request.copyWith(body: value));
+      },
+    );
+  }
+
+  CodeLanguage _getLanguageForBodyType(String bodyType) {
+    switch (bodyType) {
+      case 'json':
+        return CodeLanguage.json;
+      case 'xml':
+        return CodeLanguage.xml;
+      case 'html':
+        return CodeLanguage.html;
+      case 'text':
+      case 'form':
+      default:
+        return CodeLanguage.text;
+    }
   }
 
   Widget _buildAuthTab(BuildContext context) {
@@ -402,7 +450,25 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             activeTabId,
             updatedRequest,
           );
+      // Mark as dirty in the provider
+      ref.read(dirtyRequestsProvider.notifier).update((set) {
+        return {...set, activeTabId};
+      });
     }
+  }
+
+  void _saveRequest(WidgetRef ref, HttpRequest request) {
+    AppLogger.info('[RequestEditor] Saving request: ${request.id}');
+    ref.read(collectionProvider.notifier).updateRequestInCollection(request);
+    ref.read(requestTabProvider.notifier).markAsSaved(request.id);
+    
+    // Show success feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Request saved to collection'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   void _sendRequest(WidgetRef ref, HttpRequest request) {

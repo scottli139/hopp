@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_settings.dart';
 import '../models/collection.dart';
+import '../models/http_method.dart';
 import '../models/http_request.dart';
 import '../models/key_value_pair.dart';
 import '../utils/app_logger.dart';
@@ -27,6 +28,7 @@ class StorageService {
     Hive.init('${appDir.path}/hopp');
 
     // Register adapters
+    Hive.registerAdapter(HttpMethodAdapter());
     Hive.registerAdapter(KeyValuePairAdapter());
     Hive.registerAdapter(HttpRequestAdapter());
     Hive.registerAdapter(CollectionAdapter());

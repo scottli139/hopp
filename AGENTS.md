@@ -8,10 +8,10 @@
 
 **Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Flutter 构建，注重性能和用户体验。
 
-**当前状态**: ✅ **Session End - UI/UX问题记录，下次优先修复**  
+**当前状态**: ✅ **UI/UX 优化完成 (M3)**  
 **技术栈**: Flutter 3.27.x + Dart + Riverpod  
 **目标平台**: macOS 10.15+ / Windows 10+ / Linux  
-**下次会话重点**: 🔴 **UI数据一致性BUG修复**、JSON语法高亮、错误信息优化
+**下次会话重点**: 🟡 **主题切换**、🟢 **快捷键支持**
 
 ---
 
@@ -754,6 +754,59 @@ genhtml coverage/lcov.info -o coverage/html
 
 ---
 
+### 2026-03-11 会话 - UI/UX 优化完成
+
+**本次会话完成的工作**:
+1. ✅ 修复 P0 - Method 显示不一致 BUG
+   - 新增 `dirtyRequestsProvider` 跟踪未保存的修改
+   - 在 `CollectionNotifier` 添加 `updateRequestInCollection()` 方法
+   - 在 `RequestEditor` 添加保存按钮，保存时同步更新 collection
+2. ✅ 修复 P1 - 错误信息截断问题
+   - 错误条支持可展开的多行显示
+   - 添加点击展开/折叠功能
+   - 添加复制错误按钮
+3. ✅ 实现 P1 - JSON Body 语法高亮
+   - 创建 `CodeEditor` 组件支持 JSON/XML/HTML 语法高亮
+   - 集成 `flutter_code_editor` 包
+   - 支持浅色/深色主题自适应
+4. ✅ 更新相关测试
+   - 更新 `request_editor_test.dart` 适应 CodeEditor
+5. ✅ 所有 406 个测试通过
+
+**创建/修改的文件**:
+
+| 文件 | 说明 |
+|------|------|
+| `lib/widgets/common/code_editor.dart` | 新建 - 语法高亮代码编辑器 |
+| `lib/providers/collection/collection_provider.dart` | 修改 - 添加 updateRequestInCollection |
+| `lib/widgets/request/request_editor.dart` | 修改 - 添加保存按钮、CodeEditor 集成 |
+| `lib/widgets/request/response_viewer.dart` | 修改 - 可展开错误信息 |
+| `lib/widgets/widgets.dart` | 修改 - 导出 CodeEditor |
+| `test/widgets/request_editor_test.dart` | 修改 - 更新测试 |
+| `docs/DEVELOPMENT_PLAN.md` | 修改 - 更新任务状态 |
+| `AGENTS.md` | 修改 - 添加会话记录 |
+
+**UI/UX 修复详情**:
+
+**🔴 P0 - 数据一致性**:
+- 问题：Method 显示不一致（标签 POST vs 侧边栏 GET）
+- 解决：添加保存功能，同步更新 collection 中的请求数据
+- 使用：修改请求后点击保存按钮，侧边栏会同步更新
+
+**🟡 P1 - 错误信息展示**:
+- 问题：错误条文字被截断
+- 解决：支持点击展开查看完整错误信息
+- 新增：复制错误按钮
+
+**🟡 P1 - JSON 语法高亮**:
+- 问题：Body 编辑器无语法高亮
+- 解决：集成 flutter_code_editor
+- 支持：JSON、XML、HTML 语法高亮
+
+**测试状态**: 406 个测试全部通过 ✅
+
+---
+
 ### 2026-03-11 会话 - Widget 测试完成
 
 **本次会话完成的工作**:
@@ -811,11 +864,6 @@ fvm flutter test test/widgets/request_tabs_test.dart
 
 **测试总计**: 317 (单元测试) + 88 (Widget 测试) = **405 个测试全部通过** ✅
 
-**下次会话重点**:
-- 主题切换功能完善
-- 暗黑模式完善
-- 快捷键支持
-
 ---
 
 ## 🔗 重要链接
@@ -843,68 +891,78 @@ fvm flutter test test/widgets/request_tabs_test.dart
 | 2026-03-11 | v0.2.2-widget-tests | **Widget 测试完成**: 88个测试全部通过，Sidebar/RequestEditor/ResponseViewer/RequestTabs |
 | 2026-03-11 | v0.2.3-logging-std | **日志规范完成**: 新增日志规范到 CODING_STANDARDS.md，所有关键模块添加日志，macOS 网络权限修复 |
 | 2026-03-11 | v0.2.4-ui-ux-review | **UI/UX 问题记录**: 用户截图反馈分析，发现 Method 显示不一致等 P0 BUG，已记录到开发计划 |
+| 2026-03-11 | v0.2.5-ui-ux-fix | **UI/UX 优化完成**: 修复 P0 数据一致性 BUG、错误信息可展开、JSON 语法高亮，406个测试通过 |
 
 ---
 
 ## UI/UX 问题跟踪
 
-### 2026-03-11 用户反馈问题
+### 2026-03-11 用户反馈问题 - ✅ 已全部修复
 
 **来源**: 用户截图 `/Users/build/Desktop/Screenshot 2026-03-10 at 19.59.18.png`
 
-#### 🔴 P0 - 数据一致性 BUG
+#### ✅ P0 - 数据一致性 BUG - 已修复
 
 **问题**: Method 显示不一致
 - 顶部标签显示: POST (绿色)
 - 侧边栏显示: GET (蓝色)  
 - 请求编辑器显示: POST
 
-**原因分析**:
-1. 创建请求时默认 Method 是 GET
-2. 但标签页显示的是请求被创建时的 Method
-3. 用户在编辑器中修改 Method 后，侧边栏和标签页没有同步更新
+**修复内容**:
+1. 新增 `dirtyRequestsProvider` 跟踪未保存的修改
+2. 在 `CollectionNotifier` 添加 `updateRequestInCollection()` 方法
+3. 在 `RequestEditor` 添加保存按钮，保存时同步更新 collection
+4. 解决 Method 显示不一致问题
 
-**修复方案**:
-1. 检查 `requestTabProvider` 是否正确同步 Method 变化
-2. 确保 `collectionProvider` 中的请求数据与 tab 数据同步
-3. 考虑使用统一的请求数据源
+**相关文件**:
+- `lib/providers/collection/collection_provider.dart`
+- `lib/widgets/request/request_editor.dart`
 
-#### 🟡 P1 - 错误信息展示
+#### ✅ P1 - 错误信息展示 - 已修复
 
 **问题**: 错误信息被截断
 - 当前显示: "This indicates an error which most likely cannot be solved by th..."
 - 缺少展开/查看更多功能
 
-**修复方案**:
-1. 错误条支持多行显示
-2. 或添加点击展开详情功能
-3. 错误信息可复制
+**修复内容**:
+1. 错误条支持可展开的多行显示 (最大高度 150px)
+2. 添加点击展开/折叠功能，带动画效果
+3. 添加复制错误按钮，使用 SelectableText
+4. 错误条高度从固定 36px 改为自适应
 
-#### 🟡 P1 - Body 编辑器体验
+**相关文件**:
+- `lib/widgets/request/response_viewer.dart`
+
+#### ✅ P1 - Body 编辑器体验 - 已修复
 
 **问题**: JSON Body 缺少语法高亮
 - 当前是普通 TextField
 - 没有 JSON 格式化功能
 
-**修复方案**:
-1. 集成 `flutter_code_editor` 包
-2. 或自定义 JSON 编辑器组件
-3. 支持语法高亮、自动缩进
+**修复内容**:
+1. 创建 `CodeEditor` 组件支持 JSON/XML/HTML 语法高亮
+2. 集成 `flutter_code_editor` 包
+3. 支持浅色/深色主题自适应 (GitHub-like / VS Code-like 主题)
+4. 为 text/form 类型保留 SimpleCodeEditor
 
-#### 🟢 P2 - 布局优化
+**相关文件**:
+- `lib/widgets/common/code_editor.dart` (新建)
+- `lib/widgets/request/request_editor.dart`
+
+#### 🟢 P2 - 布局优化 (待后续处理)
 
 **问题**: 错误状态下响应区显示空状态
 - 错误条已显示连接错误
 - 响应区仍显示 "Send a request to see the response"
 
-**修复方案**:
-1. 错误状态下隐藏空状态提示
-2. 或在响应区显示错误详情
+**状态**: 低优先级，暂不处理
 
-#### 🟢 P2 - 标签页标题优化
+#### 🟢 P2 - 标签页标题优化 (待后续处理)
 
 **问题**: 标签页标题统一显示 "New Request"
 - 无法区分不同请求
+
+**状态**: 低优先级，暂不处理
 
 **修复方案**:
 1. 显示 URL path (如 GET /api/users)
@@ -1297,6 +1355,136 @@ flutter build windows --release
 # Linux
 flutter build linux --release
 ```
+
+### 8. flutter_code_editor 使用指南
+
+#### 8.1 基本用法
+
+```dart
+import 'package:flutter_code_editor/flutter_code_editor.dart';
+import 'package:highlight/languages/json.dart';
+
+CodeController _controller = CodeController(
+  text: '{"key": "value"}',
+  language: json, // Mode? 类型，来自 highlight 包
+);
+
+// 在 Widget 中使用
+CodeField(
+  controller: _controller,
+  textStyle: const TextStyle(
+    fontFamily: 'JetBrains Mono',
+    fontSize: 13,
+  ),
+)
+```
+
+#### 8.2 支持的语言
+
+```dart
+import 'package:highlight/languages/json.dart';
+import 'package:highlight/languages/xml.dart';
+import 'package:highlight/languages/htmlbars.dart';
+
+// 使用 Mode? 类型
+Mode? getLanguageMode(String language) {
+  switch (language) {
+    case 'json': return json;
+    case 'xml': return xml;
+    case 'html': return htmlbars;
+    default: return null;
+  }
+}
+```
+
+#### 8.3 主题配置
+
+```dart
+CodeThemeData _buildCodeTheme(ThemeData theme) {
+  final isDark = theme.brightness == Brightness.dark;
+  
+  final lightTheme = {
+    'root': TextStyle(
+      color: theme.colorScheme.onSurface,
+      backgroundColor: theme.colorScheme.surface,
+    ),
+    'key': TextStyle(
+      color: Colors.blue.shade700,
+      fontWeight: FontWeight.w600,
+    ),
+    'string': TextStyle(color: Colors.green.shade700),
+    'number': TextStyle(color: Colors.blue.shade600),
+    'boolean': TextStyle(color: Colors.purple.shade700),
+  };
+  
+  return CodeThemeData(styles: isDark ? darkTheme : lightTheme);
+}
+```
+
+### 9. UI 状态同步最佳实践
+
+#### 9.1 问题：数据一致性 BUG
+
+**场景**: 修改请求 Method 后，标签页、侧边栏、编辑器显示不一致
+
+**原因**: 
+- Tab 数据存储在 `requestTabProvider`
+- Collection 数据存储在 `collectionProvider`
+- 两者没有同步机制
+
+#### 9.2 解决方案
+
+**步骤 1**: 添加脏标记 Provider
+
+```dart
+final dirtyRequestsProvider = StateProvider<Set<String>>((ref) => {});
+```
+
+**步骤 2**: 在 CollectionNotifier 添加同步方法
+
+```dart
+Future<void> updateRequestInCollection(HttpRequest request) async {
+  // 1. 更新本地状态
+  state = state.map((collection) {
+    // 在集合中查找并更新请求
+    final updatedRequests = collection.requests.map((r) {
+      return r.id == request.id ? request : r;
+    }).toList();
+    return collection.copyWith(requests: updatedRequests);
+  }).toList();
+  
+  // 2. 持久化到存储
+  await storage.saveRequest(request);
+  
+  // 3. 清除脏标记
+  ref.read(dirtyRequestsProvider.notifier).update((set) {
+    return {...set}..remove(request.id);
+  });
+}
+```
+
+**步骤 3**: 在 UI 中添加保存按钮
+
+```dart
+Consumer(
+  builder: (context, ref, child) {
+    final isDirty = ref.watch(activeTabProvider)?.isDirty ?? false;
+    return IconButton(
+      onPressed: isDirty 
+        ? () => _saveRequest(ref, request) 
+        : null,
+      icon: const Icon(Icons.save),
+    );
+  },
+)
+```
+
+#### 9.3 关键要点
+
+1. **明确数据源**: Collection 是单一数据源，Tab 是临时编辑状态
+2. **显式保存**: 用户需要点击保存才能同步到 Collection
+3. **脏标记**: 显示未保存状态，防止数据丢失
+4. **错误恢复**: 保存失败时保留脏标记
 
 ---
 

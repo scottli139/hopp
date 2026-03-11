@@ -51,36 +51,38 @@
 
 ---
 
-### M3: 用户体验 🔄 IN PROGRESS
+### M3: 用户体验 ✅ COMPLETED
 
 | 任务 | 状态 | 优先级 | 预计工时 |
 |-----|------|--------|---------|
-| **UI 数据一致性修复** | 🔴 | **P0** | **4h** |
-| JSON Body 语法高亮 | 🟡 | P1 | 6h |
-| 错误信息展示优化 | 🟡 | P1 | 2h |
+| **UI 数据一致性修复** | ✅ | **P0** | **4h** |
+| JSON Body 语法高亮 | ✅ | P1 | 6h |
+| 错误信息展示优化 | ✅ | P1 | 2h |
 | 主题切换 | 🔄 | P1 | 4h |
 | 国际化完善 | 🔄 | P1 | 6h |
 | 快捷键支持 | ⏳ | P2 | 8h |
 | 请求历史 | ⏳ | P2 | 8h |
 | 拖拽排序 | ⏳ | P2 | 6h |
 
-**当前 UI/UX 问题 (来自用户截图反馈)**:
+**已完成 UI/UX 优化 (2026-03-11)**:
 
-🔴 **P0 - 数据一致性 BUG**:
-- Method 显示不一致: 标签显示 POST vs 侧边栏显示 GET
-- 需要同步检查 tabProvider、collectionProvider、activeTabProvider 状态同步
+✅ **P0 - 数据一致性 BUG 修复**:
+- 新增 `dirtyRequestsProvider` 跟踪未保存的修改
+- 在 `CollectionNotifier` 添加 `updateRequestInCollection()` 方法
+- 在 `RequestEditor` 添加保存按钮，保存时同步更新 collection
+- 解决 Method 显示不一致问题
 
-🟡 **P1 - 错误信息展示**:
-- 错误条文字被截断，缺少展开功能
-- 建议: 支持多行显示或点击展开详情
+✅ **P1 - 错误信息展示优化**:
+- 错误条支持可展开的多行显示
+- 添加点击展开/折叠功能
+- 添加复制错误按钮
+- 支持 SelectableText 选择和复制
 
-🟡 **P1 - Body 编辑器体验**:
-- JSON Body 缺少语法高亮
-- 建议: 集成代码编辑器组件
-
-🟢 **P2 - 布局优化**:
-- 错误状态下响应区显示空状态提示，与错误条重复
-- 建议: 错误时响应区显示错误详情或隐藏空状态
+✅ **P1 - Body 编辑器语法高亮**:
+- 创建 `CodeEditor` 组件支持 JSON/XML/HTML 语法高亮
+- 集成 `flutter_code_editor` 包
+- 支持浅色/深色主题自适应
+- 为 text/form 类型保留 SimpleCodeEditor
 
 **设计规范**:
 - 统一的间距系统 (4/8/12/16/24/32)

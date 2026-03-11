@@ -2,6 +2,87 @@
 
 > 以下功能暂不实现，作为未来迭代的候选功能。
 
+## 一、请求与响应增强功能
+
+| ID | 功能 | 优先级 | 预估工作量 | 说明 |
+|----|------|--------|------------|------|
+| F1.11 | HTTPS 证书信息查看 | ⭐⭐⭐ | 8h | Response 区域增加证书查看功能，显示证书颁发者、有效期、域名、加密算法等 |
+| F1.12 | 请求时间分析 (Timing) | ⭐⭐⭐ | 10h | 展示请求各环节时间消耗：DNS 解析、TCP 连接、SSL 握手、发送、等待、接收 |
+| F1.13 | 请求详情展示 | ⭐⭐⭐ | 6h | 展示实际发送的完整请求信息：最终 URL、请求头、请求体等（变量替换后） |
+
+## 二、请求管理功能
+
+| ID | 功能 | 优先级 | 预估工作量 | 说明 |
+|----|------|--------|------------|------|
+| F2.5 | 请求名称编辑 | ⭐⭐⭐ | 4h | 支持在 Request Editor 编辑请求名称，在 Sidebar 支持重命名请求 |
+
+**功能详细说明**:
+
+### F2.5 请求名称编辑
+
+**问题**: 当前创建请求后无法修改名称，影响请求管理和识别
+
+**功能需求**:
+1. **Request Editor 名称编辑**:
+   - 在 URL Bar 上方或 Method 旁边添加请求名称输入框
+   - 默认显示当前名称，支持直接编辑
+   - 编辑后自动更新 tab 标题和侧边栏显示
+
+2. **Sidebar 重命名**:
+   - 右键菜单添加 "Rename" 选项
+   - 或支持双击名称进入编辑模式
+   - 按 Enter 确认，Esc 取消
+
+3. **新建请求时**:
+   - 当前默认名称为 "New Request"
+   - 建议：可以根据 URL 自动生成名称（如 GET api/users → "GET users"）
+
+**相关文件**:
+- `lib/widgets/request/request_editor.dart` - 添加名称编辑 UI
+- `lib/widgets/layout/sidebar.dart` - 添加重命名功能
+- `lib/providers/collection/collection_provider.dart` - 重命名逻辑
+
+---
+
+## 四、测试与脚本功能
+
+**功能详细说明**:
+
+### F1.11 HTTPS 证书信息查看
+- **触发条件**: 仅当请求 URL 为 https:// 时显示证书查看入口
+- **展示内容**:
+  - 证书颁发者 (Issuer)
+  - 证书有效期 (Valid From/To)
+  - 域名信息 (Subject CN/SAN)
+  - 签名算法
+  - 公钥类型和长度
+  - 证书指纹 (SHA-1/SHA-256)
+- **UI 位置**: Response 区域新增 "Certificate" Tab
+
+### F1.12 请求时间分析 (Timing)
+- **展示方式**: 瀑布图或时间轴
+- **时间分段**:
+  - DNS Lookup: 域名解析时间
+  - TCP Connection: TCP 连接建立时间
+  - SSL Handshake: TLS/SSL 握手时间
+  - Request Sent: 请求发送时间
+  - Waiting (TTFB): 首字节等待时间
+  - Content Download: 内容下载时间
+  - Total: 总耗时
+- **UI 位置**: Response 区域新增 "Timing" Tab
+
+### F1.13 请求详情展示
+- **展示内容**: 实际发送的 HTTP 请求详情
+  - 最终 URL（含实际 query 参数）
+  - 请求方法
+  - 实际请求头（含自动添加的 headers）
+  - 实际请求体（变量替换后的内容）
+  - 请求大小
+- **对比功能**: 与原始请求对比，高亮变量替换部分
+- **UI 位置**: Response 区域新增 "Request" Tab
+
+---
+
 ## 四、测试与脚本功能
 
 | ID | 功能 | 优先级 | 预估工作量 |

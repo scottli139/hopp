@@ -900,6 +900,37 @@ if (_lastTabId != activeTab.id) {
 
 ---
 
+---
+
+### 2026-03-11 会话 - 问题发现：请求名称无法编辑
+
+**问题发现**: 当前创建 request 后，名称不能设置和修改
+
+**问题分析**:
+1. ✅ `HttpRequest` 模型有 `name` 字段
+2. ✅ `RequestEditor` 有 `_nameController` 用于跟踪名称
+3. ❌ **UI 中没有提供编辑名称的输入框**
+   - `_buildUrlBar` 中只有 Method dropdown、URL input、Save/Send 按钮
+   - 没有 Name input field
+4. ❌ **Sidebar 也没有重命名功能**
+
+**影响**:
+- 所有请求都显示 "New Request"，无法区分
+- Collection 中多个请求难以识别
+- 标签页标题都是 "New Request"
+
+**解决方案**:
+1. 在 Request Editor 的 URL Bar 区域添加名称输入框
+2. 在 Sidebar 的右键菜单添加 Rename 选项
+3. 支持根据 URL 自动生成请求名称（可选）
+
+**已添加任务**:
+- `docs/BACKLOG.md` - F2.5 请求名称编辑
+- `docs/PRD.md` - F2.5 请求重命名
+- `docs/DEVELOPMENT_PLAN.md` - M3 用户体验 (续)
+
+---
+
 ### 2026-03-11 会话 - 品牌化与 Logo 统一
 
 **本次会话完成的工作**:
@@ -1115,6 +1146,96 @@ fvm flutter test test/widgets/request_tabs_test.dart
 1. 显示 URL path (如 GET /api/users)
 2. 或显示自定义请求名称
 3. 标题过长时截断并显示省略号
+
+---
+
+### 10. 新增功能设计考虑 (2026-03-11)
+
+#### 10.1 HTTPS 证书信息查看
+
+**技术方案**:
+- 使用 Dart `dart:io` 的 `HttpClient` 支持证书回调
+- Dio 提供 `onReceiveProgress` 和 `validateStatus` 可以访问证书信息
+- 使用 `X509Certificate` 类解析证书详情
+
+**UI 设计**:
+- 在 Response 区域新增 "Certificate" Tab
+- 仅对 HTTPS 请求显示此 Tab
+- 展示内容：
+  - 证书链（Chain）
+  - 每个证书的：Subject、Issuer、有效期、签名算法、指纹
+
+**模型设计**:
+```dart
+@freezed
+class CertificateInfo with _$CertificateInfo {
+  const factory CertificateInfo({
+    required String subject,
+    required String issuer,
+    required DateTime validFrom,
+    required DateTime validTo,
+    required String signatureAlgorithm,
+    required String serialNumber,
+    required String sha256Fingerprint,
+    required List<String> subjectAlternativeNames,
+  }) = _CertificateInfo;
+}
+```
+
+#### 10.2 请求时间分析 (Timing)
+
+**技术方案**:
+- 使用 Dio 的 `Interceptors` 记录各阶段时间戳
+- 使用 `Stopwatch` 精确测量各阶段耗时
+
+**时间阶段定义**:
+```dart
+class RequestTiming {
+  final int dnsLookupMs;      // DNS 解析
+  final int tcpConnectionMs;  // TCP 连接
+  final int sslHandshakeMs;   // SSL 握手 (HTTPS)
+  final int requestSentMs;    // 请求发送
+  final int waitingMs;        // 等待首字节 (TTFB)
+  final int contentDownloadMs; // 内容下载
+  final int totalMs;          // 总耗时
+}
+```
+
+**UI 设计**:
+- 新增 "Timing" Tab
+- 使用瀑布图展示各阶段时间
+- 显示每个阶段的百分比和毫秒数
+
+#### 10.3 请求详情展示
+
+**技术方案**:
+- 在发送请求前，记录最终生成的请求详情
+- 包括：
+  - 变量替换后的最终 URL
+  - 实际发送的 Headers（含默认添加的）
+  - 实际发送的 Body（变量替换后）
+  - 请求大小计算
+
+**模型设计**:
+```dart
+@freezed
+class RequestDetails with _$RequestDetails {
+  const factory RequestDetails({
+    required String finalUrl,
+    required HttpMethod method,
+    required Map<String, String> headers,
+    required String? body,
+    required int bodySize,
+    required int headersSize,
+    required int totalSize,
+  }) = _RequestDetails;
+}
+```
+
+**UI 设计**:
+- 新增 "Request" Tab
+- 与 Response 结构类似，方便对比
+- 支持复制原始请求
 
 ---
 

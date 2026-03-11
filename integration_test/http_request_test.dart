@@ -8,7 +8,7 @@ import 'package:hopp/widgets/request/response_viewer.dart';
 import 'package:integration_test/integration_test.dart';
 
 /// End-to-end HTTP request tests
-/// 
+///
 /// These tests verify:
 /// 1. App can create and send HTTP requests
 /// 2. Network connectivity works (outbound connections)
@@ -31,7 +31,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Enter collection name
-      await tester.enterText(find.byType(TextField).last, 'E2E Test Collection');
+      await tester.enterText(
+          find.byType(TextField).last, 'E2E Test Collection');
       await tester.tap(find.text('Create'));
       await tester.pumpAndSettle();
 
@@ -64,14 +65,14 @@ void main() {
       bool responseReceived = false;
       for (var i = 0; i < 20; i++) {
         await tester.pump(const Duration(milliseconds: 500));
-        
+
         // Check if response info bar shows success
         final infoBar = find.textContaining('200');
         if (tester.any(infoBar)) {
           responseReceived = true;
           break;
         }
-        
+
         // Check if error occurred
         final errorFinder = find.textContaining('error');
         if (tester.any(errorFinder)) {
@@ -80,7 +81,8 @@ void main() {
         }
       }
 
-      expect(responseReceived, isTrue, reason: 'Should receive HTTP 200 response');
+      expect(responseReceived, isTrue,
+          reason: 'Should receive HTTP 200 response');
 
       // Verify response viewer is displayed
       expect(find.byType(ResponseViewer), findsOneWidget);

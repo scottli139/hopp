@@ -6,7 +6,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:logger/logger.dart';
 
 /// HttpService End-to-End Tests
-/// 
+///
 /// These tests make real HTTP requests to verify network connectivity
 /// without relying on the UI.
 void main() {
@@ -41,7 +41,7 @@ void main() {
 
       final response = await httpService.sendRequest(request);
 
-      expect(response.error, isNull, 
+      expect(response.error, isNull,
           reason: 'Should not have error. Error: ${response.error}');
       expect(response.statusCode, equals(200));
       expect(response.statusText, equals('OK'));

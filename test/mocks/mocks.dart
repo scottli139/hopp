@@ -3,8 +3,5 @@
 /// Export all mock classes for use in tests.
 /// Run `dart run build_runner build --delete-conflicting-outputs` to regenerate mocks.
 
-// Dio mocks
-export 'dio.mocks.mocks.dart';
-
-// Hive and SharedPreferences mocks
-export 'hive.mocks.mocks.dart';
+// Service mocks (HttpService, StorageService)
+export 'service_mocks.mocks.dart';

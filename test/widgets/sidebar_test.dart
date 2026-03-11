@@ -6,6 +6,7 @@ import 'package:hopp/models/http_method.dart';
 import 'package:hopp/models/http_request.dart';
 import 'package:hopp/providers/providers.dart';
 import 'package:hopp/widgets/layout/sidebar.dart';
+import 'package:mockito/mockito.dart';
 
 import '../mocks/service_mocks.mocks.dart';
 
@@ -15,6 +16,10 @@ void main() {
 
     setUp(() {
       mockStorageService = MockStorageService();
+      // Stub getCollections to return empty list by default
+      when(mockStorageService.getCollections()).thenAnswer((_) async => []);
+      // Stub getRequests to return empty list by default
+      when(mockStorageService.getRequests()).thenAnswer((_) async => []);
     });
 
     Widget buildTestWidget({

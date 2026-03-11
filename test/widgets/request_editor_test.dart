@@ -8,6 +8,7 @@ import 'package:hopp/models/key_value_pair.dart';
 import 'package:hopp/models/request_tab.dart';
 import 'package:hopp/providers/providers.dart';
 import 'package:hopp/widgets/request/request_editor.dart';
+import 'package:mockito/mockito.dart';
 
 import '../mocks/service_mocks.mocks.dart';
 
@@ -17,6 +18,9 @@ void main() {
 
     setUp(() {
       mockStorageService = MockStorageService();
+      // Stub storage methods
+      when(mockStorageService.getCollections()).thenAnswer((_) async => []);
+      when(mockStorageService.getRequests()).thenAnswer((_) async => []);
     });
 
     Widget buildTestWidget({

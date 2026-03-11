@@ -68,7 +68,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   @override
   Widget build(BuildContext context) {
     final response = ref.watch(currentResponseProvider);
-    
+
     // Ensure TabController is synchronized with current response
     _updateTabController(response);
 
@@ -662,7 +662,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     );
   }
 
-  Widget _buildCertificateDetailSection(BuildContext context, CertificateInfo cert) {
+  Widget _buildCertificateDetailSection(
+      BuildContext context, CertificateInfo cert) {
     return _buildInfoSection(
       context: context,
       title: 'Certificate Details',
@@ -675,7 +676,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         _buildInfoRow(context, 'Serial Number', cert.serialNumber),
         _buildInfoRow(context, 'SHA-256 Fingerprint', cert.sha256Fingerprint),
         if (cert.publicKeyAlgorithm != null)
-          _buildInfoRow(context, 'Public Key Algorithm', cert.publicKeyAlgorithm!),
+          _buildInfoRow(
+              context, 'Public Key Algorithm', cert.publicKeyAlgorithm!),
         if (cert.publicKeyLength != null)
           _buildInfoRow(
             context,
@@ -692,7 +694,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     );
   }
 
-  Widget _buildCertificateChainSection(BuildContext context, CertificateInfo cert) {
+  Widget _buildCertificateChainSection(
+      BuildContext context, CertificateInfo cert) {
     return _buildInfoSection(
       context: context,
       title: 'Certificate Chain',
@@ -723,7 +726,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 child: Icon(
                   chainCert.isValid ? Icons.check : Icons.error,
                   size: 16,
-                  color: chainCert.isValid ? AppColors.success : AppColors.error,
+                  color:
+                      chainCert.isValid ? AppColors.success : AppColors.error,
                 ),
               ),
               const SizedBox(width: 12),
@@ -775,7 +779,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withOpacity(0.5),
         borderRadius: BorderRadius.circular(AppConstants.radiusL),
         border: Border.all(
           color: Theme.of(context).dividerColor.withOpacity(0.5),

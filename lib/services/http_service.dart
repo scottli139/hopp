@@ -12,7 +12,8 @@ import '../models/http_response.dart';
 import '../models/key_value_pair.dart';
 
 // Conditional import for dart:io
-import 'certificate_helper.dart' if (dart.library.html) 'certificate_helper_stub.dart';
+import 'certificate_helper.dart'
+    if (dart.library.html) 'certificate_helper_stub.dart';
 
 class HttpService {
   final Dio _dio;
@@ -261,7 +262,7 @@ class HttpService {
   }
 
   /// 设置证书捕获回调
-  /// 
+  ///
   /// 注意：Dart 的 HttpClient 只有在证书验证失败时才会调用 badCertificateCallback
   /// 正常成功的 HTTPS 连接不会触发此回调，因此无法直接获取服务器证书信息
   void _setupCertificateCapture(void Function(CertificateInfo?) onCertificate) {
@@ -272,7 +273,8 @@ class HttpService {
           final client = HttpClient();
           client.badCertificateCallback = (cert, host, port) {
             try {
-              _logger.i('[HttpService] Certificate callback triggered for host: $host');
+              _logger.i(
+                  '[HttpService] Certificate callback triggered for host: $host');
               final info = extractCertificateInfoFromX509(cert);
               if (info != null) {
                 onCertificate(info);
@@ -287,7 +289,8 @@ class HttpService {
           return client;
         };
       } else {
-        _logger.d('[HttpService] Adapter is not IOHttpClientAdapter: ${adapter.runtimeType}');
+        _logger.d(
+            '[HttpService] Adapter is not IOHttpClientAdapter: ${adapter.runtimeType}');
       }
     } catch (e, stack) {
       _logger.w('[HttpService] Could not setup certificate capture: $e');
@@ -304,19 +307,23 @@ class HttpService {
       validTo: now.add(const Duration(days: 335)),
       signatureAlgorithm: 'sha256WithRSAEncryption',
       serialNumber: '0C:00:5A:8D:E0:4D:00:00:00:00:5A:8D:E0',
-      sha256Fingerprint: 'A1:B2:C3:D4:E5:F6:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34',
+      sha256Fingerprint:
+          'A1:B2:C3:D4:E5:F6:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34',
       subjectAlternativeNames: [host, '*.$host'],
       publicKeyAlgorithm: 'RSA',
       publicKeyLength: 2048,
       chain: [
         const CertificateChainEntry(
           subject: 'CN=DigiCert TLS RSA SHA256 2020 CA1, O=DigiCert Inc, C=US',
-          issuer: 'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
+          issuer:
+              'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
           isValid: true,
         ),
         const CertificateChainEntry(
-          subject: 'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
-          issuer: 'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
+          subject:
+              'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
+          issuer:
+              'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
           isValid: true,
         ),
       ],

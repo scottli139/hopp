@@ -13,8 +13,7 @@ void main() {
           validTo: now.add(const Duration(days: 365)),
           signatureAlgorithm: 'SHA-256 with RSA',
           serialNumber: '1234567890',
-          sha256Fingerprint:
-              'AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90',
+          sha256Fingerprint: 'AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90',
         );
 
         expect(cert.subject, equals('CN=example.com'));

@@ -17,6 +17,7 @@ class HttpResponse with _$HttpResponse {
     int? sizeBytes,
     String? error,
     DateTime? timestamp,
+
     /// HTTPS 证书信息（仅当请求为 HTTPS 且成功获取证书时存在）
     CertificateInfo? certificateInfo,
   }) = _HttpResponse;

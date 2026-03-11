@@ -24,7 +24,8 @@ CertificateInfo? extractCertificateInfoFromX509(X509Certificate cert) {
       chain: const [],
     );
   } catch (e, stack) {
-    AppLogger.warning('[CertificateHelper] Failed to extract certificate info', e, stack);
+    AppLogger.warning(
+        '[CertificateHelper] Failed to extract certificate info', e, stack);
     return null;
   }
 }
@@ -46,21 +47,26 @@ CertificateInfo? extractCertificateFromResponse(Response<Uint8List> response) {
   // 尝试从 extra 中获取证书信息（如果在请求时设置了的话）
   final certInfo = response.extra['certificateInfo'];
   if (certInfo is CertificateInfo) {
-    AppLogger.debug('[CertificateHelper] Extracted certificate from response extra');
+    AppLogger.debug(
+        '[CertificateHelper] Extracted certificate from response extra');
     return certInfo;
   }
   return null;
 }
 
 /// 设置 HTTP 客户端以捕获证书信息
-void setupHttpClientForCertificate(HttpClient client, void Function(CertificateInfo) onCertificate) {
-  client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+void setupHttpClientForCertificate(
+    HttpClient client, void Function(CertificateInfo) onCertificate) {
+  client.badCertificateCallback =
+      (X509Certificate cert, String host, int port) {
     try {
       final info = _extractCertificateInfo(cert);
-      AppLogger.debug('[CertificateHelper] Extracted certificate for host: $host');
+      AppLogger.debug(
+          '[CertificateHelper] Extracted certificate for host: $host');
       onCertificate(info);
     } catch (e, stack) {
-      AppLogger.warning('[CertificateHelper] Failed to extract certificate', e, stack);
+      AppLogger.warning(
+          '[CertificateHelper] Failed to extract certificate', e, stack);
     }
     return true;
   };

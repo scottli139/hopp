@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 /// About Screen - Displays app information and branding
 class AboutScreen extends StatelessWidget {

@@ -49,7 +49,6 @@ class Sidebar extends ConsumerWidget {
 
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Container(
       height: AppConstants.appBarHeight,

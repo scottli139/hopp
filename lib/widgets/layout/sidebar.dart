@@ -155,9 +155,12 @@ class Sidebar extends ConsumerWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
-              ref.read(collectionProvider.notifier).toggleExpanded(collection.id);
+              ref
+                  .read(collectionProvider.notifier)
+                  .toggleExpanded(collection.id);
             },
-            hoverColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            hoverColor:
+                theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
             child: Container(
               height: AppConstants.sidebarItemHeight,
               padding: EdgeInsets.only(
@@ -172,7 +175,8 @@ class Sidebar extends ConsumerWidget {
                     child: Icon(
                       Icons.chevron_right,
                       size: 16,
-                      color: collection.children.isEmpty && collection.requests.isEmpty
+                      color: collection.children.isEmpty &&
+                              collection.requests.isEmpty
                           ? Colors.transparent
                           : theme.colorScheme.onSurfaceVariant,
                     ),
@@ -191,7 +195,8 @@ class Sidebar extends ConsumerWidget {
                       collection.name,
                       style: AppTextStyles.caption.copyWith(
                         color: theme.colorScheme.onSurface,
-                        fontWeight: isExpanded ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight:
+                            isExpanded ? FontWeight.w600 : FontWeight.w500,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -233,9 +238,8 @@ class Sidebar extends ConsumerWidget {
     final isActive = ref.watch(activeTabIdProvider) == request.id;
 
     return Material(
-      color: isActive
-          ? AppColors.primary.withOpacity(0.08)
-          : Colors.transparent,
+      color:
+          isActive ? AppColors.primary.withOpacity(0.08) : Colors.transparent,
       child: InkWell(
         onTap: () {
           ref.read(requestTabProvider.notifier).openTab(request);

@@ -469,7 +469,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               itemBuilder: (context, index) {
                 final header = response.headers[index];
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(
@@ -528,7 +529,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       child: Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+          color: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest
+              .withOpacity(0.5),
           borderRadius: BorderRadius.circular(AppConstants.radiusXL),
           border: Border.all(
             color: Theme.of(context).dividerColor.withOpacity(0.5),

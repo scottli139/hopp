@@ -90,7 +90,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         children: [
           // Method dropdown with improved styling
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppConstants.spaceS),
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppConstants.spaceS),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
               border: Border.all(color: theme.colorScheme.outlineVariant),
@@ -116,7 +117,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       ),
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                        borderRadius:
+                            BorderRadius.circular(AppConstants.radiusS),
                       ),
                       child: Text(
                         method.value,
@@ -216,7 +218,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               borderRadius: BorderRadius.circular(AppConstants.radiusM),
               border: Border.all(
                 color: isActive
-                    ? (activeColor ?? theme.colorScheme.primary).withOpacity(0.3)
+                    ? (activeColor ?? theme.colorScheme.primary)
+                        .withOpacity(0.3)
                     : theme.colorScheme.outlineVariant,
               ),
             ),
@@ -385,7 +388,10 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.5),
             border: Border(
               bottom: BorderSide(color: Theme.of(context).dividerColor),
             ),
@@ -397,21 +403,24 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   child: Text('',
                       style: AppTextStyles.tiny.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant))),
               const SizedBox(width: 16),
               Expanded(
                   flex: 2,
                   child: Text('Key',
                       style: AppTextStyles.tiny.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant))),
               const SizedBox(width: 16),
               Expanded(
                   flex: 3,
                   child: Text('Value',
                       style: AppTextStyles.tiny.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant))),
               const SizedBox(width: 40),
             ],
           ),
@@ -559,7 +568,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   selected: {request.bodyType},
                   onSelectionChanged: (value) {
                     if (value.isNotEmpty) {
-                      _updateRequest(ref, request.copyWith(bodyType: value.first));
+                      _updateRequest(
+                          ref, request.copyWith(bodyType: value.first));
                     }
                   },
                   style: SegmentedButton.styleFrom(
@@ -626,7 +636,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     );
   }
 
-  ButtonSegment<String> _buildSegment(String value, String label, IconData icon) {
+  ButtonSegment<String> _buildSegment(
+      String value, String label, IconData icon) {
     return ButtonSegment(
       value: value,
       label: Text(

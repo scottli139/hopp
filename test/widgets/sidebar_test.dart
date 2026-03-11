@@ -40,7 +40,8 @@ void main() {
       String? activeTabId,
     }) {
       // Pre-configure mock to return the collections
-      when(mockStorageService.getCollections()).thenAnswer((_) async => collections);
+      when(mockStorageService.getCollections())
+          .thenAnswer((_) async => collections);
       when(mockStorageService.getRequests()).thenAnswer((_) async => []);
 
       final container = ProviderContainer(

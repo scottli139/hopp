@@ -84,8 +84,7 @@ void main() {
       });
 
       testWidgets('should show loading indicator when collections are loading',
-          skip: 'Provider auto-loads collections, skipping for now',
-          (tester) async {
+          skip: true, (tester) async {
         final container = ProviderContainer(
           overrides: [
             storageServiceProvider.overrideWithValue(mockStorageService),
@@ -103,8 +102,7 @@ void main() {
       });
 
       testWidgets('should show error message when collections fail to load',
-          skip: 'Provider auto-loads collections, skipping for now',
-          (tester) async {
+          skip: true, (tester) async {
         final container = ProviderContainer(
           overrides: [
             storageServiceProvider.overrideWithValue(mockStorageService),

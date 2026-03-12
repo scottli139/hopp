@@ -219,8 +219,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
                 (child) => _buildCollectionItem(context, child, depth + 1),
               ),
               ...collection.requests.map(
-                (request) =>
-                    _buildRequestItem(context, request, depth + 1),
+                (request) => _buildRequestItem(context, request, depth + 1),
               ),
             ],
           ),
@@ -333,15 +332,14 @@ class _SidebarState extends ConsumerState<Sidebar> {
   }
 
   /// 构建名称显示
-  Widget _buildNameDisplay(BuildContext context, HttpRequest request, bool isActive) {
+  Widget _buildNameDisplay(
+      BuildContext context, HttpRequest request, bool isActive) {
     final theme = Theme.of(context);
     return Text(
       request.name,
       style: TextStyle(
         fontSize: 11,
-        color: isActive
-            ? AppColors.primaryDark
-            : theme.colorScheme.onSurface,
+        color: isActive ? AppColors.primaryDark : theme.colorScheme.onSurface,
         fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
       ),
       overflow: TextOverflow.ellipsis,
@@ -379,7 +377,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
         ),
         decoration: InputDecoration(
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: AppColors.primary.withOpacity(0.5)),
@@ -512,7 +511,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
   }
 
   /// 开始编辑名称
-  void _startEditingName(String requestId, String currentName, StateSetter setState) {
+  void _startEditingName(
+      String requestId, String currentName, StateSetter setState) {
     setState(() {
       _isEditingName = true;
       _editingRequestId = requestId;
@@ -543,7 +543,9 @@ class _SidebarState extends ConsumerState<Sidebar> {
     // 更新 Tab（如果打开）
     final tab = ref.read(requestTabProvider.notifier).getTab(request.id);
     if (tab != null) {
-      ref.read(requestTabProvider.notifier).updateRequest(request.id, updatedRequest);
+      ref
+          .read(requestTabProvider.notifier)
+          .updateRequest(request.id, updatedRequest);
     }
 
     // 通知 UI 测试模式编辑完成

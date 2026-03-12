@@ -15,7 +15,7 @@ List<String> appArgs = [];
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 保存启动参数
   appArgs = args;
 
@@ -32,7 +32,7 @@ void main(List<String> args) async {
       storageServiceProvider.overrideWithValue(storage),
     ],
   );
-  
+
   // Initialize menu channel (for macOS system menu)
   MenuChannelService.initialize(container);
 

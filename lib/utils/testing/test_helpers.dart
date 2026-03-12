@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// 测试 Keys 集合
-/// 
+///
 /// 使用这些 Keys 可以在测试中精确定位 Widget
 class TestKeys {
   TestKeys._();
@@ -61,7 +61,7 @@ class TestKeys {
 }
 
 /// 语义标签集合
-/// 
+///
 /// 用于辅助功能和 UI 自动化测试
 class SemanticLabels {
   SemanticLabels._();
@@ -138,7 +138,7 @@ class TestProperties {
 }
 
 /// 测试辅助 Widget 包装器
-/// 
+///
 /// 为子 Widget 添加语义标签和 Key，使其更容易在测试中被找到
 class TestableWidget extends StatelessWidget {
   final Widget child;
@@ -189,7 +189,7 @@ class TestableWidget extends StatelessWidget {
 }
 
 /// 可测试的 TextField
-/// 
+///
 /// 预配置好语义标签和 Key 的 TextField
 class TestableTextField extends StatelessWidget {
   final String testKey;
@@ -234,7 +234,7 @@ class TestableTextField extends StatelessWidget {
 }
 
 /// 可测试的按钮
-/// 
+///
 /// 预配置好语义标签、Key 和 Tooltip 的按钮
 class TestableButton extends StatelessWidget {
   final String testKey;
@@ -316,7 +316,7 @@ class TestableIconButton extends StatelessWidget {
 }
 
 /// 可调整大小的 Sidebar
-/// 
+///
 /// 支持拖动调整宽度，并带有测试标识
 class TestableResizableSidebar extends StatefulWidget {
   final double initialWidth;
@@ -339,8 +339,7 @@ class TestableResizableSidebar extends StatefulWidget {
       _TestableResizableSidebarState();
 }
 
-class _TestableResizableSidebarState
-    extends State<TestableResizableSidebar> {
+class _TestableResizableSidebarState extends State<TestableResizableSidebar> {
   late double _width;
   bool _isDragging = false;
 
@@ -398,7 +397,7 @@ class _TestableResizableSidebarState
 }
 
 /// 测试模式检测
-/// 
+///
 /// 检测当前是否在测试环境中运行
 bool get isInTestMode {
   // 检查是否在 Flutter 测试环境中

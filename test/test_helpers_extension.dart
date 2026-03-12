@@ -1,5 +1,5 @@
 /// WidgetTester 扩展
-/// 
+///
 /// 提供额外的测试辅助方法
 /// 仅在测试中使用
 
@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 extension WidgetTesterExtension on WidgetTester {
   /// 等待条件满足
-  /// 
+  ///
   /// 持续 pump 直到条件满足或超时
   Future<bool> waitFor(
     Finder finder, {
@@ -37,7 +37,7 @@ extension WidgetTesterExtension on WidgetTester {
   }
 
   /// 安全地输入文本
-  /// 
+  ///
   /// 先确保字段有焦点，然后输入文本
   Future<void> enterTextSafely(Finder finder, String text) async {
     // 确保 Widget 存在

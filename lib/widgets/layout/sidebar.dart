@@ -236,7 +236,7 @@ class Sidebar extends ConsumerWidget {
         hoverColor: AppColors.primary.withOpacity(0.04),
         splashColor: AppColors.primary.withOpacity(0.08),
         child: Container(
-          height: AppConstants.sidebarItemHeight,
+          height: 32, // 统一高度
           padding: EdgeInsets.only(
             left: AppConstants.spaceS + depth * AppConstants.spaceM + 12,
             right: AppConstants.spaceS,
@@ -253,31 +253,32 @@ class Sidebar extends ConsumerWidget {
               : null,
           child: Row(
             children: [
-              // Method badge with improved contrast
+              // Method badge - 增大字体到 10px
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 3,
-                  vertical: 1,
+                  horizontal: 5,
+                  vertical: 2,
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.getHttpMethodColor(request.method.value)
                       .withOpacity(isActive ? 0.15 : 0.1),
-                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   request.method.value.toUpperCase(),
-                  style: AppTextStyles.tiny.copyWith(
-                    fontSize: 8,
+                  style: TextStyle(
+                    fontSize: 9,
                     color: AppColors.getHttpMethodColor(request.method.value),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   request.name,
-                  style: AppTextStyles.caption.copyWith(
+                  style: TextStyle(
+                    fontSize: 11, // 统一字体大小
                     color: isActive
                         ? AppColors.primaryDark
                         : theme.colorScheme.onSurface,

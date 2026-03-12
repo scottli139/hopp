@@ -68,6 +68,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   @override
   Widget build(BuildContext context) {
     final response = ref.watch(currentResponseProvider);
+    final theme = Theme.of(context);
 
     // Ensure TabController is synchronized with current response
     _updateTabController(response);
@@ -75,7 +76,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: Theme.of(context).dividerColor),
+          top: BorderSide(color: theme.dividerColor),
         ),
       ),
       child: Column(
@@ -83,10 +84,33 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           // Response info bar
           _buildInfoBar(context, response),
           // Tabs
-          TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            tabs: _buildTabs(response),
+          Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              border: Border(
+                bottom: BorderSide(color: theme.dividerColor),
+              ),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              dividerColor: Colors.transparent,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorWeight: 2,
+              indicatorColor: AppColors.primary,
+              labelStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+              labelColor: AppColors.primary,
+              unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+              tabs: _buildTabs(response),
+            ),
           ),
           // Tab content
           Expanded(
@@ -101,14 +125,17 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   Widget _buildInfoBar(BuildContext context, HttpResponse? response) {
+    const infoFontSize = 11.0;
+    final theme = Theme.of(context);
+
     if (response == null) {
       return Container(
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: theme.colorScheme.surfaceContainerHighest,
           border: Border(
-            bottom: BorderSide(color: Theme.of(context).dividerColor),
+            bottom: BorderSide(color: theme.dividerColor),
           ),
         ),
         child: Row(
@@ -116,13 +143,14 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             Icon(
               Icons.hourglass_empty,
               size: 12,
-              color: Theme.of(context).colorScheme.outline,
+              color: theme.colorScheme.outline,
             ),
             const SizedBox(width: 6),
             Text(
               'No response yet',
-              style: AppTextStyles.tiny.copyWith(
-                color: Theme.of(context).colorScheme.outline,
+              style: TextStyle(
+                fontSize: infoFontSize,
+                color: theme.colorScheme.outline,
               ),
             ),
           ],
@@ -180,7 +208,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                     ? SingleChildScrollView(
                         child: SelectableText(
                           errorText,
-                          style: AppTextStyles.caption.copyWith(
+                          style: TextStyle(
+                            fontSize: infoFontSize,
                             color: AppColors.error,
                             height: 1.4,
                           ),
@@ -188,7 +217,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                       )
                     : Text(
                         errorText,
-                        style: AppTextStyles.caption.copyWith(
+                        style: TextStyle(
+                          fontSize: infoFontSize,
                           color: AppColors.error,
                           fontWeight: FontWeight.w500,
                         ),
@@ -259,7 +289,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             ),
             child: Text(
               '${response.statusCode} ${response.statusText ?? ''}',
-              style: AppTextStyles.tiny.copyWith(
+              style: TextStyle(
+                fontSize: infoFontSize,
                 fontWeight: FontWeight.w700,
                 color: statusColor,
               ),
@@ -270,13 +301,14 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           Icon(
             Icons.timer_outlined,
             size: 12,
-            color: Theme.of(context).colorScheme.outline,
+            color: theme.colorScheme.outline,
           ),
           const SizedBox(width: 4),
           Text(
             '${response.durationMs ?? 0} ms',
-            style: AppTextStyles.tiny.copyWith(
-              color: Theme.of(context).colorScheme.outline,
+            style: TextStyle(
+              fontSize: infoFontSize,
+              color: theme.colorScheme.outline,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -285,13 +317,14 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           Icon(
             Icons.storage_outlined,
             size: 12,
-            color: Theme.of(context).colorScheme.outline,
+            color: theme.colorScheme.outline,
           ),
           const SizedBox(width: 4),
           Text(
             _formatSize(response.sizeBytes),
-            style: AppTextStyles.tiny.copyWith(
-              color: Theme.of(context).colorScheme.outline,
+            style: TextStyle(
+              fontSize: infoFontSize,
+              color: theme.colorScheme.outline,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -537,18 +570,43 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
   /// 构建 Tab 列表
   List<Widget> _buildTabs(HttpResponse? response) {
+    const tabFontSize = 13.0;
+    const tabHeight = 36.0;
+
     final tabs = <Widget>[
-      const Tab(text: 'Body'),
-      const Tab(text: 'Headers'),
-      const Tab(text: 'Cookies'),
+      const Tab(
+        height: tabHeight,
+        child: Text(
+          'Body',
+          style: TextStyle(fontSize: tabFontSize),
+        ),
+      ),
+      const Tab(
+        height: tabHeight,
+        child: Text(
+          'Headers',
+          style: TextStyle(fontSize: tabFontSize),
+        ),
+      ),
+      const Tab(
+        height: tabHeight,
+        child: Text(
+          'Cookies',
+          style: TextStyle(fontSize: tabFontSize),
+        ),
+      ),
     ];
     if (response?.certificateInfo != null) {
       tabs.add(
         Tab(
+          height: tabHeight,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Certificate'),
+              const Text(
+                'Certificate',
+                style: TextStyle(fontSize: tabFontSize),
+              ),
               const SizedBox(width: 6),
               Icon(
                 Icons.verified,
@@ -640,9 +698,9 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               children: [
                 Text(
                   isValid ? 'Certificate is valid' : 'Certificate expired',
-                  style: AppTextStyles.title.copyWith(
+                  style: AppTextStyles.body.copyWith(
                     color: validityColor,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -650,7 +708,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                   isValid
                       ? '${cert.remainingDays} days remaining'
                       : 'Expired on ${cert.validTo}',
-                  style: AppTextStyles.body.copyWith(
+                  style: AppTextStyles.caption.copyWith(
                     color: Theme.of(context).colorScheme.outline,
                   ),
                 ),
@@ -793,8 +851,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         children: [
           Text(
             title,
-            style: AppTextStyles.title.copyWith(
-              fontWeight: FontWeight.w700,
+            style: AppTextStyles.body.copyWith(
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 12),
@@ -816,7 +874,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             width: 140,
             child: Text(
               label,
-              style: AppTextStyles.caption.copyWith(
+              style: AppTextStyles.tiny.copyWith(
                 color: Theme.of(context).colorScheme.outline,
                 fontWeight: FontWeight.w600,
               ),
@@ -825,7 +883,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           Expanded(
             child: SelectableText(
               value,
-              style: AppTextStyles.bodySmall.copyWith(
+              style: AppTextStyles.caption.copyWith(
                 fontFamily: 'monospace',
               ),
             ),

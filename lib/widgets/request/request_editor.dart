@@ -77,6 +77,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   Widget _buildUrlBar(
       BuildContext context, WidgetRef ref, HttpRequest request) {
     final theme = Theme.of(context);
+    const urlBarHeight = 36.0; // 统一高度
+    const fontSize = 13.0; // 统一字体大小
 
     return Container(
       padding: const EdgeInsets.all(AppConstants.spaceL),
@@ -88,8 +90,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       ),
       child: Row(
         children: [
-          // Method dropdown with improved styling
+          // Method dropdown - 固定高度 36px
           Container(
+            height: urlBarHeight,
             padding:
                 const EdgeInsets.symmetric(horizontal: AppConstants.spaceS),
             decoration: BoxDecoration(
@@ -100,11 +103,16 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             child: DropdownButtonHideUnderline(
               child: DropdownButton<HttpMethod>(
                 value: request.method,
-                isDense: true,
+                isDense: false,
                 icon: Icon(
                   Icons.arrow_drop_down,
                   color: theme.colorScheme.outline,
-                  size: 20,
+                  size: 18,
+                ),
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
                 ),
                 items: HttpMethod.values.map((method) {
                   final color = _getMethodColor(method.value);
@@ -112,17 +120,17 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     value: method,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.spaceXS,
-                        vertical: 2,
+                        horizontal: 6,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.1),
-                        borderRadius:
-                            BorderRadius.circular(AppConstants.radiusS),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         method.value,
-                        style: AppTextStyles.caption.copyWith(
+                        style: TextStyle(
+                          fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: color,
                         ),
@@ -139,9 +147,10 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             ),
           ),
           const SizedBox(width: AppConstants.spaceM),
-          // URL input with improved styling
+          // URL input - 同样高度 36px
           Expanded(
             child: Container(
+              height: urlBarHeight,
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(AppConstants.radiusM),
@@ -151,17 +160,19 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 controller: _urlController,
                 decoration: InputDecoration(
                   hintText: 'Enter URL',
-                  hintStyle: AppTextStyles.bodySmall.copyWith(
+                  hintStyle: TextStyle(
+                    fontSize: fontSize,
                     color: theme.colorScheme.outline,
                   ),
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: AppConstants.spaceM,
-                    vertical: 12,
+                    vertical: 8, // 调整垂直内边距以适应 36px 高度
                   ),
                   border: InputBorder.none,
                 ),
-                style: AppTextStyles.bodySmall.copyWith(
+                style: TextStyle(
+                  fontSize: fontSize,
                   color: theme.colorScheme.onSurface,
                 ),
                 onChanged: (value) {
@@ -171,21 +182,28 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             ),
           ),
           const SizedBox(width: AppConstants.spaceM),
-          // Save button with hover effect
-          _buildIconButton(
-            context: context,
-            icon: Icons.save,
-            tooltip: 'Save to collection',
-            onPressed: () {
-              final isDirty = ref.read(activeTabProvider)?.isDirty ?? false;
-              if (isDirty) _saveRequest(ref, request);
-            },
-            isActive: ref.watch(activeTabProvider)?.isDirty ?? false,
-            activeColor: AppColors.primary,
+          // Save button - 同样 36px
+          SizedBox(
+            height: urlBarHeight,
+            width: urlBarHeight,
+            child: _buildIconButton(
+              context: context,
+              icon: Icons.save,
+              tooltip: 'Save to collection',
+              onPressed: () {
+                final isDirty = ref.read(activeTabProvider)?.isDirty ?? false;
+                if (isDirty) _saveRequest(ref, request);
+              },
+              isActive: ref.watch(activeTabProvider)?.isDirty ?? false,
+              activeColor: AppColors.primary,
+            ),
           ),
           const SizedBox(width: AppConstants.spaceS),
-          // Send button with improved styling
-          _buildSendButton(context, ref, request),
+          // Send button - 同样高度
+          SizedBox(
+            height: urlBarHeight,
+            child: _buildSendButton(context, ref, request),
+          ),
         ],
       ),
     );
@@ -279,6 +297,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
   Widget _buildTabs(BuildContext context) {
     final theme = Theme.of(context);
+    const tabFontSize = 12.0;
+    const tabHeight = 36.0;
+    const iconSize = 14.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -295,55 +316,57 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         indicatorSize: TabBarIndicatorSize.tab,
         indicatorWeight: 2,
         indicatorColor: AppColors.primary,
-        labelStyle: AppTextStyles.tiny.copyWith(
+        labelStyle: const TextStyle(
+          fontSize: tabFontSize,
           fontWeight: FontWeight.w600,
         ),
-        unselectedLabelStyle: AppTextStyles.tiny.copyWith(
+        unselectedLabelStyle: const TextStyle(
+          fontSize: tabFontSize,
           fontWeight: FontWeight.w500,
         ),
         labelColor: AppColors.primary,
         unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
         tabs: const [
           Tab(
-            height: 40,
+            height: tabHeight,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.tune, size: 14),
-                SizedBox(width: 4),
+                Icon(Icons.tune, size: iconSize),
+                SizedBox(width: 6),
                 Text('Params'),
               ],
             ),
           ),
           Tab(
-            height: 40,
+            height: tabHeight,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.http, size: 14),
-                SizedBox(width: 4),
+                Icon(Icons.http, size: iconSize),
+                SizedBox(width: 6),
                 Text('Headers'),
               ],
             ),
           ),
           Tab(
-            height: 40,
+            height: tabHeight,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.code, size: 14),
-                SizedBox(width: 4),
+                Icon(Icons.code, size: iconSize),
+                SizedBox(width: 6),
                 Text('Body'),
               ],
             ),
           ),
           Tab(
-            height: 40,
+            height: tabHeight,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.lock_outline, size: 14),
-                SizedBox(width: 4),
+                Icon(Icons.lock_outline, size: iconSize),
+                SizedBox(width: 6),
                 Text('Auth'),
               ],
             ),
@@ -434,7 +457,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 return ListTile(
                   leading: const SizedBox(width: 40),
                   title: const Text('Add new',
-                      style: TextStyle(color: Colors.grey)),
+                      style: TextStyle(color: Colors.grey, fontSize: 12)),
                   onTap: () {
                     final newItems = [...items, _createEmptyKeyValue()];
                     _updateRequest(ref, updateFn(newItems));
@@ -551,35 +574,43 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             children: [
               Text(
                 'Content Type',
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.tiny.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(width: AppConstants.spaceL),
               Expanded(
-                child: SegmentedButton<String>(
-                  segments: [
-                    _buildSegment('none', 'None', Icons.block),
-                    _buildSegment('json', 'JSON', Icons.data_object),
-                    _buildSegment('text', 'Text', Icons.text_fields),
-                    _buildSegment('form', 'Form', Icons.format_list_bulleted),
-                  ],
-                  selected: {request.bodyType},
-                  onSelectionChanged: (value) {
-                    if (value.isNotEmpty) {
-                      _updateRequest(
-                          ref, request.copyWith(bodyType: value.first));
-                    }
-                  },
-                  style: SegmentedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                    selectedBackgroundColor: AppColors.primary,
-                    selectedForegroundColor: Colors.white,
-                    foregroundColor: theme.colorScheme.onSurface,
-                    side: BorderSide.none,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppConstants.radiusM),
+                child: SizedBox(
+                  height: 32,
+                  child: SegmentedButton<String>(
+                    segments: [
+                      _buildSegment('none', 'None', Icons.block),
+                      _buildSegment('json', 'JSON', Icons.data_object),
+                      _buildSegment('text', 'Text', Icons.text_fields),
+                      _buildSegment('form', 'Form', Icons.format_list_bulleted),
+                    ],
+                    selected: {request.bodyType},
+                    onSelectionChanged: (value) {
+                      if (value.isNotEmpty) {
+                        _updateRequest(
+                            ref, request.copyWith(bodyType: value.first));
+                      }
+                    },
+                    style: SegmentedButton.styleFrom(
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
+                      selectedBackgroundColor: AppColors.primary,
+                      selectedForegroundColor: Colors.white,
+                      foregroundColor: theme.colorScheme.onSurface,
+                      side: BorderSide.none,
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppConstants.radiusM),
+                      ),
+                      textStyle: const TextStyle(fontSize: 11),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ),
                 ),

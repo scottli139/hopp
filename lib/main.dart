@@ -4,21 +4,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'providers/providers.dart';
 import 'screens/main_screen.dart';
+import 'services/menu_channel.dart';
 import 'services/storage_service.dart';
+import 'widgets/common/shortcut_wrapper.dart';
+import 'utils/app_logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize logging first
+  await AppLogger.initialize();
 
   // Initialize storage
   final storage = StorageService();
   await storage.initialize();
 
+  // Create ProviderContainer for menu channel
+  final container = ProviderContainer(
+    overrides: [
+      storageServiceProvider.overrideWithValue(storage),
+    ],
+  );
+  
+  // Initialize menu channel (for macOS system menu)
+  MenuChannelService.initialize(container);
+
   runApp(
-    ProviderScope(
-      overrides: [
-        // Override storageServiceProvider with initialized instance
-        storageServiceProvider.overrideWithValue(storage),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: const HoppApp(),
     ),
   );
@@ -46,7 +59,9 @@ class HoppApp extends ConsumerWidget {
         Locale('en'),
         Locale('zh', 'CN'),
       ],
-      home: const MainScreen(),
+      home: const ShortcutWrapper(
+        child: MainScreen(),
+      ),
     );
   }
 

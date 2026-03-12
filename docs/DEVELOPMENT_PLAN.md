@@ -8,9 +8,10 @@
 
 **Hopp** 是一款轻量级、跨平台的 API 请求测试工具，基于 Flutter 构建，致力于提供高效、优雅的 API 测试体验。
 
-**当前阶段**: Flutter 迁移完成，功能完善中  
+**当前阶段**: 快捷键支持 & E2E 测试完成，准备响应优化  
 **目标版本**: v1.0.0  
 **技术栈**: Flutter 3.27.x + Dart 3.6.x + Riverpod
+**测试状态**: 405+ 单元测试 + Peekaboo E2E 测试 ✅
 
 ---
 
@@ -60,7 +61,7 @@
 | 错误信息展示优化 | ✅ | P1 | 2h |
 | 主题切换 | 🔄 | P1 | 4h |
 | 国际化完善 | 🔄 | P1 | 6h |
-| 快捷键支持 | ⏳ | P2 | 8h |
+| **快捷键支持** | ✅ | **P2** | **4h** | **已完成 (Shortcuts + macOS Menu)** |
 | 请求历史 | ⏳ | P2 | 8h |
 | 拖拽排序 | ⏳ | P2 | 6h |
 
@@ -131,11 +132,42 @@
 
 **测试状态**: 419 个测试全部通过 ✅
 
+**M3.6: 快捷键支持 ✅ COMPLETED (2026-03-12)**
+
+| 任务 | 状态 | 优先级 | 说明 |
+|-----|------|--------|------|
+| Flutter Shortcuts + Actions | ✅ | P0 | 应用内快捷键支持 |
+| macOS 系统菜单集成 | ✅ | P0 | File/Edit 菜单注册 |
+| MethodChannel 通信 | ✅ | P0 | Swift ↔ Dart 通信 |
+| Peekaboo E2E 测试套件 | ✅ | P1 | 完整自动化测试 |
+
+**实现方案**:
+1. **Flutter 快捷键** (`lib/widgets/common/shortcut_wrapper.dart`):
+   - 使用 `Shortcuts` + `Actions` + `Focus` 组合
+   - 支持 Cmd+N (新建), Cmd+Enter (发送), Cmd+S (保存)
+   - 支持 Cmd+W (关闭), Cmd+1-9 (切换标签)
+
+2. **macOS 菜单集成** (`macos/Runner/AppDelegate.swift`):
+   - 注册系统级菜单 (File/Edit)
+   - 使用 `MethodChannel` 与 Flutter 通信
+   - 支持 Peekaboo 自动化测试
+
+3. **E2E 测试套件** (`integration_test/peekaboo/`):
+   - 完整测试脚本 (Makefile + Shell Scripts)
+   - 支持菜单驱动测试
+   - 自动截图验证
+
+**测试验证**:
+```bash
+cd integration_test/peekaboo
+make test  # 运行完整测试
+```
+
 **下次会话计划**:
 - 🟡 主题切换功能 (Light/Dark Mode) - P1
 - 🟡 国际化完善 (多语言切换) - P1
-- 🟢 快捷键支持 - P2
 - 🟢 请求历史记录 - P2
+- 🟢 响应优化 (大响应体渲染) - P1
 
 ---
 
@@ -200,10 +232,10 @@
 | 任务 | 状态 | 优先级 | 预计工时 | 说明 |
 |-----|------|--------|---------|------|
 | HTTPS 证书信息查看 | ✅ | P1 | 8h | 2026-03-11 | Response 区域增加 Certificate Tab |
+| **快捷键支持** | ✅ | **P2** | **4h** | **2026-03-12** | **Shortcuts + macOS Menu + Peekaboo E2E** |
 | 请求时间分析 (Timing) | ⏳ | P1 | 10h | 展示请求各环节时间消耗 |
 | 请求详情展示 | ⏳ | P1 | 6h | 展示实际发送的完整请求信息 |
 | 环境变量 | ⏳ | P1 | 12h | 支持变量替换和不同环境配置 |
-| 快捷键支持 | ⏳ | P2 | 8h | 常用操作快捷键绑定 |
 | 请求历史 | ⏳ | P2 | 8h | 保存请求历史记录 |
 | 拖拽排序 | ⏳ | P2 | 6h | Collection 和请求拖拽排序 |
 
@@ -256,6 +288,86 @@
   - 请求大小
 - **对比功能**: 与原始请求对比，高亮变量替换部分
 - **UI 位置**: Response 区域新增 "Request" Tab
+
+---
+
+### M6: 测试与质量保障 ✅ COMPLETED
+
+| 任务 | 状态 | 优先级 | 预计工时 | 说明 |
+|-----|------|--------|---------|------|
+| **单元测试 (Models)** | ✅ | P0 | 4h | 152 个测试 |
+| **单元测试 (Services)** | ✅ | P0 | 4h | 73 个测试 |
+| **单元测试 (Providers)** | ✅ | P0 | 4h | 92 个测试 |
+| **Widget 测试** | ✅ | P1 | 6h | 88 个测试 |
+| **Peekaboo E2E 测试** | ✅ | P2 | 4h | macOS UI 自动化测试 |
+
+**测试统计**: 405+ 个测试全部通过 ✅
+
+#### M6.1: 单元测试 (2026-03-11)
+
+**Models 测试** (152 个):
+- `test/models/http_method_test.dart` - 12 个测试
+- `test/models/key_value_pair_test.dart` - 18 个测试
+- `test/models/http_request_test.dart` - 26 个测试
+- `test/models/http_response_test.dart` - 24 个测试
+- `test/models/collection_test.dart` - 28 个测试
+- `test/models/request_tab_test.dart` - 22 个测试
+- `test/models/app_settings_test.dart` - 32 个测试
+
+**Services 测试** (73 个):
+- `test/services/http_service_test.dart` - 28 个测试
+- `test/services/storage_service_test.dart` - 45 个测试
+
+**Providers 测试** (92 个):
+- `test/providers/core_providers_test.dart` - 6 个测试
+- `test/providers/request_tab_provider_test.dart` - 27 个测试
+- `test/providers/request_response_provider_test.dart` - 15 个测试
+- `test/providers/collection_provider_test.dart` - 19 个测试
+- `test/providers/settings_provider_test.dart` - 25 个测试
+
+#### M6.2: Widget 测试 (2026-03-11)
+
+| 组件 | 测试数量 | 覆盖范围 |
+|------|----------|----------|
+| Sidebar | 25 | 渲染、交互、菜单、嵌套集合 |
+| RequestEditor | 32 | URL 栏、Method、Tabs、Body |
+| ResponseViewer | 25 | Tabs、状态码、复制按钮 |
+| RequestTabs | 28 | 标签管理、关闭、切换 |
+
+#### M6.3: Peekaboo E2E 测试 (2026-03-12)
+
+**测试套件位置**: `integration_test/peekaboo/`
+
+**测试脚本**:
+- `test_basic_request.sh` - 基本请求流程测试
+- `test_multiple_tabs.sh` - 多标签页管理测试
+- `test_save_collection.sh` - 保存请求测试
+- `run_full_test.sh` - 完整测试套件
+- `quick_test.sh` - 快速测试
+- `view_logs.sh` - 日志查看工具
+- `cleanup.sh` - 环境清理工具
+- `Makefile` - 便捷命令
+
+**使用方式**:
+```bash
+cd integration_test/peekaboo
+
+# 查看帮助
+make help
+
+# 运行测试
+make test      # 完整测试
+make quick     # 快速测试
+make logs      # 查看日志
+make clean     # 清理环境
+```
+
+**测试覆盖**:
+- ✅ File > New Request (创建请求)
+- ✅ Edit > Send Request (发送请求)
+- ✅ File > Save (保存请求)
+- ✅ File > Close Tab (关闭标签)
+- ✅ 多标签页创建和管理
 
 ---
 

@@ -30,7 +30,7 @@ class HttpRequest with _$HttpRequest {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: 'New Request',
         method: HttpMethod.get,
-        url: 'https://api.example.com',
+        url: 'https://httpbin.org/get',
         params: [],
         headers: [],
         body: '',

@@ -7,6 +7,7 @@ import '../../models/http_response.dart';
 import '../../models/key_value_pair.dart';
 import '../../providers/providers.dart';
 import '../../utils/constants.dart';
+import '../../utils/testing/ui_test_mode.dart';
 import '../common/code_editor.dart';
 
 class ResponseViewer extends ConsumerStatefulWidget {
@@ -72,6 +73,30 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
     // Ensure TabController is synchronized with current response
     _updateTabController(response);
+
+    // Handle UI test mode tab switching
+    final targetTab = ref.watch(uiTestTargetTabProvider);
+    if (targetTab != null && _tabController != null) {
+      // Map tab name to index
+      final tabIndexMap = <String, int>{
+        'body': 0,
+        'headers': 1,
+        'cookies': 2,
+        'certificate': 3,
+      };
+      final targetIndex = tabIndexMap[targetTab.toLowerCase()];
+      if (targetIndex != null && targetIndex < _tabController!.length) {
+        if (_tabController!.index != targetIndex) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _tabController!.animateTo(targetIndex);
+              // Clear the target after switching
+              ref.read(uiTestTargetTabProvider.notifier).state = null;
+            }
+          });
+        }
+      }
+    }
 
     return Container(
       decoration: BoxDecoration(

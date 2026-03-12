@@ -13,13 +13,13 @@ import 'package:integration_test/integration_test.dart';
 /// 1. App can create and send HTTP requests
 /// 2. Network connectivity works (outbound connections)
 /// 3. Response is correctly displayed
-void main() {
+void main([List<String> args = const []]) {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('HTTP Request E2E Tests', () {
     testWidgets('should create request and verify UI layout', (tester) async {
       // Launch the app
-      app.main();
+      app.main([]);
       await tester.pumpAndSettle();
 
       // Verify app loaded with sidebar
@@ -89,7 +89,7 @@ void main() {
     });
 
     testWidgets('should handle connection errors gracefully', (tester) async {
-      app.main();
+      app.main([]);
       await tester.pumpAndSettle();
 
       // Create collection and request

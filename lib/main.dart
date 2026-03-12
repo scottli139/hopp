@@ -8,9 +8,16 @@ import 'services/menu_channel.dart';
 import 'services/storage_service.dart';
 import 'widgets/common/shortcut_wrapper.dart';
 import 'utils/app_logger.dart';
+import 'utils/testing/ui_test_mode.dart';
 
-void main() async {
+// 存储启动参数，供测试模式使用
+List<String> appArgs = [];
+
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 保存启动参数
+  appArgs = args;
 
   // Initialize logging first
   await AppLogger.initialize();
@@ -37,11 +44,27 @@ void main() async {
   );
 }
 
-class HoppApp extends ConsumerWidget {
+class HoppApp extends ConsumerStatefulWidget {
   const HoppApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HoppApp> createState() => _HoppAppState();
+}
+
+class _HoppAppState extends ConsumerState<HoppApp> {
+  @override
+  void initState() {
+    super.initState();
+    // 初始化 UI 测试模式
+    _initTestMode();
+  }
+
+  Future<void> _initTestMode() async {
+    await UITestModeManager().initialize(appArgs, ref);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(

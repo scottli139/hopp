@@ -23,10 +23,10 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **快捷键与 E2E 测试完成** |
+| **当前状态** | ✅ **UI 测试模式完成** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **测试覆盖** | 405 个测试 (Models 152 + Services 73 + Providers 92 + Widgets 88) |
+| **测试覆盖** | 405+ 个测试 (Models 152 + Services 73 + Providers 92 + Widgets 88 + UI Test) |
 | **下次重点** | 🟡 主题切换 / 🟡 响应优化 / 🟢 请求历史 |
 
 ---
@@ -77,6 +77,8 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | 品牌化 | 2026-03-11 | 统一 Logo、修复布局溢出 |
 | 快捷键支持 | 2026-03-12 | Shortcuts + Actions + macOS 菜单集成 |
 | Peekaboo E2E 测试 | 2026-03-12 | 完整自动化测试套件 |
+| UI 测试模式 | 2026-03-12 | 内置 HTTP 指令服务器，支持远程控制 |
+| UI 自动化测试验证 | 2026-03-12 | HTTPS 请求 + Certificate Tab 切换测试 |
 
 ### 进行中 🔄
 
@@ -218,6 +220,39 @@ make quick  # 快速测试
 make logs   # 查看日志
 make clean  # 清理环境
 ```
+
+### UI 测试模式
+
+**核心实现**: `lib/utils/testing/ui_test_mode.dart`
+
+**客户端**: `integration_test/test_client.py`
+
+**使用方式**:
+```bash
+# 1. 以测试模式启动应用
+./hopp.app/Contents/MacOS/hopp --test-mode
+
+# 2. 从日志获取端口
+grep "测试服务器启动在端口" ~/Library/Containers/.../hopp_*.log
+
+# 3. 执行测试
+python3 integration_test/test_client.py --port <PORT> full_test
+```
+
+**可用指令**:
+- `create_request` - 创建新请求
+- `set_url` - 设置 URL
+- `send_request` - 发送请求
+- `switch_response_tab` - 切换响应 Tab (body/headers/cookies/certificate)
+- `get_response_info` - 获取响应信息
+- `wait` - 等待指定时间
+- `full_test` - 完整测试流程
+
+**优势**:
+- ✅ 精确控制，直接操作 Flutter Provider 状态
+- ✅ 稳定可靠，不受窗口位置/分辨率影响
+- ✅ 速度快，无需等待动画
+- ✅ 易于扩展，添加新指令简单
 
 ### 日志最佳实践
 
@@ -378,6 +413,46 @@ genhtml coverage/lcov.info -o coverage/html
 
 </details>
 
+<details>
+<summary>2026-03-12 - UI 测试模式实现 (Kimi 辅助测试)</summary>
+
+**完成工作**:
+- ✅ 实现 UI 测试模式 (`--test-mode` 启动参数)
+- ✅ 内置 HTTP 指令服务器 (`UITestModeManager`)
+- ✅ 创建 Python 测试客户端 (`test_client.py`)
+- ✅ 实现 12 个测试指令 (create_request, send_request, switch_response_tab 等)
+- ✅ 成功执行 HTTPS 请求 + Certificate Tab 切换测试
+- ✅ 清理冗余测试方案 (Python+OpenCV, XCTest, Peekaboo 高级脚本)
+- ✅ 更新测试文档
+
+**技术方案**:
+- 应用以 `--test-mode` 启动时，自动启动 HTTP 服务器
+- 测试客户端通过 HTTP POST 发送指令
+- 应用执行指令并操作 Flutter Provider 状态
+- UI 自动响应状态变化
+
+**核心文件**:
+- `lib/utils/testing/ui_test_mode.dart` (新建)
+- `integration_test/test_client.py` (新建)
+- `lib/widgets/request/response_viewer.dart` (修改，支持 Tab 切换)
+- `lib/main.dart` (修改，支持测试模式参数)
+
+**使用方式**:
+```bash
+# 启动应用（测试模式）
+./hopp.app/Contents/MacOS/hopp --test-mode
+
+# 执行测试
+python3 integration_test/test_client.py --port <PORT> full_test
+```
+
+**优势**:
+- 精确控制，直接操作状态，不受坐标/分辨率影响
+- 稳定可靠，速度快
+- 易于扩展新指令
+
+</details>
+
 ---
 
 ## 更新日志
@@ -392,6 +467,7 @@ genhtml coverage/lcov.info -o coverage/html
 | 2026-03-11 | v0.2.7-test-fix | 修复 16 个 Sidebar 测试 |
 | 2026-03-12 | v0.2.8-shortcuts | 快捷键 + macOS 菜单 |
 | 2026-03-12 | v0.2.9-peekaboo | Peekaboo E2E 测试套件 |
+| 2026-03-12 | v0.3.0-ui-test-mode | UI 测试模式，支持 HTTP 指令控制 |
 
 ---
 

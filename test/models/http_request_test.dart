@@ -66,7 +66,7 @@ void main() {
         expect(request.id, isNotEmpty);
         expect(request.name, equals('New Request'));
         expect(request.method, equals(HttpMethod.get));
-        expect(request.url, equals('https://api.example.com'));
+        expect(request.url, equals('https://httpbin.org/get'));
         expect(request.params, isEmpty);
         expect(request.headers, isEmpty);
         expect(request.body, equals(''));

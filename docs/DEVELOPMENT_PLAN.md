@@ -8,10 +8,10 @@
 
 **Hopp** 是一款轻量级、跨平台的 API 请求测试工具，基于 Flutter 构建，致力于提供高效、优雅的 API 测试体验。
 
-**当前阶段**: 快捷键支持 & E2E 测试完成，准备响应优化  
+**当前阶段**: UI 字体优化完成，准备主题切换和响应优化  
 **目标版本**: v1.0.0  
 **技术栈**: Flutter 3.27.x + Dart 3.6.x + Riverpod
-**测试状态**: 405+ 单元测试 + Peekaboo E2E 测试 ✅
+**测试状态**: 415 个单元测试 (2 个失败待修复) + Peekaboo E2E 测试 ✅
 
 ---
 
@@ -168,6 +168,34 @@ make test  # 运行完整测试
 - 🟡 国际化完善 (多语言切换) - P1
 - 🟢 请求历史记录 - P2
 - 🟢 响应优化 (大响应体渲染) - P1
+
+---
+
+### M3.7: UI 字体和布局优化 ✅ COMPLETED (2026-03-12)
+
+| 任务 | 状态 | 优先级 | 说明 |
+|-----|------|--------|------|
+| Request/Response Tab 字体 | ✅ | P1 | 13px → 12px |
+| 侧边栏 Method badge 字体 | ✅ | P1 | 10px → 9px |
+| 侧边栏请求名字体 | ✅ | P1 | 13px → 11px |
+| Content Type 标签字体 | ✅ | P1 | 12px → 11px |
+| SegmentedButton 高度 | ✅ | P1 | 限制 32px |
+| Certificate 页面字体 | ✅ | P1 | 标题和详情字体优化 |
+| Add new 文字大小 | ✅ | P1 | 14px → 12px |
+
+**对比 Postman 优化**:
+- 统一字体大小系统，与 Postman 保持一致 (11-12px)
+- 优化组件高度，更紧凑的界面布局
+- 修复底部溢出警告 (仍有 87px 待解决)
+
+**修改文件**:
+- `lib/widgets/request/request_editor.dart` - Tab 字体、Content Type、SegmentedButton
+- `lib/widgets/request/response_viewer.dart` - Response Tab、Certificate 字体
+- `lib/widgets/layout/sidebar.dart` - Method badge、请求名字体
+
+**Git 提交**: `style(ui): optimize font sizes and component heights`
+
+**测试状态**: 415 个测试 (2 个失败待修复)
 
 ---
 

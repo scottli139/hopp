@@ -8,10 +8,10 @@
 
 **Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Flutter 构建，注重性能和用户体验。
 
-**当前状态**: ✅ **快捷键支持 & Peekaboo E2E 测试完成**  
+**当前状态**: ✅ **UI 字体和布局优化完成**  
 **技术栈**: Flutter 3.27.x + Dart + Riverpod  
 **目标平台**: macOS 10.15+ / Windows 10+ / Linux  
-**下次会话重点**: 🟡 **主题切换**、🟡 **响应优化**
+**下次会话重点**: 🟡 **主题切换**、🟡 **响应优化**、🟡 **修复失败测试**
 
 ---
 
@@ -609,6 +609,47 @@ pnpm tauri build            # 构建生产版本
 ---
 
 ## 📝 会话记录
+
+### 2026-03-12 会话 - UI 字体和布局优化
+
+**本次会话完成的工作**:
+1. ✅ 对比 Postman 分析 UI 字体大小问题
+2. ✅ 调整 Request/Response Tab 字体从 13px 到 12px
+3. ✅ 调整侧边栏 Method badge 字体从 10px 到 9px
+4. ✅ 调整侧边栏请求名字体从 13px 到 11px
+5. ✅ 调整 Content Type 标签字体到 11px
+6. ✅ 限制 SegmentedButton 高度为 32px
+7. ✅ 调整 Certificate 页面字体大小
+8. ✅ 调整 Add new 文字大小为 12px
+9. ✅ 提交代码并格式化
+
+**创建/修改的文件**:
+- `lib/widgets/request/request_editor.dart` - 字体和 SegmentedButton 高度优化
+- `lib/widgets/request/response_viewer.dart` - Response Tab 和 Certificate 字体优化
+- `lib/widgets/layout/sidebar.dart` - 侧边栏字体优化
+
+**测试状态**:
+- 单元测试: 415 个通过, 2 个失败, 2 个跳过
+- 失败测试: sidebar_test.dart (Mock 问题，非功能问题)
+
+**Git 提交记录**:
+```
+style(ui): optimize font sizes and component heights
+- Reduce Request/Response tab font size from 13px to 12px
+- Reduce sidebar method badge font from 10px to 9px  
+- Reduce sidebar request name font from 13px to 11px
+- Reduce Content Type label font to tiny (11px)
+- Limit SegmentedButton height to 32px
+- Reduce Certificate page font sizes
+- Reduce Add new text font to 12px
+```
+
+**待办事项**:
+- [ ] 修复失败的 widget 测试 (sidebar_test.dart)
+- [ ] 解决 Body Tab 底部溢出警告 (87 pixels)
+- [ ] 继续优化 UI 一致性
+
+---
 
 ### 2026-03-10 会话 - M1.4 HTTP 核心功能完成
 

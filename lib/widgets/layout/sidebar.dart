@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -8,12 +9,29 @@ import '../../providers/providers.dart';
 import '../../screens/about/about_screen.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
+import '../../utils/testing/ui_test_mode.dart';
 
-class Sidebar extends ConsumerWidget {
+class Sidebar extends ConsumerStatefulWidget {
   const Sidebar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<Sidebar> createState() => _SidebarState();
+}
+
+class _SidebarState extends ConsumerState<Sidebar> {
+  // 编辑状态变量
+  bool _isEditingName = false;
+  String? _editingRequestId;
+  final TextEditingController _nameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final collections = ref.watch(collectionProvider);
     final theme = Theme.of(context);
 
@@ -30,14 +48,14 @@ class Sidebar extends ConsumerWidget {
       child: Column(
         children: [
           // Header
-          _buildHeader(context, ref),
+          _buildHeader(context),
           const Divider(height: 1),
           // Search
           _buildSearch(context),
           // Collection tree
           Expanded(
             child: collections.when(
-              data: (data) => _buildCollectionTree(context, ref, data),
+              data: (data) => _buildCollectionTree(context, data),
               loading: () => const Center(
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
@@ -56,7 +74,7 @@ class Sidebar extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, WidgetRef ref) {
+  Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
 
     return Container(
@@ -68,7 +86,7 @@ class Sidebar extends ConsumerWidget {
           _buildBrandLogo(context),
           const Spacer(),
           // Actions menu
-          _buildActionsMenu(context, ref),
+          _buildActionsMenu(context),
         ],
       ),
     );
@@ -88,7 +106,6 @@ class Sidebar extends ConsumerWidget {
 
   Widget _buildCollectionTree(
     BuildContext context,
-    WidgetRef ref,
     List<Collection> collections,
   ) {
     if (collections.isEmpty) {
@@ -98,7 +115,7 @@ class Sidebar extends ConsumerWidget {
     return ListView.builder(
       itemCount: collections.length,
       itemBuilder: (context, index) {
-        return _buildCollectionItem(context, ref, collections[index], 0);
+        return _buildCollectionItem(context, collections[index], 0);
       },
     );
   }
@@ -129,7 +146,6 @@ class Sidebar extends ConsumerWidget {
 
   Widget _buildCollectionItem(
     BuildContext context,
-    WidgetRef ref,
     Collection collection,
     int depth,
   ) {
@@ -189,7 +205,7 @@ class Sidebar extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  _buildCollectionActions(context, ref, collection),
+                  _buildCollectionActions(context, collection),
                 ],
               ),
             ),
@@ -200,11 +216,11 @@ class Sidebar extends ConsumerWidget {
           secondChild: Column(
             children: [
               ...collection.children.map(
-                (child) => _buildCollectionItem(context, ref, child, depth + 1),
+                (child) => _buildCollectionItem(context, child, depth + 1),
               ),
               ...collection.requests.map(
                 (request) =>
-                    _buildRequestItem(context, ref, request, depth + 1),
+                    _buildRequestItem(context, request, depth + 1),
               ),
             ],
           ),
@@ -218,85 +234,444 @@ class Sidebar extends ConsumerWidget {
 
   Widget _buildRequestItem(
     BuildContext context,
-    WidgetRef ref,
     HttpRequest request,
     int depth,
   ) {
     final theme = Theme.of(context);
     final isActive = ref.watch(activeTabIdProvider) == request.id;
 
-    return Material(
-      color:
-          isActive ? AppColors.primary.withOpacity(0.08) : Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          ref.read(requestTabProvider.notifier).openTab(request);
-          ref.read(activeTabIdProvider.notifier).state = request.id;
-        },
-        hoverColor: AppColors.primary.withOpacity(0.04),
-        splashColor: AppColors.primary.withOpacity(0.08),
-        child: Container(
-          height: 32, // 统一高度
-          padding: EdgeInsets.only(
-            left: AppConstants.spaceS + depth * AppConstants.spaceM + 12,
-            right: AppConstants.spaceS,
-          ),
-          decoration: isActive
-              ? BoxDecoration(
-                  border: Border(
-                    left: BorderSide(
-                      color: AppColors.primary,
-                      width: 3,
+    // 使用 StatefulBuilder 管理编辑状态
+    return StatefulBuilder(
+      builder: (context, setState) {
+        // 检查是否正在编辑此请求
+        final editingRequestId = ref.watch(uiTestEditingRequestIdProvider);
+        final isEditing = editingRequestId == request.id;
+
+        // 如果是测试模式触发的编辑，自动进入编辑状态
+        if (isEditing && !_isEditingName) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              _isEditingName = true;
+              _editingRequestId = request.id;
+              _nameController.text = request.name;
+            });
+          });
+        }
+
+        return Material(
+          color: isActive
+              ? AppColors.primary.withOpacity(0.08)
+              : Colors.transparent,
+          child: InkWell(
+            onTap: _isEditingName && _editingRequestId == request.id
+                ? null
+                : () {
+                    ref.read(requestTabProvider.notifier).openTab(request);
+                    ref.read(activeTabIdProvider.notifier).state = request.id;
+                  },
+            onSecondaryTap: () => _showRequestContextMenu(context, request),
+            hoverColor: AppColors.primary.withOpacity(0.04),
+            splashColor: AppColors.primary.withOpacity(0.08),
+            child: Container(
+              height: 32,
+              padding: EdgeInsets.only(
+                left: AppConstants.spaceS + depth * AppConstants.spaceM + 12,
+                right: AppConstants.spaceS,
+              ),
+              decoration: isActive
+                  ? BoxDecoration(
+                      border: Border(
+                        left: BorderSide(
+                          color: AppColors.primary,
+                          width: 3,
+                        ),
+                      ),
+                    )
+                  : null,
+              child: Row(
+                children: [
+                  // Method badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.getHttpMethodColor(request.method.value)
+                          .withOpacity(isActive ? 0.15 : 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      request.method.value.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 9,
+                        color:
+                            AppColors.getHttpMethodColor(request.method.value),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                )
-              : null,
-          child: Row(
-            children: [
-              // Method badge - 增大字体到 10px
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 5,
-                  vertical: 2,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.getHttpMethodColor(request.method.value)
-                      .withOpacity(isActive ? 0.15 : 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  request.method.value.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: AppColors.getHttpMethodColor(request.method.value),
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(width: 8),
+                  // 名称显示或编辑
+                  Expanded(
+                    child: _isEditingName && _editingRequestId == request.id
+                        ? _buildNameEditor(context, request, setState)
+                        : _buildNameDisplay(context, request, isActive),
                   ),
-                ),
+                  // 编辑时显示操作按钮
+                  if (_isEditingName && _editingRequestId == request.id) ...[
+                    _buildEditActions(context, request, setState),
+                  ] else
+                    _buildRequestMenuButton(context, request),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  request.name,
-                  style: TextStyle(
-                    fontSize: 11, // 统一字体大小
-                    color: isActive
-                        ? AppColors.primaryDark
-                        : theme.colorScheme.onSurface,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+            ),
           ),
+        );
+      },
+    );
+  }
+
+  /// 构建名称显示
+  Widget _buildNameDisplay(BuildContext context, HttpRequest request, bool isActive) {
+    final theme = Theme.of(context);
+    return Text(
+      request.name,
+      style: TextStyle(
+        fontSize: 11,
+        color: isActive
+            ? AppColors.primaryDark
+            : theme.colorScheme.onSurface,
+        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+      ),
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  /// 构建名称编辑器
+  Widget _buildNameEditor(
+    BuildContext context,
+    HttpRequest request,
+    StateSetter setState,
+  ) {
+    final theme = Theme.of(context);
+
+    return Focus(
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent) {
+          if (event.logicalKey == LogicalKeyboardKey.enter) {
+            _saveRequestName(context, request, setState);
+            return KeyEventResult.handled;
+          } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+            _cancelEdit(setState);
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: TextField(
+        controller: _nameController,
+        autofocus: true,
+        style: TextStyle(
+          fontSize: 11,
+          color: theme.colorScheme.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(4),
+            borderSide: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(4),
+            borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(4),
+            borderSide: const BorderSide(color: AppColors.primary),
+          ),
+        ),
+        onSubmitted: (_) => _saveRequestName(context, request, setState),
+      ),
+    );
+  }
+
+  /// 构建编辑操作按钮
+  Widget _buildEditActions(
+    BuildContext context,
+    HttpRequest request,
+    StateSetter setState,
+  ) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: () => _saveRequestName(context, request, setState),
+          child: Icon(
+            Icons.check,
+            size: 14,
+            color: AppColors.success,
+          ),
+        ),
+        const SizedBox(width: 4),
+        InkWell(
+          onTap: () => _cancelEdit(setState),
+          child: Icon(
+            Icons.close,
+            size: 14,
+            color: AppColors.error,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 构建请求菜单按钮
+  Widget _buildRequestMenuButton(
+    BuildContext context,
+    HttpRequest request,
+  ) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppConstants.radiusS),
+        onTap: () {},
+        child: PopupMenuButton<String>(
+          icon: Icon(
+            Icons.more_vert,
+            size: 14,
+            color: theme.colorScheme.outline,
+          ),
+          offset: const Offset(0, 28),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.radiusM),
+          ),
+          elevation: 8,
+          color: theme.colorScheme.surface,
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'rename',
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.edit,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Rename',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'delete',
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.delete,
+                    size: 16,
+                    color: AppColors.error,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Delete',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          onSelected: (value) {
+            switch (value) {
+              case 'rename':
+                _startEditingName(request.id, request.name, setState);
+                break;
+              case 'delete':
+                _showDeleteRequestConfirmation(context, request);
+                break;
+            }
+          },
         ),
       ),
     );
   }
 
+  /// 开始编辑名称
+  void _startEditingName(String requestId, String currentName, StateSetter setState) {
+    setState(() {
+      _isEditingName = true;
+      _editingRequestId = requestId;
+      _nameController.text = currentName;
+    });
+  }
+
+  /// 保存请求名称
+  Future<void> _saveRequestName(
+    BuildContext context,
+    HttpRequest request,
+    StateSetter setState,
+  ) async {
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty || newName == request.name) {
+      _cancelEdit(setState);
+      return;
+    }
+
+    // 更新请求
+    final updatedRequest = request.copyWith(name: newName);
+
+    // 更新 Collection
+    await ref
+        .read(collectionProvider.notifier)
+        .updateRequestInCollection(updatedRequest);
+
+    // 更新 Tab（如果打开）
+    final tab = ref.read(requestTabProvider.notifier).getTab(request.id);
+    if (tab != null) {
+      ref.read(requestTabProvider.notifier).updateRequest(request.id, updatedRequest);
+    }
+
+    // 通知 UI 测试模式编辑完成
+    if (ref.read(uiTestEditCompleteProvider) != null) {
+      ref.read(uiTestEditCompleteProvider.notifier).state = {
+        'request_id': request.id,
+        'old_name': request.name,
+        'new_name': newName,
+        'confirmed': true,
+      };
+    }
+
+    _cancelEdit(setState);
+  }
+
+  /// 取消编辑
+  void _cancelEdit(StateSetter setState) {
+    setState(() {
+      _isEditingName = false;
+      _editingRequestId = null;
+      _nameController.clear();
+    });
+  }
+
+  /// 显示请求右键菜单
+  void _showRequestContextMenu(
+    BuildContext context,
+    HttpRequest request,
+  ) {
+    final theme = Theme.of(context);
+
+    showMenu(
+      context: context,
+      position: const RelativeRect.fromLTRB(100, 100, 0, 0),
+      items: [
+        PopupMenuItem(
+          value: 'rename',
+          child: Row(
+            children: [
+              Icon(
+                Icons.edit,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              const Text('Rename'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(
+                Icons.delete,
+                size: 16,
+                color: AppColors.error,
+              ),
+              const SizedBox(width: 8),
+              const Text('Delete'),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'rename') {
+        // 触发编辑状态
+      } else if (value == 'delete') {
+        _showDeleteRequestConfirmation(context, request);
+      }
+    });
+  }
+
+  /// 显示删除确认对话框
+  void _showDeleteRequestConfirmation(
+    BuildContext context,
+    HttpRequest request,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Request'),
+        content: Text(
+          'Are you sure you want to delete "${request.name}"? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+            ),
+            onPressed: () {
+              // 删除请求
+              _deleteRequest(request);
+              Navigator.pop(context);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 删除请求
+  void _deleteRequest(HttpRequest request) {
+    // 关闭相关 Tab
+    final tab = ref.read(requestTabProvider.notifier).getTab(request.id);
+    if (tab != null) {
+      ref.read(requestTabProvider.notifier).closeTab(request.id);
+    }
+
+    // 从 Collection 中删除
+    final collectionId = ref
+        .read(collectionProvider.notifier)
+        .findRequestCollectionId(request.id);
+    if (collectionId != null) {
+      ref.read(collectionProvider.notifier).deleteRequestFromCollection(
+            collectionId,
+            request.id,
+          );
+    }
+  }
+
   Widget _buildCollectionActions(
     BuildContext context,
-    WidgetRef ref,
     Collection collection,
   ) {
     final theme = Theme.of(context);
@@ -455,7 +830,7 @@ class Sidebar extends ConsumerWidget {
                     '[Sidebar] New request created and tab opened: ${newRequest.name}');
                 break;
               case 'delete':
-                _showDeleteConfirmation(context, ref, collection);
+                _showDeleteConfirmation(context, collection);
                 break;
             }
           },
@@ -464,7 +839,7 @@ class Sidebar extends ConsumerWidget {
     );
   }
 
-  void _showNewCollectionDialog(BuildContext context, WidgetRef ref) {
+  void _showNewCollectionDialog(BuildContext context) {
     final controller = TextEditingController();
 
     showDialog(
@@ -501,7 +876,6 @@ class Sidebar extends ConsumerWidget {
 
   void _showDeleteConfirmation(
     BuildContext context,
-    WidgetRef ref,
     Collection collection,
   ) {
     showDialog(
@@ -543,7 +917,7 @@ class Sidebar extends ConsumerWidget {
   }
 
   /// Build actions menu button
-  Widget _buildActionsMenu(BuildContext context, WidgetRef ref) {
+  Widget _buildActionsMenu(BuildContext context) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, size: 18),
       padding: EdgeInsets.zero,
@@ -554,7 +928,7 @@ class Sidebar extends ConsumerWidget {
             _showAboutDialog(context);
             break;
           case 'new':
-            _showNewCollectionDialog(context, ref);
+            _showNewCollectionDialog(context);
             break;
           case 'refresh':
             ref.read(collectionProvider.notifier).loadCollections();

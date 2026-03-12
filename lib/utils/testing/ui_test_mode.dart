@@ -16,6 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/providers.dart';
+import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../models/http_method.dart';
 import '../../models/key_value_pair.dart';
@@ -56,7 +57,8 @@ class UITestModeManager {
   Future<void> _startTestServer() async {
     try {
       // 绑定到本地随机端口
-      _server = await io.HttpServer.bind(io.InternetAddress.loopbackIPv4, 0);
+      // 使用 anyIPv4 而不是 loopbackIPv4 以避免 macOS 权限问题
+      _server = await io.HttpServer.bind(io.InternetAddress.anyIPv4, 0);
       _port = _server!.port;
       
       print('[UI_TEST] =======================================');
@@ -161,6 +163,29 @@ class UITestModeManager {
         
       case 'save_request':
         return await _saveRequest();
+        
+      case 'rename_request':
+        final requestId = params['request_id'] as String?;
+        final newName = params['new_name'] as String;
+        return await _renameRequest(requestId, newName);
+        
+      case 'start_edit_request_name':
+        final requestId = params['request_id'] as String?;
+        return await _startEditRequestName(requestId);
+        
+      case 'set_request_name':
+        final name = params['name'] as String;
+        return await _setRequestName(name);
+        
+      case 'confirm_edit_request_name':
+        return await _confirmEditRequestName();
+        
+      case 'cancel_edit_request_name':
+        return await _cancelEditRequestName();
+        
+      case 'get_request_info':
+        final requestId = params['request_id'] as String?;
+        return await _getRequestInfo(requestId);
         
       default:
         throw Exception('未知指令: $action');
@@ -356,6 +381,238 @@ class UITestModeManager {
     return {'saved': true};
   }
 
+  /// 直接重命名请求（非交互式）
+  Future<Map<String, dynamic>> _renameRequest(
+      String? requestId, String newName) async {
+    final targetId = requestId ?? _ref!.read(activeTabIdProvider);
+    if (targetId == null) {
+      throw Exception('没有指定请求 ID，且没有活动的请求 Tab');
+    }
+
+    // 查找请求
+    HttpRequest? request;
+    final activeTab = _ref!.read(requestTabProvider.notifier).getTab(targetId);
+    if (activeTab != null) {
+      request = activeTab.request;
+    } else {
+      // 从 Collection 中查找
+      request = _findRequestInCollections(targetId);
+    }
+
+    if (request == null) {
+      throw Exception('未找到请求: $targetId');
+    }
+
+    // 更新名称
+    final updatedRequest = request.copyWith(name: newName);
+
+    // 更新 Collection
+    await _ref!.read(collectionProvider.notifier)
+        .updateRequestInCollection(updatedRequest);
+
+    // 更新 Tab（如果打开）
+    final tab = _ref!.read(requestTabProvider.notifier).getTab(targetId);
+    if (tab != null) {
+      _ref!.read(requestTabProvider.notifier).updateRequest(targetId, updatedRequest);
+    }
+
+    return {
+      'request_id': targetId,
+      'old_name': request.name,
+      'new_name': newName,
+    };
+  }
+
+  /// 开始编辑请求名称（交互式）
+  Future<Map<String, dynamic>> _startEditRequestName(String? requestId) async {
+    final targetId = requestId ?? _ref!.read(activeTabIdProvider);
+    if (targetId == null) {
+      throw Exception('没有指定请求 ID，且没有活动的请求 Tab');
+    }
+
+    // 查找请求
+    HttpRequest? request;
+    final activeTab = _ref!.read(requestTabProvider.notifier).getTab(targetId);
+    if (activeTab != null) {
+      request = activeTab.request;
+    } else {
+      request = _findRequestInCollections(targetId);
+    }
+
+    if (request == null) {
+      throw Exception('未找到请求: $targetId');
+    }
+
+    // 设置编辑状态
+    _ref!.read(uiTestEditingRequestIdProvider.notifier).state = targetId;
+    _ref!.read(uiTestEditingRequestNameTextProvider.notifier).state = request.name;
+    _ref!.read(uiTestEditCompleteProvider.notifier).state = null;
+
+    return {
+      'request_id': targetId,
+      'current_name': request.name,
+      'editing': true,
+    };
+  }
+
+  /// 设置编辑中的名称文本
+  Future<Map<String, dynamic>> _setRequestName(String name) async {
+    final editingId = _ref!.read(uiTestEditingRequestIdProvider);
+    if (editingId == null) {
+      throw Exception('没有正在编辑的请求，请先调用 start_edit_request_name');
+    }
+
+    _ref!.read(uiTestEditingRequestNameTextProvider.notifier).state = name;
+
+    return {
+      'request_id': editingId,
+      'name': name,
+    };
+  }
+
+  /// 确认编辑请求名称
+  Future<Map<String, dynamic>> _confirmEditRequestName() async {
+    final editingId = _ref!.read(uiTestEditingRequestIdProvider);
+    if (editingId == null) {
+      throw Exception('没有正在编辑的请求，请先调用 start_edit_request_name');
+    }
+
+    final newName = _ref!.read(uiTestEditingRequestNameTextProvider);
+    if (newName.trim().isEmpty) {
+      throw Exception('名称不能为空');
+    }
+
+    // 查找请求
+    HttpRequest? request;
+    final activeTab = _ref!.read(requestTabProvider.notifier).getTab(editingId);
+    if (activeTab != null) {
+      request = activeTab.request;
+    } else {
+      request = _findRequestInCollections(editingId);
+    }
+
+    if (request == null) {
+      throw Exception('未找到请求: $editingId');
+    }
+
+    final oldName = request.name;
+
+    // 更新请求
+    final updatedRequest = request.copyWith(name: newName.trim());
+
+    // 更新 Collection
+    await _ref!.read(collectionProvider.notifier)
+        .updateRequestInCollection(updatedRequest);
+
+    // 更新 Tab（如果打开）
+    if (activeTab != null) {
+      _ref!.read(requestTabProvider.notifier).updateRequest(editingId, updatedRequest);
+    }
+
+    // 清除编辑状态
+    _ref!.read(uiTestEditingRequestIdProvider.notifier).state = null;
+    _ref!.read(uiTestEditingRequestNameTextProvider.notifier).state = '';
+    _ref!.read(uiTestEditCompleteProvider.notifier).state = {
+      'request_id': editingId,
+      'old_name': oldName,
+      'new_name': newName,
+      'confirmed': true,
+    };
+
+    return {
+      'request_id': editingId,
+      'old_name': oldName,
+      'new_name': newName,
+      'confirmed': true,
+    };
+  }
+
+  /// 取消编辑请求名称
+  Future<Map<String, dynamic>> _cancelEditRequestName() async {
+    final editingId = _ref!.read(uiTestEditingRequestIdProvider);
+    if (editingId == null) {
+      throw Exception('没有正在编辑的请求');
+    }
+
+    // 清除编辑状态
+    _ref!.read(uiTestEditingRequestIdProvider.notifier).state = null;
+    _ref!.read(uiTestEditingRequestNameTextProvider.notifier).state = '';
+    _ref!.read(uiTestEditCompleteProvider.notifier).state = {
+      'request_id': editingId,
+      'cancelled': true,
+    };
+
+    return {
+      'request_id': editingId,
+      'cancelled': true,
+    };
+  }
+
+  /// 获取请求信息
+  Future<Map<String, dynamic>> _getRequestInfo(String? requestId) async {
+    final targetId = requestId ?? _ref!.read(activeTabIdProvider);
+    if (targetId == null) {
+      throw Exception('没有指定请求 ID，且没有活动的请求 Tab');
+    }
+
+    // 查找请求
+    HttpRequest? request;
+    final activeTab = _ref!.read(requestTabProvider.notifier).getTab(targetId);
+    if (activeTab != null) {
+      request = activeTab.request;
+    } else {
+      request = _findRequestInCollections(targetId);
+    }
+
+    if (request == null) {
+      throw Exception('未找到请求: $targetId');
+    }
+
+    // 检查是否有响应
+    final response = _ref!.read(requestResponseProvider)[targetId];
+
+    return {
+      'request_id': request.id,
+      'name': request.name,
+      'method': request.method.value,
+      'url': request.url,
+      'has_response': response != null,
+      'is_open_in_tab': activeTab != null,
+    };
+  }
+
+  /// 在 Collection 中查找请求
+  HttpRequest? _findRequestInCollections(String requestId) {
+    final collectionsAsync = _ref!.read(collectionProvider);
+    
+    if (collectionsAsync case AsyncData(:final value)) {
+      HttpRequest? findInCollections(List<Collection> collections) {
+        for (final collection in collections) {
+          // 检查当前 collection 的请求
+          try {
+            final request = collection.requests.firstWhere(
+              (r) => r.id == requestId,
+            );
+            return request;
+          } catch (_) {
+            // 未找到，继续检查子 collection
+          }
+          
+          // 递归检查子 collection
+          if (collection.children.isNotEmpty) {
+            final found = findInCollections(collection.children);
+            if (found != null) return found;
+          }
+        }
+        return null;
+      }
+
+      return findInCollections(value);
+    }
+    
+    return null;
+  }
+
   /// 关闭测试服务器
   Future<void> dispose() async {
     await _server?.close();
@@ -365,3 +622,12 @@ class UITestModeManager {
 
 /// UI 测试目标 Tab 状态
 final uiTestTargetTabProvider = StateProvider<String?>((ref) => null);
+
+/// UI 测试 - 当前正在编辑的请求 ID
+final uiTestEditingRequestIdProvider = StateProvider<String?>((ref) => null);
+
+/// UI 测试 - 当前编辑的名称文本
+final uiTestEditingRequestNameTextProvider = StateProvider<String>((ref) => '');
+
+/// UI 测试 - 编辑完成通知
+final uiTestEditCompleteProvider = StateProvider<Map<String, dynamic>?>((ref) => null);

@@ -91,7 +91,12 @@ class HoppTestClient:
                 timeout=30
             )
             response.raise_for_status()
-            return response.json()
+            resp_json = response.json()
+            # 返回 result 字段的内容
+            if resp_json.get('success'):
+                return resp_json.get('result', {})
+            else:
+                raise Exception(f"服务器错误: {resp_json.get('error', '未知错误')}")
         except requests.exceptions.ConnectionError:
             raise Exception(f"无法连接到 Hopp 测试服务器 ({self.base_url})，请确认应用已启动")
         except requests.exceptions.Timeout:
@@ -188,6 +193,60 @@ class HoppTestClient:
         print("✅ 请求已保存")
         return result
     
+    def rename_request(self, new_name, request_id=None):
+        """直接重命名请求（非交互式）"""
+        print(f"✏️ 重命名请求为: {new_name}")
+        params = {"new_name": new_name}
+        if request_id:
+            params["request_id"] = request_id
+        result = self.send_command("rename_request", params)
+        print(f"✅ 已重命名: {result.get('old_name')} → {result.get('new_name')}")
+        return result
+    
+    def start_edit_request_name(self, request_id=None):
+        """开始编辑请求名称（交互式）"""
+        print("📝 开始编辑请求名称...")
+        params = {}
+        if request_id:
+            params["request_id"] = request_id
+        result = self.send_command("start_edit_request_name", params)
+        print(f"✅ 正在编辑: {result.get('current_name')}")
+        return result
+    
+    def set_request_name(self, name):
+        """设置编辑中的名称文本"""
+        print(f"⌨️ 输入名称: {name}")
+        result = self.send_command("set_request_name", {"name": name})
+        return result
+    
+    def confirm_edit_request_name(self):
+        """确认编辑请求名称"""
+        print("✅ 确认编辑...")
+        result = self.send_command("confirm_edit_request_name")
+        print(f"✅ 已确认: {result.get('old_name')} → {result.get('new_name')}")
+        return result
+    
+    def cancel_edit_request_name(self):
+        """取消编辑请求名称"""
+        print("❌ 取消编辑...")
+        result = self.send_command("cancel_edit_request_name")
+        print("✅ 已取消")
+        return result
+    
+    def get_request_info(self, request_id=None):
+        """获取请求信息"""
+        params = {}
+        if request_id:
+            params["request_id"] = request_id
+        result = self.send_command("get_request_info", params)
+        print(f"📋 请求信息:")
+        print(f"   ID: {result.get('request_id')}")
+        print(f"   名称: {result.get('name')}")
+        print(f"   方法: {result.get('method')}")
+        print(f"   URL: {result.get('url')}")
+        print(f"   是否打开: {result.get('is_open_in_tab')}")
+        return result
+    
     def full_test(self):
         """执行完整测试流程"""
         print("\n" + "="*60)
@@ -238,6 +297,13 @@ def main():
   %(prog)s send_request                  # 发送请求
   %(prog)s switch_response_tab --tab certificate  # 切换 Tab
   %(prog)s full_test                     # 执行完整测试
+  
+请求名称编辑:
+  %(prog)s rename_request --name "New Name"          # 直接重命名
+  %(prog)s start_edit_request_name                   # 开始编辑
+  %(prog)s set_request_name --name "New Name"        # 输入名称
+  %(prog)s confirm_edit_request_name                 # 确认编辑
+  %(prog)s cancel_edit_request_name                  # 取消编辑
         """
     )
     
@@ -289,6 +355,29 @@ def main():
     # save_request
     subparsers.add_parser("save_request", help="保存请求")
     
+    # rename_request
+    rename_parser = subparsers.add_parser("rename_request", help="直接重命名请求")
+    rename_parser.add_argument("--name", required=True, help="新名称")
+    rename_parser.add_argument("--id", help="请求 ID（默认当前活动请求）")
+    
+    # start_edit_request_name
+    start_edit_parser = subparsers.add_parser("start_edit_request_name", help="开始编辑请求名称")
+    start_edit_parser.add_argument("--id", help="请求 ID（默认当前活动请求）")
+    
+    # set_request_name
+    set_name_parser = subparsers.add_parser("set_request_name", help="设置编辑中的名称")
+    set_name_parser.add_argument("--name", required=True, help="名称")
+    
+    # confirm_edit_request_name
+    subparsers.add_parser("confirm_edit_request_name", help="确认编辑")
+    
+    # cancel_edit_request_name
+    subparsers.add_parser("cancel_edit_request_name", help="取消编辑")
+    
+    # get_request_info
+    get_info_parser = subparsers.add_parser("get_request_info", help="获取请求信息")
+    get_info_parser.add_argument("--id", help="请求 ID（默认当前活动请求）")
+    
     # full_test
     subparsers.add_parser("full_test", help="执行完整测试流程")
     
@@ -326,6 +415,18 @@ def main():
             client.close_tab()
         elif args.command == "save_request":
             client.save_request()
+        elif args.command == "rename_request":
+            client.rename_request(args.name, args.id)
+        elif args.command == "start_edit_request_name":
+            client.start_edit_request_name(args.id)
+        elif args.command == "set_request_name":
+            client.set_request_name(args.name)
+        elif args.command == "confirm_edit_request_name":
+            client.confirm_edit_request_name()
+        elif args.command == "cancel_edit_request_name":
+            client.cancel_edit_request_name()
+        elif args.command == "get_request_info":
+            client.get_request_info(args.id)
         elif args.command == "full_test":
             client.full_test()
         

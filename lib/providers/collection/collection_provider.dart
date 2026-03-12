@@ -181,6 +181,43 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
     }
     return null;
   }
+
+  /// Delete a request from a collection
+  Future<void> deleteRequestFromCollection(
+      String collectionId, String requestId) async {
+    AppLogger.info(
+        '[CollectionNotifier] Deleting request $requestId from collection $collectionId');
+    final currentState = state;
+    if (currentState case AsyncData(:final value)) {
+      // Find and update the collection
+      List<Collection> updateCollections(List<Collection> collections) {
+        return collections.map((c) {
+          if (c.id == collectionId) {
+            final updatedRequests =
+                c.requests.where((r) => r.id != requestId).toList();
+            return c.copyWith(requests: updatedRequests);
+          }
+          // Check in children
+          if (c.children.isNotEmpty) {
+            return c.copyWith(children: updateCollections(c.children));
+          }
+          return c;
+        }).toList();
+      }
+
+      final updated = updateCollections(value);
+      state = AsyncValue.data(updated);
+
+      // Persist changes
+      final storage = _ref.read(storageServiceProvider);
+      final collection = updated.firstWhere((c) => c.id == collectionId);
+      await storage.saveCollection(collection);
+      await storage.deleteRequest(requestId);
+
+      AppLogger.info(
+          '[CollectionNotifier] Request deleted: $requestId from collection: $collectionId');
+    }
+  }
 }
 
 final collectionProvider =

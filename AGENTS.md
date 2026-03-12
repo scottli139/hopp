@@ -23,7 +23,7 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **UI 测试模式完成** |
+| **当前状态** | ✅ **请求名称编辑功能完成** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
 | **测试覆盖** | 405+ 个测试 (Models 152 + Services 73 + Providers 92 + Widgets 88 + UI Test) |
@@ -78,6 +78,8 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | 快捷键支持 | 2026-03-12 | Shortcuts + Actions + macOS 菜单集成 |
 | Peekaboo E2E 测试 | 2026-03-12 | 完整自动化测试套件 |
 | UI 测试模式 | 2026-03-12 | 内置 HTTP 指令服务器，支持远程控制 |
+| UI 自动化测试验证 | 2026-03-12 | HTTPS 请求 + Certificate Tab 切换测试 |
+| 请求名称编辑 | 2026-03-12 | 右键菜单重命名 + UI 测试模式支持 |
 | UI 自动化测试验证 | 2026-03-12 | HTTPS 请求 + Certificate Tab 切换测试 |
 
 ### 进行中 🔄
@@ -246,6 +248,12 @@ python3 integration_test/test_client.py --port <PORT> full_test
 - `switch_response_tab` - 切换响应 Tab (body/headers/cookies/certificate)
 - `get_response_info` - 获取响应信息
 - `wait` - 等待指定时间
+- `rename_request` - 直接重命名请求
+- `start_edit_request_name` - 开始编辑请求名称（交互式）
+- `set_request_name` - 设置编辑中的名称
+- `confirm_edit_request_name` - 确认编辑
+- `cancel_edit_request_name` - 取消编辑
+- `get_request_info` - 获取请求信息
 - `full_test` - 完整测试流程
 
 **优势**:
@@ -326,6 +334,37 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-12 - 请求名称编辑功能 + UI 测试验证</summary>
+
+**完成工作**:
+- ✅ 实现请求名称编辑功能（Sidebar 右键菜单）
+- ✅ 支持交互式编辑（TextField + Enter/Esc）
+- ✅ 扩展 UI 测试模式（6个新指令）
+- ✅ 实际运行 UI 自动化测试并全部通过
+
+**修改文件**:
+- `lib/widgets/layout/sidebar.dart` - 添加名称编辑 UI
+- `lib/providers/collection/collection_provider.dart` - 添加删除请求方法
+- `lib/utils/testing/ui_test_mode.dart` - 添加测试指令
+- `integration_test/test_client.py` - 添加客户端方法
+- `integration_test/test_rename_request.py` - 新增测试脚本
+- `macos/Runner/Release.entitlements` - 添加 network.server 权限
+
+**测试结果**:
+```
+总计: 4 个测试
+通过: 4 个
+失败: 0 个
+
+✅ 测试 1: 直接重命名
+✅ 测试 2: 交互式编辑
+✅ 测试 3: 取消编辑
+✅ 测试 4: 重命名已存在请求
+```
+
+</details>
 
 <details>
 <summary>2026-03-12 - UI 字体和布局优化</summary>
@@ -468,6 +507,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-12 | v0.2.8-shortcuts | 快捷键 + macOS 菜单 |
 | 2026-03-12 | v0.2.9-peekaboo | Peekaboo E2E 测试套件 |
 | 2026-03-12 | v0.3.0-ui-test-mode | UI 测试模式，支持 HTTP 指令控制 |
+| 2026-03-12 | v0.3.1-rename-request | 请求名称编辑功能 + UI 测试验证 |
 
 ---
 

@@ -86,6 +86,17 @@ coverage/
 *.swo
 *~
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Test screenshots
+integration_test/*.png
+integration_test/*.jpg
+
 # Backup directory (keep structure, ignore build artifacts)
 backup_tauri/node_modules/
 backup_tauri/.pnpm-store/

@@ -77,13 +77,13 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       final direction = scrollCommand['direction'] as String;
       final amount = scrollCommand['amount'] as int;
       final timestamp = scrollCommand['timestamp'] as int;
-      
+
       // 使用 timestamp 确保每次都能触发
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _certificateScrollController.hasClients) {
           final currentOffset = _certificateScrollController.offset;
           double newOffset;
-          
+
           switch (direction) {
             case 'down':
               newOffset = currentOffset + amount;
@@ -94,9 +94,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             default:
               return;
           }
-          
+
           _certificateScrollController.animateTo(
-            newOffset.clamp(0.0, _certificateScrollController.position.maxScrollExtent),
+            newOffset.clamp(
+                0.0, _certificateScrollController.position.maxScrollExtent),
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOut,
           );
@@ -829,9 +830,11 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         _buildCompactInfoRow(context, 'Issuer', cert.issuer),
         _buildCompactInfoRow(context, 'Valid From', cert.validFrom.toString()),
         _buildCompactInfoRow(context, 'Valid To', cert.validTo.toString()),
-        _buildCompactInfoRow(context, 'Signature Algorithm', cert.signatureAlgorithm),
+        _buildCompactInfoRow(
+            context, 'Signature Algorithm', cert.signatureAlgorithm),
         _buildCompactInfoRow(context, 'Serial Number', cert.serialNumber),
-        _buildCompactInfoRow(context, 'SHA-256 Fingerprint', cert.sha256Fingerprint),
+        _buildCompactInfoRow(
+            context, 'SHA-256 Fingerprint', cert.sha256Fingerprint),
         if (cert.publicKeyAlgorithm != null)
           _buildCompactInfoRow(
               context, 'Public Key Algorithm', cert.publicKeyAlgorithm!),
@@ -1038,7 +1041,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   // 紧凑型 info row，字体更小
-  Widget _buildCompactInfoRow(BuildContext context, String label, String value) {
+  Widget _buildCompactInfoRow(
+      BuildContext context, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(

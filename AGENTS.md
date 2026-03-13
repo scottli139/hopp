@@ -23,7 +23,7 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **URL Bar 对齐修复完成** |
+| **当前状态** | ✅ **URL Focus 边框对齐修复完成** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
 | **测试覆盖** | 418+ 个测试 (Models 152 + Services 73 + Providers 92 + Widgets 88 + UI Test) |
@@ -85,6 +85,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | UI 自动化测试验证 | 2026-03-12 | 响应优化功能测试脚本 |
 | UI 细节优化 | 2026-03-13 | Tab 样式、+按钮、URL输入框、下拉菜单优化 |
 | UI 对齐修复 | 2026-03-13 | URL行高度统一36px、Method下拉与URL输入框对齐、Certificate字体缩小 |
+| URL Focus 边框对齐修复 | 2026-03-13 | 修复 URL 输入框 focus 状态紫色边框与灰色背景区域高度不一致问题 |
 
 ### 进行中 🔄
 
@@ -263,6 +264,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 - `set_response_display_mode` - 设置响应显示模式（auto/performance/full/raw）
 - `simulate_large_response` - 模拟大响应（用于性能测试）
 - `full_test` - 完整测试流程
+- `focus_url_input` - 聚焦 URL 输入框（用于测试 focus 状态边框对齐）
 
 **优势**:
 - ✅ 精确控制，直接操作 Flutter Provider 状态
@@ -342,6 +344,64 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-13 - URL Focus 边框对齐修复完成</summary>
+
+**修复内容**:
+- ✅ 修复 URL 输入框 focus 状态下紫色边框与灰色背景区域高度不一致问题
+- ✅ 让 TextField 完全控制所有边框状态（enabledBorder/focusedBorder）
+- ✅ 移除外层 Container 的边框设置，避免边框叠加
+- ✅ 调整 contentPadding 确保文字垂直居中
+
+**技术方案**:
+
+1. **问题原因**:
+   - 外层 Container 设置了高度 36px 和背景色
+   - 内层 TextField 的边框独立于 Container
+   - 导致背景色区域和边框区域不一致
+
+2. **解决方案**:
+```dart
+// TextField 完全控制背景和边框，使用 SizedBox 限制高度
+Expanded(
+  child: SizedBox(
+    height: 36,
+    child: TextField(
+      decoration: InputDecoration(
+        // TextField 控制背景色
+        filled: true,
+        fillColor: theme.colorScheme.surfaceContainerHighest,
+        // TextField 控制边框
+        enabledBorder: OutlineInputBorder(...),  // 灰色边框
+        focusedBorder: OutlineInputBorder(...),  // 紫色边框
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 11,
+        ),
+      ),
+    ),
+  ),
+)
+```
+
+3. **新增 UI 测试指令**:
+- `focus_url_input` - 聚焦 URL 输入框（用于测试 focus 状态）
+
+**验证结果**:
+
+| 检查项 | 状态 | 说明 |
+|--------|------|------|
+| Focus 边框对齐 | ✅ | 紫色边框与灰色背景区域完全对齐 |
+| 高度一致 | ✅ | URL 输入框与 Method 下拉框高度一致（36px） |
+| 文字垂直居中 | ✅ | URL 文字在输入框内垂直居中 |
+| 非 focus 状态边框 | ✅ | 灰色边框与 focus 状态边框位置一致 |
+
+**截图验证**:
+- `url_unfocused.png` - 非 focus 状态（灰色边框）
+- `url_focus_state.png` - focus 状态（紫色边框对齐效果，高度 36px）
+
+</details>
 
 <details>
 <summary>2026-03-13 - URL Bar 对齐修复完成</summary>
@@ -771,6 +831,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-12 | v0.3.2-response-optimization | 大响应体渲染优化 + UI 测试 |
 | 2026-03-13 | v0.3.3-ui-polish | UI 细节优化：Tab样式、+按钮、输入框对齐、边框统一、高度优化 |
 | 2026-03-13 | v0.3.5-ui-fix | URL Bar 对齐修复：Method下拉、URL输入框、Save/Send按钮统一36px高度 |
+| 2026-03-13 | v0.3.6-url-focus-fix | 修复 URL 输入框 focus 状态下紫色边框与灰色背景区域高度不一致问题 |
 
 ---
 

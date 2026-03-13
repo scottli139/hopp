@@ -350,6 +350,13 @@ class HoppTestClient:
         print(f"📏 分隔线位置设置为 {ratio}")
         return result
 
+    def focus_url_input(self):
+        """聚焦 URL 输入框（用于测试 focus 状态）"""
+        print("🎯 聚焦 URL 输入框...")
+        result = self.send_command("focus_url_input")
+        print("✅ URL 输入框已聚焦")
+        return result
+
     def full_test(self):
         """执行完整测试流程"""
         print("\n" + "="*60)
@@ -521,6 +528,9 @@ def main():
     divider_parser = subparsers.add_parser("set_divider_position", help="设置分隔线位置")
     divider_parser.add_argument("--ratio", type=float, default=0.5, help="分隔线位置（0.2-0.8）")
 
+    # focus_url_input
+    subparsers.add_parser("focus_url_input", help="聚焦 URL 输入框（用于测试 focus 状态）")
+
     # full_test
     subparsers.add_parser("full_test", help="执行完整测试流程")
     
@@ -590,6 +600,8 @@ def main():
             client.set_window_size(args.width, args.height)
         elif args.command == "set_divider_position":
             client.set_divider_position(args.ratio)
+        elif args.command == "focus_url_input":
+            client.focus_url_input()
         elif args.command == "full_test":
             client.full_test()
         

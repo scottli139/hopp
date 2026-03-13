@@ -7,6 +7,7 @@ import '../../models/key_value_pair.dart';
 import '../../providers/providers.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
+import '../../utils/testing/ui_test_mode.dart';
 import '../common/code_editor.dart';
 
 class RequestEditor extends ConsumerStatefulWidget {
@@ -21,6 +22,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   late TabController _tabController;
   final _urlController = TextEditingController();
   final _nameController = TextEditingController();
+  final _urlFocusNode = FocusNode();
   String? _lastTabId;
 
   @override
@@ -34,6 +36,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     _tabController.dispose();
     _urlController.dispose();
     _nameController.dispose();
+    _urlFocusNode.dispose();
     super.dispose();
   }
 
@@ -51,6 +54,13 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       _urlController.text = activeTab.request.url;
       _nameController.text = activeTab.request.name;
     }
+
+    // 监听测试模式的 URL 输入框 focus 指令
+    ref.listen(uiTestFocusUrlInputProvider, (previous, current) {
+      if (current != null && current != previous) {
+        _urlFocusNode.requestFocus();
+      }
+    });
 
     return Column(
       children: [
@@ -139,54 +149,60 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               ),
             ),
           ),
-          // URL input - 使用固定高度 36px（包含边框）
+          // URL input - 使用固定高度 36px（包含边框和背景）
           Expanded(
-            child: Container(
+            child: SizedBox(
               height: 36,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                border: Border(
-                  top: BorderSide(color: theme.colorScheme.outlineVariant),
-                  bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-                  right: BorderSide(color: theme.colorScheme.outlineVariant),
-                ),
-                borderRadius: const BorderRadius.horizontal(
-                  right: Radius.circular(AppConstants.radiusM),
-                ),
-              ),
               child: TextField(
-                  controller: _urlController,
-                  decoration: InputDecoration(
-                    hintText: 'Enter URL',
-                    hintStyle: TextStyle(
-                      fontSize: fontSize,
-                      color: theme.colorScheme.outline,
-                      height: 1.0,
+                controller: _urlController,
+                focusNode: _urlFocusNode,
+                decoration: InputDecoration(
+                  hintText: 'Enter URL',
+                  hintStyle: TextStyle(
+                    fontSize: fontSize,
+                    color: theme.colorScheme.outline,
+                    height: 1.0,
+                  ),
+                  // 背景色设置
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest,
+                  // 调整 padding 使内容垂直居中（36px 高度 - 14px 字体）/ 2 ≈ 11px
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 11,
+                  ),
+                  // 非 focus 状态的边框（灰色）
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: const BorderRadius.horizontal(
+                      right: Radius.circular(AppConstants.radiusM),
                     ),
-                    isDense: true,
-                    // 调整 padding 使内容垂直居中
-                    contentPadding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
-                    filled: false,
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.outlineVariant,
+                      width: 1.0,
+                    ),
+                  ),
+                  // Focus 状态的紫色边框
                   focusedBorder: OutlineInputBorder(
                     borderRadius: const BorderRadius.horizontal(
                       right: Radius.circular(AppConstants.radiusM),
                     ),
-                    borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+                    borderSide: BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
                   ),
-                  ),
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    color: theme.colorScheme.onSurface,
-                    height: 1.0,
-                  ),
-                  onChanged: (value) {
-                    _updateRequest(ref, request.copyWith(url: value));
-                  },
                 ),
+                style: TextStyle(
+                  fontSize: fontSize,
+                  color: theme.colorScheme.onSurface,
+                  height: 1.0,
+                ),
+                onChanged: (value) {
+                  _updateRequest(ref, request.copyWith(url: value));
+                },
               ),
             ),
+          ),
           const SizedBox(width: AppConstants.spaceM),
           // Save button
           SizedBox(

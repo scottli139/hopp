@@ -226,6 +226,9 @@ class UITestModeManager {
         final ratio = params['ratio'] as double? ?? 0.5;
         return await _setDividerPosition(ratio);
 
+      case 'focus_url_input':
+        return await _focusUrlInput();
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -815,9 +818,9 @@ class UITestModeManager {
   /// 展开 Method 下拉菜单（通过状态通知 UI）
   Future<Map<String, dynamic>> _expandMethodDropdown() async {
     // 设置状态通知 UI 展开下拉菜单
-    _ref!.read(uiTestExpandMethodDropdownProvider.notifier).state = 
+    _ref!.read(uiTestExpandMethodDropdownProvider.notifier).state =
         DateTime.now().millisecondsSinceEpoch;
-    
+
     return {
       'expanded': true,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
@@ -828,33 +831,34 @@ class UITestModeManager {
   Future<Map<String, dynamic>> _switchRequestTab(String tab) async {
     final validTabs = ['params', 'headers', 'body', 'auth'];
     final tabLower = tab.toLowerCase();
-    
+
     if (!validTabs.contains(tabLower)) {
       throw Exception('无效的 Tab: $tab, 可选: $validTabs');
     }
-    
+
     // 设置目标 Tab
     _ref!.read(uiTestRequestTabProvider.notifier).state = tabLower;
-    
+
     return {'tab': tabLower};
   }
 
   /// 滚动响应区域
-  Future<Map<String, dynamic>> _scrollResponse(String direction, int amount) async {
+  Future<Map<String, dynamic>> _scrollResponse(
+      String direction, int amount) async {
     final validDirections = ['up', 'down', 'left', 'right'];
     final dirLower = direction.toLowerCase();
-    
+
     if (!validDirections.contains(dirLower)) {
       throw Exception('无效的滚动方向: $direction, 可选: $validDirections');
     }
-    
+
     // 设置滚动状态通知 UI
     _ref!.read(uiTestScrollResponseProvider.notifier).state = {
       'direction': dirLower,
       'amount': amount,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
-    
+
     return {
       'direction': dirLower,
       'amount': amount,
@@ -869,7 +873,7 @@ class UITestModeManager {
       'height': height ?? 900,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
-    
+
     return {
       'width': width ?? 1400,
       'height': height ?? 900,
@@ -880,12 +884,24 @@ class UITestModeManager {
   Future<Map<String, dynamic>> _setDividerPosition(double ratio) async {
     // 确保 ratio 在有效范围内
     final validRatio = ratio.clamp(0.2, 0.8);
-    
+
     // 设置分隔线位置
     _ref!.read(uiTestDividerPositionProvider.notifier).state = validRatio;
-    
+
     return {
       'ratio': validRatio,
+    };
+  }
+
+  /// 聚焦 URL 输入框
+  Future<Map<String, dynamic>> _focusUrlInput() async {
+    // 设置状态通知 UI 聚焦 URL 输入框
+    _ref!.read(uiTestFocusUrlInputProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {
+      'focused': true,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
   }
 }
@@ -915,11 +931,16 @@ final uiTestRequestTabProvider = StateProvider<String?>((ref) => null);
 
 /// UI 测试 - 响应区域滚动控制
 /// 格式: {'direction': 'up'/'down', 'amount': 100, 'timestamp': 123456}
-final uiTestScrollResponseProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
+final uiTestScrollResponseProvider =
+    StateProvider<Map<String, dynamic>?>((ref) => null);
 
 /// UI 测试 - 窗口大小控制
 /// 格式: {'width': 1400, 'height': 900, 'timestamp': 123456}
-final uiTestWindowSizeProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
+final uiTestWindowSizeProvider =
+    StateProvider<Map<String, dynamic>?>((ref) => null);
 
 /// UI 测试 - 分隔线位置控制（0.0 - 1.0，表示请求/响应区域的比例）
 final uiTestDividerPositionProvider = StateProvider<double>((ref) => 0.5);
+
+/// UI 测试 - 聚焦 URL 输入框触发器（使用时间戳确保每次都能触发）
+final uiTestFocusUrlInputProvider = StateProvider<int?>((ref) => null);

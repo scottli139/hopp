@@ -8,6 +8,7 @@ import 'package:hopp/models/key_value_pair.dart';
 import 'package:hopp/models/request_tab.dart';
 import 'package:hopp/providers/providers.dart';
 import 'package:hopp/widgets/common/code_editor.dart';
+import 'package:hopp/widgets/common/optimized_response_viewer.dart';
 import 'package:hopp/widgets/request/response_viewer.dart';
 import 'package:mockito/mockito.dart';
 
@@ -300,11 +301,12 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
-        // Verify CodeEditor is used for body content
-        expect(find.byType(CodeEditor), findsOneWidget);
+        // Verify OptimizedResponseViewer is used for body content
+        expect(find.byType(OptimizedResponseViewer), findsOneWidget);
       });
 
-      testWidgets('should display code editor for body', (tester) async {
+      testWidgets('should display OptimizedResponseViewer for body',
+          (tester) async {
         final response = HttpResponse(
           statusCode: 200,
           body: 'response content',
@@ -318,7 +320,7 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
-        expect(find.byType(CodeEditor), findsOneWidget);
+        expect(find.byType(OptimizedResponseViewer), findsOneWidget);
       });
     });
 
@@ -426,7 +428,7 @@ void main() {
     });
 
     group('action buttons', () {
-      testWidgets('should show copy button when body exists', (tester) async {
+      testWidgets('should show copy buttons when body exists', (tester) async {
         final response = HttpResponse(
           statusCode: 200,
           body: 'response data',
@@ -440,7 +442,8 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.copy), findsOneWidget);
+        // Copy buttons exist in both ResponseViewer and OptimizedResponseViewer
+        expect(find.byIcon(Icons.copy), findsWidgets);
       });
 
       testWidgets('should show save button when body exists', (tester) async {
@@ -458,23 +461,6 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.save), findsOneWidget);
-      });
-
-      testWidgets('should show copy button when body exists', (tester) async {
-        final response = HttpResponse(
-          statusCode: 200,
-          body: 'response data',
-          durationMs: 100,
-          timestamp: DateTime.now(),
-        );
-
-        final container =
-            createContainer(response: response, activeTabId: 'tab1');
-
-        await tester.pumpWidget(buildTestWidget(container: container));
-        await tester.pumpAndSettle();
-
-        expect(find.byIcon(Icons.copy), findsOneWidget);
       });
     });
 
@@ -565,8 +551,8 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
-        // Verify CodeEditor is used for HTML content
-        expect(find.byType(CodeEditor), findsOneWidget);
+        // Verify OptimizedResponseViewer is used for HTML content
+        expect(find.byType(OptimizedResponseViewer), findsOneWidget);
       });
 
       testWidgets('should handle response with many headers', (tester) async {

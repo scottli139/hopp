@@ -9,6 +9,7 @@ import '../../providers/providers.dart';
 import '../../utils/constants.dart';
 import '../../utils/testing/ui_test_mode.dart';
 import '../common/code_editor.dart';
+import '../common/optimized_response_viewer.dart';
 
 class ResponseViewer extends ConsumerStatefulWidget {
   const ResponseViewer({super.key});
@@ -438,42 +439,19 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       );
     }
 
-    // Detect content type and use appropriate language
-    final language = _detectLanguage(response!);
-
-    return Container(
-      color: Theme.of(context).colorScheme.surface,
-      padding: const EdgeInsets.all(12),
-      child: CodeEditor(
-        code: response.body!,
-        language: language,
-        readOnly: true,
-        expands: true,
-      ),
-    );
-  }
-
-  CodeLanguage _detectLanguage(HttpResponse response) {
-    final contentType = response.headers
+    // Get content type for optimized display
+    final contentType = response!.headers
         .firstWhere(
           (h) => h.key.toLowerCase() == 'content-type',
           orElse: () => KeyValuePair.empty(),
         )
-        .value
-        .toLowerCase();
+        .value;
 
-    if (contentType.contains('json')) return CodeLanguage.json;
-    if (contentType.contains('xml')) return CodeLanguage.xml;
-    if (contentType.contains('html')) return CodeLanguage.html;
-
-    // Try to detect JSON by content
-    final body = response.body?.trim() ?? '';
-    if ((body.startsWith('{') && body.endsWith('}')) ||
-        (body.startsWith('[') && body.endsWith(']'))) {
-      return CodeLanguage.json;
-    }
-
-    return CodeLanguage.text;
+    // Use optimized response viewer for better performance
+    return OptimizedResponseViewer(
+      content: response.body!,
+      contentType: contentType.isNotEmpty ? contentType : null,
+    );
   }
 
   Widget _buildHeadersTab(BuildContext context, HttpResponse? response) {

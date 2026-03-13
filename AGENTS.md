@@ -23,11 +23,11 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **请求名称编辑功能完成** |
+| **当前状态** | ✅ **响应优化功能完成** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **测试覆盖** | 405+ 个测试 (Models 152 + Services 73 + Providers 92 + Widgets 88 + UI Test) |
-| **下次重点** | 🟡 主题切换 / 🟡 响应优化 / 🟢 请求历史 |
+| **测试覆盖** | 418+ 个测试 (Models 152 + Services 73 + Providers 92 + Widgets 88 + UI Test) |
+| **下次重点** | 🟡 主题切换 / 🟢 请求历史 |
 
 ---
 
@@ -81,13 +81,14 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | UI 自动化测试验证 | 2026-03-12 | HTTPS 请求 + Certificate Tab 切换测试 |
 | 请求名称编辑 | 2026-03-12 | 右键菜单重命名 + UI 测试模式支持 |
 | UI 自动化测试验证 | 2026-03-12 | HTTPS 请求 + Certificate Tab 切换测试 |
+| 响应优化 | 2026-03-12 | 大响应体虚拟化显示优化 |
+| UI 自动化测试验证 | 2026-03-12 | 响应优化功能测试脚本 |
 
 ### 进行中 🔄
 
 | 任务 | 说明 |
 |------|------|
 | 主题切换 | Light/Dark 模式完善 |
-| 响应优化 | 大响应体渲染优化 |
 
 ### 质量保障
 
@@ -97,7 +98,8 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | Services 测试 | 73 | ✅ 通过 |
 | Providers 测试 | 92 | ✅ 通过 |
 | Widget 测试 | 88 | ✅ 通过 |
-| **总计** | **405** | **全部通过** |
+| 响应优化组件测试 | 新增 | ✅ 通过 |
+| **总计** | **418** | **全部通过** |
 
 ---
 
@@ -254,6 +256,9 @@ python3 integration_test/test_client.py --port <PORT> full_test
 - `confirm_edit_request_name` - 确认编辑
 - `cancel_edit_request_name` - 取消编辑
 - `get_request_info` - 获取请求信息
+- `get_response_body_info` - 获取响应体信息（大小、行数等）
+- `set_response_display_mode` - 设置响应显示模式（auto/performance/full/raw）
+- `simulate_large_response` - 模拟大响应（用于性能测试）
 - `full_test` - 完整测试流程
 
 **优势**:
@@ -334,6 +339,67 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-12 - 响应优化功能实现</summary>
+
+**完成工作**:
+- ✅ 创建 `OptimizedResponseViewer` 组件，支持大响应虚拟化显示
+- ✅ 实现自动/性能/完整/原始四种显示模式
+- ✅ 大响应自动切换性能模式（阈值 50KB）
+- ✅ 虚拟化列表支持（初始显示 500 行，支持加载更多）
+- ✅ 轻量级 JSON 语法高亮（性能模式下）
+- ✅ 添加 UI 测试模式支持（3个新指令）
+- ✅ 创建响应优化功能测试脚本
+- ✅ 所有单元测试通过（418个）
+
+**优化策略**:
+| 响应大小 | 默认模式 | 说明 |
+|---------|---------|------|
+| < 10KB | Full | 完整语法高亮 |
+| 10KB - 50KB | Full | 完整语法高亮 |
+| > 50KB | Performance | 虚拟化列表，轻量高亮 |
+
+**新增文件**:
+- `lib/widgets/common/optimized_response_viewer.dart` - 优化响应显示组件
+- `integration_test/test_response_optimization.py` - 自动化测试脚本
+
+**修改文件**:
+- `lib/widgets/request/response_viewer.dart` - 集成 OptimizedResponseViewer
+- `lib/utils/testing/ui_test_mode.dart` - 添加测试指令
+- `lib/providers/request/request_response_provider.dart` - 添加 setMockResponse
+- `integration_test/test_client.py` - 添加客户端方法
+- `test/widgets/response_viewer_test.dart` - 适配新组件
+
+**测试指令**:
+- `get_response_body_info` - 获取响应体信息（大小、行数等）
+- `set_response_display_mode` - 设置显示模式（auto/performance/full/raw）
+- `simulate_large_response` - 模拟大响应（用于性能测试）
+
+**UI 测试结果** (2026-03-13):
+```
+总计: 8 个测试
+通过: 8 个
+失败: 0 个
+
+✅ 测试 1: 基础连接
+✅ 测试 2: 大响应模拟 (50.52 KB, 1008 lines)
+✅ 测试 3: 获取响应体信息
+✅ 测试 4: Tab 切换 (Body/Headers)
+✅ 测试 5: 切换到 Performance 模式
+✅ 测试 6: 切换到 Full 模式
+✅ 测试 7: 切换到 Auto 模式
+✅ 测试 8: 超大响应处理 (265.37 KB, 5008 lines)
+```
+
+**截图验证**: 
+- 大响应正确显示：265.4 KB · 5008 lines
+- 性能模式工具栏：Performance / Full 切换按钮（始终显示）
+- JSON 语法高亮：key 蓝色、string 绿色、number 蓝色
+- 虚拟化加载：Showing 500 of 5008 lines + Load 4508 more / Load all 按钮
+- 响应信息栏：200 OK | 150 ms | 265.4 KB
+
+</details>
 
 <details>
 <summary>2026-03-12 - 请求名称编辑功能 + UI 测试验证</summary>
@@ -508,6 +574,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-12 | v0.2.9-peekaboo | Peekaboo E2E 测试套件 |
 | 2026-03-12 | v0.3.0-ui-test-mode | UI 测试模式，支持 HTTP 指令控制 |
 | 2026-03-12 | v0.3.1-rename-request | 请求名称编辑功能 + UI 测试验证 |
+| 2026-03-12 | v0.3.2-response-optimization | 大响应体渲染优化 + UI 测试 |
 
 ---
 

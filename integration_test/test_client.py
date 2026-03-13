@@ -247,6 +247,34 @@ class HoppTestClient:
         print(f"   是否打开: {result.get('is_open_in_tab')}")
         return result
     
+    def get_response_body_info(self):
+        """获取响应体信息"""
+        result = self.send_command("get_response_body_info")
+        if result.get("has_body"):
+            print(f"📄 响应体信息:")
+            print(f"   大小: {result.get('size_kb')} KB ({result.get('size_bytes')} bytes)")
+            print(f"   行数: {result.get('line_count')}")
+            print(f"   预览: {result.get('preview')[:50]}...")
+        else:
+            print("⚠️ 暂无响应体")
+        return result
+    
+    def set_response_display_mode(self, mode):
+        """设置响应显示模式"""
+        print(f"🎨 设置显示模式: {mode}")
+        result = self.send_command("set_response_display_mode", {"mode": mode})
+        print(f"✅ 显示模式已设置为: {result.get('mode')}")
+        return result
+    
+    def simulate_large_response(self, size=100000):
+        """模拟大响应（用于测试性能优化）"""
+        print(f"🔧 模拟大响应 ({size} bytes)...")
+        result = self.send_command("simulate_large_response", {"size": size})
+        print(f"✅ 模拟响应已创建:")
+        print(f"   大小: {result.get('size_kb')} KB ({result.get('size_bytes')} bytes)")
+        print(f"   行数: {result.get('line_count')}")
+        return result
+    
     def full_test(self):
         """执行完整测试流程"""
         print("\n" + "="*60)
@@ -378,6 +406,19 @@ def main():
     get_info_parser = subparsers.add_parser("get_request_info", help="获取请求信息")
     get_info_parser.add_argument("--id", help="请求 ID（默认当前活动请求）")
     
+    # get_response_body_info
+    subparsers.add_parser("get_response_body_info", help="获取响应体信息")
+    
+    # set_response_display_mode
+    mode_parser = subparsers.add_parser("set_response_display_mode", help="设置响应显示模式")
+    mode_parser.add_argument("--mode", required=True, 
+                             choices=["auto", "performance", "full", "raw"],
+                             help="显示模式")
+    
+    # simulate_large_response
+    simulate_parser = subparsers.add_parser("simulate_large_response", help="模拟大响应")
+    simulate_parser.add_argument("--size", type=int, default=100000, help="响应大小（字节）")
+    
     # full_test
     subparsers.add_parser("full_test", help="执行完整测试流程")
     
@@ -427,6 +468,12 @@ def main():
             client.cancel_edit_request_name()
         elif args.command == "get_request_info":
             client.get_request_info(args.id)
+        elif args.command == "get_response_body_info":
+            client.get_response_body_info()
+        elif args.command == "set_response_display_mode":
+            client.set_response_display_mode(args.mode)
+        elif args.command == "simulate_large_response":
+            client.simulate_large_response(args.size)
         elif args.command == "full_test":
             client.full_test()
         

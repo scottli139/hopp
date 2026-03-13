@@ -47,6 +47,18 @@ class RequestResponseNotifier extends StateNotifier<Map<String, HttpResponse>> {
   void clearAll() {
     state = {};
   }
+
+  /// 设置模拟响应（用于测试）
+  void setMockResponse(String tabId, HttpResponse response) {
+    AppLogger.info(
+      '[RequestResponseNotifier] Setting mock response for tab $tabId: '
+      '${response.statusCode}, size: ${response.sizeBytes} bytes',
+    );
+    state = {
+      ...state,
+      tabId: response,
+    };
+  }
 }
 
 final requestResponseProvider =

@@ -188,6 +188,17 @@ class UITestModeManager {
         final requestId = params['request_id'] as String?;
         return await _getRequestInfo(requestId);
 
+      case 'get_response_body_info':
+        return await _getResponseBodyInfo();
+
+      case 'set_response_display_mode':
+        final mode = params['mode'] as String;
+        return await _setResponseDisplayMode(mode);
+
+      case 'simulate_large_response':
+        final size = params['size'] as int? ?? 100000;
+        return await _simulateLargeResponse(size);
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -624,6 +635,111 @@ class UITestModeManager {
     return null;
   }
 
+  /// 获取响应体信息
+  Future<Map<String, dynamic>> _getResponseBodyInfo() async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final response = _ref!.read(requestResponseProvider)[activeTab.id];
+
+    if (response == null || response.body == null) {
+      return {'has_body': false};
+    }
+
+    final body = response.body!;
+    final lines = body.split('\n');
+
+    return {
+      'has_body': true,
+      'size_bytes': body.length,
+      'size_kb': (body.length / 1024).toStringAsFixed(2),
+      'line_count': lines.length,
+      'preview': body.length > 200 ? body.substring(0, 200) : body,
+    };
+  }
+
+  /// 设置响应显示模式
+  Future<Map<String, dynamic>> _setResponseDisplayMode(String mode) async {
+    final validModes = ['auto', 'performance', 'full', 'raw'];
+    final modeLower = mode.toLowerCase();
+
+    if (!validModes.contains(modeLower)) {
+      throw Exception('无效的显示模式: $mode, 可选: $validModes');
+    }
+
+    // 存储目标显示模式，UI 组件可以监听这个状态
+    _ref!.read(uiTestResponseDisplayModeProvider.notifier).state = modeLower;
+
+    return {'mode': modeLower};
+  }
+
+  /// 模拟大响应（用于测试性能优化）
+  Future<Map<String, dynamic>> _simulateLargeResponse(int size) async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    // 生成大 JSON 数据
+    final buffer = StringBuffer();
+    buffer.writeln('{');
+    buffer.writeln('  "data": [');
+
+    final itemCount = size ~/ 100; // 每个项目约 100 字节
+    for (var i = 0; i < itemCount; i++) {
+      buffer.write('    {"id": $i, "name": "Item $i", "value": ${i * 10}}');
+      if (i < itemCount - 1) {
+        buffer.writeln(',');
+      } else {
+        buffer.writeln();
+      }
+    }
+
+    buffer.writeln('  ],');
+    buffer.writeln('  "total": $itemCount,');
+    buffer.writeln('  "page": 1,');
+    buffer.writeln('  "size": $itemCount');
+    buffer.writeln('}');
+
+    final largeBody = buffer.toString();
+
+    // 创建模拟响应
+    final mockResponse = HttpResponse(
+      statusCode: 200,
+      statusText: 'OK',
+      body: largeBody,
+      headers: [
+        KeyValuePair.empty().copyWith(
+          key: 'Content-Type',
+          value: 'application/json',
+          enabled: true,
+        ),
+        KeyValuePair.empty().copyWith(
+          key: 'Content-Length',
+          value: largeBody.length.toString(),
+          enabled: true,
+        ),
+      ],
+      durationMs: 150,
+      sizeBytes: largeBody.length,
+    );
+
+    // 设置响应
+    _ref!.read(requestResponseProvider.notifier).setMockResponse(
+          activeTab.id,
+          mockResponse,
+        );
+
+    return {
+      'simulated': true,
+      'size_bytes': largeBody.length,
+      'size_kb': (largeBody.length / 1024).toStringAsFixed(2),
+      'line_count': largeBody.split('\n').length,
+    };
+  }
+
   /// 关闭测试服务器
   Future<void> dispose() async {
     await _server?.close();
@@ -643,3 +759,7 @@ final uiTestEditingRequestNameTextProvider = StateProvider<String>((ref) => '');
 /// UI 测试 - 编辑完成通知
 final uiTestEditCompleteProvider =
     StateProvider<Map<String, dynamic>?>((ref) => null);
+
+/// UI 测试 - 响应显示模式
+final uiTestResponseDisplayModeProvider =
+    StateProvider<String>((ref) => 'auto');

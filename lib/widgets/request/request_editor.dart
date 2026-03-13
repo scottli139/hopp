@@ -77,8 +77,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   Widget _buildUrlBar(
       BuildContext context, WidgetRef ref, HttpRequest request) {
     final theme = Theme.of(context);
-    const urlBarHeight = 36.0; // 统一高度
-    const fontSize = 13.0; // 统一字体大小
+    const fontSize = 13.0;
 
     return Container(
       padding: const EdgeInsets.all(AppConstants.spaceL),
@@ -89,21 +88,28 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Method dropdown - 固定高度 36px
+          // Method dropdown - 使用固定高度 36px
           Container(
-            height: urlBarHeight,
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppConstants.spaceS),
+            height: 36,
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-              borderRadius: BorderRadius.circular(AppConstants.radiusM),
+              border: Border(
+                left: BorderSide(color: theme.colorScheme.outlineVariant),
+                top: BorderSide(color: theme.colorScheme.outlineVariant),
+                bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(AppConstants.radiusM),
+              ),
             ),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<HttpMethod>(
                 value: request.method,
-                isDense: false,
+                isDense: true,
+                itemHeight: 36,
                 icon: Icon(
                   Icons.arrow_drop_down,
                   color: theme.colorScheme.outline,
@@ -113,29 +119,13 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   fontSize: fontSize,
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.onSurface,
+                  height: 1.0,
                 ),
                 items: HttpMethod.values.map((method) {
                   final color = _getMethodColor(method.value);
-                  return DropdownMenuItem(
+                  return DropdownMenuItem<HttpMethod>(
                     value: method,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        method.value,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: color,
-                        ),
-                      ),
-                    ),
+                    child: _buildMethodMenuItem(method.value, color),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -143,49 +133,65 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     _updateRequest(ref, request.copyWith(method: value));
                   }
                 },
+                dropdownColor: theme.colorScheme.surface,
+                menuMaxHeight: 280,
+                alignment: AlignmentDirectional.centerStart,
               ),
             ),
           ),
-          const SizedBox(width: AppConstants.spaceM),
-          // URL input - 同样高度 36px
+          // URL input - 使用固定高度 36px（包含边框）
           Expanded(
             child: Container(
-              height: urlBarHeight,
+              height: 36,
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppConstants.radiusM),
-                border: Border.all(color: theme.colorScheme.outlineVariant),
+                border: Border(
+                  top: BorderSide(color: theme.colorScheme.outlineVariant),
+                  bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+                  right: BorderSide(color: theme.colorScheme.outlineVariant),
+                ),
+                borderRadius: const BorderRadius.horizontal(
+                  right: Radius.circular(AppConstants.radiusM),
+                ),
               ),
               child: TextField(
-                controller: _urlController,
-                decoration: InputDecoration(
-                  hintText: 'Enter URL',
-                  hintStyle: TextStyle(
-                    fontSize: fontSize,
-                    color: theme.colorScheme.outline,
-                  ),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppConstants.spaceM,
-                    vertical: 8, // 调整垂直内边距以适应 36px 高度
-                  ),
+                  controller: _urlController,
+                  decoration: InputDecoration(
+                    hintText: 'Enter URL',
+                    hintStyle: TextStyle(
+                      fontSize: fontSize,
+                      color: theme.colorScheme.outline,
+                      height: 1.0,
+                    ),
+                    isDense: true,
+                    // 调整 padding 使内容垂直居中
+                    contentPadding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
+                    filled: false,
                   border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: const BorderRadius.horizontal(
+                      right: Radius.circular(AppConstants.radiusM),
+                    ),
+                    borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+                  ),
+                  ),
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    color: theme.colorScheme.onSurface,
+                    height: 1.0,
+                  ),
+                  onChanged: (value) {
+                    _updateRequest(ref, request.copyWith(url: value));
+                  },
                 ),
-                style: TextStyle(
-                  fontSize: fontSize,
-                  color: theme.colorScheme.onSurface,
-                ),
-                onChanged: (value) {
-                  _updateRequest(ref, request.copyWith(url: value));
-                },
               ),
             ),
-          ),
           const SizedBox(width: AppConstants.spaceM),
-          // Save button - 同样 36px
+          // Save button
           SizedBox(
-            height: urlBarHeight,
-            width: urlBarHeight,
+            height: 36,
+            width: 36,
             child: _buildIconButton(
               context: context,
               icon: Icons.save,
@@ -199,10 +205,40 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             ),
           ),
           const SizedBox(width: AppConstants.spaceS),
-          // Send button - 同样高度
+          // Send button
           SizedBox(
-            height: urlBarHeight,
+            height: 36,
             child: _buildSendButton(context, ref, request),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建 Method 下拉菜单项
+  Widget _buildMethodMenuItem(String method, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 6,
+              vertical: 2,
+            ),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text(
+              method,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: color,
+                height: 1.1,
+              ),
+            ),
           ),
         ],
       ),
@@ -227,23 +263,24 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         child: Tooltip(
           message: tooltip,
           child: Container(
-            width: 40,
-            height: 40,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: isActive
-                  ? (activeColor ?? theme.colorScheme.primary).withOpacity(0.1)
+                  ? (activeColor ?? theme.colorScheme.primary)
+                      .withValues(alpha: 0.1)
                   : theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(AppConstants.radiusM),
               border: Border.all(
                 color: isActive
                     ? (activeColor ?? theme.colorScheme.primary)
-                        .withOpacity(0.3)
+                        .withValues(alpha: 0.3)
                     : theme.colorScheme.outlineVariant,
               ),
             ),
             child: Icon(
               icon,
-              size: 20,
+              size: 18,
               color: isActive
                   ? activeColor ?? theme.colorScheme.primary
                   : theme.colorScheme.outline,
@@ -270,20 +307,20 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         child: Container(
           height: 36,
           padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.spaceM,
+            horizontal: 16,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(
                 Icons.send,
-                size: 14,
+                size: 16,
                 color: Colors.white,
               ),
               const SizedBox(width: 6),
               Text(
                 'Send',
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.bodySmall.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
@@ -297,9 +334,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
   Widget _buildTabs(BuildContext context) {
     final theme = Theme.of(context);
-    const tabFontSize = 12.0;
-    const tabHeight = 36.0;
-    const iconSize = 14.0;
+    const tabFontSize = 11.0;
+    const tabHeight = 28.0;
+    const iconSize = 12.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -559,13 +596,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
     return Column(
       children: [
-        // Body type selector with improved styling
+        // Body type selector - 使用 Tab 风格设计
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppConstants.spaceL,
-            vertical: AppConstants.spaceM,
+            vertical: AppConstants.spaceS,
           ),
           decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
             border: Border(
               bottom: BorderSide(color: theme.dividerColor),
             ),
@@ -574,46 +612,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             children: [
               Text(
                 'Content Type',
-                style: AppTextStyles.tiny.copyWith(
+                style: AppTextStyles.caption.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: AppConstants.spaceL),
+              const SizedBox(width: AppConstants.spaceM),
               Expanded(
-                child: SizedBox(
-                  height: 32,
-                  child: SegmentedButton<String>(
-                    segments: [
-                      _buildSegment('none', 'None', Icons.block),
-                      _buildSegment('json', 'JSON', Icons.data_object),
-                      _buildSegment('text', 'Text', Icons.text_fields),
-                      _buildSegment('form', 'Form', Icons.format_list_bulleted),
-                    ],
-                    selected: {request.bodyType},
-                    onSelectionChanged: (value) {
-                      if (value.isNotEmpty) {
-                        _updateRequest(
-                            ref, request.copyWith(bodyType: value.first));
-                      }
-                    },
-                    style: SegmentedButton.styleFrom(
-                      backgroundColor:
-                          theme.colorScheme.surfaceContainerHighest,
-                      selectedBackgroundColor: AppColors.primary,
-                      selectedForegroundColor: Colors.white,
-                      foregroundColor: theme.colorScheme.onSurface,
-                      side: BorderSide.none,
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppConstants.radiusM),
-                      ),
-                      textStyle: const TextStyle(fontSize: 11),
-                      minimumSize: const Size(0, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-                ),
+                child: _buildContentTypeSelector(context, ref, request),
               ),
             ],
           ),
@@ -667,6 +673,92 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     );
   }
 
+  /// 构建 Content Type 选择器 - 使用统一的 Tab 风格
+  Widget _buildContentTypeSelector(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    final theme = Theme.of(context);
+    final options = [
+      _ContentTypeOption('none', 'None', Icons.block),
+      _ContentTypeOption('json', 'JSON', Icons.data_object),
+      _ContentTypeOption('text', 'Text', Icons.text_fields),
+      _ContentTypeOption('form', 'Form', Icons.format_list_bulleted),
+    ];
+
+    return Container(
+      height: 32,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppConstants.radiusS),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: options.map((option) {
+          final isSelected = request.bodyType == option.value;
+          return _buildContentTypeButton(
+            context: context,
+            option: option,
+            isSelected: isSelected,
+            onTap: () {
+              _updateRequest(ref, request.copyWith(bodyType: option.value));
+            },
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildContentTypeButton({
+    required BuildContext context,
+    required _ContentTypeOption option,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppConstants.radiusS - 2),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppConstants.radiusS - 2),
+        child: Container(
+          height: 28,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppConstants.radiusS - 2),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                option.icon,
+                size: 14,
+                color: isSelected
+                    ? Colors.white
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                option.label,
+                style: AppTextStyles.caption.copyWith(
+                  color: isSelected
+                      ? Colors.white
+                      : theme.colorScheme.onSurfaceVariant,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   ButtonSegment<String> _buildSegment(
       String value, String label, IconData icon) {
     return ButtonSegment(
@@ -678,6 +770,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       icon: Icon(icon, size: 14),
     );
   }
+
+  /// Content Type 选项数据类
+  final List<_ContentTypeOption> _contentTypeOptions = [
+    _ContentTypeOption('none', 'None', Icons.block),
+    _ContentTypeOption('json', 'JSON', Icons.data_object),
+    _ContentTypeOption('text', 'Text', Icons.text_fields),
+    _ContentTypeOption('form', 'Form', Icons.format_list_bulleted),
+  ];
 
   Widget _buildBodyEditor(
     BuildContext context,
@@ -809,4 +909,13 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         return Colors.grey;
     }
   }
+}
+
+/// Content Type 选项数据类
+class _ContentTypeOption {
+  final String value;
+  final String label;
+  final IconData icon;
+
+  const _ContentTypeOption(this.value, this.label, this.icon);
 }

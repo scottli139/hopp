@@ -11,6 +11,9 @@ import '../../utils/testing/ui_test_mode.dart';
 import '../common/code_editor.dart';
 import '../common/optimized_response_viewer.dart';
 
+// 全局 ScrollController 用于 UI 测试控制滚动
+final _certificateScrollController = ScrollController();
+
 class ResponseViewer extends ConsumerStatefulWidget {
   const ResponseViewer({super.key});
 
@@ -67,6 +70,41 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     super.dispose();
   }
 
+  /// 处理 UI 测试模式的滚动控制
+  void _handleUITestScroll() {
+    final scrollCommand = ref.watch(uiTestScrollResponseProvider);
+    if (scrollCommand != null) {
+      final direction = scrollCommand['direction'] as String;
+      final amount = scrollCommand['amount'] as int;
+      final timestamp = scrollCommand['timestamp'] as int;
+      
+      // 使用 timestamp 确保每次都能触发
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _certificateScrollController.hasClients) {
+          final currentOffset = _certificateScrollController.offset;
+          double newOffset;
+          
+          switch (direction) {
+            case 'down':
+              newOffset = currentOffset + amount;
+              break;
+            case 'up':
+              newOffset = currentOffset - amount;
+              break;
+            default:
+              return;
+          }
+          
+          _certificateScrollController.animateTo(
+            newOffset.clamp(0.0, _certificateScrollController.position.maxScrollExtent),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final response = ref.watch(currentResponseProvider);
@@ -77,6 +115,9 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
     // Handle UI test mode tab switching
     final targetTab = ref.watch(uiTestTargetTabProvider);
+
+    // Handle UI test mode scroll control
+    _handleUITestScroll();
     if (targetTab != null && _tabController != null) {
       // Map tab name to index
       final tabIndexMap = <String, int>{
@@ -126,16 +167,16 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               indicatorWeight: 2,
               indicatorColor: AppColors.primary,
               labelStyle: const TextStyle(
-                fontSize: 12,
+                fontSize: 10,
                 fontWeight: FontWeight.w600,
               ),
               unselectedLabelStyle: const TextStyle(
-                fontSize: 12,
+                fontSize: 10,
                 fontWeight: FontWeight.w500,
               ),
               labelColor: AppColors.primary,
               unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-              tabs: _buildTabs(response),
+              tabs: _buildTabs(context, response),
             ),
           ),
           // Tab content
@@ -294,31 +335,42 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     final statusColor = _getStatusColor(response.statusCode);
 
     return Container(
-      height: 36,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: Theme.of(context).colorScheme.surface,
         border: Border(
-          bottom: BorderSide(color: Theme.of(context).dividerColor),
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 1,
+          ),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).shadowColor.withOpacity(0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Status
+          // Status - 缩小字号
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.12),
+              color: statusColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(AppConstants.radiusS),
-              border: Border.all(color: statusColor.withOpacity(0.3), width: 1),
+              border: Border.all(color: statusColor.withOpacity(0.4), width: 1),
             ),
             child: Text(
               '${response.statusCode} ${response.statusText ?? ''}',
               style: TextStyle(
-                fontSize: infoFontSize,
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
                 color: statusColor,
+                height: 1.2,
               ),
             ),
           ),
@@ -481,13 +533,16 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       color: Theme.of(context).colorScheme.surface,
       child: Column(
         children: [
-          // Header row
+          // Header row - 使用更明显的样式区分
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
               border: Border(
-                bottom: BorderSide(color: Theme.of(context).dividerColor),
+                bottom: BorderSide(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  width: 2,
+                ),
               ),
             ),
             child: Row(
@@ -495,19 +550,21 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 SizedBox(
                   width: 200,
                   child: Text(
-                    'Name',
-                    style: AppTextStyles.caption.copyWith(
+                    'Header Name',
+                    style: TextStyle(
+                      fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
                 Expanded(
                   child: Text(
                     'Value',
-                    style: AppTextStyles.caption.copyWith(
+                    style: TextStyle(
+                      fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
@@ -537,7 +594,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                         width: 200,
                         child: SelectableText(
                           header.key,
-                          style: AppTextStyles.bodySmall.copyWith(
+                          style: TextStyle(
+                            fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -546,7 +604,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                       Expanded(
                         child: SelectableText(
                           header.value,
-                          style: AppTextStyles.bodySmall.copyWith(
+                          style: TextStyle(
+                            fontSize: 11,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
@@ -572,30 +631,64 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   /// 构建 Tab 列表
-  List<Widget> _buildTabs(HttpResponse? response) {
-    const tabFontSize = 13.0;
-    const tabHeight = 36.0;
+  List<Widget> _buildTabs(BuildContext context, HttpResponse? response) {
+    const tabFontSize = 10.0;
+    const tabHeight = 28.0;
+    final theme = Theme.of(context);
 
     final tabs = <Widget>[
-      const Tab(
+      Tab(
         height: tabHeight,
-        child: Text(
-          'Body',
-          style: TextStyle(fontSize: tabFontSize),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.code,
+              size: 10,
+              color: AppColors.primary.withValues(alpha: 0.8),
+            ),
+            const SizedBox(width: 3),
+            const Text(
+              'Body',
+              style: TextStyle(fontSize: tabFontSize),
+            ),
+          ],
         ),
       ),
-      const Tab(
+      Tab(
         height: tabHeight,
-        child: Text(
-          'Headers',
-          style: TextStyle(fontSize: tabFontSize),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.list,
+              size: 10,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+            const SizedBox(width: 3),
+            const Text(
+              'Headers',
+              style: TextStyle(fontSize: tabFontSize),
+            ),
+          ],
         ),
       ),
-      const Tab(
+      Tab(
         height: tabHeight,
-        child: Text(
-          'Cookies',
-          style: TextStyle(fontSize: tabFontSize),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.cookie_outlined,
+              size: 10,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+            const SizedBox(width: 3),
+            const Text(
+              'Cookies',
+              style: TextStyle(fontSize: tabFontSize),
+            ),
+          ],
         ),
       ),
     ];
@@ -606,17 +699,17 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Certificate',
-                style: TextStyle(fontSize: tabFontSize),
-              ),
-              const SizedBox(width: 6),
               Icon(
-                Icons.verified,
-                size: 14,
+                Icons.verified_user,
+                size: 10,
                 color: response!.certificateInfo!.isValid
                     ? AppColors.success
                     : AppColors.warning,
+              ),
+              const SizedBox(width: 3),
+              const Text(
+                'Certificate',
+                style: TextStyle(fontSize: tabFontSize),
               ),
             ],
           ),
@@ -647,17 +740,18 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     return Container(
       color: theme.colorScheme.surface,
       child: SingleChildScrollView(
+        controller: _certificateScrollController,
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 证书状态卡片
             _buildCertificateStatusCard(context, cert, isValid, validityColor),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             // 详细信息
             _buildCertificateDetailSection(context, cert),
             if (cert.chain.isNotEmpty) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _buildCertificateChainSection(context, cert),
             ],
           ],
@@ -673,45 +767,47 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     Color validityColor,
   ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: validityColor.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(AppConstants.radiusL),
+        borderRadius: BorderRadius.circular(AppConstants.radiusM),
         border: Border.all(color: validityColor.withOpacity(0.2)),
       ),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: validityColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppConstants.radiusM),
+              borderRadius: BorderRadius.circular(AppConstants.radiusS),
             ),
             child: Icon(
               isValid ? Icons.verified_user : Icons.warning_amber,
-              size: 24,
+              size: 20,
               color: validityColor,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   isValid ? 'Certificate is valid' : 'Certificate expired',
-                  style: AppTextStyles.body.copyWith(
-                    color: validityColor,
+                  style: TextStyle(
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
+                    color: validityColor,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   isValid
                       ? '${cert.remainingDays} days remaining'
                       : 'Expired on ${cert.validTo}',
-                  style: AppTextStyles.caption.copyWith(
+                  style: TextStyle(
+                    fontSize: 10,
                     color: Theme.of(context).colorScheme.outline,
                   ),
                 ),
@@ -725,28 +821,28 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
   Widget _buildCertificateDetailSection(
       BuildContext context, CertificateInfo cert) {
-    return _buildInfoSection(
+    return _buildCompactInfoSection(
       context: context,
       title: 'Certificate Details',
       children: [
-        _buildInfoRow(context, 'Subject', cert.subject),
-        _buildInfoRow(context, 'Issuer', cert.issuer),
-        _buildInfoRow(context, 'Valid From', cert.validFrom.toString()),
-        _buildInfoRow(context, 'Valid To', cert.validTo.toString()),
-        _buildInfoRow(context, 'Signature Algorithm', cert.signatureAlgorithm),
-        _buildInfoRow(context, 'Serial Number', cert.serialNumber),
-        _buildInfoRow(context, 'SHA-256 Fingerprint', cert.sha256Fingerprint),
+        _buildCompactInfoRow(context, 'Subject', cert.subject),
+        _buildCompactInfoRow(context, 'Issuer', cert.issuer),
+        _buildCompactInfoRow(context, 'Valid From', cert.validFrom.toString()),
+        _buildCompactInfoRow(context, 'Valid To', cert.validTo.toString()),
+        _buildCompactInfoRow(context, 'Signature Algorithm', cert.signatureAlgorithm),
+        _buildCompactInfoRow(context, 'Serial Number', cert.serialNumber),
+        _buildCompactInfoRow(context, 'SHA-256 Fingerprint', cert.sha256Fingerprint),
         if (cert.publicKeyAlgorithm != null)
-          _buildInfoRow(
+          _buildCompactInfoRow(
               context, 'Public Key Algorithm', cert.publicKeyAlgorithm!),
         if (cert.publicKeyLength != null)
-          _buildInfoRow(
+          _buildCompactInfoRow(
             context,
             'Public Key Length',
             '${cert.publicKeyLength} bits',
           ),
         if (cert.subjectAlternativeNames.isNotEmpty)
-          _buildInfoRow(
+          _buildCompactInfoRow(
             context,
             'Subject Alternative Names',
             cert.subjectAlternativeNames.join(', '),
@@ -757,18 +853,18 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
   Widget _buildCertificateChainSection(
       BuildContext context, CertificateInfo cert) {
-    return _buildInfoSection(
+    return _buildCompactInfoSection(
       context: context,
       title: 'Certificate Chain',
       children: cert.chain.asMap().entries.map((entry) {
         final index = entry.key;
         final chainCert = entry.value;
         return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(AppConstants.radiusM),
+            borderRadius: BorderRadius.circular(AppConstants.radiusS),
             border: Border.all(
               color: Theme.of(context).dividerColor.withOpacity(0.5),
             ),
@@ -776,8 +872,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           child: Row(
             children: [
               Container(
-                width: 28,
-                height: 28,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
                   color: chainCert.isValid
                       ? AppColors.success.withOpacity(0.1)
@@ -786,26 +882,29 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 ),
                 child: Icon(
                   chainCert.isValid ? Icons.check : Icons.error,
-                  size: 16,
+                  size: 14,
                   color:
                       chainCert.isValid ? AppColors.success : AppColors.error,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       chainCert.subject,
-                      style: AppTextStyles.bodySmall.copyWith(
+                      style: TextStyle(
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     Text(
                       'Issued by: ${chainCert.issuer}',
-                      style: AppTextStyles.caption.copyWith(
+                      style: TextStyle(
+                        fontSize: 9,
                         color: Theme.of(context).colorScheme.outline,
                       ),
                     ),
@@ -813,14 +912,15 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(AppConstants.radiusS),
                 ),
                 child: Text(
                   '#${index + 1}',
-                  style: AppTextStyles.tiny.copyWith(
+                  style: TextStyle(
+                    fontSize: 9,
                     color: Theme.of(context).colorScheme.outline,
                   ),
                 ),
@@ -838,13 +938,13 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     required List<Widget> children,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context)
             .colorScheme
             .surfaceContainerHighest
             .withOpacity(0.5),
-        borderRadius: BorderRadius.circular(AppConstants.radiusL),
+        borderRadius: BorderRadius.circular(AppConstants.radiusM),
         border: Border.all(
           color: Theme.of(context).dividerColor.withOpacity(0.5),
         ),
@@ -854,13 +954,13 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         children: [
           Text(
             title,
-            style: AppTextStyles.body.copyWith(
+            style: AppTextStyles.caption.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           const Divider(height: 1),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           ...children,
         ],
       ),
@@ -869,15 +969,16 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
   Widget _buildInfoRow(BuildContext context, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 140,
+            width: 120,
             child: Text(
               label,
-              style: AppTextStyles.tiny.copyWith(
+              style: TextStyle(
+                fontSize: 10,
                 color: Theme.of(context).colorScheme.outline,
                 fontWeight: FontWeight.w600,
               ),
@@ -886,8 +987,81 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           Expanded(
             child: SelectableText(
               value,
-              style: AppTextStyles.caption.copyWith(
+              style: TextStyle(
+                fontSize: 11,
                 fontFamily: 'monospace',
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 紧凑型 info section，用于 Certificate 展示
+  Widget _buildCompactInfoSection({
+    required BuildContext context,
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withOpacity(0.5),
+        borderRadius: BorderRadius.circular(AppConstants.radiusM),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Divider(height: 1),
+          const SizedBox(height: 6),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  // 紧凑型 info row，字体更小
+  Widget _buildCompactInfoRow(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 9,
+                color: Theme.of(context).colorScheme.outline,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: SelectableText(
+              value,
+              style: TextStyle(
+                fontSize: 10,
+                fontFamily: 'monospace',
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),

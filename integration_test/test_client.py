@@ -274,7 +274,82 @@ class HoppTestClient:
         print(f"   大小: {result.get('size_kb')} KB ({result.get('size_bytes')} bytes)")
         print(f"   行数: {result.get('line_count')}")
         return result
-    
+
+    def click_new_tab_button(self):
+        """点击新建标签按钮"""
+        print("➕ 点击新建标签按钮...")
+        result = self.send_command("click_new_tab_button")
+        print(f"✅ 新标签已创建: {result.get('request_name')}")
+        print(f"   ID: {result.get('request_id')}")
+        return result
+
+    def get_ui_info(self):
+        """获取 UI 信息"""
+        result = self.send_command("get_ui_info")
+        print(f"📊 UI 信息:")
+        print(f"   标签数量: {result.get('tab_count')}")
+        print(f"   活动标签: {result.get('active_tab_id')}")
+        if result.get('has_active_request'):
+            print(f"   当前请求: {result.get('active_request_method')} {result.get('active_request_url')}")
+        print(f"   标签列表:")
+        for tab in result.get('tabs', []):
+            dirty_mark = " ●" if tab.get('is_dirty') else ""
+            active_mark = " 👈" if tab.get('is_active') else ""
+            print(f"     [{tab.get('method')}] {tab.get('name')}{dirty_mark}{active_mark}")
+        return result
+
+    def expand_method_dropdown(self):
+        """展开 Method 下拉菜单"""
+        result = self.send_command("expand_method_dropdown")
+        print(f"📋 Method 下拉菜单已展开")
+        return result
+
+    def switch_request_tab(self, tab):
+        """切换 Request Editor Tab"""
+        result = self.send_command("switch_request_tab", {"tab": tab})
+        print(f"📑 切换到 {tab} Tab")
+        return result
+
+    def scroll_response(self, direction="down", amount=100):
+        """滚动响应区域
+        
+        Args:
+            direction: 滚动方向 ('up', 'down', 'left', 'right')
+            amount: 滚动距离（像素）
+        """
+        result = self.send_command("scroll_response", {
+            "direction": direction,
+            "amount": amount
+        })
+        print(f"📜 响应区域向{direction}滚动 {amount}px")
+        return result
+
+    def set_window_size(self, width=None, height=None):
+        """设置窗口大小
+        
+        Args:
+            width: 窗口宽度（像素），None 表示不调整
+            height: 窗口高度（像素），None 表示不调整
+        """
+        result = self.send_command("set_window_size", {
+            "width": width,
+            "height": height
+        })
+        print(f"🪟 窗口大小设置为 {width}x{height}")
+        return result
+
+    def set_divider_position(self, ratio=0.5):
+        """设置分隔线位置（请求/响应区域的比例）
+        
+        Args:
+            ratio: 分隔线位置（0.2 - 0.8），0.5 表示中间
+        """
+        result = self.send_command("set_divider_position", {
+            "ratio": ratio
+        })
+        print(f"📏 分隔线位置设置为 {ratio}")
+        return result
+
     def full_test(self):
         """执行完整测试流程"""
         print("\n" + "="*60)
@@ -418,7 +493,34 @@ def main():
     # simulate_large_response
     simulate_parser = subparsers.add_parser("simulate_large_response", help="模拟大响应")
     simulate_parser.add_argument("--size", type=int, default=100000, help="响应大小（字节）")
-    
+
+    # click_new_tab_button
+    subparsers.add_parser("click_new_tab_button", help="点击新建标签按钮")
+
+    # get_ui_info
+    subparsers.add_parser("get_ui_info", help="获取 UI 信息")
+
+    # expand_method_dropdown
+    subparsers.add_parser("expand_method_dropdown", help="展开 Method 下拉菜单")
+
+    # switch_request_tab
+    switch_request_tab_parser = subparsers.add_parser("switch_request_tab", help="切换 Request Editor Tab")
+    switch_request_tab_parser.add_argument("--tab", required=True, choices=["params", "headers", "body", "auth"], help="目标 Tab")
+
+    # scroll_response
+    scroll_parser = subparsers.add_parser("scroll_response", help="滚动响应区域")
+    scroll_parser.add_argument("--direction", default="down", choices=["up", "down", "left", "right"], help="滚动方向")
+    scroll_parser.add_argument("--amount", type=int, default=100, help="滚动距离（像素）")
+
+    # set_window_size
+    window_parser = subparsers.add_parser("set_window_size", help="设置窗口大小")
+    window_parser.add_argument("--width", type=int, help="窗口宽度（像素）")
+    window_parser.add_argument("--height", type=int, help="窗口高度（像素）")
+
+    # set_divider_position
+    divider_parser = subparsers.add_parser("set_divider_position", help="设置分隔线位置")
+    divider_parser.add_argument("--ratio", type=float, default=0.5, help="分隔线位置（0.2-0.8）")
+
     # full_test
     subparsers.add_parser("full_test", help="执行完整测试流程")
     
@@ -474,6 +576,20 @@ def main():
             client.set_response_display_mode(args.mode)
         elif args.command == "simulate_large_response":
             client.simulate_large_response(args.size)
+        elif args.command == "click_new_tab_button":
+            client.click_new_tab_button()
+        elif args.command == "get_ui_info":
+            client.get_ui_info()
+        elif args.command == "expand_method_dropdown":
+            client.expand_method_dropdown()
+        elif args.command == "switch_request_tab":
+            client.switch_request_tab(args.tab)
+        elif args.command == "scroll_response":
+            client.scroll_response(args.direction, args.amount)
+        elif args.command == "set_window_size":
+            client.set_window_size(args.width, args.height)
+        elif args.command == "set_divider_position":
+            client.set_divider_position(args.ratio)
         elif args.command == "full_test":
             client.full_test()
         

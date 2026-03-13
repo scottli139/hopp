@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 
+import '../utils/constants.dart';
+import '../utils/testing/ui_test_mode.dart';
+
 import '../providers/providers.dart';
 import '../widgets/layout/sidebar.dart';
 import '../widgets/layout/request_tabs.dart';
@@ -37,38 +40,69 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     super.dispose();
   }
 
+  /// 监听 UI 测试命令
+  void _listenToUITestCommands() {
+    // 监听分隔线位置变化
+    final dividerRatio = ref.watch(uiTestDividerPositionProvider);
+    // 只在非默认值时更新
+    if (dividerRatio != 0.5) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _verticalSplitController.areas = [
+            Area(flex: dividerRatio),
+            Area(flex: 1.0 - dividerRatio),
+          ];
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tabs = ref.watch(requestTabProvider);
     final activeTab = ref.watch(activeTabProvider);
+
+    final theme = Theme.of(context);
+
+    // 监听 UI 测试模式的分隔线位置控制
+    _listenToUITestCommands();
 
     return Scaffold(
       body: Column(
         children: [
           // Main content with sidebar and request area
           Expanded(
-            child: MultiSplitView(
-              controller: _splitController,
-              builder: (context, area) {
-                if (area.index == 0) {
-                  return const Sidebar();
-                } else {
-                  return Column(
-                    children: [
-                      // Request tabs
-                      const RequestTabs(),
-                      // Request/Response area
-                      Expanded(
-                        child: tabs.isEmpty
-                            ? _buildEmptyState()
-                            : activeTab != null
-                                ? _buildRequestResponseArea()
-                                : _buildNoActiveTabState(),
-                      ),
-                    ],
-                  );
-                }
-              },
+            child: MultiSplitViewTheme(
+              data: MultiSplitViewThemeData(
+                dividerThickness: 1,
+                dividerPainter: DividerPainters.background(
+                  color: theme.dividerColor.withOpacity(0.3),
+                  highlightedColor: theme.colorScheme.primary.withOpacity(0.3),
+                ),
+              ),
+              child: MultiSplitView(
+                controller: _splitController,
+                builder: (context, area) {
+                  if (area.index == 0) {
+                    return const Sidebar();
+                  } else {
+                    return Column(
+                      children: [
+                        // Request tabs
+                        const RequestTabs(),
+                        // Request/Response area
+                        Expanded(
+                          child: tabs.isEmpty
+                              ? _buildEmptyState()
+                              : activeTab != null
+                                  ? _buildRequestResponseArea()
+                                  : _buildNoActiveTabState(),
+                        ),
+                      ],
+                    );
+                  }
+                },
+              ),
             ),
           ),
           // Status bar
@@ -115,16 +149,31 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildRequestResponseArea() {
-    return MultiSplitView(
-      axis: Axis.vertical,
-      controller: _verticalSplitController,
-      builder: (context, area) {
-        if (area.index == 0) {
-          return const RequestEditor();
-        } else {
-          return const ResponseViewer();
-        }
-      },
+    final theme = Theme.of(context);
+
+    return MultiSplitViewTheme(
+      data: MultiSplitViewThemeData(
+        dividerThickness: 12,
+        dividerPainter: DividerPainters.grooved2(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          highlightedColor: theme.colorScheme.primary.withOpacity(0.6),
+          thickness: 2,
+          count: 3,
+          highlightedCount: 5,
+          gap: 3,
+        ),
+      ),
+      child: MultiSplitView(
+        axis: Axis.vertical,
+        controller: _verticalSplitController,
+        builder: (context, area) {
+          if (area.index == 0) {
+            return const RequestEditor();
+          } else {
+            return const ResponseViewer();
+          }
+        },
+      ),
     );
   }
 

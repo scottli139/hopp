@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/http_request.dart';
 import '../../models/request_tab.dart';
 import '../../providers/providers.dart';
+import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
 
-class RequestTabs extends ConsumerWidget {
+/// 请求标签栏组件
+///
+/// 显示所有打开的请求标签，支持切换和关闭
+class RequestTabs extends ConsumerWidget with LogMixin {
   const RequestTabs({super.key});
 
   @override
@@ -18,7 +23,7 @@ class RequestTabs extends ConsumerWidget {
     }
 
     return Container(
-      height: 36,
+      height: 32,
       color: Theme.of(context).colorScheme.surface,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -62,7 +67,7 @@ class RequestTabs extends ConsumerWidget {
                 width: 2,
               ),
               right: BorderSide(
-                color: theme.dividerColor,
+                color: theme.dividerColor.withOpacity(0.5),
               ),
             ),
           ),
@@ -71,17 +76,18 @@ class RequestTabs extends ConsumerWidget {
             children: [
               // Method badge with improved styling
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
-                  color: methodColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                  color: methodColor.withOpacity(isActive ? 0.15 : 0.1),
+                  borderRadius: BorderRadius.circular(3),
                 ),
                 child: Text(
                   tab.request.method.value,
-                  style: AppTextStyles.tiny.copyWith(
-                    fontSize: 8,
+                  style: TextStyle(
+                    fontSize: 9,
                     color: methodColor,
                     fontWeight: FontWeight.w700,
+                    height: 1,
                   ),
                 ),
               ),
@@ -117,14 +123,16 @@ class RequestTabs extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(AppConstants.radiusS),
                   onTap: () => _closeTab(ref, tab),
                   child: Container(
-                    width: 18,
-                    height: 18,
+                    width: 16,
+                    height: 16,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withOpacity(0.5),
                     ),
                     child: Icon(
                       Icons.close,
-                      size: 12,
+                      size: 10,
                       color: theme.colorScheme.outline,
                     ),
                   ),
@@ -143,37 +151,36 @@ class RequestTabs extends ConsumerWidget {
     return Material(
       color: theme.colorScheme.surface,
       child: InkWell(
-        onTap: () {
-          // Create a new empty request
-          ref.read(requestTabProvider.notifier).getTab('');
-        },
+        onTap: () => _createNewRequest(ref),
         hoverColor: theme.colorScheme.surfaceContainerHighest,
         child: Container(
-          width: 44,
+          width: 36,
           height: double.infinity,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             border: Border(
-              right: BorderSide(color: theme.dividerColor),
+              right: BorderSide(
+                color: theme.dividerColor.withOpacity(0.5),
+              ),
             ),
           ),
-          child: Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(AppConstants.radiusM),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: Icon(
-              Icons.add,
-              size: 18,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          child: Icon(
+            Icons.add,
+            size: 16,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ),
     );
+  }
+
+  /// 创建新请求
+  void _createNewRequest(WidgetRef ref) {
+    logInfo('Creating new request from tab bar');
+    final newRequest = HttpRequest.empty();
+    ref.read(requestTabProvider.notifier).openTab(newRequest);
+    ref.read(activeTabIdProvider.notifier).state = newRequest.id;
+    logInfo('New request created: ${newRequest.id}');
   }
 
   void _closeTab(WidgetRef ref, RequestTab tab) {

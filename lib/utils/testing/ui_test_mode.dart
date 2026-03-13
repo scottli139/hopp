@@ -199,6 +199,33 @@ class UITestModeManager {
         final size = params['size'] as int? ?? 100000;
         return await _simulateLargeResponse(size);
 
+      case 'click_new_tab_button':
+        return await _clickNewTabButton();
+
+      case 'get_ui_info':
+        return await _getUIInfo();
+
+      case 'expand_method_dropdown':
+        return await _expandMethodDropdown();
+
+      case 'switch_request_tab':
+        final tab = params['tab'] as String;
+        return await _switchRequestTab(tab);
+
+      case 'scroll_response':
+        final direction = params['direction'] as String? ?? 'down';
+        final amount = params['amount'] as int? ?? 100;
+        return await _scrollResponse(direction, amount);
+
+      case 'set_window_size':
+        final width = params['width'] as int?;
+        final height = params['height'] as int?;
+        return await _setWindowSize(width, height);
+
+      case 'set_divider_position':
+        final ratio = params['ratio'] as double? ?? 0.5;
+        return await _setDividerPosition(ratio);
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -740,10 +767,126 @@ class UITestModeManager {
     };
   }
 
+  /// 点击新建标签按钮
+  Future<Map<String, dynamic>> _clickNewTabButton() async {
+    final newRequest = HttpRequest.empty();
+    _ref!.read(requestTabProvider.notifier).openTab(newRequest);
+    _ref!.read(activeTabIdProvider.notifier).state = newRequest.id;
+
+    return {
+      'clicked': true,
+      'request_id': newRequest.id,
+      'request_name': newRequest.name,
+    };
+  }
+
+  /// 获取 UI 信息
+  Future<Map<String, dynamic>> _getUIInfo() async {
+    final tabs = _ref!.read(requestTabProvider);
+    final activeTabId = _ref!.read(activeTabIdProvider);
+    final activeTab = _ref!.read(activeTabProvider);
+
+    final tabInfo = tabs
+        .map((tab) => {
+              'id': tab.id,
+              'name': tab.request.name,
+              'method': tab.request.method.value,
+              'is_active': tab.id == activeTabId,
+              'is_dirty': tab.isDirty,
+            })
+        .toList();
+
+    return {
+      'tab_count': tabs.length,
+      'active_tab_id': activeTabId,
+      'tabs': tabInfo,
+      'has_active_request': activeTab != null,
+      'active_request_url': activeTab?.request.url,
+      'active_request_method': activeTab?.request.method.value,
+    };
+  }
+
   /// 关闭测试服务器
   Future<void> dispose() async {
     await _server?.close();
     _server = null;
+  }
+
+  /// 展开 Method 下拉菜单（通过状态通知 UI）
+  Future<Map<String, dynamic>> _expandMethodDropdown() async {
+    // 设置状态通知 UI 展开下拉菜单
+    _ref!.read(uiTestExpandMethodDropdownProvider.notifier).state = 
+        DateTime.now().millisecondsSinceEpoch;
+    
+    return {
+      'expanded': true,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+
+  /// 切换 Request Editor Tab
+  Future<Map<String, dynamic>> _switchRequestTab(String tab) async {
+    final validTabs = ['params', 'headers', 'body', 'auth'];
+    final tabLower = tab.toLowerCase();
+    
+    if (!validTabs.contains(tabLower)) {
+      throw Exception('无效的 Tab: $tab, 可选: $validTabs');
+    }
+    
+    // 设置目标 Tab
+    _ref!.read(uiTestRequestTabProvider.notifier).state = tabLower;
+    
+    return {'tab': tabLower};
+  }
+
+  /// 滚动响应区域
+  Future<Map<String, dynamic>> _scrollResponse(String direction, int amount) async {
+    final validDirections = ['up', 'down', 'left', 'right'];
+    final dirLower = direction.toLowerCase();
+    
+    if (!validDirections.contains(dirLower)) {
+      throw Exception('无效的滚动方向: $direction, 可选: $validDirections');
+    }
+    
+    // 设置滚动状态通知 UI
+    _ref!.read(uiTestScrollResponseProvider.notifier).state = {
+      'direction': dirLower,
+      'amount': amount,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+    
+    return {
+      'direction': dirLower,
+      'amount': amount,
+    };
+  }
+
+  /// 设置窗口大小
+  Future<Map<String, dynamic>> _setWindowSize(int? width, int? height) async {
+    // 设置窗口大小状态通知 UI
+    _ref!.read(uiTestWindowSizeProvider.notifier).state = {
+      'width': width ?? 1400,
+      'height': height ?? 900,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+    
+    return {
+      'width': width ?? 1400,
+      'height': height ?? 900,
+    };
+  }
+
+  /// 设置分隔线位置（请求/响应区域的比例）
+  Future<Map<String, dynamic>> _setDividerPosition(double ratio) async {
+    // 确保 ratio 在有效范围内
+    final validRatio = ratio.clamp(0.2, 0.8);
+    
+    // 设置分隔线位置
+    _ref!.read(uiTestDividerPositionProvider.notifier).state = validRatio;
+    
+    return {
+      'ratio': validRatio,
+    };
   }
 }
 
@@ -763,3 +906,20 @@ final uiTestEditCompleteProvider =
 /// UI 测试 - 响应显示模式
 final uiTestResponseDisplayModeProvider =
     StateProvider<String>((ref) => 'auto');
+
+/// UI 测试 - 展开 Method 下拉菜单触发器（使用时间戳确保每次都能触发）
+final uiTestExpandMethodDropdownProvider = StateProvider<int?>((ref) => null);
+
+/// UI 测试 - Request Editor Tab 切换
+final uiTestRequestTabProvider = StateProvider<String?>((ref) => null);
+
+/// UI 测试 - 响应区域滚动控制
+/// 格式: {'direction': 'up'/'down', 'amount': 100, 'timestamp': 123456}
+final uiTestScrollResponseProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
+
+/// UI 测试 - 窗口大小控制
+/// 格式: {'width': 1400, 'height': 900, 'timestamp': 123456}
+final uiTestWindowSizeProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
+
+/// UI 测试 - 分隔线位置控制（0.0 - 1.0，表示请求/响应区域的比例）
+final uiTestDividerPositionProvider = StateProvider<double>((ref) => 0.5);

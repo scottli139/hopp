@@ -423,7 +423,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Cookies'), findsWidgets); // Multiple 'Cookies' text
-        expect(find.byIcon(Icons.cookie_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.cookie_outlined), findsWidgets); // Tab icon + empty state icon
       });
     });
 

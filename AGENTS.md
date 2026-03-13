@@ -23,7 +23,7 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **响应优化功能完成** |
+| **当前状态** | ✅ **URL Bar 对齐修复完成** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
 | **测试覆盖** | 418+ 个测试 (Models 152 + Services 73 + Providers 92 + Widgets 88 + UI Test) |
@@ -83,6 +83,8 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | UI 自动化测试验证 | 2026-03-12 | HTTPS 请求 + Certificate Tab 切换测试 |
 | 响应优化 | 2026-03-12 | 大响应体虚拟化显示优化 |
 | UI 自动化测试验证 | 2026-03-12 | 响应优化功能测试脚本 |
+| UI 细节优化 | 2026-03-13 | Tab 样式、+按钮、URL输入框、下拉菜单优化 |
+| UI 对齐修复 | 2026-03-13 | URL行高度统一36px、Method下拉与URL输入框对齐、Certificate字体缩小 |
 
 ### 进行中 🔄
 
@@ -99,6 +101,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | Providers 测试 | 92 | ✅ 通过 |
 | Widget 测试 | 88 | ✅ 通过 |
 | 响应优化组件测试 | 新增 | ✅ 通过 |
+| UI 优化测试 | 新增 7 个 | ✅ 通过 |
 | **总计** | **418** | **全部通过** |
 
 ---
@@ -341,6 +344,147 @@ genhtml coverage/lcov.info -o coverage/html
 ## 会话记录
 
 <details>
+<summary>2026-03-13 - URL Bar 对齐修复完成</summary>
+
+**修复内容**:
+- ✅ URL Bar 高度统一：Method dropdown、URL 输入框、Save/Send 按钮统一为 36px
+- ✅ 修复 URL 输入框高度不足问题（使用 Container 设置固定高度）
+- ✅ 添加 Focus 效果（紫色边框）
+- ✅ 文字垂直居中（调整 contentPadding）
+
+**技术方案**:
+
+1. **URL Bar 布局调整**:
+```dart
+// 使用 Container 设置固定高度和边框
+Container(
+  height: 36,
+  decoration: BoxDecoration(
+    color: theme.colorScheme.surfaceContainerHighest,
+    border: Border(...),
+  ),
+  child: TextField(
+    decoration: InputDecoration(
+      filled: false,
+      border: InputBorder.none,
+      focusedBorder: OutlineInputBorder(...),
+    ),
+  ),
+)
+```
+
+2. **文字垂直居中**:
+```dart
+contentPadding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
+```
+
+3. **新增 UI 测试命令**:
+- `scroll_response` - 控制响应区域滚动
+- `set_window_size` - 设置窗口大小
+- `set_divider_position` - 设置分隔线位置
+
+**验证结果**:
+
+| 检查项 | 状态 | 说明 |
+|--------|------|------|
+| URL Bar 高度对齐 | ✅ | 36px 统一高度，上下边框对齐 |
+| Focus 效果 | ✅ | 紫色边框显示正常 |
+| 文字垂直居中 | ✅ | URL 文字在输入框内垂直居中 |
+
+**截图验证**:
+- `final_ui_test.png` - URL Bar 对齐效果
+
+</details>
+
+<details>
+<summary>2026-03-13 - UI 对齐修复与验证</summary>
+
+**修复内容**:
+- ✅ URL 行高度对齐：Method 下拉框与 URL 输入框统一为 32px
+- ✅ Method 下拉选项高度：从 48px 缩小到 36px，更紧凑
+- ✅ Certificate 字体缩小：标签 10px，值 11px，标题 13px
+- ✅ Sidebar Divider：从 8px 缩小到 1px，更精致
+
+**关键修复**:
+
+1. **URL Bar 高度统一**:
+```dart
+// 统一使用 32px 高度
+const urlBarHeight = 32.0;
+
+// Method 下拉框 - 左侧带圆角
+Container(
+  height: urlBarHeight,
+  decoration: BoxDecoration(
+    borderRadius: const BorderRadius.horizontal(
+      left: Radius.circular(AppConstants.radiusM),
+    ),
+  ),
+)
+
+// URL 输入框 - 右侧 fused
+TextField(
+  decoration: InputDecoration(
+    border: OutlineInputBorder(
+      borderRadius: const BorderRadius.horizontal(
+        right: Radius.circular(AppConstants.radiusM),
+      ),
+    ),
+  ),
+)
+```
+
+2. **Method 下拉菜单优化**:
+```dart
+DropdownButton<HttpMethod>(
+  itemHeight: 36, // 从 48 缩小到 36
+  // 内边距和字体也相应缩小
+)
+```
+
+3. **Certificate 字体优化**:
+```dart
+// 状态卡片标题
+Text('Certificate is valid', style: TextStyle(fontSize: 13))
+
+// 详情标签
+SizedBox(
+  width: 120,
+  child: Text(label, style: TextStyle(fontSize: 10)),
+)
+
+// 详情值
+SelectableText(value, style: TextStyle(fontSize: 11))
+```
+
+**验证结果** (截图确认):
+
+| 检查项 | 状态 | 说明 |
+|--------|------|------|
+| URL 行高度 | ✅ | Method 下拉框与 URL 输入框 32px 对齐 |
+| Method 下拉选项 | ✅ | 选项高度 36px，视觉上更紧凑 |
+| Certificate 字体 | ✅ | 标签 10px、值 11px、标题 13px |
+| Sidebar Divider | ✅ | 1px 细线，更精致 |
+
+**截图验证**:
+- `ui_test_url_bar.png` - URL 行对齐效果
+- `ui_test_cert_top.png` - Certificate 概览
+- `ui_test_cert_full.png` - Certificate Chain 详情
+
+**新增 UI 测试命令**:
+- `capture_url_bar` - 触发 URL 栏截图
+- `expand_method_dropdown` - 展开 Method 下拉菜单（待完善）
+- `capture_certificate` - 触发 Certificate 截图
+- `switch_request_tab` - 切换 Request Tab
+
+**经验教训**:
+- 自动化测试通过 ≠ 视觉正确，必须通过截图人工确认
+- Flutter DropdownButton 不支持程序化打开，需要特殊处理
+- 高度对齐必须使用统一的尺寸常量，避免硬编码
+
+</details>
+
+<details>
 <summary>2026-03-12 - 响应优化功能实现</summary>
 
 **完成工作**:
@@ -428,6 +572,56 @@ genhtml coverage/lcov.info -o coverage/html
 ✅ 测试 2: 交互式编辑
 ✅ 测试 3: 取消编辑
 ✅ 测试 4: 重命名已存在请求
+```
+
+</details>
+
+<details>
+<summary>2026-03-13 - UI 细节优化</summary>
+
+**完成工作**:
+- ✅ Request Tab 样式优化：高度 32px、选中状态增强、+按钮修复
+- ✅ URL 输入框垂直居中对齐，统一边框样式（选中/未选中一致）
+- ✅ URL 行整体高度优化：36px → 32px，按钮统一 32px
+- ✅ Response Tab 优化：字体 10px、高度 28px、添加图标
+- ✅ Request Editor Tabs 优化：高度 36px → 28px
+- ✅ Content Type SegmentedButton 优化：高度 32px → 28px，更紧凑样式
+- ✅ Method 下拉菜单间距优化
+- ✅ Sidebar 弹出菜单样式统一
+- ✅ 整体垂直空间优化：降低各组件高度，减少间距浪费
+- ✅ 添加 UI 测试指令：`click_new_tab_button`、`get_ui_info`
+- ✅ 创建 UI 优化测试脚本
+
+**修改文件**:
+- `lib/widgets/layout/request_tabs.dart` - Tab 样式和 +按钮功能
+- `lib/widgets/request/request_editor.dart` - URL 输入框和 Method 下拉菜单
+- `lib/widgets/request/response_viewer.dart` - Response Tab 样式
+- `lib/widgets/layout/sidebar.dart` - 弹出菜单样式
+- `lib/utils/testing/ui_test_mode.dart` - 添加测试指令
+- `integration_test/test_client.py` - 添加客户端方法
+- `integration_test/test_ui_optimization.py` - 新增测试脚本
+
+**UI 测试结果**:
+```
+总计: 7 个测试
+通过: 7 个
+失败: 0 个
+
+✅ 测试 1: 基础连接
+✅ 测试 2: + 按钮创建新请求
+✅ 测试 3: Request Tab 视觉样式
+✅ 测试 4: Response Tab 样式
+✅ 测试 5: URL 输入框对齐
+✅ 测试 6: Method 下拉菜单
+✅ 测试 7: UI 信息一致性
+
+📸 截图验证:
+- ui_test_new_tab_created.png
+- ui_test_request_tabs_multiple.png
+- ui_test_response_tabs_body.png
+- ui_test_response_tabs_headers.png
+- ui_test_url_input_alignment.png
+- ui_test_method_dropdown.png
 ```
 
 </details>
@@ -575,6 +769,8 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-12 | v0.3.0-ui-test-mode | UI 测试模式，支持 HTTP 指令控制 |
 | 2026-03-12 | v0.3.1-rename-request | 请求名称编辑功能 + UI 测试验证 |
 | 2026-03-12 | v0.3.2-response-optimization | 大响应体渲染优化 + UI 测试 |
+| 2026-03-13 | v0.3.3-ui-polish | UI 细节优化：Tab样式、+按钮、输入框对齐、边框统一、高度优化 |
+| 2026-03-13 | v0.3.5-ui-fix | URL Bar 对齐修复：Method下拉、URL输入框、Save/Send按钮统一36px高度 |
 
 ---
 

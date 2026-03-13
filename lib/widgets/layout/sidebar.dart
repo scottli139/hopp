@@ -272,7 +272,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
             hoverColor: AppColors.primary.withOpacity(0.04),
             splashColor: AppColors.primary.withOpacity(0.08),
             child: Container(
-              height: 32,
+              height: 28,
               padding: EdgeInsets.only(
                 left: AppConstants.spaceS + depth * AppConstants.spaceM + 12,
                 right: AppConstants.spaceS,
@@ -292,36 +292,38 @@ class _SidebarState extends ConsumerState<Sidebar> {
                   // Method badge
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 2,
+                      horizontal: 4,
+                      vertical: 1,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.getHttpMethodColor(request.method.value)
                           .withOpacity(isActive ? 0.15 : 0.1),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                     child: Text(
                       request.method.value.toUpperCase(),
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: 8,
                         color:
                             AppColors.getHttpMethodColor(request.method.value),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   // 名称显示或编辑
                   Expanded(
                     child: _isEditingName && _editingRequestId == request.id
                         ? _buildNameEditor(context, request, setState)
                         : _buildNameDisplay(context, request, isActive),
                   ),
-                  // 编辑时显示操作按钮
+                  // 编辑时显示操作按钮，或选中/悬停时显示菜单按钮
                   if (_isEditingName && _editingRequestId == request.id) ...[
                     _buildEditActions(context, request, setState),
-                  ] else
-                    _buildRequestMenuButton(context, request),
+                  ] else if (isActive)
+                    _buildRequestMenuButton(context, request)
+                  else
+                    const SizedBox(width: 28), // 保持间距一致
                 ],
               ),
             ),
@@ -446,27 +448,30 @@ class _SidebarState extends ConsumerState<Sidebar> {
             size: 14,
             color: theme.colorScheme.outline,
           ),
-          offset: const Offset(0, 28),
+          offset: const Offset(0, 24),
+          constraints: const BoxConstraints(minWidth: 140),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.radiusM),
+            side: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
           ),
-          elevation: 8,
+          elevation: 4,
           color: theme.colorScheme.surface,
           itemBuilder: (context) => [
             PopupMenuItem(
               value: 'rename',
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
                   Icon(
-                    Icons.edit,
-                    size: 16,
+                    Icons.edit_outlined,
+                    size: 14,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'Rename',
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: AppTextStyles.caption.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -475,18 +480,19 @@ class _SidebarState extends ConsumerState<Sidebar> {
             ),
             PopupMenuItem(
               value: 'delete',
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
                   Icon(
-                    Icons.delete,
-                    size: 16,
+                    Icons.delete_outline,
+                    size: 14,
                     color: AppColors.error,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'Delete',
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: AppTextStyles.caption.copyWith(
                       fontWeight: FontWeight.w500,
                       color: AppColors.error,
                     ),
@@ -690,36 +696,30 @@ class _SidebarState extends ConsumerState<Sidebar> {
             size: 16,
             color: theme.colorScheme.outline,
           ),
-          offset: const Offset(0, 32),
+          offset: const Offset(0, 28),
+          constraints: const BoxConstraints(minWidth: 160),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.radiusL),
+            borderRadius: BorderRadius.circular(AppConstants.radiusM),
+            side: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
           ),
-          elevation: 8,
-          shadowColor: Colors.black.withOpacity(0.2),
+          elevation: 4,
           color: theme.colorScheme.surface,
           itemBuilder: (context) => [
             PopupMenuItem(
               value: 'add_request',
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
-                    ),
-                    child: const Icon(
-                      Icons.add,
-                      size: 16,
-                      color: AppColors.primary,
-                    ),
+                  Icon(
+                    Icons.add,
+                    size: 14,
+                    color: AppColors.primary,
                   ),
-                  const SizedBox(width: AppConstants.spaceM),
+                  const SizedBox(width: 8),
                   Text(
                     'Add Request',
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: AppTextStyles.caption.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -728,55 +728,41 @@ class _SidebarState extends ConsumerState<Sidebar> {
             ),
             PopupMenuItem(
               value: 'add_folder',
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: AppColors.info.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
-                    ),
-                    child: Icon(
-                      Icons.create_new_folder,
-                      size: 16,
-                      color: AppColors.info,
-                    ),
+                  Icon(
+                    Icons.create_new_folder_outlined,
+                    size: 14,
+                    color: AppColors.info,
                   ),
-                  const SizedBox(width: AppConstants.spaceM),
+                  const SizedBox(width: 8),
                   Text(
                     'Add Folder',
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: AppTextStyles.caption.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ),
-            const PopupMenuDivider(),
+            const PopupMenuDivider(height: 1),
             PopupMenuItem(
               value: 'rename',
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
-                    ),
-                    child: Icon(
-                      Icons.edit,
-                      size: 16,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                  Icon(
+                    Icons.edit_outlined,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(width: AppConstants.spaceM),
+                  const SizedBox(width: 8),
                   Text(
                     'Rename',
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: AppTextStyles.caption.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -785,26 +771,19 @@ class _SidebarState extends ConsumerState<Sidebar> {
             ),
             PopupMenuItem(
               value: 'delete',
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
-                    ),
-                    child: const Icon(
-                      Icons.delete,
-                      size: 16,
-                      color: AppColors.error,
-                    ),
+                  Icon(
+                    Icons.delete_outline,
+                    size: 14,
+                    color: AppColors.error,
                   ),
-                  const SizedBox(width: AppConstants.spaceM),
+                  const SizedBox(width: 8),
                   Text(
                     'Delete',
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: AppTextStyles.caption.copyWith(
                       fontWeight: FontWeight.w500,
                       color: AppColors.error,
                     ),
@@ -920,10 +899,19 @@ class _SidebarState extends ConsumerState<Sidebar> {
 
   /// Build actions menu button
   Widget _buildActionsMenu(BuildContext context) {
+    final theme = Theme.of(context);
+
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert, size: 18),
+      icon: Icon(Icons.more_vert, size: 18, color: theme.colorScheme.outline),
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      offset: const Offset(0, 28),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppConstants.radiusM),
+        side: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
+      ),
+      elevation: 4,
+      color: theme.colorScheme.surface,
       onSelected: (value) {
         switch (value) {
           case 'about':
@@ -938,33 +926,57 @@ class _SidebarState extends ConsumerState<Sidebar> {
         }
       },
       itemBuilder: (context) => [
-        const PopupMenuItem(
-          value: 'about',
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, size: 18),
-              SizedBox(width: 8),
-              Text('About'),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'new',
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             children: [
-              Icon(Icons.add, size: 18),
-              SizedBox(width: 8),
-              Text('New Collection'),
+              Icon(Icons.add, size: 14, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'New Collection',
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'refresh',
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             children: [
-              Icon(Icons.refresh, size: 18),
-              SizedBox(width: 8),
-              Text('Refresh'),
+              Icon(Icons.refresh,
+                  size: 14, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Text(
+                'Refresh',
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
+        PopupMenuItem(
+          value: 'about',
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline,
+                  size: 14, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Text(
+                'About',
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),

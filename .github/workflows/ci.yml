@@ -40,7 +40,7 @@ jobs:
         run: flutter test --coverage || true
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: coverage/lcov.info
           fail_ci_if_error: false
@@ -75,6 +75,7 @@ jobs:
         with:
           name: macos-build
           path: build/macos/Build/Products/Release/*.app
+          if-no-files-found: warn
 
   # Windows 构建
   build-windows:
@@ -106,6 +107,7 @@ jobs:
         with:
           name: windows-build
           path: build/windows/x64/runner/Release/
+          if-no-files-found: warn
 
   # Linux 构建
   build-linux:
@@ -142,3 +144,4 @@ jobs:
         with:
           name: linux-build
           path: build/linux/x64/release/bundle/
+          if-no-files-found: warn

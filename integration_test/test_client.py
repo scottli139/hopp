@@ -177,12 +177,34 @@ class HoppTestClient:
         print(f"   方法: {result.get('method')}")
         print(f"   URL: {result.get('url')}")
         print(f"   完整 URL: {result.get('full_url')}")
+        
+        # 如果有 requestInfo，显示更多详情
+        if result.get('has_request_info'):
+            print(f"   Scheme: {result.get('scheme')}")
+            print(f"   Host: {result.get('host')}")
+            print(f"   Path: {result.get('path')}")
+            if result.get('port'):
+                print(f"   Port: {result.get('port')}")
+            print(f"   Query Params: {result.get('query_params_count')} 个")
+            if result.get('user_agent'):
+                print(f"   User-Agent: {result.get('user_agent')}")
+            if result.get('content_type'):
+                print(f"   Content-Type: {result.get('content_type')}")
+        
         print(f"   Headers: {result.get('headers_count')} 个")
         for header in result.get('headers', []):
             print(f"     {header.get('key')}: {header.get('value')}")
         print(f"   Body: {'有' if result.get('has_body') else '无'} ({result.get('body_type')})")
         if result.get('has_body'):
-            print(f"   Body 长度: {result.get('body_length')} 字符")
+            if result.get('body_size'):
+                print(f"   Body 大小: {result.get('body_size')} bytes")
+            if result.get('body_length'):
+                print(f"   Body 长度: {result.get('body_length')} 字符")
+            if result.get('body_preview'):
+                preview = result.get('body_preview', '')
+                if len(preview) > 100:
+                    preview = preview[:100] + '...'
+                print(f"   Body 预览: {preview}")
         return result
     
     def add_header(self, key, value):

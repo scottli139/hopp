@@ -23,7 +23,7 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **Request Editor UI 优化完成 / 请求设置规划中** |
+| **当前状态** | ✅ **Request Tab 完善完成 / 请求设置规划中** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
 | **测试覆盖** | 396 个通过 / 22 个失败 / ~418 总计 |
@@ -90,6 +90,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | Request Editor UI 优化 | 2026-03-14 | Tab样式、Headers/Params列表、自动完成 |
 | 请求设置功能规划 | 2026-03-14 | 参考 Postman 整理 13 项配置 |
 | 请求详情展示 | 2026-03-14 | Request Tab (方法/URL/Headers/Body) |
+| Request Tab 完善 | 2026-03-14 | 展示实际发送的完整请求信息（含自动添加的 Headers） |
 
 ### 进行中 🔄
 
@@ -401,6 +402,93 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-14 - Request Tab 完善：展示实际发送的完整请求信息</summary>
+
+**完成工作**:
+- ✅ 创建 `HttpRequestInfo` 模型存储实际发送的请求信息
+- ✅ 修改 `HttpResponse` 添加 `requestInfo` 字段
+- ✅ 修改 `HttpService` 记录实际发送的请求头（包括 Dio 自动添加的）
+- ✅ 完善 Request Tab UI，展示完整的请求信息
+- ✅ Headers 分类展示（用户添加 vs 自动添加）
+- ✅ URL 分解展示（Scheme/Host/Path/Port）
+- ✅ 添加 UI 测试指令更新
+- ✅ 创建 `test_request_info.py` 自动化测试脚本
+- ✅ 所有单元测试通过（396个通过，无回归）
+
+**技术实现**:
+
+1. **HttpRequestInfo 模型** (`lib/models/http_request_info.dart`):
+```dart
+@freezed
+class HttpRequestInfo with _$HttpRequestInfo {
+  const factory HttpRequestInfo({
+    required String method,
+    required String baseUrl,
+    required String fullUrl,
+    required String scheme,
+    required String host,
+    int? port,
+    required String path,
+    @Default([]) List<KeyValuePair> queryParams,
+    @Default([]) List<KeyValuePair> headers,
+    String? body,
+    String? bodyType,
+    int? bodySize,
+    required DateTime timestamp,
+  }) = _HttpRequestInfo;
+}
+```
+
+2. **HttpService 记录请求信息**:
+```dart
+// 构建实际发送的请求信息
+final requestInfo = HttpRequestInfo(
+  method: request.method.value.toUpperCase(),
+  baseUrl: request.url,
+  fullUrl: uri.toString(),
+  scheme: uri.scheme,
+  host: uri.host,
+  port: uri.hasPort ? uri.port : null,
+  path: uri.path,
+  queryParams: ..., // 启用的查询参数
+  headers: _buildRequestInfoHeaders(headers, response), // 包含自动添加的
+  body: request.body.isNotEmpty ? request.body : null,
+  timestamp: DateTime.now(),
+);
+```
+
+3. **Headers 分类展示**:
+   - 用户添加的 Headers：显示为主色，排在前面
+   - 自动添加的 Headers（User-Agent, Accept-Encoding 等）：显示为灰色，带 "auto" 标签
+   - 自动添加的 Headers 包括：`user-agent`, `accept-encoding`, `connection`, `host`
+
+4. **Request Tab UI 结构**:
+   - 请求概览卡片：方法标签 + 完整 URL + 时间戳 + URL 分解信息
+   - Headers 区域：显示数量 + 分类展示
+   - Body 区域：类型标签 + 大小 + 内容展示
+
+**文件变更**:
+- `lib/models/http_request_info.dart` - 新增模型
+- `lib/models/http_response.dart` - 添加 requestInfo 字段
+- `lib/services/http_service.dart` - 记录实际发送的请求信息
+- `lib/widgets/request/response_viewer.dart` - 完善 Request Tab UI
+- `lib/utils/testing/ui_test_mode.dart` - 更新测试指令
+- `integration_test/test_client.py` - 更新客户端方法
+- `integration_test/test_request_info.py` - 新增测试脚本
+
+**测试结果**:
+```
+总计: 396 个单元测试通过
+新增测试: 4 个 UI 测试场景全部通过
+ - 基本请求信息展示
+ - POST 请求带 Body
+ - Headers 分类展示
+ - 空请求状态
+```
+
+</details>
 
 <details>
 <summary>2026-03-14 - 请求详情展示功能完成</summary>
@@ -1149,6 +1237,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-14 | v0.4.0-rc-plan | 请求设置 (Request Settings) 功能规划完成，参考 Postman 实现 |
 | 2026-03-14 | v0.4.0-docs-update | 全面更新项目文档，同步实际功能状态 |
 | 2026-03-14 | v0.4.1-request-details | 请求详情展示功能：Request Tab (方法/URL/Headers/Body) + UI测试 |
+| 2026-03-14 | v0.4.2-request-info | Request Tab 完善：展示实际发送的完整请求信息（含自动添加的 Headers） |
 
 ---
 

@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'certificate_info.dart';
+import 'http_request_info.dart';
 import 'key_value_pair.dart';
 import 'timing_info.dart';
 
@@ -24,6 +25,9 @@ class HttpResponse with _$HttpResponse {
 
     /// 请求时间分析信息
     TimingInfo? timingInfo,
+
+    /// 实际发送的请求信息（用于 Request Tab 展示）
+    HttpRequestInfo? requestInfo,
   }) = _HttpResponse;
 
   factory HttpResponse.fromJson(Map<String, dynamic> json) =>

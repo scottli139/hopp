@@ -19,6 +19,7 @@ import '../../providers/providers.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../models/http_method.dart';
+import '../../models/http_request_info.dart';
 import '../../models/key_value_pair.dart';
 import '../../models/http_response.dart';
 import '../../models/timing_info.dart';
@@ -369,6 +370,92 @@ class UITestModeManager {
       throw Exception('没有活动的请求 Tab');
     }
 
+    final request = activeTab.request;
+    final uri = Uri.parse(request.url);
+
+    // 构建查询参数
+    final enabledParams =
+        request.params.where((p) => p.enabled && p.key.isNotEmpty).toList();
+    String fullUrl = request.url;
+    if (enabledParams.isNotEmpty) {
+      final queryString = enabledParams
+          .map((p) =>
+              '${Uri.encodeComponent(p.key)}=${Uri.encodeComponent(p.value)}')
+          .join('&');
+      final separator = fullUrl.contains('?') ? '&' : '?';
+      fullUrl = '$fullUrl$separator$queryString';
+    }
+
+    // 构建 headers：用户添加的 + 自动添加的
+    final headers = <KeyValuePair>[];
+
+    // 用户添加的 headers
+    for (final header in request.headers) {
+      if (header.enabled && header.key.isNotEmpty) {
+        headers.add(KeyValuePair(
+          id: header.id,
+          key: header.key,
+          value: header.value,
+          enabled: true,
+        ));
+      }
+    }
+
+    // 自动添加的 headers
+    final autoHeaders = [
+      KeyValuePair.empty().copyWith(
+        key: 'User-Agent',
+        value: 'Hopp/1.0 (Flutter HTTP Client)',
+        enabled: true,
+      ),
+      KeyValuePair.empty().copyWith(
+        key: 'Accept',
+        value: '*/*',
+        enabled: true,
+      ),
+      KeyValuePair.empty().copyWith(
+        key: 'Accept-Encoding',
+        value: 'gzip',
+        enabled: true,
+      ),
+    ];
+
+    // 只添加不存在重复 key 的自动 headers
+    for (final autoHeader in autoHeaders) {
+      final exists = headers.any(
+        (h) => h.key.toLowerCase() == autoHeader.key.toLowerCase(),
+      );
+      if (!exists) {
+        headers.add(autoHeader);
+      }
+    }
+
+    // 创建请求信息
+    final requestInfo = HttpRequestInfo(
+      method: request.method.value.toUpperCase(),
+      baseUrl: request.url,
+      fullUrl: fullUrl,
+      scheme: uri.scheme.isNotEmpty ? uri.scheme : 'https',
+      host: uri.host.isNotEmpty ? uri.host : 'example.com',
+      path: uri.path.isNotEmpty ? uri.path : '/',
+      port: uri.hasPort ? uri.port : null,
+      queryParams: enabledParams
+          .map((p) => KeyValuePair(
+                id: p.id,
+                key: p.key,
+                value: p.value,
+                enabled: true,
+              ))
+          .toList(),
+      headers: headers,
+      body: request.body.isNotEmpty && request.bodyType != 'none'
+          ? request.body
+          : null,
+      bodyType: request.bodyType != 'none' ? request.bodyType : null,
+      bodySize: request.body.isNotEmpty ? request.body.length : null,
+      timestamp: DateTime.now(),
+    );
+
     // 创建带时间信息的模拟响应
     final mockResponse = HttpResponse(
       statusCode: 200,
@@ -396,6 +483,7 @@ class UITestModeManager {
         downloadMs: 107,
         totalMs: 245,
       ),
+      requestInfo: requestInfo,
     );
 
     // 设置响应
@@ -408,6 +496,7 @@ class UITestModeManager {
       'simulated': true,
       'has_timing': true,
       'total_ms': 245,
+      'has_request_info': true,
     };
   }
 
@@ -781,6 +870,43 @@ class UITestModeManager {
         .map((h) => {'key': h.key, 'value': h.value})
         .toList();
 
+    // 检查是否有响应和 requestInfo
+    final response = _ref!.read(requestResponseProvider)[activeTab.id];
+    final requestInfo = response?.requestInfo;
+
+    // 如果有 requestInfo，使用它来提供实际发送的请求详情
+    if (requestInfo != null) {
+      return {
+        'method': requestInfo.method,
+        'url': requestInfo.baseUrl,
+        'full_url': requestInfo.fullUrl,
+        'scheme': requestInfo.scheme,
+        'host': requestInfo.host,
+        'path': requestInfo.path,
+        'port': requestInfo.port,
+        'query_params_count': requestInfo.queryParams.length,
+        'query_params': requestInfo.queryParams
+            .map((p) => {'key': p.key, 'value': p.value})
+            .toList(),
+        'headers_count': requestInfo.headers.length,
+        'headers': requestInfo.headers
+            .map((h) => {'key': h.key, 'value': h.value})
+            .toList(),
+        'has_body': requestInfo.hasBody,
+        'body_type': requestInfo.bodyType,
+        'body_size': requestInfo.bodySize,
+        'body_preview':
+            requestInfo.body != null && requestInfo.body!.length > 200
+                ? requestInfo.body!.substring(0, 200)
+                : requestInfo.body,
+        'user_agent': requestInfo.userAgent,
+        'content_type': requestInfo.contentType,
+        'authorization': requestInfo.authorization != null ? '***' : null,
+        'has_request_info': true,
+      };
+    }
+
+    // 否则返回原始的请求详情
     return {
       'method': request.method.value,
       'url': request.url,
@@ -793,6 +919,7 @@ class UITestModeManager {
       'body_preview': request.body.length > 200
           ? request.body.substring(0, 200)
           : request.body,
+      'has_request_info': false,
     };
   }
 
@@ -875,6 +1002,8 @@ class UITestModeManager {
       throw Exception('没有活动的请求 Tab');
     }
 
+    final request = activeTab.request;
+
     // 生成大 JSON 数据
     final buffer = StringBuffer();
     buffer.writeln('{');
@@ -898,6 +1027,29 @@ class UITestModeManager {
 
     final largeBody = buffer.toString();
 
+    // 创建请求信息
+    final requestInfo = HttpRequestInfo(
+      method: request.method.value.toUpperCase(),
+      baseUrl: request.url,
+      fullUrl: request.url,
+      scheme: 'https',
+      host: Uri.parse(request.url).host,
+      path: Uri.parse(request.url).path,
+      headers: [
+        KeyValuePair.empty().copyWith(
+          key: 'Accept',
+          value: '*/*',
+          enabled: true,
+        ),
+        KeyValuePair.empty().copyWith(
+          key: 'User-Agent',
+          value: 'Hopp/1.0 (Flutter HTTP Client)',
+          enabled: true,
+        ),
+      ],
+      timestamp: DateTime.now(),
+    );
+
     // 创建模拟响应
     final mockResponse = HttpResponse(
       statusCode: 200,
@@ -917,6 +1069,7 @@ class UITestModeManager {
       ],
       durationMs: 150,
       sizeBytes: largeBody.length,
+      requestInfo: requestInfo,
     );
 
     // 设置响应

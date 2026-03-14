@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/certificate_info.dart';
 import '../../models/http_method.dart';
 import '../../models/http_request.dart';
+import '../../models/http_request_info.dart';
 import '../../models/http_response.dart';
 import '../../models/key_value_pair.dart';
 import '../../models/timing_info.dart';
@@ -689,8 +690,37 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     }
   }
 
+  /// 根据字符串获取 HTTP 方法颜色
+  Color _getMethodColorFromString(String method) {
+    switch (method.toUpperCase()) {
+      case 'GET':
+        return AppColors.httpGet;
+      case 'POST':
+        return AppColors.httpPost;
+      case 'PUT':
+        return AppColors.httpPut;
+      case 'DELETE':
+        return AppColors.httpDelete;
+      case 'PATCH':
+        return AppColors.httpPatch;
+      case 'HEAD':
+      case 'OPTIONS':
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
+  }
+
   Widget _buildRequestTab(BuildContext context) {
     final theme = Theme.of(context);
+    final response = ref.watch(currentResponseProvider);
+
+    // 优先使用 response 中的 requestInfo（实际发送的请求信息）
+    if (response?.requestInfo != null) {
+      return _buildRequestInfoTab(context, response!.requestInfo!);
+    }
+
+    // 如果没有 requestInfo，回退到使用当前编辑的请求信息
     final activeTab = ref.watch(activeTabProvider);
 
     if (activeTab == null) {
@@ -732,6 +762,41 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             // Body 区域
             if (hasBody) ...[
               _buildRequestBodySection(context, request),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 使用 HttpRequestInfo 构建 Request Tab
+  Widget _buildRequestInfoTab(
+      BuildContext context, HttpRequestInfo requestInfo) {
+    final theme = Theme.of(context);
+    final methodColor = _getMethodColorFromString(requestInfo.method);
+
+    return Container(
+      color: theme.colorScheme.surface,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 请求概览卡片
+            _buildRequestInfoOverviewCard(
+              context,
+              requestInfo,
+              methodColor,
+            ),
+            const SizedBox(height: 16),
+            // Headers 区域
+            if (requestInfo.headers.isNotEmpty) ...[
+              _buildRequestInfoHeadersSection(context, requestInfo.headers),
+              const SizedBox(height: 16),
+            ],
+            // Body 区域
+            if (requestInfo.hasBody) ...[
+              _buildRequestInfoBodySection(context, requestInfo),
             ],
           ],
         ),
@@ -830,6 +895,360 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           ),
           child: SelectableText(
             request.body,
+            style: const TextStyle(
+              fontSize: 11,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 使用 HttpRequestInfo 构建请求概览卡片
+  Widget _buildRequestInfoOverviewCard(
+    BuildContext context,
+    HttpRequestInfo requestInfo,
+    Color methodColor,
+  ) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            methodColor.withOpacity(0.1),
+            methodColor.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppConstants.radiusL),
+        border: Border.all(color: methodColor.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // HTTP 方法标签和时间戳
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: methodColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                ),
+                child: Text(
+                  requestInfo.method.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: methodColor,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _formatTimestamp(requestInfo.timestamp),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 完整 URL
+          SelectableText(
+            requestInfo.fullUrl,
+            style: TextStyle(
+              fontSize: 12,
+              fontFamily: 'monospace',
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // URL 分解信息
+          Wrap(
+            spacing: 16,
+            runSpacing: 4,
+            children: [
+              _buildUrlInfoChip(context, 'Scheme', requestInfo.scheme),
+              _buildUrlInfoChip(context, 'Host', requestInfo.host),
+              if (requestInfo.port != null)
+                _buildUrlInfoChip(context, 'Port', '${requestInfo.port}'),
+              _buildUrlInfoChip(context, 'Path', requestInfo.path),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建 URL 信息 chip
+  Widget _buildUrlInfoChip(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 10,
+            color: theme.colorScheme.outline,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 10,
+            fontFamily: 'monospace',
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 格式化时间戳
+  String _formatTimestamp(DateTime timestamp) {
+    final hour = timestamp.hour.toString().padLeft(2, '0');
+    final minute = timestamp.minute.toString().padLeft(2, '0');
+    final second = timestamp.second.toString().padLeft(2, '0');
+    final millisecond = timestamp.millisecond.toString().padLeft(3, '0');
+    return '$hour:$minute:$second.$millisecond';
+  }
+
+  /// 使用 HttpRequestInfo 构建 Headers 区域
+  Widget _buildRequestInfoHeadersSection(
+    BuildContext context,
+    List<KeyValuePair> headers,
+  ) {
+    final theme = Theme.of(context);
+
+    // 将 headers 分为用户添加的和自动添加的
+    final userHeaders = <KeyValuePair>[];
+    final autoHeaders = <KeyValuePair>[];
+
+    for (final header in headers) {
+      if (_isAutoHeader(header.key)) {
+        autoHeaders.add(header);
+      } else {
+        userHeaders.add(header);
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Headers 标题
+        Row(
+          children: [
+            Text(
+              'Headers (${headers.length})',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const Spacer(),
+            if (userHeaders.isNotEmpty)
+              Text(
+                '${userHeaders.length} custom',
+                style: TextStyle(
+                  fontSize: 9,
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Headers 列表
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(AppConstants.radiusM),
+            border: Border.all(
+              color: theme.dividerColor.withOpacity(0.5),
+            ),
+          ),
+          child: Column(
+            children: [
+              // 用户添加的 headers
+              ...userHeaders.map((header) => _buildRequestInfoHeaderRow(
+                    context,
+                    header,
+                    isAuto: false,
+                  )),
+              // 自动添加的 headers（如果有用户添加的，显示分隔线）
+              if (userHeaders.isNotEmpty && autoHeaders.isNotEmpty) ...[
+                const Divider(height: 16),
+                Text(
+                  'Auto-added Headers',
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: theme.colorScheme.outline,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              // 自动添加的 headers
+              ...autoHeaders.map((header) => _buildRequestInfoHeaderRow(
+                    context,
+                    header,
+                    isAuto: true,
+                  )),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 判断是否为自动添加的 header
+  bool _isAutoHeader(String key) {
+    final autoHeaders = {
+      'user-agent',
+      'accept-encoding',
+      'connection',
+      'host',
+    };
+    return autoHeaders.contains(key.toLowerCase());
+  }
+
+  /// 构建单个 header 行
+  Widget _buildRequestInfoHeaderRow(
+    BuildContext context,
+    KeyValuePair header, {
+    required bool isAuto,
+  }) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Row(
+              children: [
+                Text(
+                  header.key,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: isAuto
+                        ? theme.colorScheme.outline
+                        : theme.colorScheme.primary,
+                  ),
+                ),
+                if (isAuto) ...[
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: Text(
+                      'auto',
+                      style: TextStyle(
+                        fontSize: 8,
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Expanded(
+            child: SelectableText(
+              header.value,
+              style: TextStyle(
+                fontSize: 10,
+                fontFamily: 'monospace',
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 使用 HttpRequestInfo 构建 Body 区域
+  Widget _buildRequestInfoBodySection(
+    BuildContext context,
+    HttpRequestInfo requestInfo,
+  ) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Body',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const Spacer(),
+            if (requestInfo.bodyType != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                ),
+                child: Text(
+                  requestInfo.bodyType!.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            if (requestInfo.bodySize != null) ...[
+              const SizedBox(width: 8),
+              Text(
+                _formatSize(requestInfo.bodySize),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppConstants.radiusS),
+          ),
+          child: SelectableText(
+            requestInfo.body ?? '',
             style: const TextStyle(
               fontSize: 11,
               fontFamily: 'monospace',

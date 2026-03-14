@@ -8,6 +8,7 @@ import 'package:logger/logger.dart';
 
 import '../models/certificate_info.dart';
 import '../models/http_request.dart';
+import '../models/http_request_info.dart';
 import '../models/http_response.dart';
 import '../models/key_value_pair.dart';
 import '../models/timing_info.dart';
@@ -146,6 +147,31 @@ class HttpService {
         responseBody = _decodeBody(bytes, response.headers);
       }
 
+      // 构建实际发送的请求信息
+      final requestInfo = HttpRequestInfo(
+        method: request.method.value.toUpperCase(),
+        baseUrl: request.url,
+        fullUrl: uri.toString(),
+        scheme: uri.scheme,
+        host: uri.host,
+        port: uri.hasPort ? uri.port : null,
+        path: uri.path,
+        queryParams: request.params
+            .where((p) => p.enabled && p.key.isNotEmpty)
+            .map((p) => KeyValuePair(
+                  id: p.id,
+                  key: p.key,
+                  value: p.value,
+                  enabled: true,
+                ))
+            .toList(),
+        headers: _buildRequestInfoHeaders(headers, response),
+        body: request.body.isNotEmpty ? request.body : null,
+        bodyType: request.bodyType != 'none' ? request.bodyType : null,
+        bodySize: body != null ? request.body.length : null,
+        timestamp: DateTime.now(),
+      );
+
       _logger.i('Request completed: ${response.statusCode} in ${totalMs}ms '
           '(DNS: ${dnsMs}ms, TCP: ${tcpMs}ms, TLS: ${tlsMs}ms, TTFB: ${ttfbMs}ms, Download: ${downloadMs}ms)');
 
@@ -176,6 +202,7 @@ class HttpService {
         timestamp: DateTime.now(),
         certificateInfo: finalCertificate,
         timingInfo: timingInfo,
+        requestInfo: requestInfo,
       );
     } on DioException catch (e) {
       totalStopwatch.stop();
@@ -224,6 +251,98 @@ class HttpService {
     }
 
     return result.isEmpty ? null : result;
+  }
+
+  /// 构建请求信息中的 headers 列表
+  /// 合并用户设置的 headers 和 Dio 自动添加的 headers
+  List<KeyValuePair> _buildRequestInfoHeaders(
+    Map<String, dynamic>? userHeaders,
+    Response<Uint8List> response,
+  ) {
+    final result = <KeyValuePair>[];
+    final seenKeys = <String>{};
+
+    // 首先添加用户设置的 headers
+    if (userHeaders != null) {
+      for (final entry in userHeaders.entries) {
+        final key = entry.key;
+        final value = entry.value?.toString() ?? '';
+        result.add(KeyValuePair(
+          id: key.toLowerCase(),
+          key: key,
+          value: value,
+          enabled: true,
+        ));
+        seenKeys.add(key.toLowerCase());
+      }
+    }
+
+    // 从响应的 requestOptions 中获取实际发送的 headers
+    // Dio 会自动添加一些 headers，如 content-length 等
+    final requestOptions = response.requestOptions;
+    final allHeaders = requestOptions.headers;
+
+    for (final entry in allHeaders.entries) {
+      final key = entry.key;
+      final value = entry.value?.toString() ?? '';
+      final keyLower = key.toLowerCase();
+
+      // 如果已经添加过用户设置的值，则跳过
+      if (seenKeys.contains(keyLower)) continue;
+
+      result.add(KeyValuePair(
+        id: keyLower,
+        key: key,
+        value: value,
+        enabled: true,
+      ));
+      seenKeys.add(keyLower);
+    }
+
+    // Dio 底层会自动添加一些 headers，但它们可能不在 requestOptions.headers 中
+    // 这里手动添加一些常见的默认 headers
+    final defaultHeaders = {
+      'user-agent': 'Dio/5.x',
+      'accept': '*/*',
+    };
+
+    for (final entry in defaultHeaders.entries) {
+      final keyLower = entry.key.toLowerCase();
+      if (!seenKeys.contains(keyLower)) {
+        result.add(KeyValuePair(
+          id: keyLower,
+          key: entry.key,
+          value: entry.value,
+          enabled: true,
+        ));
+        seenKeys.add(keyLower);
+      }
+    }
+
+    // 排序：先按是否为自动添加排序（用户添加的在前），再按名称排序
+    result.sort((a, b) {
+      final aIsAuto = _isAutoHeader(a.key);
+      final bIsAuto = _isAutoHeader(b.key);
+      if (aIsAuto != bIsAuto) {
+        return aIsAuto ? 1 : -1; // 用户添加的在前
+      }
+      return a.key.toLowerCase().compareTo(b.key.toLowerCase());
+    });
+
+    return result;
+  }
+
+  /// 判断是否为 Dio/HTTP 客户端自动添加的 header
+  bool _isAutoHeader(String key) {
+    final autoHeaders = {
+      'user-agent',
+      'accept-encoding',
+      'connection',
+      'host',
+      'accept',
+      'content-length',
+    };
+    return autoHeaders.contains(key.toLowerCase());
   }
 
   dynamic _prepareBody(String body, String bodyType) {

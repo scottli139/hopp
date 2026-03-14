@@ -236,6 +236,20 @@ class UITestModeManager {
       case 'focus_url_input':
         return await _focusUrlInput();
 
+      case 'get_request_editor_info':
+        return await _getRequestEditorInfo();
+
+      case 'add_param':
+        final key = params['key'] as String;
+        final value = params['value'] as String;
+        return await _addParam(key, value);
+
+      case 'add_header_with_description':
+        final key = params['key'] as String;
+        final value = params['value'] as String;
+        final description = params['description'] as String?;
+        return await _addHeaderWithDescription(key, value, description);
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -998,6 +1012,103 @@ class UITestModeManager {
     return {
       'focused': true,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+
+  /// 获取 Request Editor 信息
+  Future<Map<String, dynamic>> _getRequestEditorInfo() async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final request = activeTab.request;
+
+    // 计算 enabled 且非空的 params 和 headers 数量
+    final paramsCount =
+        request.params.where((p) => p.enabled && p.key.isNotEmpty).length;
+    final headersCount =
+        request.headers.where((h) => h.enabled && h.key.isNotEmpty).length;
+    final hasBodyContent =
+        request.body.isNotEmpty && request.bodyType != 'none';
+
+    return {
+      'params_count': paramsCount,
+      'headers_count': headersCount,
+      'has_body_content': hasBodyContent,
+      'body_type': request.bodyType,
+      'body_length': request.body.length,
+      'params': request.params
+          .where((p) => p.enabled && p.key.isNotEmpty)
+          .map((p) => {'key': p.key, 'value': p.value})
+          .toList(),
+      'headers': request.headers
+          .where((h) => h.enabled && h.key.isNotEmpty)
+          .map((h) => {'key': h.key, 'value': h.value})
+          .toList(),
+    };
+  }
+
+  /// 添加 Param
+  Future<Map<String, dynamic>> _addParam(String key, String value) async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final params = [...activeTab.request.params];
+    params.add(
+      KeyValuePair.empty().copyWith(
+        key: key,
+        value: value,
+        enabled: true,
+      ),
+    );
+
+    final updatedRequest = activeTab.request.copyWith(params: params);
+    _ref!.read(requestTabProvider.notifier).updateRequest(
+          activeTab.id,
+          updatedRequest,
+        );
+
+    return {
+      'added': true,
+      'param': '$key=$value',
+      'total_params': params.length,
+    };
+  }
+
+  /// 添加 Header（带描述）
+  Future<Map<String, dynamic>> _addHeaderWithDescription(
+    String key,
+    String value,
+    String? description,
+  ) async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final headers = [...activeTab.request.headers];
+    headers.add(
+      KeyValuePair.empty().copyWith(
+        key: key,
+        value: value,
+        enabled: true,
+      ),
+    );
+
+    final updatedRequest = activeTab.request.copyWith(headers: headers);
+    _ref!.read(requestTabProvider.notifier).updateRequest(
+          activeTab.id,
+          updatedRequest,
+        );
+
+    return {
+      'added': true,
+      'header': '$key: $value',
+      'description': description,
+      'total_headers': headers.length,
     };
   }
 }

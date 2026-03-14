@@ -23,7 +23,7 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **请求时间分析功能完成** |
+| **当前状态** | ✅ **Request Editor UI 优化完成** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
 | **测试覆盖** | 418+ 个测试 (Models 152 + Services 73 + Providers 92 + Widgets 88 + UI Test) |
@@ -348,6 +348,92 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-14 - Request Editor UI 优化完成</summary>
+
+**完成工作**:
+- ✅ 优化 Tab 样式（参考 Postman）
+  - Tab 显示数量标记（如 "Headers 11"）
+  - Body Tab 有内容时显示绿色圆点指示器
+  - Tab 高度 32px，字体 11px
+  - 选中 Tab 有底部指示线
+- ✅ 优化 Key-Value 编辑器（Headers/Params）
+  - 添加 info icon（常见 headers 显示说明）
+  - 行高统一 36px，更紧凑
+  - 表头添加 Description 列
+  - 输入框样式优化
+  - 自动完成功能（输入 header key 时显示下拉建议）
+- ✅ UI 测试支持
+  - 添加 `get_request_editor_info` 指令
+  - 添加 `add_param` 指令
+  - 添加 `add_header_with_description` 指令
+- ✅ 创建 UI 测试脚本 `test_request_editor_ui.py`
+- ✅ 所有 UI 测试通过（7 个测试）
+
+**技术方案**:
+
+1. **Tab 样式**:
+```dart
+Widget _buildTabItem({
+  required IconData icon,
+  required String label,
+  String? badge,        // 数量标记
+  bool hasDot = false,  // 圆点指示器
+  required bool isActive,
+  required VoidCallback onTap,
+}) {
+  // 底部指示线 + 图标 + 文字 + 数量标记/圆点
+}
+```
+
+2. **Key-Value Row**:
+```dart
+Container(
+  height: 36,  // 固定高度
+  child: Row(
+    children: [
+      Checkbox(...),
+      // Key input with autocomplete
+      // Info icon for common headers
+      // Value input
+      // Description text
+      // Delete button
+    ],
+  ),
+)
+```
+
+3. **常见 Headers 数据**:
+```dart
+const Map<String, String> _commonHeaders = {
+  'Accept': 'Media types that are acceptable...',
+  'Content-Type': 'The MIME type of the body...',
+  // ...
+};
+```
+
+**验证结果**:
+
+| 检查项 | 状态 | 说明 |
+|--------|------|------|
+| Tab 样式 | ✅ | 图标+文字+数量/圆点 |
+| Tab 切换 | ✅ | 正常切换 |
+| Headers 数量 | ✅ | 实时更新 |
+| Body 圆点 | ✅ | 有内容时显示 |
+| Key-Value 行高 | ✅ | 36px 统一高度 |
+| Info icon | ✅ | 常见 headers 显示 |
+| 自动完成 | ✅ | Header key 下拉建议 |
+| UI 测试 | ✅ | 7 个测试全部通过 |
+
+**截图验证**:
+- `test_request_tabs.png` - Tab 切换界面
+- `test_headers_tab.png` - Headers Tab 界面
+- `test_body_tab.png` - Body Tab 界面
+- `test_params_tab.png` - Params Tab 界面
+- `test_headers_info_icon.png` - Headers Info Icon 界面
+
+</details>
 
 <details>
 <summary>2026-03-14 - 请求时间分析功能 (Timing Analysis) 完成</summary>
@@ -889,6 +975,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-13 | v0.3.5-ui-fix | URL Bar 对齐修复：Method下拉、URL输入框、Save/Send按钮统一36px高度 |
 | 2026-03-13 | v0.3.6-url-focus-fix | 修复 URL 输入框 focus 状态下紫色边框与灰色背景区域高度不一致问题 |
 | 2026-03-14 | v0.3.7-timing-analysis | 请求时间分析功能：DNS/TCP/TLS/TTFB/Download |
+| 2026-03-14 | v0.3.8-request-editor-ui | Request Editor UI 优化：Tab样式、Headers/Params列表、自动完成 |
 
 ---
 

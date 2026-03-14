@@ -382,6 +382,32 @@ class HoppTestClient:
         print("✅ URL 输入框已聚焦")
         return result
 
+    def get_request_editor_info(self):
+        """获取 Request Editor 信息"""
+        result = self.send_command("get_request_editor_info")
+        print("📋 Request Editor 信息:")
+        print(f"   Params: {result.get('params_count')} 个")
+        print(f"   Headers: {result.get('headers_count')} 个")
+        print(f"   Body: {'有' if result.get('has_body_content') else '无'} ({result.get('body_type')})")
+        return result
+
+    def add_param(self, key, value):
+        """添加 Param"""
+        print(f"📋 添加 Param: {key}={value}")
+        result = self.send_command("add_param", {"key": key, "value": value})
+        print(f"✅ Param 已添加，总共 {result.get('total_params')} 个")
+        return result
+
+    def add_header_with_description(self, key, value, description=None):
+        """添加 Header（带描述）"""
+        print(f"📋 添加 Header: {key}: {value}")
+        params = {"key": key, "value": value}
+        if description:
+            params["description"] = description
+        result = self.send_command("add_header_with_description", params)
+        print(f"✅ Header 已添加，总共 {result.get('total_headers')} 个")
+        return result
+
     def full_test(self):
         """执行完整测试流程"""
         print("\n" + "="*60)
@@ -556,6 +582,20 @@ def main():
     # focus_url_input
     subparsers.add_parser("focus_url_input", help="聚焦 URL 输入框（用于测试 focus 状态）")
 
+    # get_request_editor_info
+    subparsers.add_parser("get_request_editor_info", help="获取 Request Editor 信息")
+
+    # add_param
+    add_param_parser = subparsers.add_parser("add_param", help="添加 Param")
+    add_param_parser.add_argument("--key", required=True, help="Param 名称")
+    add_param_parser.add_argument("--value", required=True, help="Param 值")
+
+    # add_header_with_description
+    add_header_desc_parser = subparsers.add_parser("add_header_with_description", help="添加 Header（带描述）")
+    add_header_desc_parser.add_argument("--key", required=True, help="Header 名称")
+    add_header_desc_parser.add_argument("--value", required=True, help="Header 值")
+    add_header_desc_parser.add_argument("--description", help="Header 描述")
+
     # get_timing_info
     subparsers.add_parser("get_timing_info", help="获取请求时间分析信息")
 
@@ -633,6 +673,12 @@ def main():
             client.set_divider_position(args.ratio)
         elif args.command == "focus_url_input":
             client.focus_url_input()
+        elif args.command == "get_request_editor_info":
+            client.get_request_editor_info()
+        elif args.command == "add_param":
+            client.add_param(args.key, args.value)
+        elif args.command == "add_header_with_description":
+            client.add_header_with_description(args.key, args.value, args.description)
         elif args.command == "get_timing_info":
             client.get_timing_info()
         elif args.command == "simulate_response_with_timing":

@@ -14,6 +14,14 @@
 - [布局规范](#布局规范)
 - [交互规范](#交互规范)
 - [暗黑模式](#暗黑模式)
+- [Key-Value 编辑器规范](#key-value-编辑器规范)
+- [Certificate Tab UI 规范](#certificate-tab-ui-规范)
+- [Timing Tab UI 规范](#timing-tab-ui-规范)
+- [Request Tab UI 规范](#request-tab-ui-规范)
+- [Request Settings UI 规范](#request-settings-ui-规范)
+- [图标规范](#图标规范)
+- [快捷键](#快捷键)
+- [无障碍](#无障碍)
 
 ---
 
@@ -137,11 +145,30 @@ class AppFonts {
 | Display | 24px | 600 | 32px | 页面标题 |
 | Headline | 18px | 600 | 28px | 区块标题 |
 | Title | 16px | 600 | 24px | 卡片标题 |
+| Subtitle | 14px | 500 | 20px | 子标题 |
 | Body | 14px | 400 | 20px | 正文内容 |
 | Body Small | 13px | 400 | 18px | 次要文字 |
 | Caption | 12px | 500 | 16px | 标签、提示 |
-| Tiny | 11px | 500 | 14px | 辅助信息 |
+| Tiny | 11px | 500 | 14px | Tab 文字、徽章 |
+| Micro | 10px | 500 | 12px | Certificate 标签 |
+| Nano | 9px | 600 | 11px | Sidebar Method badge |
 | Code | 13px | 400 | 18px | 代码显示 |
+| Code Small | 11px | 400 | 16px | 性能模式代码 |
+
+### 实际应用规范
+
+| 位置 | 字号 | 字重 | 说明 |
+|------|------|------|------|
+| Request/Response Tab | 11px | 500 | 统一使用 Tiny |
+| Sidebar 请求名 | 11px | 400 | 紧凑显示 |
+| Sidebar Method badge | 9px | 600 | Nano 字号 |
+| Certificate 标签 | 10px | 400 | Micro 字号 |
+| Certificate 值 | 11px | 400 | Tiny 字号 |
+| Certificate 标题 | 13px | 600 | 卡片标题 |
+| Response Tab | 10px | 500 | 比 Request Tab 更小 |
+| URL 输入框 | 13px | 400 | Body Small |
+| Headers/Params 表头 | 11px | 500 | Tiny |
+| Key-Value 输入框 | 12px | 400 | Caption |
 
 ```dart
 class AppTextStyles {
@@ -221,6 +248,7 @@ class AppSpacing {
 | 组件 | 内边距 | 间距 |
 |-----|-------|------|
 | Sidebar Item | 8px 12px | - |
+| Sidebar Divider | - | 1px |
 | Tab | 8px 16px | 0 |
 | Card | 16px | - |
 | Input | 10px 12px | - |
@@ -228,6 +256,31 @@ class AppSpacing {
 | Button (M) | 8px 16px | - |
 | Button (L) | 12px 24px | - |
 | Section | - | 16px |
+
+### 高度规范
+
+| 组件 | 高度 | 说明 |
+|-----|------|------|
+| URL Bar | 32px | Method下拉、URL输入框、按钮统一 |
+| Method Dropdown | 32px | 与 URL Bar 对齐 |
+| Method 选项 | 36px | 下拉菜单选项高度 |
+| Request Tab | 32px | 图标+文字+状态指示器 |
+| Request Editor Tabs | 28px | 次级 Tab，更紧凑 |
+| Response Tab | 28px | 字体 10px |
+| SegmentedButton | 28px | Content Type 切换 |
+| Key-Value Row | 36px | Headers/Params 列表行高 |
+| StatusBar | 28px | 底部状态栏 |
+| Send/Save Button | 32px | 与 URL Bar 统一 |
+
+### 对齐规范
+
+| 元素 | 对齐规则 |
+|-----|----------|
+| URL Bar | Method下拉、URL输入框、按钮高度统一，底部对齐 |
+| URL Focus 边框 | TextField 完全控制边框，紫色边框与灰色背景区域对齐 |
+| Key-Value 行 | Checkbox、Key输入框、Info图标、Value输入框、Delete按钮垂直居中对齐 |
+| Tab 文字 | 统一使用 11px，垂直居中 |
+| Sidebar 图标 | 与文字垂直居中对齐 |
 
 ---
 
@@ -282,8 +335,36 @@ class ButtonStyles {
 | 尺寸 | 高度 | 水平内边距 | 字体 |
 |-----|------|-----------|------|
 | Small | 28px | 10px | 12px |
-| Medium | 36px | 12px | 13px |
-| Large | 44px | 16px | 14px |
+| Medium | 32px | 12px | 13px |
+| Large | 36px | 16px | 14px |
+| XLarge | 44px | 16px | 14px |
+
+#### URL Bar 专用输入框
+
+```dart
+// URL 输入框样式规范
+TextField(
+  decoration: InputDecoration(
+    filled: true,
+    fillColor: theme.colorScheme.surfaceContainerHighest,
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.horizontal(right: Radius.circular(6)),
+      borderSide: BorderSide(color: theme.colorScheme.outline),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.horizontal(right: Radius.circular(6)),
+      borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+    ),
+    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+  ),
+)
+```
+
+**关键点**:
+- 高度统一 32px
+- TextField 完全控制背景和边框（避免外层 Container 叠加）
+- Focus 状态紫色边框与背景区域完全对齐
+- 文字垂直居中
 
 #### 样式
 
@@ -486,10 +567,71 @@ class DropdownStyles {
 - 高度：28px
 - 标签样式：图标 + 文字 + 状态指示器
 - 状态指示器：
-  - Body Tab：有内容时显示绿色圆点
+  - Body Tab：有内容时显示绿色圆点（4px）
   - Headers/Params Tab：显示数量标记（如 "Headers 11"）
 - 选中状态：底部 2px 主色指示线
 - 字体：11px Medium
+- 间距：Tab 之间 4px
+
+```dart
+Widget _buildTabItem({
+  required IconData icon,
+  required String label,
+  String? badge,        // 数量标记
+  bool hasDot = false,  // 绿色圆点指示器
+  required bool isActive,
+  required VoidCallback onTap,
+}) {
+  return Container(
+    height: 28,
+    padding: EdgeInsets.symmetric(horizontal: 12),
+    decoration: BoxDecoration(
+      border: isActive
+        ? Border(bottom: BorderSide(color: AppColors.primary, width: 2))
+        : null,
+    ),
+    child: Row(
+      children: [
+        Icon(icon, size: 14),
+        SizedBox(width: 6),
+        Text(label, style: AppTextStyles.tiny),
+        if (badge != null) ...[
+          SizedBox(width: 4),
+          Text(badge, style: AppTextStyles.caption),
+        ],
+        if (hasDot) ...[
+          SizedBox(width: 4),
+          DotIndicator(color: AppColors.success),
+        ],
+      ],
+    ),
+  );
+}
+```
+
+### Response Viewer Tabs
+
+- 高度：28px
+- 字体：10px Medium（比 Request Tab 更小）
+- 标签样式：图标 + 文字
+- 动态 Tab：Certificate Tab 仅在 HTTPS 响应时显示
+- 选中状态：底部 2px 主色指示线
+
+**Tab 顺序**: Body → Headers → Cookies → Certificate → Timing → Request
+
+### URL Bar
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ [GET ▼] [URL Input                    ] [💾 Save] [▶ Send]          │
+│  32px          32px（与两侧对齐）            32px      32px           │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+- 整体高度：32px
+- Method Dropdown：左侧圆角，宽度自适应
+- URL Input：右侧圆角，与 Method fused 连接
+- 按钮：与输入框高度一致，Send 按钮使用主色填充
 
 ### 响应式断点
 
@@ -498,6 +640,19 @@ class DropdownStyles {
 | Mobile | < 768px | 隐藏 Sidebar，使用抽屉 |
 | Tablet | 768px - 1200px | 缩小 Sidebar 至 200px |
 | Desktop | > 1200px | 默认布局 |
+
+### 大响应体显示策略
+
+| 响应大小 | 默认模式 | 说明 |
+|---------|---------|------|
+| < 10KB | Full | 完整语法高亮，全部显示 |
+| 10KB - 50KB | Full | 完整语法高亮，全部显示 |
+| > 50KB | Performance | 虚拟化列表，初始 500 行，轻量高亮 |
+
+**Performance 模式 UI**:
+- 顶部工具栏：Performance / Full / Raw 切换按钮（始终显示）
+- 底部加载提示："Showing 500 of 5008 lines"
+- 加载更多按钮："Load 4508 more" / "Load all"
 
 ---
 
@@ -572,6 +727,8 @@ AnimatedScale(
 
 ## Request Settings UI 规范
 
+> **功能状态**: ⏳ 规划中 (参考 Postman 请求级别配置)
+
 ### 整体布局
 
 ```
@@ -600,6 +757,24 @@ AnimatedScale(
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
+
+### 功能清单
+
+| 设置项 | 控件类型 | 默认值 | Dio 支持 |
+|--------|----------|--------|----------|
+| HTTP Version | Dropdown | Auto | ✅ via `httpVersion` |
+| Enable SSL certificate verification | Toggle | ON | ✅ via `HttpClient` |
+| Automatically follow redirects | Toggle | ON | ✅ via `followRedirects` |
+| Follow original HTTP Method | Toggle | OFF | ⚠️ 需自定义拦截器 |
+| Follow Authorization header | Toggle | OFF | ⚠️ 需自定义拦截器 |
+| Remove referer header on redirect | Toggle | OFF | ⚠️ 需自定义拦截器 |
+| Enable strict HTTP parser | Toggle | OFF | ❌ 平台特定 |
+| Encode URL automatically | Toggle | ON | ✅ 默认行为 |
+| Disable cookie jar | Toggle | OFF | ✅ via `CookieManager` |
+| Use server cipher suite during handshake | Toggle | OFF | ⚠️ 平台特定 |
+| Maximum number of redirects | Number | 10 | ✅ via `maxRedirects` |
+| TLS/SSL protocols disabled | Multi-select | - | ⚠️ 平台特定 |
+| Cipher suite selection | Text | - | ⚠️ 平台特定 |
 
 ### 设置项结构
 
@@ -669,6 +844,32 @@ class SettingItem extends StatelessWidget {
 | 标题与描述之间 | 4px |
 | 描述与默认值之间 | 4px |
 | 控件与文字之间 | 16px |
+
+### 实现规划
+
+```
+lib/
+├── models/
+│   └── request_settings.dart          # Freezed 模型
+├── providers/
+│   └── request/
+│       └── request_settings_provider.dart
+├── widgets/
+│   └── request/
+│       ├── request_editor.dart        # 添加 Settings Tab
+│       └── request_settings_tab.dart  # 设置面板 UI
+└── services/
+    └── http/
+        └── request_options_builder.dart   # 构建 Dio Options
+```
+
+### 技术要点
+
+1. 请求设置应与请求数据一起持久化到 Collection
+2. Dio 支持通过 `Options` 配置大部分设置
+3. SSL 验证通过 `DioHttpClientAdapter` 的 `onHttpClientCreate` 配置
+4. TLS/SSL 协议禁用需要平台特定的实现
+5. 设置项需要支持「继承全局默认值」和「请求级别覆盖」两种模式
 
 ### 控件类型
 
@@ -813,6 +1014,322 @@ class SettingGroup extends StatelessWidget {
 
 ---
 
+## Key-Value 编辑器规范
+
+### Headers/Params 列表
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ✓ │ Key                    │ ⓘ │ Value                 │ Description  │
+├─────────────────────────────────────────────────────────────────────────┤
+│ ✓ │ Content-Type           │ ⓘ │ application/json      │ The MIME...  │
+│ ✓ │ Authorization          │   │ Bearer xxx            │              │
+│ ☐ │ X-Custom-Header        │   │                       │              │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 行规范
+
+- 高度：36px
+- 结构：Checkbox (24px) + Key Input + Info Icon (条件显示) + Value Input + Delete Button
+- 对齐：所有元素垂直居中
+- 间距：元素之间 8px
+
+### Info Icon 规则
+
+常见 Headers 显示 Info 图标，悬停显示说明：
+
+| Header Key | 说明 |
+|-----------|------|
+| Accept | Media types that are acceptable for the response |
+| Content-Type | The MIME type of the body of the request |
+| Authorization | Credentials for authenticating the client |
+| User-Agent | Information about the user agent |
+| Cache-Control | Directives for caching mechanisms |
+| ... | ... |
+
+### 自动完成
+
+Header Key 输入时显示下拉建议：
+
+```dart
+Autocomplete<String>(
+  optionsBuilder: (TextEditingValue textEditingValue) {
+    if (textEditingValue.text.isEmpty) return const [];
+    return _commonHeaderKeys.where((key) => 
+      key.toLowerCase().contains(textEditingValue.text.toLowerCase())
+    );
+  },
+  fieldViewBuilder: (context, controller, focusNode, onSubmit) {
+    return TextField(
+      controller: controller,
+      focusNode: focusNode,
+      decoration: InputDecoration(
+        hintText: 'Key',
+        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+      ),
+    );
+  },
+)
+```
+
+---
+
+## Certificate Tab UI 规范
+
+### 整体布局
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Certificate Tab                                                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ 🔒 Certificate is valid                                             │ │
+│ │ Valid from: 2023-01-01 to 2024-01-01                                │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│ Subject:                                                                │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ Common Name (CN)       example.com                                  │ │
+│ │ Organization (O)       Example Inc.                                 │ │
+│ │ Organizational Unit    IT Department                                │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│ Issuer:                                                                 │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ Common Name (CN)       DigiCert TLS RSA SHA256 2020 CA1             │ │
+│ │ Organization (O)       DigiCert Inc                                 │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│ Certificate Chain:                                                      │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ ⬇ example.com                                                       │ │
+│ │ ⬇ DigiCert TLS RSA SHA256 2020 CA1                                  │ │
+│ │ ⬇ DigiCert Global Root CA                                           │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 字体规范
+
+| 元素 | 字号 | 字重 | 颜色 |
+|-----|------|------|------|
+| 状态标题 | 13px | 600 | success/error |
+| 分组标题 | 12px | 500 | textSecondary |
+| 详情标签 | 10px | 400 | textSecondary |
+| 详情值 | 11px | 400 | textPrimary |
+| 有效期 | 11px | 400 | textSecondary |
+
+### 状态卡片
+
+```dart
+Container(
+  padding: EdgeInsets.all(16),
+  decoration: BoxDecoration(
+    color: isValid 
+      ? AppColors.success.withOpacity(0.1)
+      : AppColors.error.withOpacity(0.1),
+    borderRadius: BorderRadius.circular(8),
+    border: Border.all(
+      color: isValid ? AppColors.success : AppColors.error,
+    ),
+  ),
+  child: Row(
+    children: [
+      Icon(
+        isValid ? Icons.lock : Icons.lock_open,
+        color: isValid ? AppColors.success : AppColors.error,
+      ),
+      SizedBox(width: 12),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isValid ? 'Certificate is valid' : 'Certificate is invalid',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isValid ? AppColors.success : AppColors.error,
+            ),
+          ),
+          Text(
+            'Valid from: $validFrom to $validTo',
+            style: TextStyle(fontSize: 11, color: NeutralColors.textSecondary),
+          ),
+        ],
+      ),
+    ],
+  ),
+)
+```
+
+---
+
+## Timing Tab UI 规范
+
+### 整体布局
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Timing Tab                                                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │           ⏱ 156 ms                                                  │ │
+│ │              Total Duration                                         │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│ Phase Details:                                                          │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ DNS Lookup     ████████ 25ms (16%)                                  │ │
+│ │ TCP Handshake  ██████ 18ms (12%)                                    │ │
+│ │ TLS Handshake  ████████████ 42ms (27%)                              │ │
+│ │ TTFB           ████████████████ 58ms (37%)                          │ │
+│ │ Download       ███ 13ms (8%)                                        │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│ Timeline:                                                               │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ DNS │ TCP │  TLS   │     TTFB      │ Down│                         │ │
+│ │█████│█████│████████│████████████████│█████│                         │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 总时间卡片
+
+```dart
+Container(
+  padding: EdgeInsets.all(20),
+  decoration: BoxDecoration(
+    gradient: LinearGradient(
+      colors: [AppColors.primary, AppColors.secondary],
+    ),
+    borderRadius: BorderRadius.circular(12),
+  ),
+  child: Column(
+    children: [
+      Icon(Icons.timer, color: Colors.white, size: 32),
+      SizedBox(height: 8),
+      Text(
+        '${timingInfo.totalMs} ms',
+        style: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      Text(
+        'Total Duration',
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.white.withOpacity(0.8),
+        ),
+      ),
+    ],
+  ),
+)
+```
+
+### 阶段详情
+
+| 阶段 | 颜色 | 说明 |
+|-----|------|------|
+| DNS Lookup | Blue 500 | 域名解析时间 |
+| TCP Handshake | Green 500 | TCP 连接建立时间 |
+| TLS Handshake | Purple 500 | SSL/TLS 握手时间 |
+| TTFB | Amber 500 | 首字节时间 |
+| Download | Gray 500 | 响应体下载时间 |
+
+---
+
+## Request Tab UI 规范
+
+### 整体布局
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Request Tab                                                              │
+├─────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │  POST                                          https://api.ex.com   │ │
+│ │  /v1/users?include=profile                                          │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│ Headers (2):                                                            │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ Content-Type           application/json                             │ │
+│ │ Authorization          Bearer xxx                                   │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│ Body (JSON):                                                            │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ {                                                                   │ │
+│ │   "name": "John",                                                   │ │
+│ │   "email": "john@example.com"                                       │ │
+│ │ }                                                                   │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 请求概览卡片
+
+```dart
+Container(
+  padding: EdgeInsets.all(16),
+  decoration: BoxDecoration(
+    gradient: LinearGradient(
+      colors: [
+        methodColor.withOpacity(0.1),
+        methodColor.withOpacity(0.05),
+      ],
+    ),
+    borderRadius: BorderRadius.circular(8),
+    border: Border.all(color: methodColor.withOpacity(0.3)),
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          HttpMethodTag(method: request.method),
+          SizedBox(width: 8),
+          Expanded(
+            child: SelectableText(
+              request.url,
+              style: AppTextStyles.bodySmall,
+            ),
+          ),
+        ],
+      ),
+      if (queryParams.isNotEmpty)
+        SelectableText(
+          '?${queryParams.entries.map((e) => "${e.key}=${e.value}").join("&")}',
+          style: AppTextStyles.tiny.copyWith(
+            color: NeutralColors.textSecondary,
+          ),
+        ),
+    ],
+  ),
+)
+```
+
+### HTTP 方法颜色
+
+```dart
+Color _getMethodColor(HttpMethod method) {
+  switch (method) {
+    case HttpMethod.get: return Color(0xFF3B82F6);    // Blue 500
+    case HttpMethod.post: return Color(0xFF10B981);   // Green 500
+    case HttpMethod.put: return Color(0xFFF59E0B);    // Amber 500
+    case HttpMethod.delete: return Color(0xFFEF4444); // Red 500
+    case HttpMethod.patch: return Color(0xFF8B5CF6);  // Violet 500
+    default: return Color(0xFF6B7280);                // Gray 500
+  }
+}
+```
+
+---
+
 ## 暗黑模式
 
 ### 切换逻辑
@@ -852,11 +1369,26 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
 
 | 用途 | 尺寸 |
 |-----|------|
+| Tab 内 | 14px |
 | 按钮内 | 16px |
 | 列表项 | 16px |
 | 工具栏 | 20px |
+| Sidebar Item | 16px |
 | 空状态 | 48px |
 | 特性展示 | 64px |
+
+### Tab 图标映射
+
+| Tab | 图标 |
+|-----|------|
+| Body | Icons.code |
+| Headers | Icons.list_alt |
+| Params | Icons.tune |
+| Cookies | Icons.cookie |
+| Certificate | Icons.verified |
+| Timing | Icons.timer |
+| Request | Icons.send |
+| Settings | Icons.settings |
 
 ### 图标库
 
@@ -867,16 +1399,39 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
 
 ## 快捷键
 
-| 快捷键 | 功能 |
-|-------|------|
-| Ctrl/Cmd + N | 新建请求 |
-| Ctrl/Cmd + S | 保存请求 |
-| Ctrl/Cmd + Enter | 发送请求 |
-| Ctrl/Cmd + W | 关闭标签 |
-| Ctrl/Cmd + Shift + T | 重新打开关闭的标签 |
-| Ctrl/Cmd + / | 切换 Sidebar |
-| Ctrl/Cmd + , | 打开设置 |
-| Ctrl/Cmd + Shift + P | 命令面板 |
+| 快捷键 | 功能 | 状态 |
+|-------|------|------|
+| Cmd + N | 新建请求 | ✅ 已实现 |
+| Cmd + Enter | 发送请求 | ✅ 已实现 |
+| Cmd + S | 保存请求 | ✅ 已实现 |
+| Cmd + Shift + S | 另存为 | ✅ 已实现 |
+| Cmd + W | 关闭标签 | ✅ 已实现 |
+| Cmd + 1-9 | 切换标签 | ✅ 已实现 |
+| Ctrl/Cmd + Shift + T | 重新打开关闭的标签 | ⏸️ Backlog |
+| Ctrl/Cmd + / | 切换 Sidebar | ⏸️ Backlog |
+| Ctrl/Cmd + , | 打开设置 | ⏸️ Backlog |
+| Ctrl/Cmd + Shift + P | 命令面板 | ⏸️ Backlog |
+
+### macOS 菜单集成
+
+应用支持 macOS 系统菜单通过 MethodChannel 与 Flutter 通信：
+
+```
+File
+  ├── New Request (Cmd+N)
+  ├── Save (Cmd+S)
+  └── Save As... (Cmd+Shift+S)
+
+Edit
+  └── (系统默认编辑菜单)
+
+View
+  └── (预留)
+
+Window
+  ├── Close (Cmd+W)
+  └── (系统默认窗口菜单)
+```
 
 ---
 

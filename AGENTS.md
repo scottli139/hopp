@@ -26,7 +26,7 @@
 | **当前状态** | ✅ **Request Tab 完善完成 / 请求设置规划中** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **测试覆盖** | 396 个通过 / 22 个失败 / ~418 总计 |
+| **测试覆盖** | 418 个通过 / 0 个失败 / 418 总计 |
 | **下次重点** | 🟡 请求设置实现 / 🟢 国际化完善 / 🔵 修复测试失败 |
 
 ---
@@ -98,7 +98,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 |------|------|
 | 请求设置 (Request Settings) | 请求级别配置选项 (F1.14)，预计 2026-03-20 开始实现 |
 | 国际化完善 | 框架已搭建，需完善翻译 |
-| 修复测试失败 | 22 个 Mock 相关测试失败 |
+| 修复 Mock 测试失败 | 2026-03-14 | 修复 22 个 MissingStubError 相关测试 |
 
 ### 质量保障
 
@@ -112,7 +112,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | UI 优化测试 | 新增 7 个 | ✅ 通过 |
 | Timing 分析测试 | 新增 | ✅ 通过 |
 | 请求详情展示测试 | 新增 3 个 | ✅ 通过 |
-| **总计** | **418+** | **全部通过** |
+| **总计** | **418** | **✅ 全部通过** |
 
 ---
 
@@ -402,6 +402,70 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-14 - 修复单元测试失败问题</summary>
+
+**完成工作**:
+- ✅ 修复 `collection_provider_test.dart` 中的 `MissingStubError`
+- ✅ 修复 `http_service_test.dart` 中的 `MissingStubError`
+- ✅ 所有 418 个单元测试全部通过
+
+**问题分析**:
+
+1. **Collection Provider 测试失败**:
+   - 原因：`CollectionNotifier` 构造时和 `deleteCollection` 方法会调用 `loadCollections()`
+   - 部分测试没有为 `getCollections` 设置 mock stub
+   - 修复：在相关测试中添加了 `getCollections` 的 mock
+
+2. **Http Service 测试失败**:
+   - 原因：Mockito 生成的 `MockDio` 启用了 `throwOnMissingStub`
+   - `Dio.request<T>()` 方法有多个命名参数，但测试中的 `when` 调用缺少 `cancelToken`, `onSendProgress`, `onReceiveProgress`
+   - 修复：为所有 `when` 和 `verify` 调用添加了缺失的命名参数
+
+**修复详情**:
+
+```dart
+// 修复前
+when(mockDio.request<Uint8List>(
+  any,
+  data: anyNamed('data'),
+  options: anyNamed('options'),
+)).thenAnswer(...);
+
+// 修复后
+when(mockDio.request<Uint8List>(
+  any,
+  data: anyNamed('data'),
+  options: anyNamed('options'),
+  cancelToken: anyNamed('cancelToken'),
+  onSendProgress: anyNamed('onSendProgress'),
+  onReceiveProgress: anyNamed('onReceiveProgress'),
+)).thenAnswer(...);
+```
+
+**测试结果**:
+```
+总计: 418 个单元测试
+通过: 418 个
+失败: 0 个
+
+✅ Models 测试: 152 个通过
+✅ Services 测试: 73 个通过
+✅ Providers 测试: 92 个通过
+✅ Widget 测试: 88 个通过
+✅ 响应优化组件测试: 新增通过
+✅ UI 优化测试: 7 个通过
+✅ Timing 分析测试: 新增通过
+✅ 请求详情展示测试: 3 个通过
+```
+
+**文件变更**:
+- `test/providers/collection_provider_test.dart` - 添加缺失的 mock stubs
+- `test/services/http_service_test.dart` - 更新所有 mock 调用以包含完整参数
+- `AGENTS.md` - 更新测试状态和添加会话记录
+
+</details>
 
 <details>
 <summary>2026-03-14 - Request Tab 完善：展示实际发送的完整请求信息</summary>
@@ -1341,6 +1405,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-14 | v0.4.0-docs-update | 全面更新项目文档，同步实际功能状态 |
 | 2026-03-14 | v0.4.1-request-details | 请求详情展示功能：Request Tab (方法/URL/Headers/Body) + UI测试 |
 | 2026-03-14 | v0.4.2-request-info | Request Tab 完善：展示实际发送的完整请求信息（含自动添加的 Headers） |
+| 2026-03-14 | v0.4.3-test-fix | 修复 22 个单元测试失败：修复 MissingStubError 问题，所有 418 个测试全部通过 |
 
 ---
 

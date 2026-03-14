@@ -93,6 +93,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List.fromList(responseData),
               statusCode: 200,
@@ -127,6 +130,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List.fromList(responseData),
               statusCode: 201,
@@ -153,6 +159,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: null,
               statusCode: 204,
@@ -180,6 +189,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List.fromList(utf8.encode(responseText)),
               statusCode: 200,
@@ -208,6 +220,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenThrow(DioException(
           type: DioExceptionType.connectionTimeout,
           message: 'Connection timeout',
@@ -231,6 +246,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenThrow(DioException(
           type: DioExceptionType.receiveTimeout,
           message: 'Receive timeout',
@@ -252,6 +270,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenThrow(DioException(
           type: DioExceptionType.badResponse,
           message: 'Bad Request',
@@ -279,6 +300,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenThrow(DioException(
           type: DioExceptionType.badResponse,
           message: 'Internal Server Error',
@@ -306,6 +330,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenThrow(DioException(
           type: DioExceptionType.connectionError,
           message: 'Failed to connect',
@@ -327,6 +354,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenThrow(DioException(
           type: DioExceptionType.cancel,
           message: 'Request cancelled',
@@ -348,6 +378,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenThrow(DioException(
           type: DioExceptionType.badCertificate,
           message: 'Certificate verification failed',
@@ -369,6 +402,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenThrow(Exception('Unexpected error'));
 
         // Act
@@ -388,6 +424,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List(0),
               statusCode: 200,
@@ -403,6 +442,9 @@ void main() {
           captureAny,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).captured;
         final url = captured.first as String;
         expect(url, contains('enabled=yes'));
@@ -433,6 +475,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List(0),
               statusCode: 200,
@@ -448,6 +493,9 @@ void main() {
           captureAny,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).captured;
         final url = captured.first as String;
         expect(url, contains('existing=value'));
@@ -464,6 +512,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List(0),
               statusCode: 200,
@@ -479,6 +530,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: captureAnyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).captured;
         final options = captured.first as Options;
         expect(options.headers?['Authorization'], equals('Bearer token123'));
@@ -493,6 +547,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List(0),
               statusCode: 200,
@@ -508,6 +565,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: captureAnyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).captured;
         final options = captured.first as Options;
         expect(options.headers, isNull);
@@ -523,6 +583,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List(0),
               statusCode: 201,
@@ -538,6 +601,9 @@ void main() {
           any,
           data: captureAnyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).captured;
         final body = captured.first;
         expect(body, isA<Map<String, dynamic>>());
@@ -553,6 +619,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List(0),
               statusCode: 200,
@@ -568,6 +637,9 @@ void main() {
           any,
           data: captureAnyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).captured;
         final body = captured.first;
         expect(body, equals('Plain text body'));
@@ -581,6 +653,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List(0),
               statusCode: 200,
@@ -596,6 +671,9 @@ void main() {
           any,
           data: captureAnyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).captured;
         final body = captured.first;
         expect(body, isNull);
@@ -632,6 +710,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List(0),
               statusCode: 200,
@@ -647,6 +728,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: captureAnyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).captured;
         final options = captured.first as Options;
         expect(options.method, equals('GET'));
@@ -660,6 +744,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List(0),
               statusCode: 201,
@@ -675,6 +762,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: captureAnyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).captured;
         final options = captured.first as Options;
         expect(options.method, equals('POST'));
@@ -688,6 +778,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List(0),
               statusCode: 200,
@@ -703,6 +796,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: captureAnyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).captured;
         final options = captured.first as Options;
         expect(options.method, equals('PUT'));
@@ -716,6 +812,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).thenAnswer((_) async => Response<Uint8List>(
               data: Uint8List(0),
               statusCode: 204,
@@ -731,6 +830,9 @@ void main() {
           any,
           data: anyNamed('data'),
           options: captureAnyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
         )).captured;
         final options = captured.first as Options;
         expect(options.method, equals('DELETE'));

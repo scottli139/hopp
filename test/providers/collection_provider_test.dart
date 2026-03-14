@@ -153,6 +153,7 @@ void main() {
       test('should handle delete error gracefully', () async {
         when(mockStorageService.deleteCollection('col-1'))
             .thenThrow(Exception('Delete error'));
+        when(mockStorageService.getCollections()).thenAnswer((_) async => []);
 
         await container
             .read(collectionProvider.notifier)
@@ -223,6 +224,9 @@ void main() {
             .thenThrow(Exception('Load error'));
 
         await container.read(collectionProvider.notifier).loadCollections();
+        
+        // Reset the mock to avoid MissingStubError on subsequent calls
+        when(mockStorageService.getCollections()).thenAnswer((_) async => []);
 
         await container
             .read(collectionProvider.notifier)

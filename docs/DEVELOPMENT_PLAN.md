@@ -192,7 +192,7 @@
 | 国际化完善 | 🔄 | P1 | 6h | 多语言支持 (框架已搭建，需完善翻译) |
 | 请求时间分析 | ✅ | P1 | 10h | Timing Tab (DNS/TCP/TLS/TTFB/Download) |
 | 收尾检查清单 | ✅ | P0 | 2h | 测试验证、代码规范、文档更新 |
-| 请求详情展示 | ⏳ | P1 | 6h | Request Tab |
+| 请求详情展示 | ✅ | P1 | 6h | Request Tab (方法/URL/Headers/Body) + UI测试 |
 | 环境变量 | ⏳ | P1 | 12h | 变量替换和多环境 |
 | 请求历史 | ⏳ | P2 | 8h | 请求历史记录 |
 | 拖拽排序 | ⏳ | P2 | 6h | Collection 拖拽排序 |
@@ -329,7 +329,7 @@ make logs   # 查看日志
 - ⏳ 环境变量
 - ⏳ 导入/导出 (Postman/Insomnia/curl)
 - ✅ Timing 分析
-- ⏳ 请求详情展示
+- ✅ 请求详情展示
 - ⏳ 请求设置 (Request Settings)
 - ⚠️ 修复测试失败 (22个)
 

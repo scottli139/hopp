@@ -138,6 +138,9 @@ class UITestModeManager {
         final tab = params['tab'] as String;
         return await _switchResponseTab(tab);
 
+      case 'get_request_details':
+        return await _getRequestDetails();
+
       case 'simulate_response_with_timing':
         return await _simulateResponseWithTiming();
 
@@ -339,7 +342,14 @@ class UITestModeManager {
   Future<Map<String, dynamic>> _switchResponseTab(String tab) async {
     // 发送消息通知 UI 切换 Tab
     // 使用 MethodChannel 或直接操作状态
-    final validTabs = ['body', 'headers', 'cookies', 'timing', 'certificate'];
+    final validTabs = [
+      'body',
+      'headers',
+      'cookies',
+      'timing',
+      'certificate',
+      'request'
+    ];
     final tabLower = tab.toLowerCase();
 
     if (!validTabs.contains(tabLower)) {
@@ -740,6 +750,49 @@ class UITestModeManager {
       'url': request.url,
       'has_response': response != null,
       'is_open_in_tab': activeTab != null,
+    };
+  }
+
+  /// 获取请求详情（用于 Request Tab）
+  Future<Map<String, dynamic>> _getRequestDetails() async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final request = activeTab.request;
+
+    // 构建完整 URL（包含查询参数）
+    final enabledParams =
+        request.params.where((p) => p.enabled && p.key.isNotEmpty).toList();
+    String fullUrl = request.url;
+    if (enabledParams.isNotEmpty) {
+      final queryString = enabledParams
+          .map((p) =>
+              '${Uri.encodeComponent(p.key)}=${Uri.encodeComponent(p.value)}')
+          .join('&');
+      final separator = fullUrl.contains('?') ? '&' : '?';
+      fullUrl = '$fullUrl$separator$queryString';
+    }
+
+    // 获取 enabled headers
+    final enabledHeaders = request.headers
+        .where((h) => h.enabled && h.key.isNotEmpty)
+        .map((h) => {'key': h.key, 'value': h.value})
+        .toList();
+
+    return {
+      'method': request.method.value,
+      'url': request.url,
+      'full_url': fullUrl,
+      'headers_count': enabledHeaders.length,
+      'headers': enabledHeaders,
+      'has_body': request.body.isNotEmpty && request.bodyType != 'none',
+      'body_type': request.bodyType,
+      'body_length': request.body.length,
+      'body_preview': request.body.length > 200
+          ? request.body.substring(0, 200)
+          : request.body,
     };
   }
 

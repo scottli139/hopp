@@ -3,9 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/certificate_info.dart';
+import '../../models/http_method.dart';
+import '../../models/http_request.dart';
 import '../../models/http_response.dart';
 import '../../models/key_value_pair.dart';
 import '../../models/timing_info.dart';
+import '../../providers/request/request_tab_provider.dart';
 import '../../providers/providers.dart';
 import '../../utils/constants.dart';
 import '../../utils/testing/ui_test_mode.dart';
@@ -32,7 +35,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   void initState() {
     super.initState();
     // Initialize with default length, will be updated on first build
-    _tabController = TabController(length: 3, vsync: this);
+    // Default index is 1 (Body tab) for backward compatibility
+    _tabController = TabController(length: 4, vsync: this, initialIndex: 1);
   }
 
   @override
@@ -53,8 +57,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
   /// 根据响应获取 Tab 长度
   int _getTabLength(HttpResponse? response) {
-    if (response == null) return 3;
-    var length = 3;
+    if (response == null) return 4; // Body, Headers, Cookies, Request
+    var length = 4; // Base tabs including Request
     if (response.timingInfo != null) length++;
     if (response.certificateInfo != null) length++;
     return length;
@@ -65,7 +69,14 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     final newLength = _getTabLength(response);
     if (_tabController == null || _tabController!.length != newLength) {
       _tabController?.dispose();
-      _tabController = TabController(length: newLength, vsync: this);
+      // Keep current index if possible, otherwise default to 1 (Body tab)
+      final currentIndex = _tabController?.index ?? 1;
+      final newIndex = currentIndex < newLength ? currentIndex : 1;
+      _tabController = TabController(
+        length: newLength,
+        vsync: this,
+        initialIndex: newIndex,
+      );
     }
   }
 
@@ -128,6 +139,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       // Map tab name to index (动态计算，考虑 Timing Tab)
       final tabIndexMap = <String, int>{};
       var currentIndex = 0;
+      tabIndexMap['request'] = currentIndex++;
       tabIndexMap['body'] = currentIndex++;
       tabIndexMap['headers'] = currentIndex++;
       tabIndexMap['cookies'] = currentIndex++;
@@ -641,6 +653,193 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     );
   }
 
+  /// 构建完整 URL（包含查询参数）
+  String _buildFullUrl(HttpRequest request) {
+    final baseUrl = request.url;
+    final enabledParams =
+        request.params.where((p) => p.enabled && p.key.isNotEmpty).toList();
+
+    if (enabledParams.isEmpty) return baseUrl;
+
+    final queryString = enabledParams
+        .map((p) =>
+            '${Uri.encodeComponent(p.key)}=${Uri.encodeComponent(p.value)}')
+        .join('&');
+
+    final separator = baseUrl.contains('?') ? '&' : '?';
+    return '$baseUrl$separator$queryString';
+  }
+
+  /// 获取 HTTP 方法颜色
+  Color _getMethodColor(HttpMethod method) {
+    switch (method) {
+      case HttpMethod.get:
+        return AppColors.httpGet;
+      case HttpMethod.post:
+        return AppColors.httpPost;
+      case HttpMethod.put:
+        return AppColors.httpPut;
+      case HttpMethod.delete:
+        return AppColors.httpDelete;
+      case HttpMethod.patch:
+        return AppColors.httpPatch;
+      case HttpMethod.head:
+      case HttpMethod.options:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildRequestTab(BuildContext context) {
+    final theme = Theme.of(context);
+    final activeTab = ref.watch(activeTabProvider);
+
+    if (activeTab == null) {
+      return _buildEmptyState(
+        context: context,
+        icon: Icons.upload_outlined,
+        title: 'No Request',
+        subtitle: 'Create a request to see details',
+      );
+    }
+
+    final request = activeTab.request;
+    final fullUrl = _buildFullUrl(request);
+    final methodColor = _getMethodColor(request.method);
+    final enabledHeaders =
+        request.headers.where((h) => h.enabled && h.key.isNotEmpty).toList();
+    final hasBody = request.body.isNotEmpty && request.bodyType != 'none';
+
+    return Container(
+      color: theme.colorScheme.surface,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 请求概览卡片
+            _buildRequestOverviewCard(
+              context,
+              request,
+              fullUrl,
+              methodColor,
+            ),
+            const SizedBox(height: 16),
+            // Headers 区域
+            if (enabledHeaders.isNotEmpty) ...[
+              _buildRequestHeadersSection(context, enabledHeaders),
+              const SizedBox(height: 16),
+            ],
+            // Body 区域
+            if (hasBody) ...[
+              _buildRequestBodySection(context, request),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRequestOverviewCard(
+    BuildContext context,
+    HttpRequest request,
+    String fullUrl,
+    Color methodColor,
+  ) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            methodColor.withOpacity(0.1),
+            methodColor.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppConstants.radiusL),
+        border: Border.all(color: methodColor.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // HTTP 方法标签
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: methodColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(AppConstants.radiusS),
+            ),
+            child: Text(
+              request.method.value.toUpperCase(),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: methodColor,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // 完整 URL
+          SelectableText(
+            fullUrl,
+            style: TextStyle(
+              fontSize: 12,
+              fontFamily: 'monospace',
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequestHeadersSection(
+    BuildContext context,
+    List<KeyValuePair> headers,
+  ) {
+    final theme = Theme.of(context);
+
+    return _buildCompactInfoSection(
+      context: context,
+      title: 'Headers (${headers.length})',
+      children: headers.map((header) {
+        return _buildCompactInfoRow(
+          context,
+          header.key,
+          header.value,
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildRequestBodySection(BuildContext context, HttpRequest request) {
+    final theme = Theme.of(context);
+
+    return _buildCompactInfoSection(
+      context: context,
+      title: 'Body (${request.bodyType})',
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppConstants.radiusS),
+          ),
+          child: SelectableText(
+            request.body,
+            style: const TextStyle(
+              fontSize: 11,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTimingTab(BuildContext context, TimingInfo timing) {
     final theme = Theme.of(context);
     final percentages = timing.getPhasePercentages();
@@ -962,6 +1161,25 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     final theme = Theme.of(context);
 
     final tabs = <Widget>[
+      // Request Tab - always first
+      Tab(
+        height: tabHeight,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.upload_outlined,
+              size: 10,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+            const SizedBox(width: 3),
+            const Text(
+              'Request',
+              style: TextStyle(fontSize: tabFontSize),
+            ),
+          ],
+        ),
+      ),
       Tab(
         height: tabHeight,
         child: Row(
@@ -1074,6 +1292,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   /// 构建 Tab 内容列表
   List<Widget> _buildTabContents(BuildContext context, HttpResponse? response) {
     final contents = <Widget>[
+      _buildRequestTab(context),
       _buildBodyTab(context, response),
       _buildHeadersTab(context, response),
       _buildCookiesTab(context),

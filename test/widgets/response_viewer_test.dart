@@ -73,6 +73,7 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
+        expect(find.text('Request'), findsOneWidget);
         expect(find.text('Body'), findsOneWidget);
         expect(find.text('Headers'), findsOneWidget);
         expect(find.text('Cookies'), findsOneWidget);

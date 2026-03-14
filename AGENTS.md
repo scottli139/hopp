@@ -89,6 +89,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | 请求时间分析 | 2026-03-14 | Timing Tab (DNS/TCP/TLS/TTFB/Download) |
 | Request Editor UI 优化 | 2026-03-14 | Tab样式、Headers/Params列表、自动完成 |
 | 请求设置功能规划 | 2026-03-14 | 参考 Postman 整理 13 项配置 |
+| 请求详情展示 | 2026-03-14 | Request Tab (方法/URL/Headers/Body) |
 
 ### 进行中 🔄
 
@@ -109,6 +110,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | 响应优化组件测试 | 新增 | ✅ 通过 |
 | UI 优化测试 | 新增 7 个 | ✅ 通过 |
 | Timing 分析测试 | 新增 | ✅ 通过 |
+| 请求详情展示测试 | 新增 3 个 | ✅ 通过 |
 | **总计** | **418+** | **全部通过** |
 
 ---
@@ -399,6 +401,60 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-14 - 请求详情展示功能完成</summary>
+
+**完成工作**:
+- ✅ 在 Response Viewer 中添加 Request Tab
+- ✅ 展示 HTTP 方法（带颜色标签）
+- ✅ 展示完整 URL（包含查询参数）
+- ✅ 展示请求 Headers 列表
+- ✅ 展示请求 Body 内容
+- ✅ 添加 UI 测试指令 `get_request_details`
+- ✅ 更新 `switch_response_tab` 支持 'request' Tab
+- ✅ 创建 `test_request_details.py` 自动化测试脚本
+- ✅ 更新 `response_viewer_test.dart` 测试用例
+- ✅ 所有 UI 测试通过（3个测试场景）
+- ✅ 所有单元测试通过（396个通过）
+
+**技术实现**:
+
+1. **ResponseViewer 修改**:
+   - 添加 Request Tab 作为第一个 Tab
+   - 实现 `_buildRequestTab()` 方法展示请求详情
+   - 实现 `_buildFullUrl()` 构建完整 URL（包含参数）
+   - 实现 `_getMethodColor()` 获取 HTTP 方法颜色
+   - 默认选中 Body Tab（索引 1）保持向后兼容
+
+2. **Request Tab UI**:
+   - 请求概览卡片：渐变背景 + 方法标签 + 完整 URL
+   - Headers 区域：数量标记 + 键值对列表
+   - Body 区域：类型标记 + 代码展示
+
+3. **UI 测试支持**:
+   - `get_request_details` 指令返回请求详情
+   - `switch_response_tab` 支持切换到 request Tab
+   - 测试脚本覆盖 GET/POST 请求、带参数/Headers/Body 的场景
+
+**文件变更**:
+- `lib/widgets/request/response_viewer.dart` - 添加 Request Tab
+- `lib/utils/testing/ui_test_mode.dart` - 添加测试指令
+- `integration_test/test_client.py` - 添加客户端方法
+- `integration_test/test_request_details.py` - 新增测试脚本
+- `test/widgets/response_viewer_test.dart` - 更新测试用例
+
+**测试结果**:
+```
+总计: 396 个单元测试通过
+ResponseViewer 测试: 25 个全部通过
+UI 测试: 3 个场景全部通过
+ - 带参数/Headers/Body 的 GET 请求
+ - 空请求详情
+ - POST 请求详情
+```
+
+</details>
 
 <details>
 <summary>2026-03-14 - Request Settings 功能规划完成</summary>
@@ -1092,6 +1148,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-14 | v0.3.8-request-editor-ui | Request Editor UI 优化：Tab样式、Headers/Params列表、自动完成 |
 | 2026-03-14 | v0.4.0-rc-plan | 请求设置 (Request Settings) 功能规划完成，参考 Postman 实现 |
 | 2026-03-14 | v0.4.0-docs-update | 全面更新项目文档，同步实际功能状态 |
+| 2026-03-14 | v0.4.1-request-details | 请求详情展示功能：Request Tab (方法/URL/Headers/Body) + UI测试 |
 
 ---
 

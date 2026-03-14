@@ -491,6 +491,109 @@ final requestInfo = HttpRequestInfo(
 </details>
 
 <details>
+<summary>2026-03-14 - Request Tab 完善：展示实际发送的完整请求信息</summary>
+
+**完成工作**:
+- ✅ 创建 `HttpRequestInfo` 模型，存储实际发送的 HTTP 请求信息
+- ✅ 修改 `HttpResponse` 添加 `requestInfo` 字段
+- ✅ 修改 `HttpService` 捕获 Dio 实际发送的请求头（包括自动添加的 User-Agent、Accept 等）
+- ✅ ResponseViewer 新增 Request Tab，展示：
+  - HTTP 方法标签（带颜色）
+  - 完整 URL 和发送时间戳
+  - URL 分解（Scheme/Host/Path/Port 卡片）
+  - Headers 分类展示（用户添加 vs 自动添加，带 "auto" 徽章）
+  - Body 内容和大小
+- ✅ UI 测试支持：`get_request_details` 指令返回完整请求信息
+- ✅ 创建 `test_request_info.py` 自动化测试脚本（4个测试场景）
+- ✅ 所有测试通过（396个单元测试 + 4个UI测试）
+
+**技术实现**:
+
+1. **HttpRequestInfo 模型** (`lib/models/http_request_info.dart`):
+```dart
+@freezed
+class HttpRequestInfo with _$HttpRequestInfo {
+  const factory HttpRequestInfo({
+    required String method,      // GET, POST, etc.
+    required String baseUrl,     // 原始 URL
+    required String fullUrl,     // 带查询参数的完整 URL
+    required String scheme,      // https
+    required String host,        // httpbin.org
+    required String path,        // /get
+    int? port,                   // 非默认端口时显示
+    required List<KeyValuePair> queryParams,
+    required List<KeyValuePair> headers,  // 用户 + 自动添加的
+    String? body,
+    required DateTime timestamp,
+  }) = _HttpRequestInfo;
+  
+  String? get userAgent => getHeader('User-Agent');
+  String? get contentType => getHeader('Content-Type');
+}
+```
+
+2. **HttpService 捕获实际请求头**:
+```dart
+// 从 Dio 响应中获取实际发送的请求头
+List<KeyValuePair> _buildRequestInfoHeaders(
+  Map<String, dynamic> userHeaders,
+  Response response,
+) {
+  final result = <KeyValuePair>[];
+  
+  // 1. 添加用户设置的 headers
+  userHeaders.forEach((key, value) {
+    result.add(KeyValuePair(...));
+  });
+  
+  // 2. 从 Dio 响应中捕获自动添加的 headers
+  final requestHeaders = response.requestOptions.headers;
+  final autoHeaders = ['user-agent', 'accept', 'accept-encoding', 'connection', 'host'];
+  for (final header in autoHeaders) {
+    if (requestHeaders[header] != null && !userHeaders.containsKey(header)) {
+      result.add(KeyValuePair(key: header, value: ..., isAuto: true));
+    }
+  }
+  
+  // 3. 排序：用户 headers 在前，自动 headers 在后
+  result.sort((a, b) => a.isAuto ? 1 : -1);
+  return result;
+}
+```
+
+3. **Request Tab UI**:
+   - **请求概览卡片**：渐变背景 + HTTP 方法彩色标签 + 完整 URL + 时间戳
+   - **URL 分解**：Scheme、Host、Path、Port 四个信息卡片
+   - **Headers 区域**：
+     * 用户 headers：主色调显示，排在前面
+     * 自动 headers：灰色显示，带 "auto" 徽章（User-Agent, Accept, Accept-Encoding 等）
+   - **Body 区域**：Content-Type 徽章 + 大小 + 格式化内容
+
+**验证结果**:
+
+| 检查项 | 状态 | 说明 |
+|--------|------|------|
+| HttpRequestInfo 模型 | ✅ | 支持所有请求信息字段 |
+| HttpResponse 字段 | ✅ | 包含 requestInfo |
+| Dio 自动 headers 捕获 | ✅ | User-Agent, Accept, Accept-Encoding 等 |
+| Headers 分类展示 | ✅ | 用户 vs 自动，带徽章区分 |
+| URL 分解展示 | ✅ | Scheme/Host/Path/Port 卡片 |
+| Request Tab UI | ✅ | 方法标签 + URL + Headers + Body |
+| UI 测试 | ✅ | 4个测试全部通过 |
+| 单元测试 | ✅ | 396个通过，无回归 |
+
+**文件变更**:
+- `lib/models/http_request_info.dart` - 新增请求信息模型
+- `lib/models/http_response.dart` - 添加 requestInfo 字段
+- `lib/services/http_service.dart` - 捕获实际发送的请求头
+- `lib/widgets/request/response_viewer.dart` - 完善 Request Tab UI
+- `lib/utils/testing/ui_test_mode.dart` - 添加 get_request_details 指令
+- `integration_test/test_client.py` - 添加客户端方法
+- `integration_test/test_request_info.py` - 新增自动化测试脚本
+
+</details>
+
+<details>
 <summary>2026-03-14 - 请求详情展示功能完成</summary>
 
 **完成工作**:

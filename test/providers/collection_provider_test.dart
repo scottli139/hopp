@@ -224,7 +224,7 @@ void main() {
             .thenThrow(Exception('Load error'));
 
         await container.read(collectionProvider.notifier).loadCollections();
-        
+
         // Reset the mock to avoid MissingStubError on subsequent calls
         when(mockStorageService.getCollections()).thenAnswer((_) async => []);
 

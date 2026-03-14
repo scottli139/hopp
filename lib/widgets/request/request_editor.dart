@@ -23,6 +23,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   final _urlController = TextEditingController();
   final _nameController = TextEditingController();
   final _urlFocusNode = FocusNode();
+  final _methodMenuController = MenuController();
+  final _rawContentTypeMenuController = MenuController();
   String? _lastTabId;
 
   // 常见 HTTP Headers 用于自动完成和提示
@@ -61,6 +63,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     _urlController.dispose();
     _nameController.dispose();
     _urlFocusNode.dispose();
+    // _methodMenuController doesn't need dispose
     _removeAutocompleteOverlay();
     for (final node in _keyFocusNodes.values) {
       node.dispose();
@@ -102,7 +105,28 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         final index = ['params', 'headers', 'body', 'auth'].indexOf(current);
         if (index != -1 && _tabController.index != index) {
           _tabController.animateTo(index);
+          AppLogger.info('[RequestEditor] Tab switched to: $current (index: $index)');
         }
+      }
+    });
+
+    // 监听展开 Method 下拉菜单指令
+    ref.listen(uiTestExpandMethodDropdownProvider, (previous, current) {
+      if (current != null && current != previous) {
+        _methodMenuController.open();
+        AppLogger.info('[RequestEditor] Method dropdown expanded');
+      }
+    });
+
+    // 监听展开 Raw Content Type 下拉菜单指令
+    ref.listen(uiTestExpandRawContentTypeDropdownProvider, (previous, current) {
+      if (current != null && current != previous) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_rawContentTypeMenuController.isOpen) {
+            _rawContentTypeMenuController.open();
+            AppLogger.info('[RequestEditor] Raw content type dropdown expanded');
+          }
+        });
       }
     });
 
@@ -159,37 +183,59 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<HttpMethod>(
-                value: request.method,
-                isDense: true,
-                icon: Icon(
-                  Icons.arrow_drop_down,
-                  color: theme.colorScheme.outline,
-                  size: 18,
-                ),
-                style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface,
-                  height: 1.0,
-                ),
-                items: HttpMethod.values.map((method) {
-                  final color = _getMethodColor(method.value);
-                  return DropdownMenuItem<HttpMethod>(
-                    value: method,
-                    child: _buildMethodMenuItem(method.value, color),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    _updateRequest(ref, request.copyWith(method: value));
-                  }
-                },
-                dropdownColor: theme.colorScheme.surface,
-                menuMaxHeight: 280,
-                alignment: AlignmentDirectional.centerStart,
-              ),
+            child: MenuAnchor(
+              controller: _methodMenuController,
+              menuChildren: HttpMethod.values.map((method) {
+                final color = _getMethodColor(method.value);
+                return MenuItemButton(
+                  onPressed: () {
+                    _updateRequest(ref, request.copyWith(method: method));
+                  },
+                  style: MenuItemButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                    minimumSize: const Size(0, 28),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 6),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      method.value,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        height: 1.0,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+              builder: (context, controller, child) {
+                return GestureDetector(
+                  onTap: () {
+                    if (controller.isOpen) {
+                      controller.close();
+                    } else {
+                      controller.open();
+                    }
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildMethodMenuItem(request.method.value, _getMethodColor(request.method.value)),
+                      Icon(
+                        Icons.arrow_drop_down,
+                        color: theme.colorScheme.outline,
+                        size: 18,
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
           // URL input - 使用固定高度 36px（包含边框和背景）
@@ -983,7 +1029,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
     return Column(
       children: [
-        // Body type selector - 使用 Tab 风格设计
+        // Body type selector - Postman 风格 Radio 组
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppConstants.spaceL,
@@ -995,111 +1041,236 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               bottom: BorderSide(color: theme.dividerColor),
             ),
           ),
-          child: Row(
-            children: [
-              Text(
-                'Content Type',
-                style: AppTextStyles.caption.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: AppConstants.spaceM),
-              Expanded(
-                child: _buildContentTypeSelector(context, ref, request),
-              ),
-            ],
-          ),
+          child: _buildBodyTypeSelector(context, ref, request),
         ),
-        // Body editor with syntax highlighting
-        if (request.bodyType != 'none')
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(AppConstants.spaceL),
-              child: _buildBodyEditor(context, ref, request),
-            ),
-          )
-        else
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(AppConstants.radiusL),
-                    ),
-                    child: Icon(
-                      Icons.block,
-                      size: 32,
-                      color: theme.colorScheme.outline.withOpacity(0.5),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No body content',
-                    style: AppTextStyles.body.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Select a content type to add body',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: theme.colorScheme.outline.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        // Body content area
+        Expanded(
+          child: _buildBodyContent(context, ref, request),
+        ),
       ],
     );
   }
 
-  /// 构建 Content Type 选择器 - 使用统一的 Tab 风格
-  Widget _buildContentTypeSelector(
+  /// 构建 Body 内容区域（根据类型显示不同内容）
+  Widget _buildBodyContent(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    switch (request.bodyType) {
+      case 'none':
+        return _buildNoneBodyView(context);
+      case 'form-data':
+        return _buildFormDataView(context, ref, request);
+      case 'x-www-form-urlencoded':
+        return _buildUrlEncodedView(context, ref, request);
+      case 'raw':
+        return _buildRawBodyView(context, ref, request);
+      case 'binary':
+        return _buildBinaryBodyView(context, ref, request);
+      case 'graphql':
+        return _buildGraphQLView(context, ref, request);
+      default:
+        return _buildNoneBodyView(context);
+    }
+  }
+
+  /// 构建 "none" 类型的 Body 视图
+  Widget _buildNoneBodyView(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(AppConstants.radiusL),
+            ),
+            child: Icon(
+              Icons.block,
+              size: 32,
+              color: theme.colorScheme.outline.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No body content',
+            style: AppTextStyles.body.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Select a body type to add content',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: theme.colorScheme.outline.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建 form-data 视图
+  Widget _buildFormDataView(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    // TODO: 实现 form-data Key-Value 编辑器（含文件上传）
+    return Center(
+      child: Text(
+        'form-data editor (coming soon)',
+        style: AppTextStyles.body.copyWith(
+          color: Theme.of(context).colorScheme.outline,
+        ),
+      ),
+    );
+  }
+
+  /// 构建 x-www-form-urlencoded 视图
+  Widget _buildUrlEncodedView(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    // TODO: 实现 x-www-form-urlencoded Key-Value 编辑器
+    return Center(
+      child: Text(
+        'x-www-form-urlencoded editor (coming soon)',
+        style: AppTextStyles.body.copyWith(
+          color: Theme.of(context).colorScheme.outline,
+        ),
+      ),
+    );
+  }
+
+  /// 构建 raw 类型的 Body 视图
+  Widget _buildRawBodyView(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    final language = _getLanguageForRawContentType(request.rawContentType);
+
+    return Padding(
+      padding: const EdgeInsets.all(AppConstants.spaceL),
+      child: CodeEditor(
+        code: request.body,
+        language: language,
+        expands: true,
+        onChanged: (value) {
+          _updateRequest(ref, request.copyWith(body: value));
+        },
+      ),
+    );
+  }
+
+  /// 构建 binary 类型的 Body 视图
+  Widget _buildBinaryBodyView(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    // TODO: 实现文件选择器
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.upload_file,
+            size: 48,
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Select file',
+            style: AppTextStyles.body.copyWith(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () {
+              // TODO: 打开文件选择器
+            },
+            child: const Text('Choose File'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建 GraphQL 视图
+  Widget _buildGraphQLView(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    // TODO: 实现 GraphQL 双栏编辑器
+    return Center(
+      child: Text(
+        'GraphQL editor (coming soon)',
+        style: AppTextStyles.body.copyWith(
+          color: Theme.of(context).colorScheme.outline,
+        ),
+      ),
+    );
+  }
+
+  /// 构建 Body 类型选择器 - Postman 风格 Radio 组
+  Widget _buildBodyTypeSelector(
     BuildContext context,
     WidgetRef ref,
     HttpRequest request,
   ) {
     final theme = Theme.of(context);
     final options = [
-      _ContentTypeOption('none', 'None', Icons.block),
-      _ContentTypeOption('json', 'JSON', Icons.data_object),
-      _ContentTypeOption('text', 'Text', Icons.text_fields),
-      _ContentTypeOption('form', 'Form', Icons.format_list_bulleted),
+      _BodyTypeOption('none', 'none'),
+      _BodyTypeOption('form-data', 'form-data'),
+      _BodyTypeOption('x-www-form-urlencoded', 'x-www-form-urlencoded'),
+      _BodyTypeOption('raw', 'raw'),
+      _BodyTypeOption('binary', 'binary'),
+      _BodyTypeOption('graphql', 'GraphQL'),
     ];
 
-    return Container(
-      height: 32,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppConstants.radiusS),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: options.map((option) {
-          final isSelected = request.bodyType == option.value;
-          return _buildContentTypeButton(
-            context: context,
-            option: option,
-            isSelected: isSelected,
-            onTap: () {
-              _updateRequest(ref, request.copyWith(bodyType: option.value));
-            },
-          );
-        }).toList(),
-      ),
+    return Row(
+      children: [
+        // Radio 组
+        Expanded(
+          child: Wrap(
+            spacing: 0,
+            runSpacing: 8,
+            children: options.map((option) {
+              final isSelected = request.bodyType == option.value;
+              return _buildBodyTypeRadio(
+                context: context,
+                option: option,
+                isSelected: isSelected,
+                onTap: () {
+                  _updateRequest(
+                    ref,
+                    request.copyWith(bodyType: option.value),
+                  );
+                },
+              );
+            }).toList(),
+          ),
+        ),
+        // Raw 子类型下拉菜单
+        if (request.bodyType == 'raw')
+          _buildRawContentTypeDropdown(context, ref, request),
+      ],
     );
   }
 
-  Widget _buildContentTypeButton({
+  /// 构建单个 Radio 选项
+  Widget _buildBodyTypeRadio({
     required BuildContext context,
-    required _ContentTypeOption option,
+    required _BodyTypeOption option,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
@@ -1107,34 +1278,47 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(AppConstants.radiusS - 2),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppConstants.radiusS - 2),
+        borderRadius: BorderRadius.circular(4),
         child: Container(
-          height: 28,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(AppConstants.radiusS - 2),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                option.icon,
-                size: 14,
-                color: isSelected
-                    ? Colors.white
-                    : theme.colorScheme.onSurfaceVariant,
+              // Radio 圆圈
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.primary
+                        : theme.colorScheme.outline,
+                    width: 1.5,
+                  ),
+                ),
+                child: isSelected
+                    ? Center(
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(width: 6),
+              // 标签文字
               Text(
                 option.label,
                 style: AppTextStyles.caption.copyWith(
                   color: isSelected
-                      ? Colors.white
+                      ? theme.colorScheme.onSurface
                       : theme.colorScheme.onSurfaceVariant,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
@@ -1146,18 +1330,110 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     );
   }
 
+  /// 构建 Raw 子类型下拉菜单
+  Widget _buildRawContentTypeDropdown(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    final theme = Theme.of(context);
+    final contentTypes = ['Text', 'JavaScript', 'JSON', 'HTML', 'XML'];
+
+    return Container(
+      margin: const EdgeInsets.only(left: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppConstants.radiusS),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant,
+        ),
+      ),
+      child: MenuAnchor(
+        controller: _rawContentTypeMenuController,
+        menuChildren: contentTypes.map((type) {
+          return MenuItemButton(
+            style: MenuItemButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
+              minimumSize: const Size(0, 28),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () {
+              _updateRequest(
+                ref,
+                request.copyWith(rawContentType: type.toLowerCase()),
+              );
+            },
+            child: Text(
+              type,
+              style: AppTextStyles.caption,
+            ),
+          );
+        }).toList(),
+        builder: (context, controller, child) {
+          return GestureDetector(
+            onTap: () {
+              if (controller.isOpen) {
+                controller.close();
+              } else {
+                controller.open();
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    request.rawContentType.toUpperCase(),
+                    style: AppTextStyles.caption.copyWith(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    size: 18,
+                    color: theme.colorScheme.outline,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// 根据 raw content type 获取代码语言
+  CodeLanguage _getLanguageForRawContentType(String rawContentType) {
+    switch (rawContentType.toLowerCase()) {
+      case 'json':
+        return CodeLanguage.json;
+      case 'javascript':
+      case 'js':
+        return CodeLanguage.javascript;
+      case 'html':
+        return CodeLanguage.html;
+      case 'xml':
+        return CodeLanguage.xml;
+      case 'text':
+      default:
+        return CodeLanguage.text;
+    }
+  }
+
+  /// 构建 Body 编辑器（根据 bodyType 决定）
   Widget _buildBodyEditor(
     BuildContext context,
     WidgetRef ref,
     HttpRequest request,
   ) {
-    final language = _getLanguageForBodyType(request.bodyType);
-
-    // Use CodeEditor for JSON with syntax highlighting
-    if (language == CodeLanguage.json) {
+    // 根据 bodyType 选择对应的编辑器
+    if (request.bodyType == 'raw') {
+      final language = _getLanguageForRawContentType(request.rawContentType);
       return CodeEditor(
         code: request.body,
-        language: CodeLanguage.json,
+        language: language,
         expands: true,
         onChanged: (value) {
           _updateRequest(ref, request.copyWith(body: value));
@@ -1165,30 +1441,15 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       );
     }
 
-    // Fallback to SimpleCodeEditor for other types
+    // 其他类型使用简单编辑器
     return SimpleCodeEditor(
       code: request.body,
-      language: language,
+      language: CodeLanguage.text,
       expands: true,
       onChanged: (value) {
         _updateRequest(ref, request.copyWith(body: value));
       },
     );
-  }
-
-  CodeLanguage _getLanguageForBodyType(String bodyType) {
-    switch (bodyType) {
-      case 'json':
-        return CodeLanguage.json;
-      case 'xml':
-        return CodeLanguage.xml;
-      case 'html':
-        return CodeLanguage.html;
-      case 'text':
-      case 'form':
-      default:
-        return CodeLanguage.text;
-    }
   }
 
   Widget _buildAuthTab(BuildContext context) {
@@ -1278,11 +1539,10 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   }
 }
 
-/// Content Type 选项数据类
-class _ContentTypeOption {
+/// Body 类型选项数据类
+class _BodyTypeOption {
   final String value;
   final String label;
-  final IconData icon;
 
-  const _ContentTypeOption(this.value, this.label, this.icon);
+  const _BodyTypeOption(this.value, this.label);
 }

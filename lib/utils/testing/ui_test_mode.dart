@@ -16,6 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/providers.dart';
+import '../../utils/app_logger.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../models/http_method.dart';
@@ -219,6 +220,9 @@ class UITestModeManager {
       case 'expand_method_dropdown':
         return await _expandMethodDropdown();
 
+      case 'expand_raw_content_type_dropdown':
+        return await _expandRawContentTypeDropdown();
+
       case 'switch_request_tab':
         final tab = params['tab'] as String;
         return await _switchRequestTab(tab);
@@ -253,6 +257,17 @@ class UITestModeManager {
         final value = params['value'] as String;
         final description = params['description'] as String?;
         return await _addHeaderWithDescription(key, value, description);
+
+      case 'set_body_type':
+        final bodyType = params['body_type'] as String;
+        return await _setBodyType(bodyType);
+
+      case 'set_raw_content_type':
+        final contentType = params['content_type'] as String;
+        return await _setRawContentType(contentType);
+
+      case 'get_body_info':
+        return await _getBodyInfo();
 
       default:
         throw Exception('未知指令: $action');
@@ -1143,17 +1158,50 @@ class UITestModeManager {
     };
   }
 
+  /// 展开 Raw 子类型下拉菜单（通过状态通知 UI）
+  Future<Map<String, dynamic>> _expandRawContentTypeDropdown() async {
+    AppLogger.info('[UI_TEST] Expanding Raw content type dropdown');
+    
+    // 先切换到 Body Tab
+    await _switchRequestTab('body');
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    // 设置 Body 类型为 raw
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab != null) {
+      final updatedRequest = activeTab.request.copyWith(bodyType: 'raw');
+      _ref!.read(requestTabProvider.notifier).updateRequest(
+        activeTab.id,
+        updatedRequest,
+      );
+      AppLogger.info('[UI_TEST] Body type set to raw');
+    }
+    await Future.delayed(const Duration(milliseconds: 200));
+    
+    // 设置状态通知 UI 展开下拉菜单
+    _ref!.read(uiTestExpandRawContentTypeDropdownProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {
+      'expanded': true,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+
   /// 切换 Request Editor Tab
   Future<Map<String, dynamic>> _switchRequestTab(String tab) async {
+    AppLogger.info('[UI_TEST] _switchRequestTab called: $tab');
     final validTabs = ['params', 'headers', 'body', 'auth'];
     final tabLower = tab.toLowerCase();
 
     if (!validTabs.contains(tabLower)) {
+      AppLogger.error('[UI_TEST] Invalid tab: $tab');
       throw Exception('无效的 Tab: $tab, 可选: $validTabs');
     }
 
     // 设置目标 Tab
     _ref!.read(uiTestRequestTabProvider.notifier).state = tabLower;
+    AppLogger.info('[UI_TEST] uiTestRequestTabProvider.state set to: $tabLower');
 
     return {'tab': tabLower};
   }
@@ -1317,6 +1365,91 @@ class UITestModeManager {
       'total_headers': headers.length,
     };
   }
+
+  /// 设置 Body 类型
+  Future<Map<String, dynamic>> _setBodyType(String bodyType) async {
+    print('[UI_TEST] _setBodyType called: $bodyType');
+    final validTypes = [
+      'none',
+      'form-data',
+      'x-www-form-urlencoded',
+      'raw',
+      'binary',
+      'graphql',
+    ];
+    if (!validTypes.contains(bodyType)) {
+      throw Exception('无效的 body 类型: $bodyType, 可选: $validTypes');
+    }
+
+    final activeTab = _ref!.read(activeTabProvider);
+    print('[UI_TEST] activeTab: ${activeTab?.id}, request: ${activeTab?.request.name}');
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final updatedRequest = activeTab.request.copyWith(bodyType: bodyType);
+    print('[UI_TEST] Updating request with bodyType: $bodyType');
+    _ref!.read(requestTabProvider.notifier).updateRequest(
+          activeTab.id,
+          updatedRequest,
+        );
+
+    // 触发 UI 更新通知
+    _ref!.read(uiTestBodyTypeProvider.notifier).state = bodyType;
+    print('[UI_TEST] uiTestBodyTypeProvider state set to: $bodyType');
+
+    return {
+      'body_type': bodyType,
+      'updated': true,
+    };
+  }
+
+  /// 设置 Raw 内容类型
+  Future<Map<String, dynamic>> _setRawContentType(String contentType) async {
+    final validTypes = ['text', 'javascript', 'json', 'html', 'xml'];
+    if (!validTypes.contains(contentType.toLowerCase())) {
+      throw Exception('无效的 content 类型: $contentType, 可选: $validTypes');
+    }
+
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final updatedRequest = activeTab.request.copyWith(
+      rawContentType: contentType.toLowerCase(),
+    );
+    _ref!.read(requestTabProvider.notifier).updateRequest(
+          activeTab.id,
+          updatedRequest,
+        );
+
+    // 触发 UI 更新通知
+    _ref!.read(uiTestRawContentTypeProvider.notifier).state =
+        contentType.toLowerCase();
+
+    return {
+      'raw_content_type': contentType.toLowerCase(),
+      'updated': true,
+    };
+  }
+
+  /// 获取 Body 信息
+  Future<Map<String, dynamic>> _getBodyInfo() async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final request = activeTab.request;
+
+    return {
+      'body_type': request.bodyType,
+      'raw_content_type': request.rawContentType,
+      'body_length': request.body.length,
+      'has_body': request.body.isNotEmpty && request.bodyType != 'none',
+    };
+  }
 }
 
 /// UI 测试目标 Tab 状态
@@ -1339,6 +1472,9 @@ final uiTestResponseDisplayModeProvider =
 /// UI 测试 - 展开 Method 下拉菜单触发器（使用时间戳确保每次都能触发）
 final uiTestExpandMethodDropdownProvider = StateProvider<int?>((ref) => null);
 
+/// UI 测试 - 展开 Raw 子类型下拉菜单触发器（使用时间戳确保每次都能触发）
+final uiTestExpandRawContentTypeDropdownProvider = StateProvider<int?>((ref) => null);
+
 /// UI 测试 - Request Editor Tab 切换
 final uiTestRequestTabProvider = StateProvider<String?>((ref) => null);
 
@@ -1357,3 +1493,9 @@ final uiTestDividerPositionProvider = StateProvider<double>((ref) => 0.5);
 
 /// UI 测试 - 聚焦 URL 输入框触发器（使用时间戳确保每次都能触发）
 final uiTestFocusUrlInputProvider = StateProvider<int?>((ref) => null);
+
+/// UI 测试 - Body 类型选择
+final uiTestBodyTypeProvider = StateProvider<String?>((ref) => null);
+
+/// UI 测试 - Raw 内容类型选择
+final uiTestRawContentTypeProvider = StateProvider<String?>((ref) => null);

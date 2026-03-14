@@ -366,6 +366,12 @@ class HoppTestClient:
         print(f"📋 Method 下拉菜单已展开")
         return result
 
+    def expand_raw_content_type_dropdown(self):
+        """展开 Raw 子类型下拉菜单"""
+        result = self.send_command("expand_raw_content_type_dropdown")
+        print(f"📋 Raw 子类型下拉菜单已展开")
+        return result
+
     def switch_request_tab(self, tab):
         """切换 Request Editor Tab"""
         result = self.send_command("switch_request_tab", {"tab": tab})
@@ -443,6 +449,44 @@ class HoppTestClient:
             params["description"] = description
         result = self.send_command("add_header_with_description", params)
         print(f"✅ Header 已添加，总共 {result.get('total_headers')} 个")
+        return result
+
+    def set_body_type(self, body_type):
+        """设置 Body 类型
+        
+        Args:
+            body_type: Body 类型 ('none', 'form-data', 'x-www-form-urlencoded', 'raw', 'binary', 'graphql')
+        """
+        valid_types = ['none', 'form-data', 'x-www-form-urlencoded', 'raw', 'binary', 'graphql']
+        if body_type not in valid_types:
+            raise Exception(f"无效的 body 类型: {body_type}, 可选: {valid_types}")
+        print(f"📄 设置 Body 类型: {body_type}")
+        result = self.send_command("set_body_type", {"body_type": body_type})
+        print(f"✅ Body 类型已设置为: {result.get('body_type')}")
+        return result
+
+    def set_raw_content_type(self, content_type):
+        """设置 Raw 子类型
+        
+        Args:
+            content_type: 内容类型 ('text', 'javascript', 'json', 'html', 'xml')
+        """
+        valid_types = ['text', 'javascript', 'json', 'html', 'xml']
+        if content_type.lower() not in valid_types:
+            raise Exception(f"无效的 content 类型: {content_type}, 可选: {valid_types}")
+        print(f"📄 设置 Raw 内容类型: {content_type}")
+        result = self.send_command("set_raw_content_type", {"content_type": content_type.lower()})
+        print(f"✅ Raw 内容类型已设置为: {result.get('raw_content_type')}")
+        return result
+
+    def get_body_info(self):
+        """获取 Body 信息"""
+        result = self.send_command("get_body_info")
+        print("📋 Body 信息:")
+        print(f"   Body 类型: {result.get('body_type')}")
+        print(f"   Raw 内容类型: {result.get('raw_content_type')}")
+        print(f"   Body 长度: {result.get('body_length')} 字符")
+        print(f"   是否有 Body: {'是' if result.get('has_body') else '否'}")
         return result
 
     def full_test(self):
@@ -598,6 +642,9 @@ def main():
     # expand_method_dropdown
     subparsers.add_parser("expand_method_dropdown", help="展开 Method 下拉菜单")
 
+    # expand_raw_content_type_dropdown
+    subparsers.add_parser("expand_raw_content_type_dropdown", help="展开 Raw 子类型下拉菜单")
+
     # switch_request_tab
     switch_request_tab_parser = subparsers.add_parser("switch_request_tab", help="切换 Request Editor Tab")
     switch_request_tab_parser.add_argument("--tab", required=True, choices=["params", "headers", "body", "auth"], help="目标 Tab")
@@ -632,6 +679,21 @@ def main():
     add_header_desc_parser.add_argument("--key", required=True, help="Header 名称")
     add_header_desc_parser.add_argument("--value", required=True, help="Header 值")
     add_header_desc_parser.add_argument("--description", help="Header 描述")
+
+    # set_body_type
+    set_body_type_parser = subparsers.add_parser("set_body_type", help="设置 Body 类型")
+    set_body_type_parser.add_argument("--type", required=True, 
+                                       choices=["none", "form-data", "x-www-form-urlencoded", "raw", "binary", "graphql"],
+                                       help="Body 类型")
+
+    # set_raw_content_type
+    set_raw_content_parser = subparsers.add_parser("set_raw_content_type", help="设置 Raw 内容类型")
+    set_raw_content_parser.add_argument("--content", required=True,
+                                        choices=["text", "javascript", "json", "html", "xml"],
+                                        help="Raw 内容类型")
+
+    # get_body_info
+    subparsers.add_parser("get_body_info", help="获取 Body 信息")
 
     # get_timing_info
     subparsers.add_parser("get_timing_info", help="获取请求时间分析信息")
@@ -700,6 +762,8 @@ def main():
             client.get_ui_info()
         elif args.command == "expand_method_dropdown":
             client.expand_method_dropdown()
+        elif args.command == "expand_raw_content_type_dropdown":
+            client.expand_raw_content_type_dropdown()
         elif args.command == "switch_request_tab":
             client.switch_request_tab(args.tab)
         elif args.command == "scroll_response":
@@ -716,6 +780,12 @@ def main():
             client.add_param(args.key, args.value)
         elif args.command == "add_header_with_description":
             client.add_header_with_description(args.key, args.value, args.description)
+        elif args.command == "set_body_type":
+            client.set_body_type(args.type)
+        elif args.command == "set_raw_content_type":
+            client.set_raw_content_type(args.content)
+        elif args.command == "get_body_info":
+            client.get_body_info()
         elif args.command == "get_timing_info":
             client.get_timing_info()
         elif args.command == "simulate_response_with_timing":

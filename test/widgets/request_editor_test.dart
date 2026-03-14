@@ -342,7 +342,8 @@ void main() {
           id: 'req1',
           name: 'Test Request',
           method: HttpMethod.post,
-          bodyType: 'json',
+          bodyType: 'raw',
+          rawContentType: 'json',
         );
 
         final container = createContainer(
@@ -362,10 +363,13 @@ void main() {
         await tester.tap(find.text('Body'));
         await tester.pumpAndSettle();
 
-        expect(find.text('None'), findsOneWidget);
-        expect(find.text('JSON'), findsOneWidget);
-        expect(find.text('Text'), findsOneWidget);
-        expect(find.text('Form'), findsOneWidget);
+        // Check for new body type options
+        expect(find.text('none'), findsOneWidget);
+        expect(find.text('form-data'), findsOneWidget);
+        expect(find.text('x-www-form-urlencoded'), findsOneWidget);
+        expect(find.text('raw'), findsOneWidget);
+        expect(find.text('binary'), findsOneWidget);
+        expect(find.text('GraphQL'), findsOneWidget);
       });
 
       testWidgets('should render body editor when body type is not none',
@@ -374,7 +378,8 @@ void main() {
           id: 'req1',
           name: 'Test Request',
           method: HttpMethod.post,
-          bodyType: 'json',
+          bodyType: 'raw',
+          rawContentType: 'json',
           body: '{"key": "value"}',
         );
 
@@ -604,7 +609,8 @@ void main() {
           name: 'Create User',
           url: 'https://api.example.com/users',
           method: HttpMethod.post,
-          bodyType: 'json',
+          bodyType: 'raw',
+          rawContentType: 'json',
           body: jsonBody,
         );
 

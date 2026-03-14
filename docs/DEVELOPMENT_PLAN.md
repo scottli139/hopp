@@ -176,6 +176,116 @@
 | Header 自动完成 | ✅ | P1 | 输入时显示下拉建议 |
 | UI 测试支持 | ✅ | P1 | 添加相关测试指令 |
 
+#### M3.10 Request Body 区域优化 ⏳ NEW
+
+参考 Postman Body 区域的功能和样式进行改进。
+
+**参考截图**:
+
+| 截图路径 | 内容说明 | 关键 UI 元素 |
+|---------|---------|-------------|
+| `Screenshot 2026-03-14 at 22.38.40.png` | Postman Body - raw JSON | Radio 选择器、JSON 下拉、Beautify 按钮、行号、语法高亮 |
+| `Screenshot 2026-03-14 at 22.42.04.png` | Hopp 当前 Body 区域 | SegmentedButton 样式（需改为 Radio 样式） |
+| `Screenshot 2026-03-14 at 22.41.15.png` | Postman Body - form-data | Radio 选中状态、Key-Value 编辑器、Value 类型下拉（Text/File） |
+| `Screenshot 2026-03-14 at 22.41.21.png` | Postman Body - x-www-form-urlencoded | Key-Value 编辑器带 Description 列 |
+| `Screenshot 2026-03-14 at 22.41.26.png` | Postman Body - binary | 文件选择器输入框（Select file） |
+| `Screenshot 2026-03-14 at 22.41.35.png` | Postman Body - GraphQL 编辑区 | 双栏编辑器布局（Query + Variables） |
+| `Screenshot 2026-03-14 at 22.41.39.png` | Postman Body - GraphQL 下拉 | Auto Fetch 下拉菜单 |
+| `Screenshot 2026-03-14 at 22.41.52.png` | Postman Body - GraphQL 提示 | 错误提示浮层 |
+
+**当前问题**:
+- Body 类型选择使用 SegmentedButton，样式不够直观
+- 缺少 Raw 模式下子类型选择（JSON/XML/Text/HTML/JavaScript）
+- 缺少 Beautify 格式化按钮
+- 编辑器无行号显示
+
+**改进计划**:
+
+| 任务 | 状态 | 优先级 | 预计工时 | 说明 |
+|-----|------|--------|---------|------|
+| Body 类型选择器重构 | ✅ | P1 | 4h | Radio button 组样式 (none/form-data/x-www-form-urlencoded/raw/binary/GraphQL) |
+| Raw 子类型下拉菜单 | ✅ | P1 | 3h | 右侧下拉选择 Text/JavaScript/JSON/HTML/XML |
+| Beautify 格式化按钮 | ⏳ | P1 | 2h | 右上角 Beautify 按钮，支持 JSON/XML 格式化 |
+| 编辑器行号显示 | ⏳ | P1 | 3h | 代码编辑器左侧显示行号 |
+| JSON 语法高亮优化 | ⏳ | P2 | 4h | 键/字符串/数字不同颜色高亮 |
+| form-data 文件上传 | ⏳ | P2 | 4h | Value 列支持 Text/File 类型切换、文件选择器 |
+| x-www-form-urlencoded 优化 | ⏳ | P2 | 3h | 添加 Description 列、Bulk Edit 功能 |
+| binary 文件选择器 | ⏳ | P2 | 2h | 单文件选择输入框 |
+| GraphQL 双栏编辑器 | ⏳ | P3 | 8h | QUERY + GRAPHQL VARIABLES 双栏布局 |
+
+**UI 设计规范**:
+
+**1. Body 类型选择器 (Radio 组)**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ○ none  ○ form-data  ○ x-www-form-urlencoded  ● raw  [JSON ▼] │
+└─────────────────────────────────────────────────────────────┘
+```
+- Radio 圆圈选中时填充蓝色，未选中为空心
+- 类型标签横向排列，间距均匀
+- Raw 模式右侧紧跟子类型下拉菜单
+
+**2. Raw 模式编辑器**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                    [Beautify]               │
+│ 1 │ {                                                        │
+│ 2 │   "username": "zhongmou",                               │
+│ 3 │   "password": "7110eda4d09e062aa5e4a390b0a572ac0d2c0220" │
+│ 4 │ }                                                        │
+└─────────────────────────────────────────────────────────────┘
+```
+- 左上角 Beautify 按钮（仅 JSON/XML 模式显示）
+- 左侧行号区域灰色背景
+- JSON 语法高亮：key 为深蓝色，字符串为绿色，数字为蓝色
+
+**3. form-data 编辑器**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Key              │ Value           │ Description │ Bulk Edit │
+│ ─────────────────┼─────────────────┼─────────────┼───────────│
+│ username         │ zhongmou        │             │     ⋮     │
+│ file             │ [Text ▼] [选择文件] │             │     ⋮     │
+└─────────────────────────────────────────────────────────────┘
+```
+- Value 列支持 Text/File 类型切换
+- File 类型显示文件选择按钮
+
+**4. binary 模式**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ [Select file]                                               │
+└─────────────────────────────────────────────────────────────┘
+```
+- 简洁的文件选择输入框
+- 点击后弹出系统文件选择器
+
+**5. GraphQL 模式**
+```
+┌──────────────────────────┬──────────────────────────────────┐
+│ QUERY                    │ GRAPHQL VARIABLES        [ⓘ]     │
+│ 1│                       │ 1│                               │
+│ 2│ query {               │ 2│ {                             │
+│ 3│   user(id: 1) {       │ 3│   "id": 1                     │
+│ 4│     name              │ 4│ }                             │
+│ 5│   }                   │                                │
+│ 6│ }                     │                                │
+└──────────────────────────┴──────────────────────────────────┘
+```
+- 双栏布局，左 Query 右 Variables
+- 右侧标题带 info 图标提示
+- 各自独立的行号显示
+
+**实现参考**:
+- 使用 `Row` + `Radio` 组件实现类型选择器
+- 使用 `DropdownButton` 实现 Raw 子类型选择
+- 集成 `flutter_code_editor` 的行号功能
+- 使用 `dart:convert` 实现 JSON 格式化
+
+**依赖文件**:
+- `lib/widgets/request/request_editor.dart` - Body Tab 实现
+- `lib/widgets/common/code_editor.dart` - 代码编辑器组件
+
 ---
 
 ### M4: 高级功能 📋 PLANNED
@@ -187,6 +297,8 @@
 | UI 细节优化 | ✅ | P1 | 4h | Tab 样式、输入框对齐、按钮统一 |
 | URL Bar 对齐修复 | ✅ | P0 | 2h | Method下拉、URL输入框、按钮统一36px |
 | URL Focus 边框对齐 | ✅ | P0 | 2h | 修复紫色边框与背景区域高度不一致 |
+| Request Editor UI 优化 | ✅ | P1 | 6h | Tab样式、Headers/Params列表、自动完成 |
+| Request Body 区域优化 | ⏳ | P1 | 26h | 参考 Postman 改进 (radio 选择器、Raw 子类型、Beautify、行号、各 body 类型) |
 | 请求设置 (Request Settings) | ⏳ | P1 | 10h | 请求级别配置选项 |
 | 主题切换 | ✅ | P1 | 4h | Light/Dark 模式 (基础实现已完成) |
 | 国际化完善 | 🔄 | P1 | 6h | 多语言支持 (框架已搭建，需完善翻译) |

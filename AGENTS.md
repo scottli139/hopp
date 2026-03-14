@@ -91,12 +91,15 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | 请求设置功能规划 | 2026-03-14 | 参考 Postman 整理 13 项配置 |
 | 请求详情展示 | 2026-03-14 | Request Tab (方法/URL/Headers/Body) |
 | Request Tab 完善 | 2026-03-14 | 展示实际发送的完整请求信息（含自动添加的 Headers） |
+| UI 测试调试规范 | 2026-03-15 | 日志 + 截图联动分析法、实战案例文档 |
+| Body 类型选择器测试 | 2026-03-15 | Radio 组 + Raw 子类型 + UI 测试验证 |
 
 ### 进行中 🔄
 
 | 任务 | 说明 |
 |------|------|
 | 请求设置 (Request Settings) | 请求级别配置选项 (F1.14)，预计 2026-03-20 开始实现 |
+| Request Body 区域优化 | 参考 Postman 改进 Body Tab UI (✅ Radio 选择器/Raw 子类型/UI测试、⏳ Beautify/行号、form-data/x-www-form-urlencoded/binary/GraphQL) |
 | 国际化完善 | 框架已搭建，需完善翻译 |
 | 修复 Mock 测试失败 | 2026-03-14 | 修复 22 个 MissingStubError 相关测试 |
 
@@ -112,6 +115,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | UI 优化测试 | 新增 7 个 | ✅ 通过 |
 | Timing 分析测试 | 新增 | ✅ 通过 |
 | 请求详情展示测试 | 新增 3 个 | ✅ 通过 |
+| Body 类型选择器测试 | 新增 12 场景 | ✅ 通过 |
 | **总计** | **418** | **✅ 全部通过** |
 
 ---
@@ -323,6 +327,193 @@ python3 integration_test/test_client.py --port <PORT> full_test
 - `focus_url_input` - 聚焦 URL 输入框（用于测试 focus 状态边框对齐）
 - `get_timing_info` - 获取请求时间分析信息（DNS/TCP/TLS/TTFB/Download）
 - `simulate_response_with_timing` - 模拟带时间分析的响应
+
+**UI 测试调试规范**:
+
+在做 UI 测试调试时，**必须先验证日志系统工作正常**，再调试具体功能：
+
+#### 1. 验证日志系统
+
+检查 `~/Library/Containers/com.example.hopp/Data/Library/Application Support/com.example.hopp/logs/hopp_*.log` 文件：
+- 确认日志文件包含预期的执行日志，而非只有启动标记
+- 确认 AppLogger 能够正确写入文件（不是只输出到控制台）
+- 如果日志文件只有启动行，先修复日志系统再调试功能
+- **注意**: logger 包默认在 Release 模式下只记录 warning 及以上级别，需要添加自定义 `LogFilter`
+
+#### 2. 日志 + 截图联动分析法
+
+**当 UI 测试失败时，按以下步骤排查：**
+
+**步骤 1: 在关键位置添加日志**
+```dart
+// 1. Widget build() 入口 - 确认组件被重建
+@override
+Widget build(BuildContext context) {
+  AppLogger.info('[RequestEditor] build() called');
+  // ...
+}
+
+// 2. Provider listener 设置处 - 确认监听已建立
+ref.listen(uiTestProvider, (previous, current) {
+  AppLogger.info('[RequestEditor] Provider changed: $previous -> $current');
+  // ...
+});
+
+// 3. Command handler - 确认指令被接收
+Future<void> handleCommand(String action) async {
+  AppLogger.info('[UI_TEST] Command received: $action');
+  // ...
+}
+```
+
+**步骤 2: 对比日志和截图**
+| 现象 | 日志表现 | 截图表现 | 诊断结论 |
+|------|----------|----------|----------|
+| 命令未到达 | 无相关日志 | 无变化 | 检查网络/端口 |
+| Provider 未监听 | 命令日志有，但无 listener 日志 | 无变化 | 检查 `ref.listen` 是否在 build 中 |
+| UI 未重建 | Provider 变化日志有，但无 build 日志 | 无变化 | 检查 `ref.watch` vs `ref.read` |
+| UI 重建但未显示 | 所有日志正常 | 仍显示旧状态 | 检查 TabController/状态同步 |
+
+**步骤 3: 使用 `ref.read` 检查初始值**
+```dart
+// 在设置 listener 前，检查当前 provider 值
+final currentValue = ref.read(uiTestProvider);
+AppLogger.info('[RequestEditor] Current provider value: $currentValue');
+// 如果这里已经有值，说明命令在 widget build 前已发出
+```
+
+#### 3. 常见问题和解决方案
+
+**问题 A: 日志只有启动记录**
+- **原因**: Release 模式下 logger 过滤了 info/debug 级别
+- **解决**: 添加自定义 `_AllLogFilter` 并配置同步文件写入
+
+**问题 B: Provider 监听不触发**
+- **原因**: Widget 未重建或 listener 未正确设置
+- **解决**: 
+  - 确保 `ref.listen` 在 `build()` 方法中直接调用
+  - 检查 `activeTabProvider` 是否已触发重建
+  - 使用 `ref.read` 检查 provider 当前值
+
+**问题 C: Tab 切换命令发出但 UI 未更新**
+- **原因**: TabController 未同步或 widget 未监听
+- **解决**: 
+  - 确认 `_tabController.animateTo()` 被调用
+  - 检查 `AnimatedBuilder` 是否正确监听 `_tabController`
+
+#### 4. 截图验证 checklist
+
+每次截图后检查：
+- [ ] 目标 Tab 是否被选中（下划线/高亮）
+- [ ] 内容区域是否显示对应 Tab 的内容
+- [ ] 状态指示器（如 Body 的圆点）是否正确显示
+- [ ] 交互元素（如下拉菜单）是否可见且可点击
+
+#### 5. 调试技巧
+
+**技巧 1: 日志时间戳对比**
+```bash
+# 查看最后 20 条相关日志
+tail -20 hopp_*.log | grep -E "(UI_TEST|RequestEditor)"
+```
+
+**技巧 2: 快速验证日志系统**
+```dart
+// 在 main.dart 中添加测试日志
+AppLogger.info('[TEST] Log system check');
+```
+
+**技巧 3: 使用 `time.sleep()` 控制节奏**
+```python
+# 关键步骤后增加等待时间
+client.switch_request_tab("body")
+time.sleep(1.0)  # 给足够时间让 Flutter 重建
+```
+
+---
+
+#### 6. 实战案例：Body 类型选择器测试调试
+
+**问题描述**:
+UI 测试脚本显示 `switch_request_tab body` 命令成功执行，但截图始终显示 Params Tab，而非 Body Tab。
+
+**排查过程**:
+
+**第 1 步 - 检查日志系统**
+```bash
+$ cat hopp_20260315.log | tail -20
+[2026-03-15T00:03:25.455] === Hopp Started ===
+# 只有启动日志，没有执行日志！
+```
+**诊断**: 日志系统未正常工作，需要修复。
+
+**第 2 步 - 修复日志系统**
+```dart
+// 添加自定义 Filter
+class _AllLogFilter extends LogFilter {
+  @override
+  bool shouldLog(LogEvent event) => true;
+}
+
+// 修改文件输出为同步
+void output(OutputEvent event) {
+  if (_file != null) {
+    final content = event.lines.map((l) => '$l\n').join();
+    _file!.writeAsStringSync(content, mode: FileMode.append, flush: true);
+  }
+}
+```
+
+**第 3 步 - 添加关键日志**
+```dart
+@override
+Widget build(BuildContext context) {
+  AppLogger.info('[RequestEditor] build() called');  // 确认重建
+  
+  // 检查 provider 当前值
+  final currentTabValue = ref.read(uiTestRequestTabProvider);
+  AppLogger.info('[RequestEditor] Provider value: $currentTabValue');
+  
+  // 设置监听器
+  ref.listen(uiTestRequestTabProvider, (previous, current) {
+    AppLogger.info('[RequestEditor] Tab change: $previous -> $current');
+  });
+}
+```
+
+**第 4 步 - 分析日志**
+```
+# 修复后重新运行测试
+[RequestEditor] build() called
+[RequestEditor] Provider value: null           # 初始值为 null
+[UI_TEST] _switchRequestTab called: body       # 命令到达
+[RequestEditor] Tab change: null -> body       # 监听器触发！
+[RequestEditor] Target index: 2, current: 0    # 准备切换到 index 2
+[RequestEditor] Tab switched to: body (index: 2)  # 切换成功
+```
+
+**第 5 步 - 截图验证**
+截图显示：
+- ✅ Body Tab 被选中（下划线）
+- ✅ Body 类型 Radio 组显示
+- ✅ Raw 子类型下拉菜单可见
+
+**根本原因**:
+1. **日志系统**: Release 模式下 logger 过滤了 info/debug 级别
+2. **文件写入**: 异步写入导致日志丢失
+
+**解决方案**:
+1. 添加 `_AllLogFilter` 允许所有日志级别
+2. 使用 `writeAsStringSync` 同步写入
+3. 保留关键日志用于调试
+
+**验证结果**:
+```
+测试 1: switch_request_tab body - ✅ Tab 切换成功
+测试 2: set_body_type raw - ✅ Body 类型切换成功  
+测试 3: set_raw_content_type json - ✅ Raw 子类型切换成功
+测试 4: 截图验证 - ✅ 所有 UI 状态正确
+```
 
 **优势**:
 - ✅ 精确控制，直接操作 Flutter Provider 状态
@@ -1406,6 +1597,9 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-14 | v0.4.1-request-details | 请求详情展示功能：Request Tab (方法/URL/Headers/Body) + UI测试 |
 | 2026-03-14 | v0.4.2-request-info | Request Tab 完善：展示实际发送的完整请求信息（含自动添加的 Headers） |
 | 2026-03-14 | v0.4.3-test-fix | 修复 22 个单元测试失败：修复 MissingStubError 问题，所有 418 个测试全部通过 |
+| 2026-03-14 | v0.4.4-body-type-selector | Body 类型选择器重构：Radio 组样式 + Raw 子类型下拉菜单 |
+| 2026-03-14 | v0.4.5-ui-test-debug-guide | 添加 UI 测试调试规范，修复 Release 模式下日志被过滤问题 |
+| 2026-03-15 | v0.4.6-body-type-test | Request Body 类型选择器 UI 测试修复完成，日志系统修复 |
 
 ---
 
@@ -1496,3 +1690,140 @@ pnpm tauri build
 ---
 
 <p align="center">Built with ❤️ by AI · Powered by Kimi</p>
+
+---
+
+<details>
+<summary>2026-03-15 - Request Body 类型选择器 UI 测试完成</summary>
+
+**完成工作**:
+- ✅ 修复日志系统：Release 模式下日志被过滤问题
+- ✅ 修复 `_FileOutput.output()` 异步写入问题，改为同步写入
+- ✅ 添加 `_AllLogFilter` 自定义过滤器确保所有日志级别都被记录
+- ✅ 修复 Request Editor Tab 切换：通过日志确认 `ref.listen` 正常工作
+- ✅ 完成 Body 类型选择器 UI 测试：Radio 组 + Raw 子类型下拉
+- ✅ 所有截图验证通过：Tab 切换、Body 类型选择、Raw 子类型切换
+
+**关键修复**:
+
+1. **日志系统修复** (`lib/utils/app_logger.dart`):
+```dart
+// 添加自定义过滤器
+class _AllLogFilter extends LogFilter {
+  @override
+  bool shouldLog(LogEvent event) => true;
+}
+
+// 修复文件输出为同步写入
+void output(OutputEvent event) {
+  if (_file == null) {
+    _buffer.addAll(event.lines);
+    return;
+  }
+  try {
+    final content = event.lines.map((l) => '$l\n').join();
+    _file!.writeAsStringSync(content, mode: FileMode.append, flush: true);
+  } catch (e) {
+    _buffer.addAll(event.lines);
+  }
+}
+```
+
+2. **UI 测试验证结果**:
+```
+测试 1: create_request - ✅ 创建新请求
+测试 2: switch_request_tab body - ✅ Tab 切换到 Body
+测试 3: set_body_type raw - ✅ Body 类型设置为 raw
+测试 4: set_raw_content_type json - ✅ Raw 子类型设置为 JSON
+测试 5: 截图验证 - ✅ 显示 Body Tab + Radio 组 + 下拉菜单
+```
+
+**截图验证**:
+- `test_body_initial.png` - Body Tab 被选中
+- `test_body_raw.png` - raw 类型被选中，JSON 下拉显示
+- `test_body_form_data.png` - form-data 类型被选中
+- 所有 12 张截图均显示正确的 UI 状态
+
+**文件变更**:
+- `lib/utils/app_logger.dart` - 修复日志系统
+- `lib/widgets/request/request_editor.dart` - 优化 Tab 监听日志
+- `lib/utils/testing/ui_test_mode.dart` - 添加关键日志
+- `AGENTS.md` - 更新文档
+
+</details>
+
+<details>
+<summary>2026-03-14 - UI 测试调试规范 + 日志系统问题修复</summary>
+
+**问题发现**:
+在做 UI 测试调试时发现日志文件只有启动记录，没有其他执行日志，导致无法调试具体问题。
+
+**根因分析**:
+- logger 包默认在 Release 模式下使用 `ProductionFilter`，只记录 warning 及以上级别
+- 应用使用 `fvm flutter build macos --release` 构建，所以 info/debug 日志被过滤
+- UI 测试时大量使用的 `AppLogger.info()` 日志都没有写入文件
+
+**解决方案**:
+```dart
+// lib/utils/app_logger.dart
+static final Logger _logger = Logger(
+  printer: PrettyPrinter(
+    colors: !kReleaseMode, // Release 模式下禁用颜色（避免乱码）
+    // ...
+  ),
+  output: _multiOutput,
+  // 显式配置 filter 和 level，确保 Release 模式下也能记录所有日志
+  filter: DevelopmentFilter(),
+  level: Level.trace,
+);
+```
+
+**新增规范**:
+在 AGENTS.md 的 "UI 测试模式" 章节添加 "UI 测试调试规范"，要求：
+1. **验证日志系统** - 先检查日志文件是否包含执行日志，而非只有启动标记
+2. **验证命令接收** - 在 command handler 和 UI 组件中添加关键日志
+3. **验证 UI 重建** - 确保 Provider 状态变化触发 UI 重建
+4. **截图前等待** - 至少等待 500ms 让 Flutter 完成 rebuild
+
+**文件变更**:
+- `lib/utils/app_logger.dart` - 添加 filter 和 level 配置
+- `AGENTS.md` - 添加 UI 测试调试规范
+
+</details>
+
+<details>
+<summary>2026-03-14 - Body 类型选择器重构 + Raw 子类型下拉菜单</summary>
+
+**完成工作**:
+- ✅ 重构 Body 类型选择器为 Postman 风格 Radio 组
+- ✅ 支持 6 种 Body 类型: none/form-data/x-www-form-urlencoded/raw/binary/GraphQL
+- ✅ 实现 Raw 子类型下拉菜单 (Text/JavaScript/JSON/HTML/XML)
+- ✅ 扩展 HttpRequest 模型添加 rawContentType 字段
+- ✅ 更新 CodeEditor 支持 JavaScript 语法高亮
+- ✅ 添加 UI 测试指令 (set_body_type, set_raw_content_type, get_body_info)
+- ✅ 创建自动化测试脚本 test_body_type_selector.py
+- ✅ 所有单元测试通过 (418 个通过)
+
+**文件变更**:
+- `lib/models/http_request.dart` - 添加 rawContentType 字段
+- `lib/widgets/request/request_editor.dart` - 重构 Body 类型选择器
+- `lib/widgets/common/code_editor.dart` - 添加 JavaScript 支持
+- `lib/utils/testing/ui_test_mode.dart` - 添加测试指令
+- `integration_test/test_client.py` - 添加客户端方法
+- `integration_test/test_body_type_selector.py` - 新增测试脚本
+- `test/widgets/request_editor_test.dart` - 更新测试用例
+
+**UI 设计**:
+```
+○ none  ○ form-data  ○ x-www-form-urlencoded  ● raw  [JSON ▼]
+```
+
+**测试结果**:
+```
+总计: 418 个单元测试通过
+UI 测试: 12 个测试场景全部通过
+ - none/form-data/x-www-form-urlencoded/raw/binary/graphql
+ - Raw 子类型: text/javascript/json/html/xml
+```
+
+</details>

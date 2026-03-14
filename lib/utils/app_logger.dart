@@ -1,6 +1,15 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
+
+/// 自定义日志过滤器 - 允许所有级别的日志
+class _AllLogFilter extends LogFilter {
+  @override
+  bool shouldLog(LogEvent event) {
+    return true; // 允许所有日志
+  }
+}
 
 /// 文件日志输出
 class _FileOutput extends LogOutput {
@@ -24,21 +33,23 @@ class _FileOutput extends LogOutput {
 
       // 写入启动标记
       final timestamp = now.toIso8601String();
-      await _file!.writeAsString('\n[$timestamp] === Hopp Started ===\n',
+      _file!.writeAsStringSync('\n[$timestamp] === Hopp Started ===\n',
           mode: FileMode.append);
 
       // 刷新缓冲区
-      for (final line in _buffer) {
-        await _file!.writeAsString('$line\n', mode: FileMode.append);
+      if (_buffer.isNotEmpty) {
+        final bufferContent = _buffer.map((l) => '$l\n').join();
+        _file!.writeAsStringSync(bufferContent, mode: FileMode.append);
+        _buffer.clear();
       }
-      _buffer.clear();
     } catch (e) {
-      print('Failed to initialize log file: $e');
+      // 初始化失败，静默处理
+      _buffer.add('Failed to initialize log file: $e');
     }
   }
 
   @override
-  void output(OutputEvent event) async {
+  void output(OutputEvent event) {
     final lines = event.lines;
 
     if (_file == null) {
@@ -47,12 +58,13 @@ class _FileOutput extends LogOutput {
       return;
     }
 
+    // 同步写入，避免异步丢失日志
     try {
-      for (final line in lines) {
-        await _file!.writeAsString('$line\n', mode: FileMode.append);
-      }
+      final content = lines.map((l) => '$l\n').join();
+      _file!.writeAsStringSync(content, mode: FileMode.append, flush: true);
     } catch (e) {
-      print('Failed to write log: $e');
+      // 静默失败，避免影响应用
+      _buffer.addAll(lines);
     }
   }
 
@@ -92,11 +104,14 @@ class AppLogger {
       methodCount: 2,
       errorMethodCount: 8,
       lineLength: 120,
-      colors: true,
+      colors: !kReleaseMode, // Release 模式下禁用颜色
       printEmojis: true,
       dateTimeFormat: DateTimeFormat.dateAndTime,
     ),
     output: _multiOutput,
+    // 使用自定义 Filter 确保 Release 模式下也能记录所有级别日志
+    filter: _AllLogFilter(),
+    level: Level.trace, // 启用所有日志级别
   );
 
   static final _MultiOutput _multiOutput = _MultiOutput();

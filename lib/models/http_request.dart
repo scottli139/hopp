@@ -21,6 +21,7 @@ class HttpRequest with _$HttpRequest {
     @HiveField(7) @Default('none') String bodyType,
     @HiveField(8) String? parentId,
     @HiveField(9) @Default(0) int sortOrder,
+    @HiveField(10) @Default('json') String rawContentType,
   }) = _HttpRequest;
 
   factory HttpRequest.fromJson(Map<String, dynamic> json) =>

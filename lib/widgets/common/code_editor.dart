@@ -5,6 +5,7 @@ import 'package:highlight/highlight.dart';
 import 'package:highlight/languages/json.dart';
 import 'package:highlight/languages/xml.dart';
 import 'package:highlight/languages/htmlbars.dart';
+import 'package:highlight/languages/javascript.dart';
 
 import '../../utils/app_logger.dart';
 
@@ -14,6 +15,7 @@ enum CodeLanguage {
   text,
   xml,
   html,
+  javascript,
 }
 
 /// A code editor widget with syntax highlighting support
@@ -82,6 +84,8 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
         return xml;
       case CodeLanguage.html:
         return htmlbars;
+      case CodeLanguage.javascript:
+        return javascript;
       case CodeLanguage.text:
         return null;
     }
@@ -225,6 +229,8 @@ class SimpleCodeEditor extends StatelessWidget {
         return '<?xml version="1.0"?>\n<root></root>';
       case CodeLanguage.html:
         return '<html>\n  <body></body>\n</html>';
+      case CodeLanguage.javascript:
+        return 'function example() {\n  return "Hello";\n}';
       case CodeLanguage.text:
         return 'Enter text...';
     }

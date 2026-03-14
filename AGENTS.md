@@ -23,11 +23,11 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **URL Focus 边框对齐修复完成** |
+| **当前状态** | ✅ **请求时间分析功能完成** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
 | **测试覆盖** | 418+ 个测试 (Models 152 + Services 73 + Providers 92 + Widgets 88 + UI Test) |
-| **下次重点** | 🟡 主题切换 / 🟢 请求历史 |
+| **下次重点** | 🟡 主题切换 / 🟢 国际化 |
 
 ---
 
@@ -86,6 +86,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | UI 细节优化 | 2026-03-13 | Tab 样式、+按钮、URL输入框、下拉菜单优化 |
 | UI 对齐修复 | 2026-03-13 | URL行高度统一36px、Method下拉与URL输入框对齐、Certificate字体缩小 |
 | URL Focus 边框对齐修复 | 2026-03-13 | 修复 URL 输入框 focus 状态紫色边框与灰色背景区域高度不一致问题 |
+| 请求时间分析 | 2026-03-14 | Timing Tab (DNS/TCP/TLS/TTFB/Download) |
 
 ### 进行中 🔄
 
@@ -103,7 +104,8 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | Widget 测试 | 88 | ✅ 通过 |
 | 响应优化组件测试 | 新增 | ✅ 通过 |
 | UI 优化测试 | 新增 7 个 | ✅ 通过 |
-| **总计** | **418** | **全部通过** |
+| Timing 分析测试 | 新增 | ✅ 通过 |
+| **总计** | **418+** | **全部通过** |
 
 ---
 
@@ -344,6 +346,58 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-14 - 请求时间分析功能 (Timing Analysis) 完成</summary>
+
+**完成工作**:
+- ✅ 创建 `TimingInfo` 模型，支持 DNS/TCP/TLS/TTFB/Download 时间记录
+- ✅ 修改 `HttpResponse` 添加 `timingInfo` 字段
+- ✅ 修改 `HttpService` 添加时间测量逻辑
+- ✅ ResponseViewer 新增 Timing Tab
+- ✅ Timing Tab UI 包含总时间卡片、阶段详情、时间线可视化
+- ✅ 添加 UI 测试指令：`get_timing_info`, `simulate_response_with_timing`
+- ✅ 创建 UI 测试脚本 `test_timing_analysis.py`
+- ✅ 所有 UI 测试通过
+
+**技术方案**:
+
+1. **TimingInfo 模型**:
+```dart
+@freezed
+class TimingInfo with _$TimingInfo {
+  const factory TimingInfo({
+    int? dnsMs,
+    int? tcpMs,
+    int? tlsMs,
+    int? ttfbMs,
+    int? downloadMs,
+    required int totalMs,
+  }) = _TimingInfo;
+}
+```
+
+2. **UI 展示**:
+   - 总时间卡片：渐变背景，醒目显示总耗时
+   - 阶段详情：进度条 + 百分比 + 时间值
+   - 时间线：彩色条形图展示各阶段占比
+
+**验证结果**:
+
+| 检查项 | 状态 | 说明 |
+|--------|------|------|
+| TimingInfo 模型 | ✅ | 支持所有时间阶段 |
+| HttpResponse 字段 | ✅ | 包含 timingInfo |
+| 时间测量 | ✅ | DNS/TCP/TLS/TTFB/Download |
+| Timing Tab UI | ✅ | 总时间卡片 + 阶段详情 + 时间线 |
+| Tab 切换 | ✅ | 支持 timing tab 切换 |
+| UI 测试 | ✅ | 8 个测试全部通过 |
+
+**截图验证**:
+- `timing_tab_test.png` - Timing Tab 界面
+- `timing_tab_test2.png` - 再次切换后的界面
+
+</details>
 
 <details>
 <summary>2026-03-13 - URL Focus 边框对齐修复完成</summary>
@@ -832,6 +886,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-13 | v0.3.3-ui-polish | UI 细节优化：Tab样式、+按钮、输入框对齐、边框统一、高度优化 |
 | 2026-03-13 | v0.3.5-ui-fix | URL Bar 对齐修复：Method下拉、URL输入框、Save/Send按钮统一36px高度 |
 | 2026-03-13 | v0.3.6-url-focus-fix | 修复 URL 输入框 focus 状态下紫色边框与灰色背景区域高度不一致问题 |
+| 2026-03-14 | v0.3.7-timing-analysis | 请求时间分析功能：DNS/TCP/TLS/TTFB/Download |
 
 ---
 

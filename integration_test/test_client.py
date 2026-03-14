@@ -140,9 +140,34 @@ class HoppTestClient:
     
     def switch_response_tab(self, tab):
         """切换响应 Tab"""
+        valid_tabs = ["body", "headers", "cookies", "timing", "certificate"]
+        if tab.lower() not in valid_tabs:
+            raise Exception(f"无效的 Tab: {tab}, 可选: {valid_tabs}")
         print(f"📑 切换到 {tab} Tab...")
         result = self.send_command("switch_response_tab", {"tab": tab})
         print(f"✅ 已切换到 {result.get('tab')} Tab")
+        return result
+
+    def get_timing_info(self):
+        """获取请求时间分析信息"""
+        result = self.send_command("get_timing_info")
+        if result.get("has_timing"):
+            print("⏱️ 时间分析信息:")
+            print(f"   DNS: {result.get('dns_formatted')} ({result.get('dns_ms')}ms)")
+            print(f"   TCP: {result.get('tcp_formatted')} ({result.get('tcp_ms')}ms)")
+            print(f"   TLS: {result.get('tls_formatted')} ({result.get('tls_ms')}ms)")
+            print(f"   TTFB: {result.get('ttfb_formatted')} ({result.get('ttfb_ms')}ms)")
+            print(f"   Download: {result.get('download_formatted')} ({result.get('download_ms')}ms)")
+            print(f"   Total: {result.get('total_formatted')} ({result.get('total_ms')}ms)")
+        else:
+            print("⚠️ 暂无时间分析信息")
+        return result
+
+    def simulate_response_with_timing(self):
+        """模拟带时间分析的响应"""
+        print("🔧 模拟带时间分析的响应...")
+        result = self.send_command("simulate_response_with_timing")
+        print(f"✅ 模拟响应已创建，总时间: {result.get('total_ms')}ms")
         return result
     
     def add_header(self, key, value):
@@ -440,7 +465,7 @@ def main():
     
     # switch_response_tab
     switch_tab_parser = subparsers.add_parser("switch_response_tab", help="切换响应 Tab")
-    switch_tab_parser.add_argument("--tab", required=True, choices=["body", "headers", "cookies", "certificate"])
+    switch_tab_parser.add_argument("--tab", required=True, choices=["body", "headers", "cookies", "timing", "certificate"])
     
     # add_header
     add_header_parser = subparsers.add_parser("add_header", help="添加 Header")
@@ -531,6 +556,12 @@ def main():
     # focus_url_input
     subparsers.add_parser("focus_url_input", help="聚焦 URL 输入框（用于测试 focus 状态）")
 
+    # get_timing_info
+    subparsers.add_parser("get_timing_info", help="获取请求时间分析信息")
+
+    # simulate_response_with_timing
+    subparsers.add_parser("simulate_response_with_timing", help="模拟带时间分析的响应")
+
     # full_test
     subparsers.add_parser("full_test", help="执行完整测试流程")
     
@@ -602,6 +633,10 @@ def main():
             client.set_divider_position(args.ratio)
         elif args.command == "focus_url_input":
             client.focus_url_input()
+        elif args.command == "get_timing_info":
+            client.get_timing_info()
+        elif args.command == "simulate_response_with_timing":
+            client.simulate_response_with_timing()
         elif args.command == "full_test":
             client.full_test()
         

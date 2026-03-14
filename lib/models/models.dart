@@ -6,3 +6,4 @@ export 'http_request.dart';
 export 'http_response.dart';
 export 'key_value_pair.dart';
 export 'request_tab.dart';
+export 'timing_info.dart';

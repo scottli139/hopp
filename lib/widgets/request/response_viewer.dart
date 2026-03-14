@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/certificate_info.dart';
 import '../../models/http_response.dart';
 import '../../models/key_value_pair.dart';
+import '../../models/timing_info.dart';
 import '../../providers/providers.dart';
 import '../../utils/constants.dart';
 import '../../utils/testing/ui_test_mode.dart';
@@ -52,7 +53,11 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
   /// 根据响应获取 Tab 长度
   int _getTabLength(HttpResponse? response) {
-    return response?.certificateInfo != null ? 4 : 3;
+    if (response == null) return 3;
+    var length = 3;
+    if (response.timingInfo != null) length++;
+    if (response.certificateInfo != null) length++;
+    return length;
   }
 
   /// 更新 TabController 以匹配当前响应
@@ -120,13 +125,18 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     // Handle UI test mode scroll control
     _handleUITestScroll();
     if (targetTab != null && _tabController != null) {
-      // Map tab name to index
-      final tabIndexMap = <String, int>{
-        'body': 0,
-        'headers': 1,
-        'cookies': 2,
-        'certificate': 3,
-      };
+      // Map tab name to index (动态计算，考虑 Timing Tab)
+      final tabIndexMap = <String, int>{};
+      var currentIndex = 0;
+      tabIndexMap['body'] = currentIndex++;
+      tabIndexMap['headers'] = currentIndex++;
+      tabIndexMap['cookies'] = currentIndex++;
+      if (response?.timingInfo != null) {
+        tabIndexMap['timing'] = currentIndex++;
+      }
+      if (response?.certificateInfo != null) {
+        tabIndexMap['certificate'] = currentIndex++;
+      }
       final targetIndex = tabIndexMap[targetTab.toLowerCase()];
       if (targetIndex != null && targetIndex < _tabController!.length) {
         if (_tabController!.index != targetIndex) {
@@ -631,6 +641,320 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     );
   }
 
+  Widget _buildTimingTab(BuildContext context, TimingInfo timing) {
+    final theme = Theme.of(context);
+    final percentages = timing.getPhasePercentages();
+
+    return Container(
+      color: theme.colorScheme.surface,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 总时间卡片
+            _buildTimingTotalCard(context, timing),
+            const SizedBox(height: 16),
+            // 各阶段时间详情
+            _buildTimingDetailSection(context, timing, percentages),
+            const SizedBox(height: 16),
+            // 时间线可视化
+            _buildTimelineVisualization(context, timing, percentages),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimingTotalCard(BuildContext context, TimingInfo timing) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.1),
+            AppColors.primary.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppConstants.radiusL),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppConstants.radiusM),
+            ),
+            child: const Icon(
+              Icons.timer,
+              size: 24,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Total Request Time',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.outline,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  timing.totalFormatted,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimingDetailSection(
+    BuildContext context,
+    TimingInfo timing,
+    Map<String, double> percentages,
+  ) {
+    return _buildCompactInfoSection(
+      context: context,
+      title: 'Phase Breakdown',
+      children: [
+        if (timing.dnsMs != null)
+          _buildTimingRow(
+            context: context,
+            label: 'DNS Lookup',
+            value: timing.dnsFormatted,
+            percentage: percentages['dns'] ?? 0,
+            color: AppColors.info,
+          ),
+        if (timing.tcpMs != null)
+          _buildTimingRow(
+            context: context,
+            label: 'TCP Connect',
+            value: timing.tcpFormatted,
+            percentage: percentages['tcp'] ?? 0,
+            color: AppColors.warning,
+          ),
+        if (timing.tlsMs != null)
+          _buildTimingRow(
+            context: context,
+            label: 'TLS Handshake',
+            value: timing.tlsFormatted,
+            percentage: percentages['tls'] ?? 0,
+            color: AppColors.success,
+          ),
+        if (timing.ttfbMs != null)
+          _buildTimingRow(
+            context: context,
+            label: 'TTFB (Time to First Byte)',
+            value: timing.ttfbFormatted,
+            percentage: percentages['ttfb'] ?? 0,
+            color: AppColors.secondary,
+          ),
+        if (timing.downloadMs != null && timing.downloadMs! > 0)
+          _buildTimingRow(
+            context: context,
+            label: 'Download',
+            value: timing.downloadFormatted,
+            percentage: percentages['download'] ?? 0,
+            color: AppColors.httpGet,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTimingRow({
+    required BuildContext context,
+    required String label,
+    required String value,
+    required double percentage,
+    required Color color,
+  }) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: 140,
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: theme.colorScheme.outline,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: percentage / 100,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                    minHeight: 6,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 50,
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.right,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Padding(
+            padding: const EdgeInsets.only(left: 140),
+            child: Text(
+              '${percentage.toStringAsFixed(1)}%',
+              style: TextStyle(
+                fontSize: 8,
+                color: theme.colorScheme.outline.withOpacity(0.7),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineVisualization(
+    BuildContext context,
+    TimingInfo timing,
+    Map<String, double> percentages,
+  ) {
+    final theme = Theme.of(context);
+
+    return _buildCompactInfoSection(
+      context: context,
+      title: 'Timeline',
+      children: [
+        const SizedBox(height: 8),
+        // 时间线条形图
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Row(
+            children: [
+              if (timing.dnsMs != null && timing.dnsMs! > 0)
+                _buildTimelineSegment(
+                  color: AppColors.info,
+                  flex: (percentages['dns'] ?? 0).round(),
+                ),
+              if (timing.tcpMs != null && timing.tcpMs! > 0)
+                _buildTimelineSegment(
+                  color: AppColors.warning,
+                  flex: (percentages['tcp'] ?? 0).round(),
+                ),
+              if (timing.tlsMs != null && timing.tlsMs! > 0)
+                _buildTimelineSegment(
+                  color: AppColors.success,
+                  flex: (percentages['tls'] ?? 0).round(),
+                ),
+              if (timing.ttfbMs != null && timing.ttfbMs! > 0)
+                _buildTimelineSegment(
+                  color: AppColors.secondary,
+                  flex: (percentages['ttfb'] ?? 0).round(),
+                ),
+              if (timing.downloadMs != null && timing.downloadMs! > 0)
+                _buildTimelineSegment(
+                  color: AppColors.httpGet,
+                  flex: (percentages['download'] ?? 0).round(),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // 图例
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            if (timing.dnsMs != null) _buildLegendItem('DNS', AppColors.info),
+            if (timing.tcpMs != null)
+              _buildLegendItem('TCP', AppColors.warning),
+            if (timing.tlsMs != null)
+              _buildLegendItem('TLS', AppColors.success),
+            if (timing.ttfbMs != null)
+              _buildLegendItem('TTFB', AppColors.secondary),
+            if (timing.downloadMs != null && timing.downloadMs! > 0)
+              _buildLegendItem('Download', AppColors.httpGet),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimelineSegment({
+    required Color color,
+    required int flex,
+  }) {
+    if (flex <= 0) return const SizedBox.shrink();
+
+    return Expanded(
+      flex: flex,
+      child: Container(
+        height: 16,
+        color: color,
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
   /// 构建 Tab 列表
   List<Widget> _buildTabs(BuildContext context, HttpResponse? response) {
     const tabFontSize = 10.0;
@@ -693,6 +1017,33 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         ),
       ),
     ];
+
+    // Timing Tab
+    if (response?.timingInfo != null) {
+      final timing = response!.timingInfo!;
+      tabs.add(
+        Tab(
+          height: tabHeight,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.timer,
+                size: 10,
+                color: AppColors.info,
+              ),
+              const SizedBox(width: 3),
+              Text(
+                'Time: ${timing.totalMs}ms',
+                style: const TextStyle(fontSize: tabFontSize),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Certificate Tab
     if (response?.certificateInfo != null) {
       tabs.add(
         Tab(
@@ -727,6 +1078,13 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       _buildHeadersTab(context, response),
       _buildCookiesTab(context),
     ];
+
+    // Timing Tab Content
+    if (response?.timingInfo != null) {
+      contents.add(_buildTimingTab(context, response!.timingInfo!));
+    }
+
+    // Certificate Tab Content
     if (response?.certificateInfo != null) {
       contents.add(_buildCertificateTab(context, response!.certificateInfo!));
     }

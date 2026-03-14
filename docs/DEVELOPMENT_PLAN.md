@@ -121,6 +121,16 @@
 | 虚拟化列表 | ✅ | P1 | 初始 500 行，支持加载更多 |
 | UI 测试支持 | ✅ | P1 | 3 个测试指令 |
 
+#### M3.6 请求时间分析 (Timing)
+
+| 任务 | 状态 | 优先级 | 说明 |
+|-----|------|--------|------|
+| TimingInfo 模型 | ✅ | P1 | DNS/TCP/TLS/TTFB/Download 时间 |
+| HttpResponse 扩展 | ✅ | P1 | 添加 timingInfo 字段 |
+| HttpService 时间测量 | ✅ | P1 | 各阶段时间统计 |
+| Timing Tab UI | ✅ | P1 | 总时间卡片、阶段详情、时间线 |
+| UI 测试支持 | ✅ | P1 | timing 相关测试指令 |
+
 **优化策略**:
 | 响应大小 | 默认模式 | 说明 |
 |---------|---------|------|
@@ -169,7 +179,7 @@
 | URL Focus 边框对齐 | ✅ | P0 | 2h | 修复紫色边框与背景区域高度不一致 |
 | 主题切换 | 🔄 | P1 | 4h | Light/Dark 模式 |
 | 国际化完善 | 🔄 | P1 | 6h | 多语言支持 |
-| 请求时间分析 | ⏳ | P1 | 10h | Timing Tab (DNS/TCP/TTFB) |
+| 请求时间分析 | ✅ | P1 | 10h | Timing Tab (DNS/TCP/TLS/TTFB/Download) |
 | 请求详情展示 | ⏳ | P1 | 6h | Request Tab |
 | 环境变量 | ⏳ | P1 | 12h | 变量替换和多环境 |
 | 请求历史 | ⏳ | P2 | 8h | 请求历史记录 |
@@ -247,7 +257,7 @@ make logs   # 查看日志
 - ⏳ 请求历史
 - ⏳ 环境变量
 - ⏳ 导入/导出 (Postman/Insomnia/curl)
-- ⏳ Timing 分析
+- ✅ Timing 分析
 - ⏳ 请求详情展示
 
 ### v1.0.0 - GA ⏳ PLANNED

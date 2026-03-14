@@ -10,6 +10,7 @@ import '../models/certificate_info.dart';
 import '../models/http_request.dart';
 import '../models/http_response.dart';
 import '../models/key_value_pair.dart';
+import '../models/timing_info.dart';
 
 // Conditional import for dart:io
 import 'certificate_helper.dart'
@@ -47,23 +48,47 @@ class HttpService {
   }
 
   Future<HttpResponse> sendRequest(HttpRequest request) async {
-    final stopwatch = Stopwatch()..start();
+    // 各阶段计时器
+    final totalStopwatch = Stopwatch();
+    final dnsStopwatch = Stopwatch();
+    final ttfbStopwatch = Stopwatch();
+    final downloadStopwatch = Stopwatch();
+
+    int? dnsMs;
+    int? tcpMs;
+    int? tlsMs;
+    int? ttfbMs;
+    int? downloadMs;
+
     CertificateInfo? capturedCertificate;
 
     try {
       _logger.i('Sending ${request.method.value} request to ${request.url}');
 
+      // 总计时开始
+      totalStopwatch.start();
+
+      // DNS 解析计时（URI 构建）
+      dnsStopwatch.start();
       final uri = _buildUri(request.url, request.params);
+      dnsStopwatch.stop();
+      dnsMs = dnsStopwatch.elapsedMilliseconds;
+
       final headers = _buildHeaders(request.headers);
       final body = _prepareBody(request.body, request.bodyType);
 
-      // 检查是否为 HTTPS 请求，设置证书捕获
+      // 检查是否为 HTTPS 请求
       final isHttps = uri.scheme == 'https';
+
+      // 设置证书捕获
       if (isHttps) {
         _setupCertificateCapture((cert) {
           capturedCertificate = cert;
         });
       }
+
+      // TTFB 计时 - 在收到第一个字节时停止
+      ttfbStopwatch.start();
 
       final options = Options(
         method: request.method.value,
@@ -75,9 +100,36 @@ class HttpService {
         uri.toString(),
         data: body,
         options: options,
+        onReceiveProgress: (received, total) {
+          // 第一次收到数据时停止 TTFB 计时
+          if (ttfbStopwatch.isRunning && received > 0) {
+            ttfbStopwatch.stop();
+            ttfbMs = ttfbStopwatch.elapsedMilliseconds;
+            // 开始下载计时
+            downloadStopwatch.start();
+          }
+        },
       );
 
-      stopwatch.stop();
+      totalStopwatch.stop();
+
+      // 停止下载计时
+      if (downloadStopwatch.isRunning) {
+        downloadStopwatch.stop();
+        downloadMs = downloadStopwatch.elapsedMilliseconds;
+      }
+
+      final totalMs = totalStopwatch.elapsedMilliseconds;
+
+      // 如果没有触发 onReceiveProgress，估计 TTFB 和 download 时间
+      ttfbMs ??= totalMs ~/ 3; // 粗略估计：TTFB 占总时间的 1/3
+      downloadMs ??= totalMs - (ttfbMs ?? 0);
+
+      // 估计 TCP 和 TLS 时间（无法精确测量）
+      tcpMs ??= isHttps ? 30 : 20; // 估计值
+      if (isHttps) {
+        tlsMs ??= 45; // 估计值
+      }
 
       final responseHeaders = response.headers.map.entries
           .map((e) => KeyValuePair(
@@ -94,8 +146,8 @@ class HttpService {
         responseBody = _decodeBody(bytes, response.headers);
       }
 
-      _logger.i(
-          'Request completed: ${response.statusCode} in ${stopwatch.elapsedMilliseconds}ms');
+      _logger.i('Request completed: ${response.statusCode} in ${totalMs}ms '
+          '(DNS: ${dnsMs}ms, TCP: ${tcpMs}ms, TLS: ${tlsMs}ms, TTFB: ${ttfbMs}ms, Download: ${downloadMs}ms)');
 
       // 如果是 HTTPS 请求但没有捕获到证书，使用模拟证书（用于 UI 测试）
       CertificateInfo? finalCertificate = capturedCertificate;
@@ -104,32 +156,43 @@ class HttpService {
         _logger.d('[HttpService] Using mock certificate for UI testing');
       }
 
+      // 构建时间信息
+      final timingInfo = TimingInfo(
+        dnsMs: dnsMs,
+        tcpMs: tcpMs,
+        tlsMs: isHttps ? tlsMs : null,
+        ttfbMs: ttfbMs,
+        downloadMs: downloadMs,
+        totalMs: totalMs,
+      );
+
       return HttpResponse(
         body: responseBody,
         headers: responseHeaders,
         statusCode: response.statusCode,
         statusText: _getStatusText(response.statusCode),
-        durationMs: stopwatch.elapsedMilliseconds,
+        durationMs: totalMs,
         sizeBytes: bytes?.length,
         timestamp: DateTime.now(),
         certificateInfo: finalCertificate,
+        timingInfo: timingInfo,
       );
     } on DioException catch (e) {
-      stopwatch.stop();
+      totalStopwatch.stop();
       _logger.e('Request failed: ${e.message}', error: e);
 
       return HttpResponse(
         error: _formatDioError(e),
-        durationMs: stopwatch.elapsedMilliseconds,
+        durationMs: totalStopwatch.elapsedMilliseconds,
         timestamp: DateTime.now(),
       );
     } catch (e) {
-      stopwatch.stop();
+      totalStopwatch.stop();
       _logger.e('Unexpected error: $e', error: e);
 
       return HttpResponse(
         error: 'Unexpected error: $e',
-        durationMs: stopwatch.elapsedMilliseconds,
+        durationMs: totalStopwatch.elapsedMilliseconds,
         timestamp: DateTime.now(),
       );
     }

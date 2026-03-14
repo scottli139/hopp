@@ -21,6 +21,7 @@ import '../../models/http_request.dart';
 import '../../models/http_method.dart';
 import '../../models/key_value_pair.dart';
 import '../../models/http_response.dart';
+import '../../models/timing_info.dart';
 
 /// UI 测试模式管理器
 class UITestModeManager {
@@ -137,6 +138,9 @@ class UITestModeManager {
         final tab = params['tab'] as String;
         return await _switchResponseTab(tab);
 
+      case 'simulate_response_with_timing':
+        return await _simulateResponseWithTiming();
+
       case 'set_method':
         final method = params['method'] as String;
         return await _setMethod(method);
@@ -153,6 +157,9 @@ class UITestModeManager {
 
       case 'get_response_info':
         return await _getResponseInfo();
+
+      case 'get_timing_info':
+        return await _getTimingInfo();
 
       case 'wait':
         final milliseconds = params['ms'] as int? ?? 1000;
@@ -318,7 +325,7 @@ class UITestModeManager {
   Future<Map<String, dynamic>> _switchResponseTab(String tab) async {
     // 发送消息通知 UI 切换 Tab
     // 使用 MethodChannel 或直接操作状态
-    final validTabs = ['body', 'headers', 'cookies', 'certificate'];
+    final validTabs = ['body', 'headers', 'cookies', 'timing', 'certificate'];
     final tabLower = tab.toLowerCase();
 
     if (!validTabs.contains(tabLower)) {
@@ -329,6 +336,55 @@ class UITestModeManager {
     _ref!.read(uiTestTargetTabProvider.notifier).state = tabLower;
 
     return {'tab': tabLower};
+  }
+
+  /// 模拟带时间分析的响应（用于测试 Timing Tab）
+  Future<Map<String, dynamic>> _simulateResponseWithTiming() async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    // 创建带时间信息的模拟响应
+    final mockResponse = HttpResponse(
+      statusCode: 200,
+      statusText: 'OK',
+      body: '{"message": "Hello, World!", "status": "success"}',
+      headers: [
+        KeyValuePair.empty().copyWith(
+          key: 'Content-Type',
+          value: 'application/json',
+          enabled: true,
+        ),
+        KeyValuePair.empty().copyWith(
+          key: 'Content-Length',
+          value: '50',
+          enabled: true,
+        ),
+      ],
+      durationMs: 245,
+      sizeBytes: 50,
+      timingInfo: const TimingInfo(
+        dnsMs: 12,
+        tcpMs: 25,
+        tlsMs: 45,
+        ttfbMs: 56,
+        downloadMs: 107,
+        totalMs: 245,
+      ),
+    );
+
+    // 设置响应
+    _ref!.read(requestResponseProvider.notifier).setMockResponse(
+          activeTab.id,
+          mockResponse,
+        );
+
+    return {
+      'simulated': true,
+      'has_timing': true,
+      'total_ms': 245,
+    };
   }
 
   /// 添加 Header
@@ -396,6 +452,46 @@ class UITestModeManager {
           )
           .value,
       'has_certificate': response.certificateInfo != null,
+      'has_timing': response.timingInfo != null,
+    };
+  }
+
+  /// 获取时间分析信息
+  Future<Map<String, dynamic>> _getTimingInfo() async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final response = _ref!.read(requestResponseProvider)[activeTab.id];
+
+    if (response == null) {
+      return {'has_response': false};
+    }
+
+    final timing = response.timingInfo;
+    if (timing == null) {
+      return {
+        'has_response': true,
+        'has_timing': false,
+      };
+    }
+
+    return {
+      'has_response': true,
+      'has_timing': true,
+      'dns_ms': timing.dnsMs,
+      'tcp_ms': timing.tcpMs,
+      'tls_ms': timing.tlsMs,
+      'ttfb_ms': timing.ttfbMs,
+      'download_ms': timing.downloadMs,
+      'total_ms': timing.totalMs,
+      'dns_formatted': timing.dnsFormatted,
+      'tcp_formatted': timing.tcpFormatted,
+      'tls_formatted': timing.tlsFormatted,
+      'ttfb_formatted': timing.ttfbFormatted,
+      'download_formatted': timing.downloadFormatted,
+      'total_formatted': timing.totalFormatted,
     };
   }
 

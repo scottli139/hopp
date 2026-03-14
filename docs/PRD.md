@@ -10,23 +10,24 @@
 
 ## 功能需求
 
-### 一、核心请求功能 ✅
+### 一、核心请求功能
 
-| ID | 功能 | 需求描述 | 验收标准 |
-|----|------|----------|----------|
-| F1.1 | HTTP 请求发送 | 支持 GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS | 所有方法可正常发送请求并接收响应 |
-| F1.2 | 请求参数设置 | Query Params、Path 参数编辑 | URL 自动编码，参数可增删改 |
-| F1.3 | 请求头管理 | Headers 编辑、常用头预设 | 支持批量编辑，预设 Content-Type/Auth 等 |
-| F1.4 | 请求体编辑 | JSON/Form-data/Form-urlencoded/Raw/Binary | 每种类型有对应的编辑器 |
-| F1.5 | 响应展示 | 显示状态码、响应时间、响应大小 | 实时显示在响应区域 |
-| F1.6 | 响应格式化 | 自动美化 JSON/XML/HTML | 支持语法高亮和折叠 |
-| F1.7 | 响应预览 | 原始/预览/JSON/图片等多种视图 | 自动识别 Content-Type 切换视图 |
-| F1.8 | Cookie 管理 | 查看/编辑/导入 Cookie | Cookie 列表展示，支持手动添加 |
-| F1.9 | 文件上传/下载 | multipart/form-data、文件下载 | 支持文件选择、进度显示 |
-| F1.10 | 请求预览 | cURL 命令生成与复制 | 一键复制生成的 cURL 命令 |
-| F1.11 | HTTPS 证书查看 | 查看 SSL/TLS 证书详细信息 | 证书颁发者、有效期、域名、指纹等 |
-| F1.12 | 请求时间分析 | 展示请求各环节耗时 | DNS、TCP、SSL、TTFB、下载时间分段展示 |
-| F1.13 | 请求详情展示 | 显示实际发送的请求信息 | 展示变量替换后的最终 URL、Headers、Body |
+| ID | 功能 | 状态 | 需求描述 | 验收标准 |
+|----|------|------|----------|----------|
+| F1.1 | HTTP 请求发送 | ✅ | 支持 GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS | 所有方法可正常发送请求并接收响应 |
+| F1.2 | 请求参数设置 | ✅ | Query Params、Path 参数编辑 | URL 自动编码，参数可增删改 |
+| F1.3 | 请求头管理 | ✅ | Headers 编辑、常用头预设、自动完成 | 支持批量编辑，Header Key 自动建议 |
+| F1.4 | 请求体编辑 | ✅ | JSON/Form-data/Form-urlencoded/Raw/Binary | 每种类型有对应的编辑器，JSON 语法高亮 |
+| F1.5 | 响应展示 | ✅ | 显示状态码、响应时间、响应大小 | 实时显示在响应区域 |
+| F1.6 | 响应格式化 | ✅ | 自动美化 JSON/XML/HTML | 支持语法高亮和折叠 |
+| F1.7 | 响应预览 | ✅ | 原始/预览/JSON/图片等多种视图 | 自动识别 Content-Type 切换视图 |
+| F1.8 | Cookie 管理 | ⏸️ | 查看/编辑/导入 Cookie | Cookie 列表展示，支持手动添加 |
+| F1.9 | 文件上传/下载 | ⏸️ | multipart/form-data、文件下载 | 支持文件选择、进度显示 |
+| F1.10 | 请求预览 | ⏸️ | cURL 命令生成与复制 | 一键复制生成的 cURL 命令 |
+| F1.11 | HTTPS 证书查看 | ✅ | 查看 SSL/TLS 证书详细信息 | 证书颁发者、有效期、域名、指纹等 |
+| F1.12 | 请求时间分析 | ✅ | 展示请求各环节耗时 | DNS、TCP、SSL、TTFB、下载时间分段展示 |
+| F1.13 | 请求详情展示 | ⏸️ | 显示实际发送的请求信息 | 展示变量替换后的最终 URL、Headers、Body |
+| F1.14 | 请求设置 | ⏳ | 请求级别的配置选项 | HTTP版本、SSL验证、重定向、编码等设置 |
 
 ### 二、集合与组织功能 ✅
 
@@ -57,23 +58,23 @@
 | F4.3 | Test Script | Backlog |
 | F4.4 | 批量运行 | Backlog |
 
-### 五、UI/UX 功能 ✅
+### 五、UI/UX 功能
 
-| ID | 功能 | 需求描述 | 验收标准 |
-|----|------|----------|----------|
-| F5.1 | 多标签页 | 同时打开多个请求 | 标签可切换、关闭、拖拽 |
-| F5.2 | 深色/浅色主题 | 主题切换 | 跟随系统或手动切换 |
-| F5.3 | 快捷键支持 | 常用操作快捷键 | 支持自定义快捷键 |
-| F5.4 | 响应体搜索 | 在响应内容中搜索 | 支持正则，高亮匹配 |
-| F5.5 | 分屏视图 | 请求/响应左右布局 | 可切换水平/垂直布局 |
-| F5.6 | 字体缩放 | 编辑器字体大小调整 | Ctrl+滚轮或设置调整 |
+| ID | 功能 | 状态 | 需求描述 | 验收标准 |
+|----|------|------|----------|----------|
+| F5.1 | 多标签页 | ✅ | 同时打开多个请求 | 标签可切换、关闭 |
+| F5.2 | 深色/浅色主题 | ✅ | 主题切换 | 跟随系统或手动切换 |
+| F5.3 | 快捷键支持 | ✅ | 常用操作快捷键 | Cmd+N, Cmd+Enter, Cmd+S, Cmd+W |
+| F5.4 | 响应体搜索 | ⏸️ | 在响应内容中搜索 | 支持正则，高亮匹配 |
+| F5.5 | 分屏视图 | ✅ | 请求/响应上下布局 | 可拖拽调整分割比例 |
+| F5.6 | 字体缩放 | ⏸️ | 编辑器字体大小调整 | Ctrl+滚轮或设置调整 |
 
 ### 六、数据与同步功能
 
-| ID | 功能 | 需求描述 | 验收标准 |
-|----|------|----------|----------|
-| F6.1 | 本地存储 | Hive/SharedPreferences 存储数据 | 数据持久化，应用重启不丢失 |
-| F6.4 | 数据备份 | 自动/手动备份 | 可导出完整数据备份 |
+| ID | 功能 | 状态 | 需求描述 | 验收标准 |
+|----|------|------|----------|----------|
+| F6.1 | 本地存储 | ✅ | Hive/SharedPreferences 存储数据 | 数据持久化，应用重启不丢失 |
+| F6.4 | 数据备份 | ⏸️ | 自动/手动备份 | 可导出完整数据备份 |
 
 **Backlog：**
 
@@ -84,12 +85,45 @@
 
 ### 七、高级功能
 
-| ID | 功能 | 需求描述 | 验收标准 |
-|----|------|----------|----------|
-| F7.1 | WebSocket 测试 | WebSocket 连接测试 | 支持 ws/wss，消息收发 |
-| F7.3 | API 文档生成 | 从集合生成文档 | 导出 Markdown/HTML |
-| F7.5 | 代理设置 | HTTP/HTTPS 代理 | 支持系统代理和自定义代理 |
-| F7.6 | 代码生成 | 生成 Python/JS/cURL 等代码 | 支持多种语言代码片段 |
+| ID | 功能 | 状态 | 需求描述 | 验收标准 |
+|----|------|------|----------|----------|
+| F7.1 | WebSocket 测试 | ⏸️ | WebSocket 连接测试 | 支持 ws/wss，消息收发 |
+| F7.3 | API 文档生成 | ⏸️ | 从集合生成文档 | 导出 Markdown/HTML |
+| F7.5 | 代理设置 | ⏸️ | HTTP/HTTPS 代理 | 支持系统代理和自定义代理 |
+| F7.6 | 代码生成 | ⏸️ | 生成 Python/JS/cURL 等代码 | 支持多种语言代码片段 |
+
+#### F1.14 请求设置 (Request Settings) 详细需求
+
+**功能概述**: 提供请求级别的精细配置，允许用户针对单个请求覆盖全局默认行为。
+
+**设置项清单**:
+
+| 设置项 | 控件类型 | 默认值 | 需求描述 |
+|--------|----------|--------|----------|
+| HTTP Version | Dropdown | Auto | 选择 HTTP/1.1 或 HTTP/2，Auto 由系统自动选择 |
+| Enable SSL certificate verification | Toggle | ON | 开启/关闭 SSL 证书验证，关闭后允许访问自签名证书 |
+| Automatically follow redirects | Toggle | ON | 是否自动跟随 3xx 重定向响应 |
+| Follow original HTTP Method | Toggle | OFF | 重定向时是否保持原始 HTTP 方法（默认转为 GET）|
+| Follow Authorization header | Toggle | OFF | 跨域重定向时是否保留 Authorization Header |
+| Remove referer header on redirect | Toggle | OFF | 重定向时是否自动移除 Referer Header |
+| Enable strict HTTP parser | Toggle | OFF | 是否严格解析 HTTP 响应头，遇到无效 header 时失败 |
+| Encode URL automatically | Toggle | ON | 自动对 URL 路径、查询参数进行百分号编码 |
+| Disable cookie jar | Toggle | OFF | 禁用此请求的 Cookie 存储和发送，Cookie 完全隔离 |
+| Use server cipher suite during handshake | Toggle | OFF | TLS 握手时优先使用服务器提供的加密套件顺序 |
+| Maximum number of redirects | Number Input | 10 | 设置最大重定向次数，0 表示不限制 |
+| TLS/SSL protocols disabled | Multi-select | - | 选择禁用的 TLS/SSL 协议版本（如 SSLv3、TLS1.0）|
+| Cipher suite selection | Text Input | - | 自定义加密套件列表，留空使用系统默认 |
+
+**交互需求**:
+1. 每个设置项显示「默认值: Settings」提示，表示继承全局设置
+2. 修改设置后显示「已修改」标记（如点状指示器）
+3. 支持「重置为默认」功能
+4. 设置与请求数据一起持久化到 Collection
+
+**技术需求**:
+1. Dio HTTP 客户端需支持动态 Options 配置
+2. SSL/TLS 高级设置需要平台原生支持
+3. 设置变更实时生效，无需重启应用
 
 **Backlog：**
 

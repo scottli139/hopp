@@ -23,11 +23,11 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **Request Editor UI 优化完成** |
+| **当前状态** | ✅ **Request Editor UI 优化完成 / 请求设置规划中** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **测试覆盖** | 418+ 个测试 (Models 152 + Services 73 + Providers 92 + Widgets 88 + UI Test) |
-| **下次重点** | 🟡 主题切换 / 🟢 国际化 |
+| **测试覆盖** | 396 个通过 / 22 个失败 / ~418 总计 |
+| **下次重点** | 🟡 请求设置实现 / 🟢 国际化完善 / 🔵 修复测试失败 |
 
 ---
 
@@ -87,12 +87,16 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | UI 对齐修复 | 2026-03-13 | URL行高度统一36px、Method下拉与URL输入框对齐、Certificate字体缩小 |
 | URL Focus 边框对齐修复 | 2026-03-13 | 修复 URL 输入框 focus 状态紫色边框与灰色背景区域高度不一致问题 |
 | 请求时间分析 | 2026-03-14 | Timing Tab (DNS/TCP/TLS/TTFB/Download) |
+| Request Editor UI 优化 | 2026-03-14 | Tab样式、Headers/Params列表、自动完成 |
+| 请求设置功能规划 | 2026-03-14 | 参考 Postman 整理 13 项配置 |
 
 ### 进行中 🔄
 
 | 任务 | 说明 |
 |------|------|
-| 主题切换 | Light/Dark 模式完善 |
+| 请求设置 (Request Settings) | 请求级别配置选项 (F1.14)，预计 2026-03-20 开始实现 |
+| 国际化完善 | 框架已搭建，需完善翻译 |
+| 修复测试失败 | 22 个 Mock 相关测试失败 |
 
 ### 质量保障
 
@@ -112,6 +116,53 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 ## 知识积累
 
 ### 技术决策记录
+
+#### Request Settings 功能规划 (F1.14)
+
+**参考**: Postman 请求级别配置
+
+**功能清单**:
+
+| 设置项 | 类型 | 默认值 | Dio 支持 |
+|--------|------|--------|----------|
+| HTTP Version | Dropdown | Auto | ✅ via `httpVersion` |
+| Enable SSL certificate verification | Toggle | ON | ✅ via `HttpClient` |
+| Automatically follow redirects | Toggle | ON | ✅ via `followRedirects` |
+| Follow original HTTP Method | Toggle | OFF | ⚠️ 需自定义拦截器 |
+| Follow Authorization header | Toggle | OFF | ⚠️ 需自定义拦截器 |
+| Remove referer header on redirect | Toggle | OFF | ⚠️ 需自定义拦截器 |
+| Enable strict HTTP parser | Toggle | OFF | ❌ 平台特定 |
+| Encode URL automatically | Toggle | ON | ✅ 默认行为 |
+| Disable cookie jar | Toggle | OFF | ✅ via `CookieManager` |
+| Use server cipher suite during handshake | Toggle | OFF | ⚠️ 平台特定 |
+| Maximum number of redirects | Number | 10 | ✅ via `maxRedirects` |
+| TLS/SSL protocols disabled | Multi-select | - | ⚠️ 平台特定 |
+| Cipher suite selection | Text | - | ⚠️ 平台特定 |
+
+**实现架构**:
+```
+lib/
+├── models/
+│   └── request_settings.dart          # Freezed 模型
+├── providers/
+│   └── request/
+│       └── request_settings_provider.dart
+├── widgets/
+│   └── request/
+│       ├── request_editor.dart        # 添加 Settings Tab
+│       └── request_settings_tab.dart  # 设置面板 UI
+└── services/
+    └── http/
+        └── request_options_builder.dart   # 构建 Dio Options
+```
+
+**UI 设计**:
+- 设置项采用卡片式布局，每个设置独立卡片
+- 显示「Default: Settings」提示继承关系
+- 修改后显示紫色圆点指示器
+- 支持分组（SSL/TLS、重定向、编码等）
+
+---
 
 #### 1. 架构选择：Flutter vs Tauri
 
@@ -348,6 +399,69 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-14 - Request Settings 功能规划完成</summary>
+
+**完成工作**:
+- ✅ 分析 Postman Request Settings 功能
+- ✅ 整理 13 项设置功能清单
+- ✅ 更新 DEVELOPMENT_PLAN.md 添加 M4.1 模块
+- ✅ 更新 PRD.md 添加 F1.14 详细需求
+- ✅ 更新 UI_UX_GUIDELINES.md 添加 Settings UI 规范
+- ✅ 更新 AGENTS.md 添加技术决策记录
+
+**功能清单**:
+
+| 设置项 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| HTTP Version | Dropdown | Auto | HTTP 版本选择 |
+| Enable SSL certificate verification | Toggle | ON | SSL 证书验证 |
+| Automatically follow redirects | Toggle | ON | 自动跟随重定向 |
+| Follow original HTTP Method | Toggle | OFF | 保持原始方法重定向 |
+| Follow Authorization header | Toggle | OFF | 跨域保留授权头 |
+| Remove referer header on redirect | Toggle | OFF | 重定向移除 Referer |
+| Enable strict HTTP parser | Toggle | OFF | 严格 HTTP 解析 |
+| Encode URL automatically | Toggle | ON | URL 自动编码 |
+| Disable cookie jar | Toggle | OFF | 禁用 Cookie |
+| Use server cipher suite during handshake | Toggle | OFF | 服务器加密套件优先 |
+| Maximum number of redirects | Number | 10 | 最大重定向次数 |
+| TLS/SSL protocols disabled | Multi-select | - | 禁用协议版本 |
+| Cipher suite selection | Text | - | 自定义加密套件 |
+
+**技术要点**:
+- Dio HTTP 客户端支持大部分设置
+- SSL/TLS 高级设置需要平台原生实现
+- 设置支持「继承全局」和「请求级别覆盖」两种模式
+- 设置与请求数据一起持久化到 Collection
+
+**UI 规范**:
+- 卡片式布局，每个设置项独立卡片
+- 显示「Default: Settings」提示继承关系
+- 修改后显示紫色圆点指示器
+- 支持分组（SSL/TLS、重定向、编码等）
+
+**实现规划**:
+```
+lib/
+├── models/
+│   └── request_settings.dart
+├── providers/
+│   └── request/
+│       └── request_settings_provider.dart
+├── widgets/
+│   └── request/
+│       └── request_settings_tab.dart
+└── services/
+    └── http/
+        └── request_options_builder.dart
+```
+
+**预计工时**: 10 小时
+**优先级**: P1
+**状态**: ⏳ 规划中
+
+</details>
 
 <details>
 <summary>2026-03-14 - Request Editor UI 优化完成</summary>
@@ -976,6 +1090,8 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-13 | v0.3.6-url-focus-fix | 修复 URL 输入框 focus 状态下紫色边框与灰色背景区域高度不一致问题 |
 | 2026-03-14 | v0.3.7-timing-analysis | 请求时间分析功能：DNS/TCP/TLS/TTFB/Download |
 | 2026-03-14 | v0.3.8-request-editor-ui | Request Editor UI 优化：Tab样式、Headers/Params列表、自动完成 |
+| 2026-03-14 | v0.4.0-rc-plan | 请求设置 (Request Settings) 功能规划完成，参考 Postman 实现 |
+| 2026-03-14 | v0.4.0-docs-update | 全面更新项目文档，同步实际功能状态 |
 
 ---
 

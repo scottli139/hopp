@@ -8,22 +8,23 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前阶段** | URL Focus 边框对齐修复完成，准备主题切换 |
+| **当前阶段** | Request Editor UI 优化完成，请求设置功能规划中 |
 | **目标版本** | v1.0.0 |
 | **技术栈** | Flutter 3.27.x + Dart 3.6.x + Riverpod |
-| **测试状态** | **418 个测试全部通过** ✅ |
+| **测试状态** | **396 个通过** / **22 个失败** ⚠️ |
 
 ### 测试统计
 
 | 类别 | 数量 | 状态 |
 |------|------|------|
 | Models 测试 | 152 | ✅ 通过 |
-| Services 测试 | 73 | ✅ 通过 |
+| Services 测试 | ~60 | ⚠️ 部分失败 (Mock 问题) |
 | Providers 测试 | 92 | ✅ 通过 |
-| Widget 测试 | 88 | ✅ 通过 |
-| 响应优化组件测试 | 新增 | ✅ 通过 |
+| Widget 测试 | ~88 | ✅ 大部分通过 |
 | UI 优化测试 | 新增 7 个 | ✅ 通过 |
-| **总计** | **418** | **全部通过** |
+| **总计** | **~418** | **396 通过 / 22 失败** |
+
+> **注意**: 当前有 22 个测试失败，主要是 `http_service_test.dart` 中的 Mock 配置问题，不影响实际功能运行。
 
 ---
 
@@ -186,14 +187,74 @@
 | UI 细节优化 | ✅ | P1 | 4h | Tab 样式、输入框对齐、按钮统一 |
 | URL Bar 对齐修复 | ✅ | P0 | 2h | Method下拉、URL输入框、按钮统一36px |
 | URL Focus 边框对齐 | ✅ | P0 | 2h | 修复紫色边框与背景区域高度不一致 |
-| 主题切换 | 🔄 | P1 | 4h | Light/Dark 模式 |
-| 国际化完善 | 🔄 | P1 | 6h | 多语言支持 |
+| 请求设置 (Request Settings) | ⏳ | P1 | 10h | 请求级别配置选项 |
+| 主题切换 | ✅ | P1 | 4h | Light/Dark 模式 (基础实现已完成) |
+| 国际化完善 | 🔄 | P1 | 6h | 多语言支持 (框架已搭建，需完善翻译) |
 | 请求时间分析 | ✅ | P1 | 10h | Timing Tab (DNS/TCP/TLS/TTFB/Download) |
 | 收尾检查清单 | ✅ | P0 | 2h | 测试验证、代码规范、文档更新 |
 | 请求详情展示 | ⏳ | P1 | 6h | Request Tab |
 | 环境变量 | ⏳ | P1 | 12h | 变量替换和多环境 |
 | 请求历史 | ⏳ | P2 | 8h | 请求历史记录 |
 | 拖拽排序 | ⏳ | P2 | 6h | Collection 拖拽排序 |
+
+#### M4.1 请求设置 (Request Settings) - F1.14
+
+参考 Postman 的请求级别配置，实现精细化的请求控制。
+
+**状态**: ⏳ 规划中 (预计 2026-03-20 开始实现)
+
+**依赖**: 
+- Dio HTTP 客户端配置
+- 平台原生 TLS/SSL 配置支持
+
+**核心功能列表**:
+
+| 功能项 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| HTTP Version | Dropdown | Auto | HTTP 版本选择 (Auto/HTTP1.1/HTTP2) |
+| Enable SSL certificate verification | Toggle | ON | SSL 证书验证开关 |
+| Automatically follow redirects | Toggle | ON | 自动跟随 HTTP 3xx 重定向 |
+| Follow original HTTP Method | Toggle | OFF | 重定向时使用原始 HTTP 方法而非 GET |
+| Follow Authorization header | Toggle | OFF | 跨域重定向时保留 Authorization 头 |
+| Remove referer header on redirect | Toggle | OFF | 重定向时移除 Referer 头 |
+| Enable strict HTTP parser | Toggle | OFF | 严格解析 HTTP 响应头 |
+| Encode URL automatically | Toggle | ON | 自动编码 URL 路径、参数和认证字段 |
+| Disable cookie jar | Toggle | OFF | 禁用该请求的 Cookie 存储和发送 |
+| Use server cipher suite during handshake | Toggle | OFF | TLS 握手时使用服务器加密套件顺序 |
+| Maximum number of redirects | Number Input | 10 | 最大重定向次数上限 |
+| TLS/SSL protocols disabled | Multi-select | - | 禁用的 TLS/SSL 协议版本 |
+| Cipher suite selection | Text Input | - | 自定义加密套件列表 |
+
+**实现规划**:
+
+```
+lib/
+├── models/
+│   ├── request_settings.dart          # RequestSettings 模型定义
+│   └── request_settings.freezed.dart
+├── providers/
+│   └── request/
+│       └── request_settings_provider.dart  # 请求设置状态管理
+├── widgets/
+│   └── request/
+│       └── request_settings_tab.dart  # Settings Tab UI
+└── services/
+    └── http/
+        └── request_options_builder.dart   # 根据设置构建 Dio Options
+```
+
+**技术要点**:
+- 请求设置应与请求数据一起保存到 Collection
+- Dio 支持通过 `Options` 配置大部分设置
+- SSL 验证通过 `DioHttpClientAdapter` 的 `onHttpClientCreate` 配置
+- TLS/SSL 协议禁用需要平台特定的实现 (iOS/macOS 使用 `Security`, Android 使用 `SSLSocket`)
+- 设置项需要支持「继承全局默认值」和「请求级别覆盖」两种模式
+
+**测试计划**:
+- 单元测试: RequestSettings 模型序列化/反序列化
+- Provider 测试: 设置变更同步到请求
+- Widget 测试: Settings Tab 渲染和交互
+- UI 测试: 各设置项切换验证
 
 ---
 
@@ -262,17 +323,20 @@ make logs   # 查看日志
 
 ### v0.4.0 - RC 🔄 IN PROGRESS
 
-- 🔄 主题切换
-- 🔄 国际化
+- ✅ 主题切换 (基础实现)
+- 🔄 国际化 (框架搭建，需完善)
 - ⏳ 请求历史
 - ⏳ 环境变量
 - ⏳ 导入/导出 (Postman/Insomnia/curl)
 - ✅ Timing 分析
 - ⏳ 请求详情展示
+- ⏳ 请求设置 (Request Settings)
+- ⚠️ 修复测试失败 (22个)
 
 ### v1.0.0 - GA ⏳ PLANNED
 
 - ⏳ 完整功能集
+- ⏳ 请求设置 (Request Settings)
 - ⏳ 完善文档
 - ⏳ 全平台稳定
 - ⏳ 应用商店发布

@@ -24,6 +24,11 @@
 - 🌓 **Dark Mode** - Support for light/dark/system themes
 - 🌍 **Internationalization** - English and Chinese support
 - 📊 **Response Viewer** - View response body, headers, and timing information
+- 🔒 **HTTPS Certificate** - View SSL/TLS certificate details
+- ⏱️ **Timing Analysis** - DNS, TCP, TLS, TTFB, Download time breakdown
+- ⚡ **Optimized Display** - Virtualized rendering for large responses (>50KB)
+- ⌨️ **Keyboard Shortcuts** - Cmd+N, Cmd+Enter, Cmd+S, Cmd+W, etc.
+- 🧪 **UI Test Mode** - Built-in HTTP command server for automated testing
 
 ---
 
@@ -109,6 +114,7 @@ hopp/
 - **Local Storage**: Hive + SharedPreferences
 - **UI Components**: Material Design 3
 - **Code Generation**: Freezed, json_serializable
+- **Testing**: Mockito, integration_test, Peekaboo
 
 ---
 

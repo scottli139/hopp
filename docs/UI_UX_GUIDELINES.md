@@ -382,6 +382,64 @@ class CardStyles {
 }
 ```
 
+### 开关 (Switch/Toggle)
+
+#### 尺寸
+
+| 尺寸 | 宽度 | 高度 | 圆角 |
+|-----|------|------|------|
+| Default | 40px | 24px | 12px |
+| Small | 32px | 18px | 9px |
+
+#### 样式
+
+```dart
+class SwitchStyles {
+  // 开启状态
+  static final active = SwitchThemeData(
+    thumbColor: MaterialStateProperty.all(Colors.white),
+    trackColor: MaterialStateProperty.resolveWith((states) {
+      if (states.contains(MaterialState.selected)) {
+        return AppColors.primary;
+      }
+      return NeutralColors.border;
+    }),
+    trackOutlineColor: MaterialStateProperty.all(Colors.transparent),
+  );
+}
+```
+
+#### 使用规范
+
+- 开关右侧显示状态文字："ON"/"OFF" 或 "开启"/"关闭"
+- 状态文字使用 12px Regular，颜色为 textSecondary
+- 开关与文字间距：8px
+
+### 下拉选择 (Dropdown)
+
+#### 尺寸
+
+| 尺寸 | 高度 | 水平内边距 | 字体 |
+|-----|------|-----------|------|
+| Small | 28px | 10px | 12px |
+| Medium | 32px | 12px | 13px |
+
+#### 样式
+
+```dart
+class DropdownStyles {
+  static final outline = InputDecoration(
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(6),
+      borderSide: BorderSide(color: NeutralColors.border),
+    ),
+    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    isDense: true,
+    suffixIcon: Icon(Icons.arrow_drop_down, size: 20),
+  );
+}
+```
+
 ---
 
 ## 布局规范
@@ -422,6 +480,16 @@ class CardStyles {
 - 标签样式：文字 + 关闭按钮
 - 活动标签：底部 2px 主色指示器
 - 背景：surface
+
+### Request Editor Tabs
+
+- 高度：28px
+- 标签样式：图标 + 文字 + 状态指示器
+- 状态指示器：
+  - Body Tab：有内容时显示绿色圆点
+  - Headers/Params Tab：显示数量标记（如 "Headers 11"）
+- 选中状态：底部 2px 主色指示线
+- 字体：11px Medium
 
 ### 响应式断点
 
@@ -498,6 +566,249 @@ AnimatedScale(
   duration: Transitions.fast,
   child: child,
 )
+```
+
+---
+
+## Request Settings UI 规范
+
+### 整体布局
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Settings Tab                                           │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │ HTTP Version                      [Dropdown ▼]  │   │
+│  │ Select the HTTP version...                      │   │
+│  │ Default: Settings                               │   │
+│  └─────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │ Enable SSL certificate verification    [○] OFF  │   │
+│  │ Verify SSL certificates when...                 │   │
+│  │ Default: Settings                               │   │
+│  └─────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │ Automatically follow redirects         [●] ON   │   │
+│  │ Follow HTTP 3xx responses...                    │   │
+│  └─────────────────────────────────────────────────┘   │
+│                                                         │
+│  ... more settings ...                                  │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 设置项结构
+
+每个设置项采用统一的卡片式布局：
+
+```dart
+class SettingItem extends StatelessWidget {
+  final String title;           // 设置项标题
+  final String description;     // 设置项描述
+  final Widget control;         // 控件（Switch/Dropdown/Input）
+  final String? defaultValue;   // 默认值提示
+  final bool isModified;        // 是否已修改
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: CardStyles.standard,
+      child: Row(
+        children: [
+          // 左侧：标题和描述
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(title, style: AppTextStyles.body),
+                    if (isModified) ...[
+                      SizedBox(width: 8),
+                      DotIndicator(color: AppColors.primary),
+                    ],
+                  ],
+                ),
+                SizedBox(height: 4),
+                Text(description, 
+                  style: AppTextStyles.caption.copyWith(
+                    color: NeutralColors.textSecondary,
+                  ),
+                ),
+                if (defaultValue != null) ...[
+                  SizedBox(height: 4),
+                  Text('Default: $defaultValue',
+                    style: AppTextStyles.tiny.copyWith(
+                      color: NeutralColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // 右侧：控件
+          control,
+        ],
+      ),
+    );
+  }
+}
+```
+
+### 间距规范
+
+| 元素 | 间距 |
+|-----|------|
+| 设置项之间 | 12px |
+| 设置项内边距 | 16px |
+| 标题与描述之间 | 4px |
+| 描述与默认值之间 | 4px |
+| 控件与文字之间 | 16px |
+
+### 控件类型
+
+#### 1. Toggle Switch
+
+用于布尔类型设置项（ON/OFF）
+
+```dart
+SettingItem(
+  title: 'Enable SSL certificate verification',
+  description: 'Verify SSL certificates when sending a request...',
+  defaultValue: 'Settings',
+  control: Row(
+    children: [
+      Switch(value: isOn, onChanged: onChanged),
+      SizedBox(width: 8),
+      Text(isOn ? 'ON' : 'OFF', style: AppTextStyles.caption),
+    ],
+  ),
+)
+```
+
+#### 2. Dropdown
+
+用于选择类型设置项
+
+```dart
+SettingItem(
+  title: 'HTTP Version',
+  description: 'Select the HTTP version to use for sending the request',
+  defaultValue: 'Settings',
+  control: SizedBox(
+    width: 120,
+    child: DropdownButtonFormField(
+      value: selectedValue,
+      items: ['Auto', 'HTTP/1.1', 'HTTP/2'],
+      onChanged: onChanged,
+      decoration: InputStyles.outline,
+    ),
+  ),
+)
+```
+
+#### 3. Number Input
+
+用于数值类型设置项
+
+```dart
+SettingItem(
+  title: 'Maximum number of redirects',
+  description: 'Set a cap on the maximum number of redirects to follow',
+  control: SizedBox(
+    width: 80,
+    child: TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputStyles.outline.copyWith(
+        suffixText: 'times',
+      ),
+    ),
+  ),
+)
+```
+
+#### 4. Text Input
+
+用于文本类型设置项（如加密套件列表）
+
+```dart
+SettingItem(
+  title: 'Cipher suite selection',
+  description: 'Order of cipher suites that the SSL server profile uses...',
+  control: Expanded(
+    child: TextField(
+      controller: controller,
+      decoration: InputStyles.outline.copyWith(
+        hintText: 'Enter cipher suites',
+      ),
+    ),
+  ),
+)
+```
+
+#### 5. Multi-select Chips
+
+用于多选类型设置项（如 TLS 协议禁用）
+
+```dart
+SettingItem(
+  title: 'TLS/SSL protocols disabled during handshake',
+  description: 'Specify the SSL and TLS protocol versions to be disabled',
+  control: Wrap(
+    spacing: 8,
+    children: [
+      FilterChip(label: Text('SSLv3'), onSelected: ...),
+      FilterChip(label: Text('TLS 1.0'), onSelected: ...),
+      FilterChip(label: Text('TLS 1.1'), onSelected: ...),
+    ],
+  ),
+)
+```
+
+### 视觉状态
+
+| 状态 | 视觉表现 |
+|-----|---------|
+| 默认值 | 无特殊标记 |
+| 已修改 | 标题旁显示紫色圆点指示器 |
+| 悬停 | 卡片背景色变为 surfaceVariant |
+| 禁用 | 控件置灰，透明度 0.5 |
+
+### 分组标题
+
+相关设置项可使用分组标题进行组织：
+
+```dart
+class SettingGroup extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            title,
+            style: AppTextStyles.caption.copyWith(
+              color: NeutralColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        ...children,
+      ],
+    );
+  }
+}
 ```
 
 ---

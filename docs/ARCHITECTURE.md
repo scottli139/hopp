@@ -99,16 +99,18 @@
 ```
 lib/
 ├── main.dart                    # 应用入口
-├── models/                      # 数据模型
+├── models/                      # 数据模型 (Freezed + Hive)
 │   ├── http_method.dart         # HTTP 方法枚举
 │   ├── http_request.dart        # HTTP 请求模型
-│   ├── http_response.dart       # HTTP 响应模型
-│   ├── key_value_pair.dart      # 键值对模型
+│   ├── http_response.dart       # HTTP 响应模型 (含 TimingInfo)
+│   ├── key_value_pair.dart      # 键值对模型 (Header/Param)
 │   ├── collection.dart          # Collection 模型
 │   ├── app_settings.dart        # 应用设置模型
 │   ├── request_tab.dart         # 标签页模型
+│   ├── certificate_info.dart    # SSL/TLS 证书信息模型 ✅
+│   ├── timing_info.dart         # 请求时间分析模型 ✅
 │   └── models.dart              # 导出文件
-├── providers/                   # 状态管理
+├── providers/                   # 状态管理 (Riverpod)
 │   ├── core/                    # 核心服务 Provider
 │   │   └── providers.dart
 │   ├── request/                 # 请求相关 Provider
@@ -120,21 +122,37 @@ lib/
 │   │   └── settings_provider.dart
 │   └── providers.dart           # 导出文件
 ├── services/                    # 业务服务
-│   ├── http_service.dart        # HTTP 服务
-│   ├── storage_service.dart     # 存储服务
+│   ├── http_service.dart        # HTTP 服务 (Dio 封装)
+│   ├── storage_service.dart     # 存储服务 (Hive)
+│   ├── certificate_helper.dart  # 证书信息解析服务 ✅
+│   ├── shortcut_service.dart    # 快捷键服务 ✅
+│   ├── menu_channel.dart        # macOS 菜单通信 ✅
 │   └── services.dart            # 导出文件
 ├── widgets/                     # UI 组件
 │   ├── layout/                  # 布局组件
-│   │   ├── sidebar.dart
-│   │   └── request_tabs.dart
+│   │   ├── sidebar.dart         # 侧边栏 (Collection 树)
+│   │   ├── request_tabs.dart    # 请求标签栏 ✅
+│   │   └── split_view.dart      # 可拖拽分割面板
 │   ├── request/                 # 请求组件
-│   │   ├── request_editor.dart
-│   │   └── response_viewer.dart
+│   │   ├── request_editor.dart  # 请求编辑器 (URL/Headers/Body)
+│   │   ├── response_viewer.dart # 响应查看器 (Body/Headers/Cookies/Certificate/Timing)
+│   │   └── request_settings_tab.dart  # 请求设置面板 (规划中)
+│   ├── common/                  # 通用组件 ✅
+│   │   ├── code_editor.dart     # JSON 代码编辑器
+│   │   ├── key_value_editor.dart # Key-Value 编辑器
+│   │   ├── optimized_response_viewer.dart # 大响应虚拟化组件 ✅
+│   │   └── shortcut_wrapper.dart # 快捷键包装器 ✅
 │   └── widgets.dart             # 导出文件
 ├── screens/                     # 页面
-│   └── main_screen.dart
+│   ├── main_screen.dart         # 主屏幕
+│   └── about/                   # 关于页面 ✅
+│       └── about_screen.dart
 ├── utils/                       # 工具类
-│   ├── app_logger.dart          # 日志工具
+│   ├── app_logger.dart          # 日志工具 (LogMixin)
+│   ├── constants.dart           # 应用常量
+│   ├── testing/                 # 测试工具 ✅
+│   │   ├── ui_test_mode.dart    # UI 测试模式 (HTTP 指令服务器)
+│   │   └── test_helpers.dart    # 测试辅助函数
 │   └── utils.dart               # 导出文件
 └── l10n/                        # 国际化
     ├── app_en.arb
@@ -245,6 +263,8 @@ class UserProfile extends ConsumerWidget {
 
 ### Hive 数据模型
 
+#### HttpRequest
+
 ```dart
 @freezed
 @HiveType(typeId: 2)
@@ -261,6 +281,41 @@ class HttpRequest with _$HttpRequest {
     @HiveField(8) String? parentId,
     @HiveField(9) @Default(0) int sortOrder,
   }) = _HttpRequest;
+}
+```
+
+#### TimingInfo (请求时间分析) ✅
+
+```dart
+@freezed
+class TimingInfo with _$TimingInfo {
+  const factory TimingInfo({
+    int? dnsMs,         // DNS 解析时间
+    int? tcpMs,         // TCP 连接时间
+    int? tlsMs,         // TLS 握手时间
+    int? ttfbMs,        // 首字节时间
+    int? downloadMs,    // 下载时间
+    required int totalMs, // 总耗时
+  }) = _TimingInfo;
+}
+```
+
+#### CertificateInfo (SSL/TLS 证书) ✅
+
+```dart
+@freezed
+class CertificateInfo with _$CertificateInfo {
+  const factory CertificateInfo({
+    required String subject,       // 证书主题
+    required String issuer,        // 颁发者
+    required DateTime validFrom,   // 有效期开始
+    required DateTime validUntil,  // 有效期结束
+    required List<String> san,     // 主题备用名称
+    required String fingerprint,   // 指纹
+    required String serialNumber,  // 序列号
+    required String version,       // 版本
+    required String signatureAlgorithm, // 签名算法
+  }) = _CertificateInfo;
 }
 ```
 
@@ -435,6 +490,44 @@ class MainScreen extends StatelessWidget {
 3. **代码安全**
    - 静态分析检查
    - 依赖安全扫描
+
+---
+
+## UI 测试模式 ✅
+
+Hopp 实现了内置的 UI 测试模式，支持通过 HTTP 指令远程控制应用。
+
+### 架构
+
+```
+测试客户端 (Python) → HTTP POST → UI Test Server → MethodChannel → Flutter Provider
+```
+
+### 使用方式
+
+```bash
+# 1. 以测试模式启动应用
+./hopp.app/Contents/MacOS/hopp --test-mode
+
+# 2. 从日志获取端口
+grep "测试服务器启动在端口" ~/Library/Containers/.../hopp_*.log
+
+# 3. 执行测试
+python3 integration_test/test_client.py --port <PORT> full_test
+```
+
+### 可用指令
+
+| 指令 | 说明 |
+|------|------|
+| `create_request` | 创建新请求 |
+| `set_url` | 设置 URL |
+| `send_request` | 发送请求 |
+| `switch_response_tab` | 切换响应 Tab |
+| `get_response_info` | 获取响应信息 |
+| `rename_request` | 重命名请求 |
+| `get_timing_info` | 获取时间分析 |
+| `full_test` | 完整测试流程 |
 
 ---
 

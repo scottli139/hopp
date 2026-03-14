@@ -1,6 +1,7 @@
 # 快捷键支持实现计划
 
 > 创建时间: 2026-03-12  
+> 完成时间: 2026-03-12 ✅  
 > 目标: 实现常用操作快捷键，配合 Peekaboo 自动化测试
 
 ---
@@ -90,21 +91,21 @@ Shortcuts(
 ## 三、实现步骤
 
 ### Step 1: 创建快捷键服务
-- [ ] 创建 `lib/services/shortcut_service.dart`
-- [ ] 定义所有 Intent 类
-- [ ] 定义所有 Action 类
-- [ ] 提供 Shortcuts 配置
+- [x] 创建 `lib/services/shortcut_service.dart`
+- [x] 定义所有 Intent 类
+- [x] 定义所有 Action 类
+- [x] 提供 Shortcuts 配置
 
 ### Step 2: 集成到 MainScreen
-- [ ] 在 `MainScreen` 包裹 `Shortcuts` widget
-- [ ] 绑定 Action 到具体业务逻辑
-- [ ] 处理快捷键冲突
+- [x] 在 `MainScreen` 包裹 `Shortcuts` widget
+- [x] 绑定 Action 到具体业务逻辑
+- [x] 处理快捷键冲突
 
 ### Step 3: 测试验证
-- [ ] 使用 Peekaboo 测试 Cmd+N
-- [ ] 使用 Peekaboo 测试 Cmd+Enter
-- [ ] 使用 Peekaboo 测试 Cmd+S
-- [ ] 验证截图结果
+- [x] 使用 Peekaboo 测试 Cmd+N
+- [x] 使用 Peekaboo 测试 Cmd+Enter
+- [x] 使用 Peekaboo 测试 Cmd+S
+- [x] 验证截图结果
 
 ---
 
@@ -123,13 +124,20 @@ Shortcuts(
 
 ---
 
-## 五、预期成果
+## 五、实际成果 ✅
 
-1. ✅ 6 个常用快捷键可用
-2. ✅ Peekaboo 测试脚本可稳定运行
-3. ✅ 截图验证自动化
-4. 📝 更新开发文档
+1. ✅ 6 个常用快捷键已实现：
+   - `Cmd+N` - 新建请求
+   - `Cmd+Enter` - 发送请求
+   - `Cmd+S` - 保存请求
+   - `Cmd+W` - 关闭标签
+   - `Cmd+Shift+S` - 另存为
+   - `Cmd+1/2/3...` - 切换标签
+2. ✅ macOS 系统菜单集成 (AppDelegate.swift + MethodChannel)
+3. ✅ Peekaboo 测试脚本可稳定运行
+4. ✅ UI 测试模式支持快捷键验证
+5. ✅ 已更新开发文档
 
 ---
 
-*开始实现...*
+*实现完成 - 2026-03-12*

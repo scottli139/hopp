@@ -26,6 +26,11 @@
 | 🔒 **隐私安全** | 数据本地存储，不上传云端 | ✅ |
 | ⚡ **高性能** | Dart 原生编译，响应迅速 | ✅ |
 | 🌍 **多语言** | 支持简体中文和英语 | ✅ |
+| 🔐 **HTTPS 证书** | 查看 SSL/TLS 证书详情 | ✅ |
+| ⏱️ **时间分析** | DNS、TCP、TLS、TTFB、Download 分段时间 | ✅ |
+| 📄 **大响应优化** | 虚拟化渲染，支持 >50KB 响应 | ✅ |
+| ⌨️ **快捷键** | Cmd+N、Cmd+Enter、Cmd+S、Cmd+W 等 | ✅ |
+| 🧪 **UI 测试模式** | 内置 HTTP 指令服务器，支持自动化测试 | ✅ |
 
 ---
 
@@ -141,6 +146,7 @@ hopp/
 - **本地存储**: Hive + SharedPreferences
 - **UI 组件**: Material Design 3
 - **代码生成**: Freezed, json_serializable
+- **测试**: Mockito, integration_test, Peekaboo
 
 ---
 

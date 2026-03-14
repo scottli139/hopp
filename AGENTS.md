@@ -595,6 +595,70 @@ genhtml coverage/lcov.info -o coverage/html
 ## 会话记录
 
 <details>
+<summary>2026-03-15 - Dropdown 垂直间距修复（进行中）</summary>
+
+**完成工作**:
+- ✅ Method Dropdown 重构为 MenuAnchor，支持程序化展开
+- ✅ Raw Content Type Dropdown 重构为 MenuAnchor
+- ✅ 修复 Release 模式日志记录问题
+- ✅ UI 测试指令支持两个 Dropdown 的展开控制
+
+**技术方案**:
+
+1. **MenuAnchor 重构**:
+```dart
+// Method Dropdown
+MenuAnchor(
+  controller: _methodMenuController,
+  menuChildren: HttpMethod.values.map((method) {
+    return MenuItemButton(
+      style: MenuItemButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+        minimumSize: const Size(0, 28),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 6),
+        // ...
+      ),
+    );
+  }).toList(),
+)
+```
+
+2. **UI 测试控制**:
+```dart
+// build 方法中监听展开指令
+ref.listen(uiTestExpandMethodDropdownProvider, (previous, current) {
+  if (current != null && current != previous) {
+    _methodMenuController.open();
+  }
+});
+```
+
+3. **Raw Content Type Dropdown 特殊处理**:
+- 类级别定义 `_rawContentTypeMenuController`
+- `expand_raw_content_type_dropdown` 指令自动切换 Tab 并设置 Body 类型
+
+**当前状态**:
+- 垂直间距偏紧，需要增加
+- 背景色高度偏低
+
+**下次调整参数**:
+```dart
+// 建议调整
+padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),  // 2->4
+minimumSize: const Size(0, 32),  // 28->32
+```
+
+**文件变更**:
+- `lib/widgets/request/request_editor.dart` - Dropdown 重构
+- `lib/utils/testing/ui_test_mode.dart` - UI 测试指令
+- `lib/utils/app_logger.dart` - Release 模式日志修复
+
+</details>
+
+<details>
 <summary>2026-03-14 - 修复单元测试失败问题</summary>
 
 **完成工作**:
@@ -1600,6 +1664,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-14 | v0.4.4-body-type-selector | Body 类型选择器重构：Radio 组样式 + Raw 子类型下拉菜单 |
 | 2026-03-14 | v0.4.5-ui-test-debug-guide | 添加 UI 测试调试规范，修复 Release 模式下日志被过滤问题 |
 | 2026-03-15 | v0.4.6-body-type-test | Request Body 类型选择器 UI 测试修复完成，日志系统修复 |
+| 2026-03-15 | v0.4.7-dropdown-spacing | Dropdown 垂直间距修复：MenuAnchor 重构，支持程序化展开（进行中，需微调） |
 
 ---
 

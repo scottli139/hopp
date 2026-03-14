@@ -267,6 +267,8 @@ python3 integration_test/test_client.py --port <PORT> full_test
 - `simulate_large_response` - 模拟大响应（用于性能测试）
 - `full_test` - 完整测试流程
 - `focus_url_input` - 聚焦 URL 输入框（用于测试 focus 状态边框对齐）
+- `get_timing_info` - 获取请求时间分析信息（DNS/TCP/TLS/TTFB/Download）
+- `simulate_response_with_timing` - 模拟带时间分析的响应
 
 **优势**:
 - ✅ 精确控制，直接操作 Flutter Provider 状态

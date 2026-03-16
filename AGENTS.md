@@ -23,11 +23,11 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **Postman 导入/导出功能完成** |
+| **当前状态** | 🐛 **发现 P0 问题：4XX/5XX 响应不显示服务端内容** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
 | **测试覆盖** | ✅ **418 个通过 / 0 个失败 / 418 总计** |
-| **下次重点** | 🟡 请求设置实现 / 🟢 国际化完善 |
+| **下次重点** | 🔴 修复 4XX/5XX 响应显示 / 🟡 请求设置实现 / 🟢 国际化完善 |
 
 ---
 
@@ -114,6 +114,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 
 | 问题 | 优先级 | 说明 | 预计修复时间 |
 |------|--------|------|-------------|
+| 4XX/5XX 响应不显示服务端返回内容 | P0 | 当服务端返回 4XX 或 5XX 错误时，Response Body 区域不显示服务端返回的数据，只显示错误信息。需要在 `http_service.dart` 的 DioException 处理中提取 `error.response` 的数据构建完整响应。 | 待修复 |
 | Certificate 显示假数据 | P1 | Response 区域的 Certificate Tab 当前显示的是模拟/假数据，非真实证书信息 | 待实现证书解析 |
 | 删除 Collection 子目录处理问题 | P1 | 删除带子目录的 Collection 时，子 Collection 未被删除而是被保留并提升到第一级 | 需修复删除逻辑 |
 | 行号与内容滚动不同步 | P2 | Request/Response Body 编辑器中行号区域与内容区域未对齐，内容滚动时行号不跟随滚动 | 需优化 CodeEditor 组件 |

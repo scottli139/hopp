@@ -69,19 +69,40 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
   Future<void> toggleExpanded(String collectionId) async {
     final currentState = state;
     if (currentState case AsyncData(:final value)) {
-      final updated = value.map((c) {
-        if (c.id == collectionId) {
-          return c.copyWith(isExpanded: !c.isExpanded);
-        }
-        return c;
-      }).toList();
+      // 递归更新嵌套集合
+      List<Collection> updateCollections(List<Collection> collections) {
+        return collections.map((c) {
+          if (c.id == collectionId) {
+            return c.copyWith(isExpanded: !c.isExpanded);
+          }
+          // 递归检查子集合
+          if (c.children.isNotEmpty) {
+            return c.copyWith(children: updateCollections(c.children));
+          }
+          return c;
+        }).toList();
+      }
 
+      final updated = updateCollections(value);
       state = AsyncValue.data(updated);
 
-      // Persist change
-      final collection = updated.firstWhere((c) => c.id == collectionId);
-      final storage = _ref.read(storageServiceProvider);
-      await storage.saveCollection(collection);
+      // 找到集合并持久化（需要递归查找）
+      Collection? findCollection(List<Collection> collections) {
+        for (final c in collections) {
+          if (c.id == collectionId) return c;
+          if (c.children.isNotEmpty) {
+            final found = findCollection(c.children);
+            if (found != null) return found;
+          }
+        }
+        return null;
+      }
+
+      final collection = findCollection(updated);
+      if (collection != null) {
+        final storage = _ref.read(storageServiceProvider);
+        await storage.saveCollection(collection);
+      }
     }
   }
 

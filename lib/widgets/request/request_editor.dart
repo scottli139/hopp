@@ -1193,6 +1193,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     final language = _getLanguageForRawContentType(request.rawContentType);
 
     return CodeEditor(
+      key: ValueKey('code_editor_${request.id}'),
       code: request.body,
       language: language,
       expands: true,
@@ -1467,6 +1468,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     if (request.bodyType == 'raw') {
       final language = _getLanguageForRawContentType(request.rawContentType);
       return CodeEditor(
+        key: ValueKey('code_editor_${request.id}'),
         code: request.body,
         language: language,
         expands: true,
@@ -1478,6 +1480,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
     // 其他类型使用简单编辑器
     return SimpleCodeEditor(
+      key: ValueKey('simple_code_editor_${request.id}'),
       code: request.body,
       language: CodeLanguage.text,
       expands: true,

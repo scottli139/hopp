@@ -10,6 +10,8 @@ import '../../screens/about/about_screen.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
 import '../../utils/testing/ui_test_mode.dart';
+import '../../widgets/import_export/export_dialog.dart';
+import '../../widgets/import_export/import_dialog.dart';
 
 class Sidebar extends ConsumerStatefulWidget {
   const Sidebar({super.key});
@@ -749,6 +751,27 @@ class _SidebarState extends ConsumerState<Sidebar> {
             ),
             const PopupMenuDivider(height: 1),
             PopupMenuItem(
+              value: 'export',
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.upload,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Export',
+                    style: AppTextStyles.caption.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuItem(
               value: 'rename',
               height: 32,
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -809,6 +832,11 @@ class _SidebarState extends ConsumerState<Sidebar> {
                 ref.read(requestTabProvider.notifier).openTab(newRequest);
                 AppLogger.info(
                     '[Sidebar] New request created and tab opened: ${newRequest.name}');
+                break;
+              case 'export':
+                AppLogger.info(
+                    '[Sidebar] Exporting collection: ${collection.name}');
+                showExportDialog(context, collectionId: collection.id);
                 break;
               case 'delete':
                 _showDeleteConfirmation(context, collection);
@@ -923,6 +951,9 @@ class _SidebarState extends ConsumerState<Sidebar> {
           case 'refresh':
             ref.read(collectionProvider.notifier).loadCollections();
             break;
+          case 'import':
+            _showImportDialog(context);
+            break;
         }
       },
       itemBuilder: (context) => [
@@ -936,6 +967,24 @@ class _SidebarState extends ConsumerState<Sidebar> {
               const SizedBox(width: 8),
               Text(
                 'New Collection',
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'import',
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              Icon(Icons.download,
+                  size: 14, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Text(
+                'Import',
                 style: AppTextStyles.caption.copyWith(
                   fontWeight: FontWeight.w500,
                 ),
@@ -982,6 +1031,11 @@ class _SidebarState extends ConsumerState<Sidebar> {
         ),
       ],
     );
+  }
+
+  /// Show import dialog
+  void _showImportDialog(BuildContext context) {
+    showImportDialog(context);
   }
 
   /// Show about dialog

@@ -23,7 +23,7 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **Response Body UI 修复完成 / 请求设置规划中** |
+| **当前状态** | ✅ **Postman 导入/导出功能完成** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
 | **测试覆盖** | ✅ **418 个通过 / 0 个失败 / 418 总计** |
@@ -99,6 +99,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | Response Body UI 修复 | 2026-03-16 | 修复重复行号问题，禁用 CodeField 内置 gutter |
 | Body 编辑器边框优化 | 2026-03-16 | 隐藏左侧边框线，Request Body 左右靠边 |
 | Code Editor 字体优化 | 2026-03-16 | Request/Response Body 使用等宽字体 Menlo，字号 12px，行号 11px |
+| Postman 导入/导出 | 2026-03-16 | Collection/Environment 导入导出，支持 v2.0/v2.1 格式 |
 
 ### 进行中 🔄
 
@@ -599,6 +600,81 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-16 - Postman 导入/导出功能实现完成</summary>
+
+**完成工作**:
+- ✅ Postman Collection v2.1/v2.0 导入支持
+- ✅ Postman Environment 导入支持 (解析部分)
+- ✅ Collection 导出为 Postman v2.1 格式
+- ✅ 嵌套文件夹结构完整支持
+- ✅ 所有 Body 类型映射 (raw/form-data/urlencoded/graphql/binary)
+- ✅ Raw 子类型映射 (json/xml/html/javascript/text)
+- ✅ 冲突处理机制 (覆盖/重命名/合并/跳过)
+- ✅ 导入/导出对话框 UI
+- ✅ Sidebar 集成导入按钮和导出菜单
+- ✅ UI 测试指令支持
+- ✅ 单元测试覆盖 (PostmanMapper 7 个测试)
+
+**实现文件**:
+```
+lib/services/import_export/
+├── postman_schema.dart              # Postman JSON Schema 模型
+├── postman_mapper.dart              # 字段映射转换器
+├── postman_import_service.dart      # 导入服务
+├── postman_export_service.dart      # 导出服务
+└── import_export_exception.dart     # 自定义异常
+
+lib/providers/import_export/
+└── import_export_provider.dart      # 状态管理
+
+lib/widgets/import_export/
+├── import_dialog.dart               # 导入对话框
+├── export_dialog.dart               # 导出对话框
+└── conflict_resolution_dialog.dart  # 冲突处理
+
+test/services/
+├── postman_mapper_test.dart         # Mapper 单元测试
+└── postman_import_service_test.dart # Import 服务测试
+
+integration_test/
+└── test_postman_import.py           # UI 自动化测试
+```
+
+**Body 类型映射表**:
+| Postman mode | Hopp BodyType |
+|--------------|---------------|
+| raw | raw (支持 json/xml/html/javascript/text 子类型) |
+| urlencoded | x-www-form-urlencoded |
+| formdata | form-data (文本类型) |
+| graphql | graphql |
+| binary | binary |
+
+**UI 功能**:
+- 导入对话框：文件选择 + 拖放区域 + 进度显示 + 错误处理
+- 导出对话框：集合选择 + 格式版本 + 美化选项
+- 冲突处理：重命名/覆盖/合并/跳过 四种策略
+
+**测试验证**:
+```bash
+# 单元测试
+fvm flutter test test/services/postman_mapper_test.dart
+# 7 个测试全部通过
+
+# UI 测试
+python3 integration_test/test_postman_import.py
+# 6 个测试场景
+```
+
+**依赖添加**:
+```yaml
+dependencies:
+  file_picker: ^6.1.1
+  uuid: ^4.3.3
+```
+
+</details>
 
 <details>
 <summary>2026-03-16 - Code Editor 字体优化：Menlo 等宽字体 12px 规范</summary>
@@ -2045,6 +2121,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-14 | v0.3.7-timing-analysis | 请求时间分析功能：DNS/TCP/TLS/TTFB/Download |
 | 2026-03-14 | v0.3.8-request-editor-ui | Request Editor UI 优化：Tab样式、Headers/Params列表、自动完成 |
 | 2026-03-14 | v0.4.0-rc-plan | 请求设置 (Request Settings) 功能规划完成，参考 Postman 实现 |
+| 2026-03-16 | v0.5.0-postman-import | Postman 导入/导出功能：Collection/Environment 支持 v2.0/v2.1 格式 |
 | 2026-03-14 | v0.4.0-docs-update | 全面更新项目文档，同步实际功能状态 |
 | 2026-03-14 | v0.4.1-request-details | 请求详情展示功能：Request Tab (方法/URL/Headers/Body) + UI测试 |
 | 2026-03-14 | v0.4.2-request-info | Request Tab 完善：展示实际发送的完整请求信息（含自动添加的 Headers） |

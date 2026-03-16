@@ -209,14 +209,15 @@ void main() {
 
         await container.read(collectionProvider.notifier).loadCollections();
 
-        // toggleExpanded throws when collection not found due to firstWhere
-        // This is expected behavior based on the implementation
-        expect(
-          () => container
-              .read(collectionProvider.notifier)
-              .toggleExpanded('non-existent'),
-          throwsA(isA<StateError>()),
-        );
+        // New implementation silently returns when collection not found
+        // (recursive search doesn't throw, just doesn't update anything)
+        await container
+            .read(collectionProvider.notifier)
+            .toggleExpanded('non-existent');
+
+        // State should remain unchanged
+        final state = container.read(collectionProvider);
+        expect(state.valueOrNull?.first.isExpanded, false);
       });
 
       test('should handle toggle when in error state', () async {

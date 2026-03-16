@@ -503,6 +503,43 @@ class HoppTestClient:
         print(f"✅ 截图已保存: {result.get('path')}")
         return result
 
+    def get_collections(self):
+        """获取所有集合"""
+        print("📁 获取集合列表...")
+        result = self.send_command("get_collections")
+        print(f"✅ 找到 {result.get('collection_count')} 个集合")
+        for collection in result.get('collections', []):
+            print(f"   - {collection.get('name')} ({collection.get('request_count')} 请求)")
+        return result
+    
+    def import_collection(self, file_path):
+        """导入 Postman Collection"""
+        print(f"📥 导入集合: {file_path}")
+        result = self.send_command("import_collection", {"file_path": file_path})
+        if result.get('imported'):
+            print(f"✅ 导入成功: {result.get('request_count')} 个请求")
+            if result.get('renamed'):
+                print(f"   已重命名为: {result.get('new_name')}")
+            if result.get('merged'):
+                print("   已合并到现有集合")
+        elif result.get('conflict'):
+            print(f"⚠️  冲突: {result.get('collection_name')} 已存在")
+        return result
+    
+    def trigger_import_dialog(self):
+        """触发导入对话框"""
+        print("📥 触发导入对话框...")
+        result = self.send_command("trigger_import_dialog")
+        print("✅ 导入对话框已触发")
+        return result
+    
+    def trigger_export_dialog(self):
+        """触发导出对话框"""
+        print("📤 触发导出对话框...")
+        result = self.send_command("trigger_export_dialog")
+        print("✅ 导出对话框已触发")
+        return result
+
     def full_test(self):
         """执行完整测试流程"""
         print("\n" + "="*60)
@@ -714,6 +751,19 @@ def main():
 
     # simulate_response_with_timing
     subparsers.add_parser("simulate_response_with_timing", help="模拟带时间分析的响应")
+    
+    # get_collections
+    subparsers.add_parser("get_collections", help="获取所有集合")
+    
+    # import_collection
+    import_parser = subparsers.add_parser("import_collection", help="导入 Postman Collection")
+    import_parser.add_argument("--file", required=True, help="文件路径")
+    
+    # trigger_import_dialog
+    subparsers.add_parser("trigger_import_dialog", help="触发导入对话框")
+    
+    # trigger_export_dialog
+    subparsers.add_parser("trigger_export_dialog", help="触发导出对话框")
 
     # full_test
     subparsers.add_parser("full_test", help="执行完整测试流程")
@@ -806,6 +856,14 @@ def main():
             client.simulate_response_with_timing()
         elif args.command == "get_request_details":
             client.get_request_details()
+        elif args.command == "get_collections":
+            client.get_collections()
+        elif args.command == "import_collection":
+            client.import_collection(args.file)
+        elif args.command == "trigger_import_dialog":
+            client.trigger_import_dialog()
+        elif args.command == "trigger_export_dialog":
+            client.trigger_export_dialog()
         elif args.command == "full_test":
             client.full_test()
         

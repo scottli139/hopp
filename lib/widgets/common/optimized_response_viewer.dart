@@ -584,15 +584,13 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             ? theme.colorScheme.surface
             : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
       ),
-      child: SelectableText(
-        line.isEmpty ? ' ' : line, // 保持空行高度
-        style: TextStyle(
-          fontFamily: 'Menlo',
-          fontSize: 12,
-          height: 1.5,
-          color: isJsonLine ? _getJsonLineColor(line, theme) : null,
-        )
-      ),
+      child: SelectableText(line.isEmpty ? ' ' : line, // 保持空行高度
+          style: TextStyle(
+            fontFamily: 'Menlo',
+            fontSize: 12,
+            height: 1.5,
+            color: isJsonLine ? _getJsonLineColor(line, theme) : null,
+          )),
     );
   }
 

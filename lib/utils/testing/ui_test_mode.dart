@@ -15,7 +15,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../providers/import_export/import_export_provider.dart';
 import '../../providers/providers.dart';
+import '../../services/import_export/postman_import_service.dart';
 import '../../utils/app_logger.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
@@ -275,6 +277,19 @@ class UITestModeManager {
       case 'capture_screenshot':
         final name = params['name'] as String? ?? 'screenshot';
         return await _captureScreenshot(name);
+
+      case 'get_collections':
+        return await _getCollections();
+
+      case 'import_collection':
+        final filePath = params['file_path'] as String;
+        return await _importCollection(filePath);
+
+      case 'trigger_import_dialog':
+        return await _triggerImportDialog();
+
+      case 'trigger_export_dialog':
+        return await _triggerExportDialog();
 
       default:
         throw Exception('未知指令: $action');
@@ -1496,6 +1511,81 @@ class UITestModeManager {
       'has_body': request.body.isNotEmpty && request.bodyType != 'none',
     };
   }
+
+  /// 获取所有集合
+  Future<Map<String, dynamic>> _getCollections() async {
+    final collectionsAsync = _ref!.read(collectionProvider);
+
+    if (collectionsAsync case AsyncData(:final value)) {
+      final collections = value
+          .map((c) => {
+                'id': c.id,
+                'name': c.name,
+                'request_count': c.requests.length + _countNestedRequests(c),
+              })
+          .toList();
+
+      return {
+        'collection_count': collections.length,
+        'collections': collections,
+      };
+    }
+
+    return {'collection_count': 0, 'collections': []};
+  }
+
+  /// 计算嵌套请求数量
+  int _countNestedRequests(Collection collection) {
+    var count = collection.requests.length;
+    for (final child in collection.children) {
+      count += _countNestedRequests(child);
+    }
+    return count;
+  }
+
+  /// 导入 Postman Collection
+  Future<Map<String, dynamic>> _importCollection(String filePath) async {
+    final importService = _ref!.read(postmanImportServiceProvider);
+    final result = await importService.importFile(filePath);
+
+    if (result.success) {
+      return {
+        'imported': true,
+        'collection_id': result.collectionId,
+        'request_count': result.importedRequestCount,
+        'renamed': result.renamed,
+        'new_name': result.newName,
+        'merged': result.merged,
+      };
+    } else if (result.conflictCollection != null) {
+      return {
+        'imported': false,
+        'conflict': true,
+        'collection_name': result.conflictCollection!.name,
+        'existing_id': result.existingId,
+      };
+    } else {
+      throw Exception(result.errorMessage ?? '导入失败');
+    }
+  }
+
+  /// 触发导入对话框
+  Future<Map<String, dynamic>> _triggerImportDialog() async {
+    // 设置状态通知 UI 显示导入对话框
+    _ref!.read(uiTestImportDialogProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {'triggered': true};
+  }
+
+  /// 触发导出对话框
+  Future<Map<String, dynamic>> _triggerExportDialog() async {
+    // 设置状态通知 UI 显示导出对话框
+    _ref!.read(uiTestExportDialogProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {'triggered': true};
+  }
 }
 
 /// UI 测试目标 Tab 状态
@@ -1549,3 +1639,9 @@ final uiTestRawContentTypeProvider = StateProvider<String?>((ref) => null);
 
 /// UI 测试 - Beautify 代码触发器
 final uiTestBeautifyCodeProvider = StateProvider<int?>((ref) => null);
+
+/// UI 测试 - 导入对话框触发器
+final uiTestImportDialogProvider = StateProvider<int?>((ref) => null);
+
+/// UI 测试 - 导出对话框触发器
+final uiTestExportDialogProvider = StateProvider<int?>((ref) => null);

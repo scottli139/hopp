@@ -154,9 +154,9 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
               '${index + 1}',
               textAlign: TextAlign.right,
               style: TextStyle(
-                fontFamily: 'JetBrains Mono',
-                fontSize: 12,
-                height: 1.4,
+                fontFamily: 'Menlo',
+                fontSize: 11,
+                height: 1.5,
                 color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
               ),
             );
@@ -189,9 +189,9 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
           maxLines: widget.maxLines,
           gutterStyle: GutterStyle.none,
           textStyle: const TextStyle(
-            fontFamily: 'JetBrains Mono',
-            fontSize: 13,
-            height: 1.4,
+            fontFamily: 'Menlo',
+            fontSize: 12,
+            height: 1.5,
           ),
         ),
       ),
@@ -307,9 +307,9 @@ class SimpleCodeEditor extends StatelessWidget {
           border: InputBorder.none,
         ),
         style: const TextStyle(
-          fontFamily: 'JetBrains Mono',
-          fontSize: 13,
-          height: 1.4,
+          fontFamily: 'Menlo',
+          fontSize: 12,
+          height: 1.5,
         ),
         onChanged: onChanged,
       ),

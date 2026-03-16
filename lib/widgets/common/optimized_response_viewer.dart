@@ -559,9 +559,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                 '${index + 1}',
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                  fontFamily: 'JetBrains Mono',
-                  fontSize: 12,
-                  height: 1.4,
+                  fontFamily: 'Menlo',
+                  fontSize: 11,
+                  height: 1.5,
                   color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
                 ),
               );
@@ -587,11 +587,11 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       child: SelectableText(
         line.isEmpty ? ' ' : line, // 保持空行高度
         style: TextStyle(
-          fontFamily: 'JetBrains Mono',
-          fontSize: 13,
-          height: 1.4,
+          fontFamily: 'Menlo',
+          fontSize: 12,
+          height: 1.5,
           color: isJsonLine ? _getJsonLineColor(line, theme) : null,
-        ),
+        )
       ),
     );
   }
@@ -724,9 +724,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                         readOnly: true,
                         gutterStyle: GutterStyle.none,
                         textStyle: const TextStyle(
-                          fontFamily: 'JetBrains Mono',
-                          fontSize: 13,
-                          height: 1.4,
+                          fontFamily: 'Menlo',
+                          fontSize: 12,
+                          height: 1.5,
                         ),
                       ),
                     ),
@@ -751,7 +751,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                   controller: controller,
                   readOnly: true,
                   textStyle: const TextStyle(
-                    fontFamily: 'JetBrains Mono',
+                    fontFamily: 'Menlo',
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -841,9 +841,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                   child: SelectableText(
                     widget.content,
                     style: TextStyle(
-                      fontFamily: 'JetBrains Mono',
-                      fontSize: 13,
-                      height: 1.4,
+                      fontFamily: 'Menlo',
+                      fontSize: 12,
+                      height: 1.5,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
@@ -856,7 +856,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             child: SelectableText(
               widget.content,
               style: TextStyle(
-                fontFamily: 'JetBrains Mono',
+                fontFamily: 'Menlo',
                 fontSize: 13,
                 height: 1.4,
                 color: theme.colorScheme.onSurface,

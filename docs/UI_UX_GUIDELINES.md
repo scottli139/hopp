@@ -152,8 +152,8 @@ class AppFonts {
 | Tiny | 11px | 500 | 14px | Tab 文字、徽章 |
 | Micro | 10px | 500 | 12px | Certificate 标签 |
 | Nano | 9px | 600 | 11px | Sidebar Method badge |
-| Code | 13px | 400 | 18px | 代码显示 |
-| Code Small | 11px | 400 | 16px | 性能模式代码 |
+| Code | 12px | 400 | 18px | 代码显示（Request/Response Body） |
+| Code Small | 11px | 400 | 16px | 行号显示 |
 
 ### 实际应用规范
 
@@ -215,10 +215,10 @@ class AppTextStyles {
   );
   
   static const code = TextStyle(
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: FontWeight.w400,
-    height: 1.38,
-    fontFamily: 'JetBrains Mono',
+    height: 1.5,
+    fontFamily: 'Menlo',
   );
 }
 ```
@@ -1495,7 +1495,23 @@ Window
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-#### 行号区域规范
+#### 字体规范
+
+Request Body 和 Response Body 编辑器统一使用以下字体规范：
+
+| 元素 | 字体 | 字号 | 行高 | 字重 |
+|-----|------|------|------|------|
+| 代码内容 | Menlo | 12px | 1.5 | 400 (Regular) |
+| 行号 | Menlo | 11px | 1.5 | 400 (Regular) |
+
+**说明**:
+- 使用 macOS 系统自带等宽字体 `Menlo` 确保代码对齐
+- Menlo 是 macOS 标准等宽字体，无需额外安装
+- 代码字号 12px 适合长时间阅读
+- 行号字号 11px 略小，不喧宾夺主
+- 行高 1.5 提供舒适的阅读体验
+
+### 行号区域规范
 
 ```dart
 // 行号区域样式
@@ -1511,10 +1527,10 @@ class LineNumberStyle {
   
   // 文字样式
   static const textStyle = TextStyle(
-    fontFamily: 'JetBrains Mono',
-    fontSize: 12,
-    color: Colors.grey, // 灰色，不喧宾夺主
-    height: 1.4,
+    fontFamily: 'Menlo', // macOS 系统自带等宽字体
+    fontSize: 11,        // 行号字号略小
+    color: Colors.grey,  // 灰色，不喧宾夺主
+    height: 1.5,
   );
   
   // 内边距

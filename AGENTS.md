@@ -98,6 +98,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | 保存功能最终修复 | 2026-03-16 | 移除 isDirty 限制，新请求可直接保存 |
 | Response Body UI 修复 | 2026-03-16 | 修复重复行号问题，禁用 CodeField 内置 gutter |
 | Body 编辑器边框优化 | 2026-03-16 | 隐藏左侧边框线，Request Body 左右靠边 |
+| Code Editor 字体优化 | 2026-03-16 | Request/Response Body 使用等宽字体 Menlo，字号 12px，行号 11px |
 
 ### 进行中 🔄
 
@@ -598,6 +599,48 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-16 - Code Editor 字体优化：Menlo 等宽字体 12px 规范</summary>
+
+**完成工作**:
+- ✅ Request Body 和 Response Body 编辑器统一使用等宽字体 Menlo（macOS 系统自带）
+- ✅ 代码字号从 13px 调整为 12px，更适合代码阅读
+- ✅ 行号字号从 12px 调整为 11px，略小于代码，不喧宾夺主
+- ✅ 行高从 1.4 调整为 1.5，提供更舒适的阅读体验
+- ✅ 更新 `docs/UI_UX_GUIDELINES.md` 添加字体规范章节
+- ✅ 创建 `integration_test/test_font_update.py` UI 测试脚本
+- ✅ 所有 418 个单元测试通过
+- ✅ UI 测试验证通过
+
+**问题修复**:
+最初使用 JetBrains Mono，但因其未在 pubspec.yaml 中声明，Flutter 无法加载，回退到系统默认字体（非等宽）。后改为使用 macOS 系统自带的 Menlo 等宽字体，问题解决。
+
+**字体规范**:
+
+| 元素 | 字体 | 字号 | 行高 | 字重 |
+|-----|------|------|------|------|
+| 代码内容 | Menlo | 12px | 1.5 | 400 (Regular) |
+| 行号 | Menlo | 11px | 1.5 | 400 (Regular) |
+
+**修改文件**:
+- `lib/widgets/common/code_editor.dart` - CodeEditor 和 SimpleCodeEditor 字体调整
+- `lib/widgets/common/optimized_response_viewer.dart` - Response Body 编辑器字体调整
+- `docs/UI_UX_GUIDELINES.md` - 添加字体规范章节，更新 AppTextStyles.code
+- `integration_test/test_font_update.py` - 新增 UI 测试脚本
+
+**UI 测试**:
+```bash
+python3 integration_test/test_font_update.py
+```
+
+**验证结果**:
+- ✅ 418 个单元测试全部通过
+- ✅ 代码使用等宽字体 JetBrains Mono
+- ✅ 代码字号 12px，行号字号 11px
+- ✅ UI/UX Guidelines 文档已更新
+
+</details>
 
 <details>
 <summary>2026-03-16 - Body 编辑器边框最终修复：完全禁用所有边框</summary>
@@ -2015,6 +2058,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-16 | v0.5.1-border-polish | Body 编辑器边框优化：隐藏左侧边框，Request Body 左右靠边 |
 | 2026-03-16 | v0.5.2-border-final | Body 编辑器边框最终修复：完全禁用所有边框，使用 Theme 覆盖 inputDecorationTheme |
 | 2026-03-16 | v0.4.7-dropdown-style | Dropdown 样式改进：垂直间距优化、触发按钮样式统一、UI测试验证 |
+| 2026-03-16 | v0.5.3-font-update | Code Editor 字体优化：使用 Menlo 等宽字体，代码 12px/行号 11px，行高 1.5，同步更新 UI_UX_GUIDELINES |
 
 ---
 

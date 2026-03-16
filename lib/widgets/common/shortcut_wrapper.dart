@@ -175,7 +175,7 @@ class _ShortcutWrapperState extends ConsumerState<ShortcutWrapper> {
   }
 
   /// 处理保存请求
-  void _handleSaveRequest() {
+  void _handleSaveRequest() async {
     AppLogger.info('[ShortcutWrapper] Handling save request');
 
     final activeTab = ref.read(activeTabProvider);
@@ -186,7 +186,11 @@ class _ShortcutWrapperState extends ConsumerState<ShortcutWrapper> {
 
     try {
       final collectionNotifier = ref.read(collectionProvider.notifier);
-      collectionNotifier.updateRequestInCollection(activeTab.request);
+      await collectionNotifier.saveRequest(activeTab.request);
+
+      // Mark as saved in tab
+      ref.read(requestTabProvider.notifier).markAsSaved(activeTab.id);
+
       AppLogger.info('[ShortcutWrapper] Request saved');
     } catch (e, stack) {
       AppLogger.error('[ShortcutWrapper] Failed to save request', e, stack);

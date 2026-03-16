@@ -306,21 +306,11 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             ),
           ),
           const SizedBox(width: AppConstants.spaceM),
-          // Save button
+          // Save button - always clickable
           SizedBox(
             height: 36,
             width: 36,
-            child: _buildIconButton(
-              context: context,
-              icon: Icons.save,
-              tooltip: 'Save to collection',
-              onPressed: () {
-                final isDirty = ref.read(activeTabProvider)?.isDirty ?? false;
-                if (isDirty) _saveRequest(ref, request);
-              },
-              isActive: ref.watch(activeTabProvider)?.isDirty ?? false,
-              activeColor: AppColors.primary,
-            ),
+            child: _buildSaveButton(context, ref, request),
           ),
           const SizedBox(width: AppConstants.spaceS),
           // Send button
@@ -437,6 +427,46 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 构建保存按钮 - 确保总是可点击
+  Widget _buildSaveButton(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    final theme = Theme.of(context);
+    final isDirty = ref.watch(activeTabProvider)?.isDirty ?? false;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        AppLogger.info('[RequestEditor] Save button tapped, isDirty: $isDirty');
+        _handleSaveButtonPress(ref, request);
+      },
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: isDirty
+              ? AppColors.primary.withOpacity(0.1)
+              : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppConstants.radiusM),
+          border: Border.all(
+            color: isDirty
+                ? AppColors.primary.withOpacity(0.3)
+                : theme.colorScheme.outlineVariant,
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.save,
+            size: 18,
+            color: isDirty ? AppColors.primary : theme.colorScheme.outline,
           ),
         ),
       ),
@@ -1501,18 +1531,58 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     }
   }
 
-  void _saveRequest(WidgetRef ref, HttpRequest request) {
-    AppLogger.info('[RequestEditor] Saving request: ${request.id}');
-    ref.read(collectionProvider.notifier).updateRequestInCollection(request);
-    ref.read(requestTabProvider.notifier).markAsSaved(request.id);
+  /// Handle save button press - always allow save
+  void _handleSaveButtonPress(WidgetRef ref, HttpRequest request) {
+    final isDirty = ref.read(activeTabProvider)?.isDirty ?? false;
 
-    // Show success feedback
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Request saved to collection'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    // Always allow save - if no changes, just save current state
+    // This allows saving newly created requests immediately
+    _saveRequest(ref, request);
+  }
+
+  void _saveRequest(WidgetRef ref, HttpRequest request) async {
+    AppLogger.info('[RequestEditor] Saving request: ${request.id}');
+
+    try {
+      // Use the new saveRequest method that handles both new and existing requests
+      // This will auto-create a default collection if none exists
+      await ref.read(collectionProvider.notifier).saveRequest(request);
+      ref.read(requestTabProvider.notifier).markAsSaved(request.id);
+
+      // Show success feedback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Request saved to collection'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      AppLogger.error('[RequestEditor] Failed to save request', e);
+
+      // Show user-friendly error feedback
+      String errorMessage = 'Failed to save request';
+      if (e.toString().contains('collection')) {
+        errorMessage = 'Unable to save: Collection error. Please try again.';
+      }
+
+      // Show error feedback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () => _saveRequest(ref, request),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   void _sendRequest(WidgetRef ref, HttpRequest request) {

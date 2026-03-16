@@ -642,9 +642,10 @@ class UITestModeManager {
       throw Exception('没有活动的请求 Tab');
     }
 
-    _ref!.read(collectionProvider.notifier).updateRequestInCollection(
-          activeTab.request,
-        );
+    // Use the new saveRequest method that handles both new and existing requests
+    await _ref!
+        .read(collectionProvider.notifier)
+        .saveRequest(activeTab.request);
     _ref!.read(requestTabProvider.notifier).markAsSaved(activeTab.request.id);
 
     return {'saved': true};

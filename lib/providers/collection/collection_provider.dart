@@ -182,6 +182,63 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
     return null;
   }
 
+  /// Check if a request exists in any collection
+  bool isRequestInAnyCollection(String requestId) {
+    return findRequestCollectionId(requestId) != null;
+  }
+
+  /// Save or update a request - automatically adds to default collection if new
+  /// If no collection exists, creates a default one automatically
+  Future<void> saveRequest(HttpRequest request,
+      {String? targetCollectionId}) async {
+    final currentState = state;
+    if (currentState is AsyncData<List<Collection>>) {
+      final collections = currentState.value;
+      // Check if request already exists in any collection
+      final existingCollectionId = findRequestCollectionId(request.id);
+
+      if (existingCollectionId != null) {
+        // Request exists, update it
+        await updateRequestInCollection(request);
+      } else {
+        // Request is new, need to add to a collection
+        String? collectionIdToUse = targetCollectionId;
+
+        // If no target specified and no collections exist, create a default one
+        if (collectionIdToUse == null && collections.isEmpty) {
+          AppLogger.info(
+              '[CollectionNotifier] No collections found, creating default collection');
+          final defaultCollection = Collection.empty().copyWith(
+            id: 'default-collection',
+            name: 'My Collection',
+            description: 'Default collection for saved requests',
+          );
+          await addCollection(defaultCollection);
+
+          // After creating default collection, reload and get the first one
+          final currentCollections = state.valueOrNull ?? [];
+          if (currentCollections.isNotEmpty) {
+            collectionIdToUse = currentCollections.first.id;
+          }
+        } else if (collectionIdToUse == null && collections.isNotEmpty) {
+          // Use the first available collection
+          collectionIdToUse = collections.first.id;
+          AppLogger.info(
+              '[CollectionNotifier] Auto-adding request to first collection: ${collections.first.name}');
+        }
+
+        if (collectionIdToUse != null) {
+          await addRequestToCollection(collectionIdToUse, request);
+        } else {
+          throw Exception(
+              'Failed to create or find a collection to save the request.');
+        }
+      }
+    } else {
+      throw Exception('Collections not loaded yet');
+    }
+  }
+
   /// Delete a request from a collection
   Future<void> deleteRequestFromCollection(
       String collectionId, String requestId) async {

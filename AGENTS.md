@@ -94,6 +94,8 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | UI 测试调试规范 | 2026-03-15 | 日志 + 截图联动分析法、实战案例文档 |
 | Body 类型选择器测试 | 2026-03-15 | Radio 组 + Raw 子类型 + UI 测试验证 |
 | Dropdown 样式改进 | 2026-03-16 | Method/Raw Content Type 下拉菜单样式统一优化 |
+| 请求保存功能修复 | 2026-03-16 | 修复新请求无法保存到 Collection 的问题 |
+| 保存功能最终修复 | 2026-03-16 | 移除 isDirty 限制，新请求可直接保存 |
 
 ### 进行中 🔄
 
@@ -594,6 +596,145 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-16 - Request 保存功能最终修复完成</summary>
+
+**完成工作**:
+- ✅ 发现并修复新请求保存按钮不可点击的问题
+- ✅ 移除 `_handleSaveButtonPress` 中的 `isDirty` 限制
+- ✅ 添加 `HitTestBehavior.opaque` 确保按钮可点击
+- ✅ 所有 UI 测试通过（12个测试）
+- ✅ 所有单元测试通过（418个测试）
+- ✅ 代码格式化（dart format）
+
+**问题分析**:
+
+用户反馈：`Cmd+N` 创建新请求后，保存按钮不可点击。
+
+根本原因：
+- 新创建的请求 `isDirty = false`
+- `_handleSaveButtonPress` 方法在 `!isDirty` 时直接返回，不执行保存
+- 这导致新请求必须修改后才能保存，用户体验差
+
+**修复详情**:
+
+1. **移除 isDirty 限制** (`request_editor.dart`):
+```dart
+// 修复前
+void _handleSaveButtonPress(...) {
+  final isDirty = ref.read(activeTabProvider)?.isDirty ?? false;
+  if (!isDirty) {
+    // 直接返回，不保存
+    return;
+  }
+  _saveRequest(ref, request);
+}
+
+// 修复后
+void _handleSaveButtonPress(...) {
+  // 总是允许保存
+  _saveRequest(ref, request);
+}
+```
+
+2. **优化按钮点击区域**:
+```dart
+GestureDetector(
+  behavior: HitTestBehavior.opaque,  // 确保整个区域可点击
+  onTap: () {
+    AppLogger.info('[RequestEditor] Save button tapped');
+    _handleSaveButtonPress(ref, request);
+  },
+  ...
+)
+```
+
+**验证结果**:
+```
+UI 测试: 12 个测试全部通过
+单元测试: 418 个测试全部通过
+代码规范: dart format 已格式化
+```
+
+**最终用户体验**:
+- ✅ `Cmd+N` 创建新请求
+- ✅ 无需修改，直接点击保存按钮
+- ✅ 系统自动创建 "My Collection"
+- ✅ 请求保存成功，Sidebar 显示
+
+</details>
+
+<details>
+<summary>2026-03-16 - Request 保存功能修复</summary>
+
+**完成工作**:
+- ✅ 发现并修复新请求无法保存到 Collection 的核心问题
+- ✅ 添加 `saveRequest` 方法自动处理新请求和已有请求
+- ✅ 修改 `_saveRequest` 方法使用新的保存逻辑
+- ✅ 修改快捷键保存处理 (`_handleSaveRequest`)
+- ✅ 更新 UI 测试模式中的保存指令
+- ✅ 创建全面的 UI 测试脚本验证保存和改名功能
+- ✅ 所有 418 个单元测试通过
+
+**问题分析**:
+
+原保存功能存在严重缺陷：
+1. `_saveRequest` 只调用 `updateRequestInCollection`，仅更新已存在的请求
+2. 新创建的请求（Cmd+N）不在任何 collection 中
+3. 保存操作实际上只执行了 `storage.saveRequest(request)`，但未关联到 collection
+4. 侧边栏不显示这些请求，重启应用后请求"丢失"
+
+**修复详情**:
+
+1. **添加 `saveRequest` 方法** (`collection_provider.dart`):
+```dart
+Future<void> saveRequest(HttpRequest request, {String? targetCollectionId}) async {
+  final existingCollectionId = findRequestCollectionId(request.id);
+  
+  if (existingCollectionId != null) {
+    // Request exists, update it
+    await updateRequestInCollection(request);
+  } else {
+    // Request is new, auto-add to first collection
+    String? collectionIdToUse = targetCollectionId ?? value.first.id;
+    await addRequestToCollection(collectionIdToUse, request);
+  }
+}
+```
+
+2. **修改 `_saveRequest`** (`request_editor.dart`):
+- 使用新的 `saveRequest` 方法
+- 添加错误处理和用户反馈
+
+3. **创建 UI 测试** (`test_save_and_rename.py`):
+- 10 个测试场景覆盖保存和改名功能
+- 包括 dirty 状态验证、多次保存、边界情况等
+
+**验证结果**:
+```
+UI 测试: 12 个测试全部通过
+- 基础连接测试
+- 创建请求并修改内容
+- Dirty 状态验证
+- 保存请求
+- 保存后状态验证
+- 直接重命名请求
+- 交互式重命名
+- 取消编辑
+- 多次修改和保存
+- 数据完整性验证
+```
+
+**文件变更**:
+- `lib/providers/collection/collection_provider.dart` - 添加 `saveRequest` 和 `isRequestInAnyCollection` 方法
+- `lib/widgets/request/request_editor.dart` - 修改 `_saveRequest` 使用新方法
+- `lib/widgets/common/shortcut_wrapper.dart` - 修改 `_handleSaveRequest` 使用新方法
+- `lib/utils/testing/ui_test_mode.dart` - 更新 `_saveRequest` 指令
+- `integration_test/test_save_and_rename.py` - 新增保存功能测试脚本
+- `integration_test/test_save_edge_cases.py` - 新增边界情况测试脚本
+
+</details>
 
 <details>
 <summary>2026-03-16 - 修复 Mock 测试失败，所有 418 个测试通过</summary>
@@ -1720,6 +1861,8 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-14 | v0.4.4-body-type-selector | Body 类型选择器重构：Radio 组样式 + Raw 子类型下拉菜单 |
 | 2026-03-14 | v0.4.5-ui-test-debug-guide | 添加 UI 测试调试规范，修复 Release 模式下日志被过滤问题 |
 | 2026-03-15 | v0.4.6-body-type-test | Request Body 类型选择器 UI 测试修复完成，日志系统修复 |
+| 2026-03-16 | v0.4.9-save-final | Request 保存功能最终修复：移除 isDirty 限制、新请求可直接保存 |
+| 2026-03-16 | v0.4.8-save-fix | Request 保存功能修复：新请求自动添加到 Collection、UI 测试验证 |
 | 2026-03-16 | v0.4.7-dropdown-style | Dropdown 样式改进：垂直间距优化、触发按钮样式统一、UI测试验证 |
 
 ---

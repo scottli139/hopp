@@ -205,6 +205,7 @@
 |-----|------|--------|---------|------|
 | Body 类型选择器重构 | ✅ | P1 | 4h | Radio button 组样式 (none/form-data/x-www-form-urlencoded/raw/binary/GraphQL) |
 | Raw 子类型下拉菜单 | ✅ | P1 | 3h | 右侧下拉选择 Text/JavaScript/JSON/HTML/XML |
+| Dropdown 样式统一 | ✅ | P1 | 2h | Method/Raw Content Type 下拉菜单样式统一优化 |
 | Beautify 格式化按钮 | ⏳ | P1 | 2h | 右上角 Beautify 按钮，支持 JSON/XML 格式化 |
 | 编辑器行号显示 | ⏳ | P1 | 3h | 代码编辑器左侧显示行号 |
 | JSON 语法高亮优化 | ⏳ | P2 | 4h | 键/字符串/数字不同颜色高亮 |

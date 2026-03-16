@@ -105,7 +105,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         final index = ['params', 'headers', 'body', 'auth'].indexOf(current);
         if (index != -1 && _tabController.index != index) {
           _tabController.animateTo(index);
-          AppLogger.info('[RequestEditor] Tab switched to: $current (index: $index)');
+          AppLogger.info(
+              '[RequestEditor] Tab switched to: $current (index: $index)');
         }
       }
     });
@@ -124,7 +125,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && !_rawContentTypeMenuController.isOpen) {
             _rawContentTypeMenuController.open();
-            AppLogger.info('[RequestEditor] Raw content type dropdown expanded');
+            AppLogger.info(
+                '[RequestEditor] Raw content type dropdown expanded');
           }
         });
       }
@@ -192,23 +194,25 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     _updateRequest(ref, request.copyWith(method: method));
                   },
                   style: MenuItemButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
-                    minimumSize: const Size(0, 28),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                    minimumSize: const Size(0, 32),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 6),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       method.value,
                       style: TextStyle(
                         color: color,
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        height: 1.0,
+                        height: 1.2,
                       ),
                     ),
                   ),
@@ -223,16 +227,25 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       controller.open();
                     }
                   },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildMethodMenuItem(request.method.value, _getMethodColor(request.method.value)),
-                      Icon(
-                        Icons.arrow_drop_down,
-                        color: theme.colorScheme.outline,
-                        size: 18,
-                      ),
-                    ],
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildMethodMenuItem(request.method.value,
+                            _getMethodColor(request.method.value)),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          color: theme.colorScheme.outline,
+                          size: 18,
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -323,29 +336,22 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   /// 构建 Method 下拉菜单项
   Widget _buildMethodMenuItem(String method, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 6,
-              vertical: 2,
-            ),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: Text(
-              method,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: color,
-                height: 1.1,
-              ),
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(
+        horizontal: 6,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        method,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+          height: 1.2,
+        ),
       ),
     );
   }
@@ -1353,8 +1359,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         menuChildren: contentTypes.map((type) {
           return MenuItemButton(
             style: MenuItemButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
-              minimumSize: const Size(0, 28),
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+              minimumSize: const Size(0, 32),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             onPressed: () {
@@ -1365,7 +1371,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             },
             child: Text(
               type,
-              style: AppTextStyles.caption,
+              style: AppTextStyles.caption.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
             ),
           );
         }).toList(),
@@ -1522,20 +1530,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   }
 
   Color _getMethodColor(String method) {
-    switch (method.toUpperCase()) {
-      case 'GET':
-        return Colors.blue;
-      case 'POST':
-        return Colors.green;
-      case 'PUT':
-        return Colors.orange;
-      case 'DELETE':
-        return Colors.red;
-      case 'PATCH':
-        return Colors.purple;
-      default:
-        return Colors.grey;
-    }
+    return AppColors.getHttpMethodColor(method);
   }
 }
 

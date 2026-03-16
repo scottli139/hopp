@@ -375,11 +375,565 @@ lib/
 
 | 任务 | 状态 | 优先级 | 预计工时 |
 |-----|------|--------|---------|
-| Postman 导入/导出 | ⏳ | P1 | 12h |
+| [Postman 导入/导出](#m51-postman-导入导出) | ⏳ | P1 | 12h |
 | Insomnia 导入 | ⏳ | P2 | 8h |
 | curl 导出 | ⏳ | P2 | 4h |
 | 云端同步 | ⏳ | P3 | 20h |
 | 团队协作 | ⏳ | P3 | 40h |
+
+---
+
+#### M5.1 Postman 导入/导出
+
+**状态**: ⏳ 待实现 (预计 2026-03-25 开始)
+**依赖**: 无（可与 Request Settings 并行开发）
+**工时估算**: 12小时
+
+##### 架构设计
+
+```
+lib/
+├── services/
+│   └── import_export/
+│       ├── postman_import_service.dart      # 导入服务
+│       ├── postman_export_service.dart      # 导出服务
+│       ├── postman_schema.dart              # Postman JSON Schema 模型
+│       ├── postman_mapper.dart              # 字段映射转换器
+│       └── import_export_exception.dart     # 自定义异常
+├── widgets/
+│   └── import_export/
+│       ├── import_dialog.dart               # 导入对话框
+│       ├── export_dialog.dart               # 导出对话框
+│       ├── conflict_resolution_dialog.dart  # 冲突处理对话框
+│       └── import_progress_dialog.dart      # 导入进度对话框
+└── providers/
+    └── import_export/
+        ├── import_provider.dart             # 导入状态管理
+        └── export_provider.dart             # 导出状态管理
+```
+
+##### 数据模型设计
+
+**Postman Schema 模型** (`postman_schema.dart`):
+
+```dart
+// Collection v2.1 Schema
+@freezed
+class PostmanCollection with _$PostmanCollection {
+  const factory PostmanCollection({
+    required PostmanInfo info,
+    required List<PostmanItem> item,
+    List<PostmanVariable>? variable,
+  }) = _PostmanCollection;
+  
+  factory PostmanCollection.fromJson(Map<String, dynamic> json) => 
+      _$PostmanCollectionFromJson(json);
+}
+
+@freezed
+class PostmanInfo with _$PostmanInfo {
+  const factory PostmanInfo({
+    required String name,
+    String? description,
+    String? version,
+    @JsonKey(name: '_postman_id') String? postmanId,
+    String? schema,
+  }) = _PostmanInfo;
+  
+  factory PostmanInfo.fromJson(Map<String, dynamic> json) => 
+      _$PostmanInfoFromJson(json);
+}
+
+@freezed
+class PostmanItem with _$PostmanItem {
+  const factory PostmanItem.request({
+    required String name,
+    PostmanRequest? request,
+    List<PostmanResponse>? response,
+    String? description,
+  }) = PostmanRequestItem;
+  
+  const factory PostmanItem.folder({
+    required String name,
+    required List<PostmanItem> item,
+    String? description,
+  }) = PostmanFolderItem;
+  
+  factory PostmanItem.fromJson(Map<String, dynamic> json) => 
+      _$PostmanItemFromJson(json);
+}
+
+@freezed
+class PostmanRequest with _$PostmanRequest {
+  const factory PostmanRequest({
+    required String method,
+    required PostmanUrl url,
+    List<PostmanHeader>? header,
+    PostmanBody? body,
+    String? description,
+  }) = _PostmanRequest;
+  
+  factory PostmanRequest.fromJson(Map<String, dynamic> json) => 
+      _$PostmanRequestFromJson(json);
+}
+
+@freezed
+class PostmanBody with _$PostmanBody {
+  const factory PostmanBody({
+    required String mode,  // raw/urlencoded/formdata/graphql/binary
+    String? raw,
+    List<PostmanUrlEncoded>? urlencoded,
+    List<PostmanFormData>? formdata,
+    PostmanGraphQL? graphql,
+    PostmanBodyOptions? options,
+  }) = _PostmanBody;
+  
+  factory PostmanBody.fromJson(Map<String, dynamic> json) => 
+      _$PostmanBodyFromJson(json);
+}
+
+// Environment Schema
+@freezed
+class PostmanEnvironment with _$PostmanEnvironment {
+  const factory PostmanEnvironment({
+    required String name,
+    @JsonKey(name: '_postman_variable_scope') String? scope,
+    List<PostmanEnvironmentValue>? values,
+  }) = _PostmanEnvironment;
+  
+  factory PostmanEnvironment.fromJson(Map<String, dynamic> json) => 
+      _$PostmanEnvironmentFromJson(json);
+}
+```
+
+##### 核心服务实现
+
+**1. PostmanImportService**:
+
+```dart
+class PostmanImportService {
+  final CollectionStorageService _collectionStorage;
+  final EnvironmentStorageService _environmentStorage;
+  
+  PostmanImportService(this._collectionStorage, this._environmentStorage);
+  
+  /// 导入文件，自动检测类型 (Collection/Environment)
+  Future<ImportResult> importFile(String filePath) async {
+    final content = await File(filePath).readAsString();
+    final json = jsonDecode(content) as Map<String, dynamic>;
+    
+    // 检测类型
+    if (_isCollection(json)) {
+      return _importCollection(json);
+    } else if (_isEnvironment(json)) {
+      return _importEnvironment(json);
+    } else {
+      throw ImportException(
+        ImportErrorCode.unknownFormat,
+        '无法识别文件格式，请确保是有效的 Postman Collection 或 Environment',
+      );
+    }
+  }
+  
+  /// 导入 Collection
+  Future<ImportResult> _importCollection(Map<String, dynamic> json) async {
+    // 版本检测
+    final version = _detectVersion(json);
+    if (version == PostmanVersion.v1_0) {
+      throw ImportException(
+        ImportErrorCode.unsupportedVersion,
+        '不支持的 Postman v1.0 格式，请升级到 v2.0+',
+      );
+    }
+    
+    final collection = PostmanCollection.fromJson(json);
+    
+    // 转换为 Hopp Collection
+    final hoppCollection = PostmanMapper.toHoppCollection(collection);
+    
+    // 检查冲突
+    final existing = await _collectionStorage.getCollectionByName(hoppCollection.name);
+    if (existing != null) {
+      return ImportResult.conflict(
+        collection: hoppCollection,
+        existingId: existing.id,
+      );
+    }
+    
+    // 保存
+    await _collectionStorage.saveCollection(hoppCollection);
+    
+    return ImportResult.success(
+      collectionId: hoppCollection.id,
+      importedRequestCount: _countRequests(collection.item),
+    );
+  }
+  
+  /// 处理导入冲突
+  Future<ImportResult> resolveConflict({
+    required Collection collection,
+    required ConflictResolution resolution,
+    String? existingId,
+  }) async {
+    switch (resolution) {
+      case ConflictResolution.overwrite:
+        if (existingId != null) {
+          await _collectionStorage.deleteCollection(existingId);
+        }
+        await _collectionStorage.saveCollection(collection);
+        return ImportResult.success(collectionId: collection.id);
+        
+      case ConflictResolution.rename:
+        final newName = await _generateUniqueName(collection.name);
+        final renamed = collection.copyWith(name: newName);
+        await _collectionStorage.saveCollection(renamed);
+        return ImportResult.success(
+          collectionId: renamed.id,
+          renamed: true,
+          newName: newName,
+        );
+        
+      case ConflictResolution.merge:
+        // 合并逻辑：保留现有，添加新请求
+        final existing = await _collectionStorage.getCollection(existingId!);
+        final merged = _mergeCollections(existing!, collection);
+        await _collectionStorage.saveCollection(merged);
+        return ImportResult.success(
+          collectionId: merged.id,
+          merged: true,
+        );
+        
+      case ConflictResolution.skip:
+        return ImportResult.skipped();
+    }
+  }
+}
+```
+
+**2. PostmanExportService**:
+
+```dart
+class PostmanExportService {
+  final CollectionStorageService _collectionStorage;
+  final EnvironmentStorageService _environmentStorage;
+  
+  /// 导出 Collection
+  Future<void> exportCollection({
+    required String collectionId,
+    required String savePath,
+    PostmanVersion version = PostmanVersion.v2_1,
+    bool prettyPrint = true,
+    bool includeEnvironment = false,
+  }) async {
+    final collection = await _collectionStorage.getCollection(collectionId);
+    if (collection == null) {
+      throw ExportException('Collection not found: $collectionId');
+    }
+    
+    // 转换为 Postman 格式
+    final postmanCollection = PostmanMapper.toPostmanCollection(
+      collection,
+      version: version,
+    );
+    
+    // 序列化
+    final json = postmanCollection.toJson();
+    var jsonString = prettyPrint 
+        ? const JsonEncoder.withIndent('  ').convert(json)
+        : jsonEncode(json);
+    
+    // 写入文件
+    final file = File(savePath);
+    await file.writeAsString(jsonString);
+    
+    // 可选：导出环境变量
+    if (includeEnvironment) {
+      await _exportEnvironments(collectionId, savePath);
+    }
+  }
+  
+  /// 生成默认文件名
+  String generateFileName(String collectionName, PostmanVersion version) {
+    final sanitized = collectionName.replaceAll(RegExp(r'[^\w\s-]'), '_');
+    final versionSuffix = version == PostmanVersion.v2_1 ? 'v2.1' : 'v2.0';
+    return '${sanitized}_$versionSuffix.postman_collection.json';
+  }
+}
+```
+
+**3. PostmanMapper** (核心映射逻辑):
+
+```dart
+class PostmanMapper {
+  /// Hopp Collection → Postman Collection
+  static PostmanCollection toPostmanCollection(
+    Collection collection, {
+    PostmanVersion version = PostmanVersion.v2_1,
+  }) {
+    return PostmanCollection(
+      info: PostmanInfo(
+        name: collection.name,
+        description: collection.description ?? '',
+        postmanId: _generateUuid(),
+        schema: 'https://schema.getpostman.com/json/collection/${version.value}/collection.json',
+      ),
+      item: [
+        // 映射 folders
+        ...collection.folders.map(_folderToPostmanItem),
+        // 映射顶层 requests
+        ...collection.requests.map(_requestToPostmanItem),
+      ],
+    );
+  }
+  
+  /// Postman Collection → Hopp Collection
+  static Collection toHoppCollection(PostmanCollection postmanCollection) {
+    return Collection(
+      id: _generateId(),
+      name: postmanCollection.info.name,
+      description: postmanCollection.info.description,
+      folders: _extractFolders(postmanCollection.item),
+      requests: _extractRootRequests(postmanCollection.item),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+  
+  /// Body 类型映射 (Postman → Hopp)
+  static BodyType mapPostmanBodyMode(String mode, PostmanBodyOptions? options) {
+    switch (mode) {
+      case 'raw':
+        return BodyType.raw;
+      case 'urlencoded':
+        return BodyType.formUrlEncoded;
+      case 'formdata':
+        return BodyType.formData;
+      case 'graphql':
+        return BodyType.graphql;
+      case 'binary':
+        return BodyType.binary;
+      default:
+        return BodyType.none;
+    }
+  }
+  
+  /// Raw 子类型映射
+  static String? mapRawContentType(String? language) {
+    switch (language) {
+      case 'json':
+        return 'application/json';
+      case 'xml':
+        return 'application/xml';
+      case 'html':
+        return 'text/html';
+      case 'javascript':
+        return 'application/javascript';
+      case 'text':
+      default:
+        return 'text/plain';
+    }
+  }
+}
+```
+
+##### UI 组件实现
+
+**1. ImportDialog**:
+
+```dart
+class ImportDialog extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<ImportDialog> createState() => _ImportDialogState();
+}
+
+class _ImportDialogState extends ConsumerState<ImportDialog> {
+  bool _isDragging = false;
+  ImportState _state = const ImportState.idle();
+  
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('导入 Postman 数据'),
+      content: SizedBox(
+        width: 480,
+        height: 320,
+        child: _buildContent(),
+      ),
+      actions: _buildActions(),
+    );
+  }
+  
+  Widget _buildContent() {
+    return _state.when(
+      idle: () => _buildDropZone(),
+      loading: () => _buildLoading(),
+      conflict: (collection, existingId) => ConflictResolutionDialog(
+        collection: collection,
+        onResolve: _handleConflictResolution,
+      ),
+      success: (result) => _buildSuccess(result),
+      error: (message) => _buildError(message),
+    );
+  }
+  
+  Widget _buildDropZone() {
+    return DropTarget(
+      onDragEntered: (_) => setState(() => _isDragging = true),
+      onDragExited: (_) => setState(() => _isDragging = false),
+      onDragDone: (details) => _handleFileDrop(details.files),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: _isDragging 
+                ? Theme.of(context).colorScheme.primary 
+                : Colors.grey.shade400,
+            width: _isDragging ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          color: _isDragging 
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.05) 
+              : Colors.grey.shade50,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.cloud_upload, size: 48, color: Colors.grey),
+              SizedBox(height: 16),
+              Text('拖放文件到此处或点击选择'),
+              SizedBox(height: 8),
+              Text(
+                '支持 Postman Collection v2.0/v2.1 和 Environment',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Future<void> _handleFileDrop(List<XFile> files) async {
+    if (files.isEmpty) return;
+    
+    setState(() => _state = const ImportState.loading());
+    
+    try {
+      final importService = ref.read(postmanImportServiceProvider);
+      final result = await importService.importFile(files.first.path);
+      
+      setState(() => _state = ImportState.success(result));
+    } on ImportException catch (e) {
+      setState(() => _state = ImportState.error(e.message));
+    }
+  }
+}
+```
+
+##### 异常处理
+
+```dart
+/// 导入错误码
+enum ImportErrorCode {
+  unknownFormat,
+  unsupportedVersion,
+  invalidJson,
+  missingRequiredField,
+  fileNotFound,
+  permissionDenied,
+}
+
+class ImportException implements Exception {
+  final ImportErrorCode code;
+  final String message;
+  final dynamic details;
+  
+  ImportException(this.code, this.message, {this.details});
+  
+  @override
+  String toString() => 'ImportException($code): $message';
+}
+
+class ExportException implements Exception {
+  final String message;
+  final dynamic details;
+  
+  ExportException(this.message, {this.details});
+  
+  @override
+  String toString() => 'ExportException: $message';
+}
+```
+
+##### 测试计划
+
+**单元测试** (`test/services/postman_import_service_test.dart`):
+
+```dart
+group('PostmanImportService', () {
+  test('should import v2.1 collection successfully', () async {
+    // 准备测试数据
+    final json = _loadTestFile('collection_v2.1.json');
+    
+    // 执行导入
+    final result = await service.importJson(json);
+    
+    // 验证结果
+    expect(result.isSuccess, true);
+    expect(result.importedRequestCount, 3);
+  });
+  
+  test('should throw error for v1.0 collection', () async {
+    final json = _loadTestFile('collection_v1.0.json');
+    
+    expect(
+      () => service.importJson(json),
+      throwsA(isA<ImportException>()),
+    );
+  });
+  
+  test('should correctly map all body types', () {
+    final testCases = [
+      ('raw', BodyType.raw),
+      ('urlencoded', BodyType.formUrlEncoded),
+      ('formdata', BodyType.formData),
+      ('graphql', BodyType.graphql),
+      ('binary', BodyType.binary),
+    ];
+    
+    for (final (mode, expectedType) in testCases) {
+      expect(PostmanMapper.mapPostmanBodyMode(mode, null), expectedType);
+    }
+  });
+});
+```
+
+**Widget 测试**:
+- ImportDialog 渲染测试
+- 文件拖放交互测试
+- 冲突处理对话框测试
+- 导出选项验证测试
+
+**集成测试**:
+- 端到端导入流程测试
+- 导出文件在 Postman 中打开验证
+- 大量数据导入性能测试
+
+##### 依赖库
+
+```yaml
+dependencies:
+  # 文件选择
+  file_picker: ^6.1.1
+  # 桌面端拖放支持
+  desktop_drop: ^0.4.4
+  # UUID 生成
+  uuid: ^4.3.3
+
+dev_dependencies:
+  # 测试数据生成
+  faker: ^2.1.0
+```
 
 ---
 
@@ -440,11 +994,26 @@ make logs   # 查看日志
 - 🔄 国际化 (框架搭建，需完善)
 - ⏳ 请求历史
 - ⏳ 环境变量
-- ⏳ 导入/导出 (Postman/Insomnia/curl)
 - ✅ Timing 分析
 - ✅ 请求详情展示
 - ⏳ 请求设置 (Request Settings)
 - ✅ 修复测试失败 (2个 Widget 测试)
+
+### v0.5.0 - Data Exchange 📋 PLANNED
+
+- ⏳ Postman 导入/导出 (v2.1 格式完整支持)
+- ⏳ Insomnia 导入 (v4 格式)
+- ⏳ curl 命令导出
+- ⏳ Collection/Environment 批量导入
+- ⏳ 导入冲突处理机制
+
+### v0.6.0 - Advanced Features 📋 PLANNED
+
+- ⏳ 请求历史记录
+- ⏳ 完整环境变量系统
+- ⏳ 请求设置 (Request Settings) 实现
+- ⏳ 数据备份与恢复
+- ⏳ 完整国际化支持
 
 ### v1.0.0 - GA ⏳ PLANNED
 

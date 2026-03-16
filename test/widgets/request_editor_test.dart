@@ -93,8 +93,8 @@ void main() {
         // Check URL field
         expect(find.text('https://api.example.com/users'), findsOneWidget);
 
-        // Check method dropdown
-        expect(find.byType(DropdownButton<HttpMethod>), findsOneWidget);
+        // Check method dropdown (MenuAnchor is used instead of DropdownButton)
+        expect(find.byType(MenuAnchor), findsWidgets);
 
         // Check Send button
         // Check for Send button with icon
@@ -148,10 +148,8 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
-        final dropdown = tester.widget<DropdownButton<HttpMethod>>(
-          find.byType(DropdownButton<HttpMethod>),
-        );
-        expect(dropdown.value, HttpMethod.post);
+        // Verify POST method is displayed (MenuAnchor shows the current method)
+        expect(find.text('POST'), findsOneWidget);
       });
     });
 

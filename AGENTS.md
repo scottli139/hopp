@@ -26,8 +26,8 @@
 | **当前状态** | ✅ **Dropdown 样式改进完成 / 请求设置规划中** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **测试覆盖** | 418 个通过 / 0 个失败 / 418 总计 |
-| **下次重点** | 🟡 请求设置实现 / 🟢 国际化完善 / 🔵 修复测试失败 |
+| **测试覆盖** | ✅ **418 个通过 / 0 个失败 / 418 总计** |
+| **下次重点** | 🟡 请求设置实现 / 🟢 国际化完善 |
 
 ---
 
@@ -102,7 +102,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | 请求设置 (Request Settings) | 请求级别配置选项 (F1.14)，预计 2026-03-20 开始实现 |
 | Request Body 区域优化 | 参考 Postman 改进 Body Tab UI (✅ Radio 选择器/Raw 子类型/UI测试、⏳ Beautify/行号、form-data/x-www-form-urlencoded/binary/GraphQL) |
 | 国际化完善 | 框架已搭建，需完善翻译 |
-| 修复 Mock 测试失败 | 2026-03-14 | 修复 22 个 MissingStubError 相关测试 |
+| 修复 Mock 测试失败 | ✅ 2026-03-16 | 修复 2 个 Widget 测试，所有 418 个测试通过 |
 
 ### 质量保障
 
@@ -594,6 +594,65 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-16 - 修复 Mock 测试失败，所有 418 个测试通过</summary>
+
+**完成工作**:
+- ✅ 修复 `test/widgets/request_editor_test.dart` 中的 2 个失败测试
+- ✅ 所有 418 个单元测试全部通过
+
+**问题分析**:
+
+`request_editor_test.dart` 中的两个测试失败：
+1. `should render URL bar with method dropdown`
+2. `should display correct method in dropdown`
+
+**原因**：
+- 测试期望查找 `DropdownButton<HttpMethod>` 组件
+- 但实际代码使用的是 `MenuAnchor` 组件来实现 Method 下拉菜单
+- 之前的 Dropdown 样式改进将 `DropdownButton` 替换为了 `MenuAnchor`
+
+**修复详情**:
+
+```dart
+// 修复前
+expect(find.byType(DropdownButton<HttpMethod>), findsOneWidget);
+
+// 修复后
+expect(find.byType(MenuAnchor), findsWidgets);
+```
+
+对于第二个测试，改为验证方法文本显示：
+
+```dart
+// 修复前
+final dropdown = tester.widget<DropdownButton<HttpMethod>>(
+  find.byType(DropdownButton<HttpMethod>),
+);
+expect(dropdown.value, HttpMethod.post);
+
+// 修复后
+expect(find.text('POST'), findsOneWidget);
+```
+
+**测试结果**:
+```
+总计: 418 个单元测试
+通过: 418 个
+失败: 0 个
+
+✅ Models 测试: 152 个通过
+✅ Services 测试: 73 个通过
+✅ Providers 测试: 92 个通过
+✅ Widget 测试: 88 个通过
+✅ 其他测试: 全部通过
+```
+
+**文件变更**:
+- `test/widgets/request_editor_test.dart` - 更新测试以使用正确的 widget 类型
+
+</details>
 
 <details>
 <summary>2026-03-16 - Dropdown 样式改进完成</summary>

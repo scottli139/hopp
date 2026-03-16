@@ -110,6 +110,14 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | 国际化完善 | 框架已搭建，需完善翻译 |
 | 修复 Mock 测试失败 | ✅ 2026-03-16 | 修复 2 个 Widget 测试，所有 418 个测试通过 |
 
+### 已知问题 🐛
+
+| 问题 | 优先级 | 说明 | 预计修复时间 |
+|------|--------|------|-------------|
+| Certificate 显示假数据 | P1 | Response 区域的 Certificate Tab 当前显示的是模拟/假数据，非真实证书信息 | 待实现证书解析 |
+| 删除 Collection 子目录处理问题 | P1 | 删除带子目录的 Collection 时，子 Collection 未被删除而是被保留并提升到第一级 | 需修复删除逻辑 |
+| 行号与内容滚动不同步 | P2 | Request/Response Body 编辑器中行号区域与内容区域未对齐，内容滚动时行号不跟随滚动 | 需优化 CodeEditor 组件 |
+
 ### 质量保障
 
 | 类别 | 数量 | 状态 |
@@ -2136,6 +2144,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-16 | v0.5.2-border-final | Body 编辑器边框最终修复：完全禁用所有边框，使用 Theme 覆盖 inputDecorationTheme |
 | 2026-03-16 | v0.4.7-dropdown-style | Dropdown 样式改进：垂直间距优化、触发按钮样式统一、UI测试验证 |
 | 2026-03-16 | v0.5.3-font-update | Code Editor 字体优化：使用 Menlo 等宽字体，代码 12px/行号 11px，行高 1.5，同步更新 UI_UX_GUIDELINES |
+| 2026-03-16 | v0.5.4-known-issues | 记录已知问题：Certificate 假数据、Collection 子目录删除问题、行号滚动同步问题 |
 
 ---
 

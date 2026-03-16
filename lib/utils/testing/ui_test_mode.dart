@@ -269,6 +269,13 @@ class UITestModeManager {
       case 'get_body_info':
         return await _getBodyInfo();
 
+      case 'beautify_code':
+        return await _beautifyCode();
+
+      case 'capture_screenshot':
+        final name = params['name'] as String? ?? 'screenshot';
+        return await _captureScreenshot(name);
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -1141,6 +1148,42 @@ class UITestModeManager {
     };
   }
 
+  /// 格式化代码
+  Future<Map<String, dynamic>> _beautifyCode() async {
+    // 通过 provider 通知 UI 执行 beautify
+    _ref!.read(uiTestBeautifyCodeProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {
+      'beautified': true,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+
+  /// 截图
+  Future<Map<String, dynamic>> _captureScreenshot(String name) async {
+    try {
+      // 使用 screencapture 命令截图
+      final result = await io.Process.run('screencapture', [
+        '-x',
+        '${io.Platform.environment['HOME']}/Downloads/hopp_${name}.png',
+      ]);
+
+      if (result.exitCode == 0) {
+        return {
+          'captured': true,
+          'name': name,
+          'path':
+              '${io.Platform.environment['HOME']}/Downloads/hopp_${name}.png',
+        };
+      } else {
+        throw Exception('截图失败: ${result.stderr}');
+      }
+    } catch (e) {
+      throw Exception('截图失败: $e');
+    }
+  }
+
   /// 关闭测试服务器
   Future<void> dispose() async {
     await _server?.close();
@@ -1503,3 +1546,6 @@ final uiTestBodyTypeProvider = StateProvider<String?>((ref) => null);
 
 /// UI 测试 - Raw 内容类型选择
 final uiTestRawContentTypeProvider = StateProvider<String?>((ref) => null);
+
+/// UI 测试 - Beautify 代码触发器
+final uiTestBeautifyCodeProvider = StateProvider<int?>((ref) => null);

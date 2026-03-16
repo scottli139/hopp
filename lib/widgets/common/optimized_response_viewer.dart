@@ -23,6 +23,35 @@ enum ResponseDisplayMode {
   raw,
 }
 
+/// 语法高亮配色
+class JsonSyntaxColors {
+  // Key - 深蓝色 (Blue 800)
+  static const key = Color(0xFF1E40AF);
+
+  // String - 深绿色 (Green 700)
+  static const string = Color(0xFF15803D);
+
+  // Number - 蓝色 (Blue 600)
+  static const number = Color(0xFF2563EB);
+
+  // Boolean/Null - 紫色 (Violet 600)
+  static const keyword = Color(0xFF7C3AED);
+
+  // Punctuation - 灰色 (Gray 500)
+  static const punctuation = Color(0xFF6B7280);
+
+  // 深色模式适配
+  static Color getKey(bool isDark) => isDark ? const Color(0xFF93C5FD) : key;
+  static Color getString(bool isDark) =>
+      isDark ? const Color(0xFF86EFAC) : string;
+  static Color getNumber(bool isDark) =>
+      isDark ? const Color(0xFF60A5FA) : number;
+  static Color getKeyword(bool isDark) =>
+      isDark ? const Color(0xFFC4B5FD) : keyword;
+  static Color getPunctuation(bool isDark) =>
+      isDark ? const Color(0xFF9CA3AF) : punctuation;
+}
+
 /// 大响应虚拟化显示组件
 ///
 /// 针对大 JSON/文本响应进行优化，使用虚拟化列表避免一次性渲染大量内容
@@ -35,6 +64,8 @@ class OptimizedResponseViewer extends StatefulWidget {
     this.performanceThreshold = 50000, // 50KB
     this.virtualizationThreshold = 10000, // 10KB
     this.maxInitialLines = 500,
+    this.showLineNumbers = true,
+    this.showBeautifyButton = true,
   });
 
   /// 响应内容
@@ -55,6 +86,12 @@ class OptimizedResponseViewer extends StatefulWidget {
   /// 初始显示的最大行数（性能模式下）
   final int maxInitialLines;
 
+  /// 是否显示行号
+  final bool showLineNumbers;
+
+  /// 是否显示 Beautify 按钮
+  final bool showBeautifyButton;
+
   @override
   State<OptimizedResponseViewer> createState() =>
       _OptimizedResponseViewerState();
@@ -62,6 +99,10 @@ class OptimizedResponseViewer extends StatefulWidget {
 
 class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     with LogMixin {
+  // 行号区域常量
+  static const double _lineNumberWidth = 40.0;
+  static const double _lineNumberPadding = 8.0;
+
   late ResponseDisplayMode _currentMode;
   late List<String> _lines;
   bool _isJson = false;
@@ -70,6 +111,10 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
 
   // 滚动控制器
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _lineNumberScrollController = ScrollController();
+
+  // 同步滚动
+  bool _isSyncing = false;
 
   @override
   void initState() {
@@ -88,7 +133,19 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   @override
   void dispose() {
     _scrollController.dispose();
+    _lineNumberScrollController.dispose();
     super.dispose();
+  }
+
+  /// 同步滚动行号区域
+  void _syncLineNumberScroll() {
+    if (_isSyncing) return;
+    _isSyncing = true;
+    if (_lineNumberScrollController.hasClients &&
+        _scrollController.hasClients) {
+      _lineNumberScrollController.jumpTo(_scrollController.offset);
+    }
+    _isSyncing = false;
   }
 
   /// 初始化内容
@@ -201,6 +258,48 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     });
   }
 
+  /// 格式化 JSON 代码
+  void _beautifyCode() {
+    if (!_isJson) return;
+
+    try {
+      final dynamic decoded = jsonDecode(widget.content);
+      const encoder = JsonEncoder.withIndent('  ');
+      final formatted = encoder.convert(decoded);
+
+      // 更新内容
+      setState(() {
+        _lines = formatted.split('\n');
+        _displayedLines = _lines.length;
+        _showAllLines = true;
+      });
+
+      logInfo('[OptimizedResponseViewer] Code beautified');
+
+      // 显示成功提示
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Code beautified'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e, stack) {
+      logError('[OptimizedResponseViewer] Beautify failed', e, stack);
+
+      // 显示错误提示
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to beautify code'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -252,6 +351,15 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           // 显示模式选择（始终显示，方便用户切换）
           _buildModeSelector(theme),
           const SizedBox(width: 8),
+          // Beautify 按钮
+          if (widget.showBeautifyButton && _isJson)
+            _buildToolbarButton(
+              icon: Icons.format_align_left,
+              tooltip: 'Beautify',
+              onPressed: _beautifyCode,
+              theme: theme,
+            ),
+          if (widget.showBeautifyButton && _isJson) const SizedBox(width: 8),
           // 复制按钮
           _buildToolbarButton(
             icon: Icons.copy,
@@ -388,24 +496,79 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     return Column(
       children: [
         Expanded(
-          child: Container(
-            color: theme.colorScheme.surface,
-            child: Scrollbar(
-              controller: _scrollController,
-              child: ListView.builder(
-                controller: _scrollController,
-                itemCount: displayLines.length,
-                itemBuilder: (context, index) {
-                  return _buildLineItem(displayLines[index], index, theme);
-                },
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 行号区域
+              if (widget.showLineNumbers)
+                _buildLineNumberArea(theme, displayLines.length),
+              // 分割线
+              if (widget.showLineNumbers)
+                VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+                ),
+              // 代码区域
+              Expanded(
+                child: Scrollbar(
+                  controller: _scrollController,
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    itemCount: displayLines.length,
+                    itemBuilder: (context, index) {
+                      return _buildLineItem(
+                        displayLines[index],
+                        index,
+                        theme,
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
         // 加载更多按钮
         if (!_showAllLines && _lines.length > _displayedLines)
           _buildLoadMoreBar(theme),
       ],
+    );
+  }
+
+  /// 构建行号区域
+  Widget _buildLineNumberArea(ThemeData theme, int lineCount) {
+    return Container(
+      width: _lineNumberWidth,
+      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      padding: const EdgeInsets.only(
+        right: _lineNumberPadding,
+        top: 12,
+        bottom: 12,
+      ),
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(
+          scrollbars: false,
+        ),
+        child: SingleChildScrollView(
+          controller: _lineNumberScrollController,
+          physics: const NeverScrollableScrollPhysics(),
+          child: Column(
+            children: List.generate(lineCount, (index) {
+              return Text(
+                '${index + 1}',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontFamily: 'JetBrains Mono',
+                  fontSize: 12,
+                  height: 1.4,
+                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
     );
   }
 
@@ -445,13 +608,15 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
 
   /// 获取 JSON 行颜色
   Color? _getJsonLineColor(String line, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
     final trimmed = line.trim();
+
     if (trimmed.startsWith('"')) {
       // 可能是 key 或 string value
       if (trimmed.contains('":')) {
-        return Colors.blue.shade700; // key
+        return JsonSyntaxColors.getKey(isDark); // key
       }
-      return Colors.green.shade700; // string
+      return JsonSyntaxColors.getString(isDark); // string
     }
     if (trimmed == '{' ||
         trimmed == '}' ||
@@ -459,17 +624,17 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         trimmed == ']' ||
         trimmed == ',' ||
         trimmed == ':') {
-      return theme.colorScheme.onSurfaceVariant;
+      return JsonSyntaxColors.getPunctuation(isDark);
     }
     if (trimmed == 'true' || trimmed == 'false') {
-      return Colors.purple.shade700;
+      return JsonSyntaxColors.getKeyword(isDark);
     }
     if (trimmed == 'null') {
-      return Colors.purple.shade700;
+      return JsonSyntaxColors.getKeyword(isDark);
     }
     // 尝试解析为数字
     if (num.tryParse(trimmed) != null) {
-      return Colors.blue.shade600;
+      return JsonSyntaxColors.getNumber(isDark);
     }
     return null;
   }
@@ -526,75 +691,126 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       text: _formatContent(),
       language: _isJson ? json : null,
     );
+    final content = _formatContent();
+    final lines = content.split('\n');
 
-    return Container(
-      color: theme.colorScheme.surface,
-      padding: const EdgeInsets.all(12),
-      child: SingleChildScrollView(
-        child: CodeTheme(
-          data: _buildCodeTheme(theme),
-          child: CodeField(
-            controller: controller,
-            readOnly: true,
-            textStyle: const TextStyle(
-              fontFamily: 'JetBrains Mono',
-              fontSize: 13,
-              height: 1.4,
+    return widget.showLineNumbers
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 行号区域
+              _buildLineNumberArea(theme, lines.length),
+              // 分割线
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+              ),
+              // 代码区域
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Theme(
+                    data: theme.copyWith(
+                      inputDecorationTheme: const InputDecorationTheme(
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                      ),
+                    ),
+                    child: CodeTheme(
+                      data: _buildCodeTheme(theme),
+                      child: CodeField(
+                        controller: controller,
+                        readOnly: true,
+                        gutterStyle: GutterStyle.none,
+                        textStyle: const TextStyle(
+                          fontFamily: 'JetBrains Mono',
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          )
+        : SingleChildScrollView(
+            padding: const EdgeInsets.all(12),
+            child: Theme(
+              data: theme.copyWith(
+                inputDecorationTheme: const InputDecorationTheme(
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+              ),
+              child: CodeTheme(
+                data: _buildCodeTheme(theme),
+                child: CodeField(
+                  controller: controller,
+                  readOnly: true,
+                  textStyle: const TextStyle(
+                    fontFamily: 'JetBrains Mono',
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ),
             ),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ),
-      ),
-    );
+          );
   }
 
   /// 构建代码主题
   CodeThemeData _buildCodeTheme(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
 
-    // Light theme colors (GitHub-like)
+    // Light theme colors (优化后的配色)
     final lightTheme = {
       'root': TextStyle(
         color: theme.colorScheme.onSurface,
         backgroundColor: theme.colorScheme.surface,
       ),
       'key': TextStyle(
-        color: Colors.blue.shade700,
+        color: JsonSyntaxColors.key,
         fontWeight: FontWeight.w600,
       ),
-      'string': TextStyle(color: Colors.green.shade700),
-      'number': TextStyle(color: Colors.blue.shade600),
-      'literal': TextStyle(color: Colors.blue.shade600),
-      'boolean': TextStyle(color: Colors.purple.shade700),
-      'null': TextStyle(color: Colors.purple.shade700),
-      'property': TextStyle(color: Colors.blue.shade700),
-      'punctuation': TextStyle(color: Colors.grey.shade600),
+      'string': TextStyle(color: JsonSyntaxColors.string),
+      'number': TextStyle(color: JsonSyntaxColors.number),
+      'literal': TextStyle(color: JsonSyntaxColors.number),
+      'boolean': TextStyle(color: JsonSyntaxColors.keyword),
+      'null': TextStyle(color: JsonSyntaxColors.keyword),
+      'property': TextStyle(
+        color: JsonSyntaxColors.key,
+        fontWeight: FontWeight.w600,
+      ),
+      'punctuation': TextStyle(color: JsonSyntaxColors.punctuation),
       'comment': TextStyle(
         color: Colors.grey.shade500,
         fontStyle: FontStyle.italic,
       ),
     };
 
-    // Dark theme colors (VS Code-like)
+    // Dark theme colors (优化后的配色)
     final darkTheme = {
       'root': TextStyle(
         color: theme.colorScheme.onSurface,
         backgroundColor: theme.colorScheme.surface,
       ),
       'key': TextStyle(
-        color: Colors.lightBlue.shade300,
+        color: JsonSyntaxColors.getKey(true),
         fontWeight: FontWeight.w600,
       ),
-      'string': TextStyle(color: Colors.lightGreen.shade300),
-      'number': TextStyle(color: Colors.lightBlue.shade200),
-      'literal': TextStyle(color: Colors.lightBlue.shade200),
-      'boolean': TextStyle(color: Colors.purple.shade200),
-      'null': TextStyle(color: Colors.purple.shade200),
-      'property': TextStyle(color: Colors.lightBlue.shade300),
-      'punctuation': TextStyle(color: Colors.grey.shade400),
+      'string': TextStyle(color: JsonSyntaxColors.getString(true)),
+      'number': TextStyle(color: JsonSyntaxColors.getNumber(true)),
+      'literal': TextStyle(color: JsonSyntaxColors.getNumber(true)),
+      'boolean': TextStyle(color: JsonSyntaxColors.getKeyword(true)),
+      'null': TextStyle(color: JsonSyntaxColors.getKeyword(true)),
+      'property': TextStyle(
+        color: JsonSyntaxColors.getKey(true),
+        fontWeight: FontWeight.w600,
+      ),
+      'punctuation': TextStyle(color: JsonSyntaxColors.getPunctuation(true)),
       'comment': TextStyle(
         color: Colors.grey.shade500,
         fontStyle: FontStyle.italic,
@@ -606,19 +822,47 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
 
   /// 原始文本视图
   Widget _buildRawView(ThemeData theme) {
-    return Container(
-      color: theme.colorScheme.surface,
-      padding: const EdgeInsets.all(12),
-      child: SelectableText(
-        widget.content,
-        style: TextStyle(
-          fontFamily: 'JetBrains Mono',
-          fontSize: 13,
-          height: 1.4,
-          color: theme.colorScheme.onSurface,
-        ),
-      ),
-    );
+    return widget.showLineNumbers
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 行号区域
+              _buildLineNumberArea(theme, _lines.length),
+              // 分割线
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+              ),
+              // 代码区域
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(12),
+                  child: SelectableText(
+                    widget.content,
+                    style: TextStyle(
+                      fontFamily: 'JetBrains Mono',
+                      fontSize: 13,
+                      height: 1.4,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          )
+        : SingleChildScrollView(
+            padding: const EdgeInsets.all(12),
+            child: SelectableText(
+              widget.content,
+              style: TextStyle(
+                fontFamily: 'JetBrains Mono',
+                fontSize: 13,
+                height: 1.4,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          );
   }
 
   /// 格式化大小

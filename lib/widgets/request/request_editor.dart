@@ -1192,16 +1192,13 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   ) {
     final language = _getLanguageForRawContentType(request.rawContentType);
 
-    return Padding(
-      padding: const EdgeInsets.all(AppConstants.spaceL),
-      child: CodeEditor(
-        code: request.body,
-        language: language,
-        expands: true,
-        onChanged: (value) {
-          _updateRequest(ref, request.copyWith(body: value));
-        },
-      ),
+    return CodeEditor(
+      code: request.body,
+      language: language,
+      expands: true,
+      onChanged: (value) {
+        _updateRequest(ref, request.copyWith(body: value));
+      },
     );
   }
 

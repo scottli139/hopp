@@ -1457,4 +1457,347 @@ Window
 
 ---
 
+## Code Editor UI 规范
+
+> **改进目标**: 参考 Postman 提升 Response Body 和 Request Body 区域的视觉精致度
+
+### 问题分析
+
+对比 Postman 的 Response Body 区域，当前 Hopp 存在以下视觉差距：
+
+| 对比项 | Postman | Hopp (当前) | 改进方向 |
+|-------|---------|-------------|---------|
+| 行号宽度 | 约 35px，紧凑 | 默认宽度，偏宽 | 缩小至 32-36px |
+| 行号背景 | 灰色背景，与代码区明显分隔 | 无独立背景 | 添加灰色背景区分 |
+| 编辑器边框 | 精致圆角边框 | 简单边框或无边框 | 添加 6px 圆角边框 |
+| 语法高亮 | 清晰：Key 深蓝、String 绿、Number 蓝 | 基础高亮 | 优化配色方案 |
+| 工具栏 | 格式选择下拉 + Beautify 按钮 | Performance/Full 切换 | 添加 Beautify 按钮 |
+| 整体质感 | 现代、精致 | 略显原始 | 提升细节处理 |
+
+### Response Body 规范
+
+#### 整体布局
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Response Body Tab                                                        │
+├─────────────────────────────────────────────────────────────────────────┤
+│ [JSON ▼] [Preview] [Visualize ▼]                   [Beautify] [Copy]    │  ← 工具栏
+├─────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │  1 │ {                                                              │ │
+│ │  2 │   "userId": 422661012,                                        │ │  ← 行号区
+│ │  3 │   "token": "0e0b7ebd0ddc46fe832bddc45e3cfc59",                │ │    (灰色背景)
+│ │  4 │   "username": "zhongmou",                                     │ │
+│ │  5 │   "org": "北京中创视讯科技有限公司"                           │ │
+│ │  6 │ }                                                              │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 行号区域规范
+
+```dart
+// 行号区域样式
+class LineNumberStyle {
+  // 宽度固定为内容自适应，最大 48px
+  static const width = 40.0;
+  
+  // 背景色 - 浅灰色与代码区区分
+  static Color backgroundColor(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.colorScheme.surfaceContainerHighest.withOpacity(0.5);
+  }
+  
+  // 文字样式
+  static const textStyle = TextStyle(
+    fontFamily: 'JetBrains Mono',
+    fontSize: 12,
+    color: Colors.grey, // 灰色，不喧宾夺主
+    height: 1.4,
+  );
+  
+  // 内边距
+  static const padding = EdgeInsets.only(right: 8);
+}
+```
+
+**关键要求**:
+1. **宽度**: 行号区域宽度固定 40px，右对齐显示
+2. **背景**: 使用 `surfaceContainerHighest.withOpacity(0.5)` 作为背景色
+3. **分隔**: 行号区与代码区之间添加 1px 分割线
+4. **对齐**: 行号与代码行严格对齐
+
+#### 编辑器边框规范
+
+```dart
+// 代码编辑器容器样式
+Container(
+  decoration: BoxDecoration(
+    color: theme.colorScheme.surface,
+    borderRadius: BorderRadius.circular(6),
+    border: Border.all(
+      color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+      width: 1,
+    ),
+  ),
+  child: ClipRRect(
+    borderRadius: BorderRadius.circular(6),
+    child: Row(
+      children: [
+        // 行号区域
+        _buildLineNumberArea(),
+        // 分割线
+        VerticalDivider(width: 1, thickness: 1),
+        // 代码区域
+        Expanded(child: _buildCodeArea()),
+      ],
+    ),
+  ),
+)
+```
+
+#### 工具栏改进
+
+```dart
+// Response Body 工具栏
+Container(
+  height: 36,
+  padding: EdgeInsets.symmetric(horizontal: 12),
+  child: Row(
+    children: [
+      // 格式选择下拉 (JSON/XML/Text/HTML)
+      _buildFormatDropdown(),
+      SizedBox(width: 12),
+      // Preview 按钮 (HTML 响应时启用)
+      _buildPreviewButton(),
+      Spacer(),
+      // Beautify 按钮
+      _buildBeautifyButton(),
+      SizedBox(width: 8),
+      // Copy 按钮
+      _buildCopyButton(),
+    ],
+  ),
+)
+```
+
+**工具栏按钮样式**:
+
+```dart
+// Beautify 按钮
+TextButton.icon(
+  onPressed: _beautifyCode,
+  icon: Icon(Icons.format_align_left, size: 14),
+  label: Text('Beautify'),
+  style: TextButton.styleFrom(
+    foregroundColor: theme.colorScheme.primary,
+    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    textStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+  ),
+)
+```
+
+#### JSON 语法高亮配色
+
+```dart
+// 优化后的语法高亮配色
+class JsonSyntaxColors {
+  // Key - 深蓝色
+  static const key = Color(0xFF1E40AF);  // Blue 800
+  
+  // String - 深绿色
+  static const string = Color(0xFF15803D);  // Green 700
+  
+  // Number - 蓝色
+  static const number = Color(0xFF2563EB);  // Blue 600
+  
+  // Boolean/Null - 紫色
+  static const keyword = Color(0xFF7C3AED);  // Violet 600
+  
+  // Punctuation - 灰色
+  static const punctuation = Color(0xFF6B7280);  // Gray 500
+  
+  // 深色模式适配
+  static Color getKey(bool isDark) => isDark ? Color(0xFF93C5FD) : key;
+  static Color getString(bool isDark) => isDark ? Color(0xFF86EFAC) : string;
+  static Color getNumber(bool isDark) => isDark ? Color(0xFF60A5FA) : number;
+}
+```
+
+### Request Body 规范
+
+Request Body 区域应与 Response Body 保持一致的编辑器样式。
+
+#### 整体布局
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Request Body Tab                                                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│ ○ none  ○ form-data  ○ x-www-form-urlencoded  ● raw  [JSON ▼]           │  ← Radio 组
+├─────────────────────────────────────────────────────────────────────────┤
+│ [JSON ▼]                                            [Beautify] [Clear]  │  ← 工具栏
+├─────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │  1 │ {                                                              │ │
+│ │  2 │   "username": "zhongmou",                                     │ │
+│ │  3 │   "password": "7110eda4d09e062aa5e4a390b0a572ac0d2c0220"       │ │
+│ │  4 │ }                                                              │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 类型选择器样式 (Radio 组)
+
+```dart
+// Radio 组样式
+Row(
+  children: [
+    _buildRadioOption('none', BodyType.none),
+    _buildRadioOption('form-data', BodyType.formData),
+    _buildRadioOption('x-www-form-urlencoded', BodyType.formUrlEncoded),
+    _buildRadioOption('raw', BodyType.raw),
+    if (selectedType == BodyType.raw) _buildRawSubtypeDropdown(),
+  ],
+)
+
+// Radio 选项样式
+Widget _buildRadioOption(String label, BodyType value) {
+  final isSelected = selectedType == value;
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Radio<BodyType>(
+        value: value,
+        groupValue: selectedType,
+        onChanged: onChanged,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+      ),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          color: isSelected 
+            ? theme.colorScheme.primary 
+            : theme.colorScheme.onSurface,
+          fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+        ),
+      ),
+      SizedBox(width: 16),
+    ],
+  );
+}
+```
+
+#### Raw 子类型下拉
+
+```dart
+// Raw 子类型选择器
+DropdownButtonFormField<String>(
+  value: rawContentType,
+  items: [
+    DropdownMenuItem(value: 'text', child: Text('Text')),
+    DropdownMenuItem(value: 'javascript', child: Text('JavaScript')),
+    DropdownMenuItem(value: 'json', child: Text('JSON')),
+    DropdownMenuItem(value: 'html', child: Text('HTML')),
+    DropdownMenuItem(value: 'xml', child: Text('XML')),
+  ],
+  onChanged: onChanged,
+  decoration: InputDecoration(
+    isDense: true,
+    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(4),
+    ),
+  ),
+  style: TextStyle(fontSize: 12),
+)
+```
+
+### 实现优先级
+
+| 改进项 | 优先级 | 工时 | 说明 |
+|-------|--------|------|------|
+| 行号区域样式优化 | P1 | 3h | 缩小宽度、添加背景色 |
+| 编辑器边框样式 | P1 | 2h | 添加圆角边框 |
+| JSON 语法高亮优化 | P1 | 3h | 优化配色方案 |
+| Beautify 按钮 | P1 | 2h | JSON/XML 格式化功能 |
+| 工具栏布局调整 | P2 | 2h | 格式选择下拉 |
+| 深色模式适配 | P2 | 2h | 语法高亮深色配色 |
+
+### 参考实现
+
+```dart
+// 完整的 Code Editor 组件示例
+class ImprovedCodeEditor extends StatelessWidget {
+  final String code;
+  final String? language;
+  final bool showLineNumbers;
+  final VoidCallback? onBeautify;
+  
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Column(
+          children: [
+            // 工具栏
+            _buildToolbar(),
+            // 编辑器区域
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 行号
+                  if (showLineNumbers) _buildLineNumbers(),
+                  // 代码
+                  Expanded(child: _buildCodeField()),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildLineNumbers() {
+    final lines = code.split('\n');
+    return Container(
+      width: 40,
+      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      padding: EdgeInsets.only(right: 8, top: 12, bottom: 12),
+      child: Column(
+        children: lines.asMap().entries.map((entry) {
+          return Text(
+            '${entry.key + 1}',
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontFamily: 'JetBrains Mono',
+              fontSize: 12,
+              height: 1.4,
+              color: Colors.grey,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+```
+
+---
+
 <p align="center">Designed with ❤️ by AI · Powered by Kimi</p>

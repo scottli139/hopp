@@ -489,6 +489,20 @@ class HoppTestClient:
         print(f"   是否有 Body: {'是' if result.get('has_body') else '否'}")
         return result
 
+    def beautify_code(self):
+        """格式化代码"""
+        print("✨ 格式化代码...")
+        result = self.send_command("beautify_code")
+        print("✅ 代码已格式化")
+        return result
+
+    def capture_screenshot(self, name="screenshot"):
+        """截图"""
+        print(f"📸 截图: {name}")
+        result = self.send_command("capture_screenshot", {"name": name})
+        print(f"✅ 截图已保存: {result.get('path')}")
+        return result
+
     def full_test(self):
         """执行完整测试流程"""
         print("\n" + "="*60)

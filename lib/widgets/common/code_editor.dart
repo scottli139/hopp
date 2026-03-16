@@ -9,6 +9,25 @@ import 'package:highlight/languages/javascript.dart';
 
 import '../../utils/app_logger.dart';
 
+/// 语法高亮配色 (与 OptimizedResponseViewer 保持一致)
+class _JsonSyntaxColors {
+  static const key = Color(0xFF1E40AF);
+  static const string = Color(0xFF15803D);
+  static const number = Color(0xFF2563EB);
+  static const keyword = Color(0xFF7C3AED);
+  static const punctuation = Color(0xFF6B7280);
+
+  static Color getKey(bool isDark) => isDark ? const Color(0xFF93C5FD) : key;
+  static Color getString(bool isDark) =>
+      isDark ? const Color(0xFF86EFAC) : string;
+  static Color getNumber(bool isDark) =>
+      isDark ? const Color(0xFF60A5FA) : number;
+  static Color getKeyword(bool isDark) =>
+      isDark ? const Color(0xFFC4B5FD) : keyword;
+  static Color getPunctuation(bool isDark) =>
+      isDark ? const Color(0xFF9CA3AF) : punctuation;
+}
+
 /// Supported language modes for syntax highlighting
 enum CodeLanguage {
   json,
@@ -29,6 +48,7 @@ class CodeEditor extends ConsumerStatefulWidget {
     this.minLines,
     this.maxLines,
     this.expands = false,
+    this.showLineNumbers = true,
   });
 
   final String code;
@@ -38,12 +58,16 @@ class CodeEditor extends ConsumerStatefulWidget {
   final int? minLines;
   final int? maxLines;
   final bool expands;
+  final bool showLineNumbers;
 
   @override
   ConsumerState<CodeEditor> createState() => _CodeEditorState();
 }
 
 class _CodeEditorState extends ConsumerState<CodeEditor> {
+  static const double _lineNumberWidth = 40.0;
+  static const double _lineNumberPadding = 8.0;
+
   late CodeController _controller;
 
   @override
@@ -95,25 +119,80 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return CodeTheme(
-      data: _buildCodeTheme(theme),
-      child: CodeField(
-        controller: _controller,
-        readOnly: widget.readOnly,
-        expands: widget.expands,
-        minLines: widget.minLines,
-        maxLines: widget.maxLines,
-        textStyle: const TextStyle(
-          fontFamily: 'JetBrains Mono',
-          fontSize: 13,
-          height: 1.4,
+    return widget.showLineNumbers
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLineNumberArea(theme),
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+              ),
+              Expanded(child: _buildCodeField(theme)),
+            ],
+          )
+        : _buildCodeField(theme);
+  }
+
+  Widget _buildLineNumberArea(ThemeData theme) {
+    final lineCount = widget.code.split('\n').length;
+
+    return Container(
+      width: _lineNumberWidth,
+      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      padding: const EdgeInsets.only(
+        right: _lineNumberPadding,
+        top: 12,
+        bottom: 12,
+      ),
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          children: List.generate(lineCount, (index) {
+            return Text(
+              '${index + 1}',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontFamily: 'JetBrains Mono',
+                fontSize: 12,
+                height: 1.4,
+                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+              ),
+            );
+          }),
         ),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+      ),
+    );
+  }
+
+  Widget _buildCodeField(ThemeData theme) {
+    return Theme(
+      data: theme.copyWith(
+        inputDecorationTheme: const InputDecorationTheme(
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+      child: CodeTheme(
+        data: _buildCodeTheme(theme),
+        child: CodeField(
+          controller: _controller,
+          readOnly: widget.readOnly,
+          expands: widget.expands,
+          minLines: widget.minLines,
+          maxLines: widget.maxLines,
+          gutterStyle: GutterStyle.none,
+          textStyle: const TextStyle(
+            fontFamily: 'JetBrains Mono',
+            fontSize: 13,
+            height: 1.4,
           ),
-          borderRadius: BorderRadius.circular(4),
         ),
       ),
     );
@@ -122,46 +201,52 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
   CodeThemeData _buildCodeTheme(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
 
-    // Light theme colors (GitHub-like)
+    // Light theme colors (优化后的配色)
     final lightTheme = {
       'root': TextStyle(
         color: theme.colorScheme.onSurface,
         backgroundColor: theme.colorScheme.surface,
       ),
       'key': TextStyle(
-        color: Colors.blue.shade700,
+        color: _JsonSyntaxColors.key,
         fontWeight: FontWeight.w600,
       ),
-      'string': TextStyle(color: Colors.green.shade700),
-      'number': TextStyle(color: Colors.blue.shade600),
-      'literal': TextStyle(color: Colors.blue.shade600),
-      'boolean': TextStyle(color: Colors.purple.shade700),
-      'null': TextStyle(color: Colors.purple.shade700),
-      'property': TextStyle(color: Colors.blue.shade700),
-      'punctuation': TextStyle(color: Colors.grey.shade600),
+      'string': TextStyle(color: _JsonSyntaxColors.string),
+      'number': TextStyle(color: _JsonSyntaxColors.number),
+      'literal': TextStyle(color: _JsonSyntaxColors.number),
+      'boolean': TextStyle(color: _JsonSyntaxColors.keyword),
+      'null': TextStyle(color: _JsonSyntaxColors.keyword),
+      'property': TextStyle(
+        color: _JsonSyntaxColors.key,
+        fontWeight: FontWeight.w600,
+      ),
+      'punctuation': TextStyle(color: _JsonSyntaxColors.punctuation),
       'comment': TextStyle(
         color: Colors.grey.shade500,
         fontStyle: FontStyle.italic,
       ),
     };
 
-    // Dark theme colors (VS Code-like)
+    // Dark theme colors (优化后的配色)
     final darkTheme = {
       'root': TextStyle(
         color: theme.colorScheme.onSurface,
         backgroundColor: theme.colorScheme.surface,
       ),
       'key': TextStyle(
-        color: Colors.lightBlue.shade300,
+        color: _JsonSyntaxColors.getKey(true),
         fontWeight: FontWeight.w600,
       ),
-      'string': TextStyle(color: Colors.lightGreen.shade300),
-      'number': TextStyle(color: Colors.lightBlue.shade200),
-      'literal': TextStyle(color: Colors.lightBlue.shade200),
-      'boolean': TextStyle(color: Colors.purple.shade200),
-      'null': TextStyle(color: Colors.purple.shade200),
-      'property': TextStyle(color: Colors.lightBlue.shade300),
-      'punctuation': TextStyle(color: Colors.grey.shade400),
+      'string': TextStyle(color: _JsonSyntaxColors.getString(true)),
+      'number': TextStyle(color: _JsonSyntaxColors.getNumber(true)),
+      'literal': TextStyle(color: _JsonSyntaxColors.getNumber(true)),
+      'boolean': TextStyle(color: _JsonSyntaxColors.getKeyword(true)),
+      'null': TextStyle(color: _JsonSyntaxColors.getKeyword(true)),
+      'property': TextStyle(
+        color: _JsonSyntaxColors.getKey(true),
+        fontWeight: FontWeight.w600,
+      ),
+      'punctuation': TextStyle(color: _JsonSyntaxColors.getPunctuation(true)),
       'comment': TextStyle(
         color: Colors.grey.shade500,
         fontStyle: FontStyle.italic,
@@ -196,8 +281,18 @@ class SimpleCodeEditor extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        border: Border(
+          top: BorderSide(
+            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          ),
+          right: BorderSide(
+            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          ),
+          bottom: BorderSide(
+            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          ),
+          // 左侧不显示边框
+          left: BorderSide.none,
         ),
         borderRadius: BorderRadius.circular(4),
       ),

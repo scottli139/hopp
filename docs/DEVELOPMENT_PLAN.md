@@ -214,6 +214,62 @@
 | binary 文件选择器 | ⏳ | P2 | 2h | 单文件选择输入框 |
 | GraphQL 双栏编辑器 | ⏳ | P3 | 8h | QUERY + GRAPHQL VARIABLES 双栏布局 |
 
+#### M3.11 Response/Request Body 编辑器样式改进 ✅ COMPLETED
+
+参考 Postman Response Body 区域样式，改进编辑器视觉效果。
+
+**参考对比** (Postman vs Hopp):
+- 截图对比: `/Users/build/Desktop/Screenshot 2026-03-16 at 11.48.09.png`
+
+**主要差距**:
+1. **行号区域**: Postman 行号宽度适中(35px)，灰色背景与代码区明显分隔；Hopp 行号偏宽，无背景区分
+2. **编辑器边框**: Postman 有精致圆角边框；Hopp 边框样式原始
+3. **语法高亮**: Postman 配色清晰(Key深蓝、String绿、Number蓝)；Hopp 高亮效果不够明显
+4. **工具栏**: Postman 有格式下拉和 Beautify 按钮；Hopp 缺少 Beautify 功能
+5. **整体质感**: Postman 现代精致；Hopp 略显粗糙
+
+**改进完成情况**:
+
+| 任务 | 状态 | 优先级 | 实际工时 | 文件 |
+|-----|------|--------|---------|------|
+| 行号区域样式优化 | ✅ | P1 | 3h | `optimized_response_viewer.dart`, `code_editor.dart` |
+| 编辑器边框圆角 | ✅ | P1 | 2h | `optimized_response_viewer.dart`, `code_editor.dart` |
+| JSON 语法高亮配色优化 | ✅ | P1 | 3h | `optimized_response_viewer.dart`, `code_editor.dart` |
+| Beautify 格式化按钮 | ✅ | P1 | 2h | `optimized_response_viewer.dart` |
+| 深色模式高亮适配 | ✅ | P2 | 2h | `optimized_response_viewer.dart`, `code_editor.dart` |
+| UI 测试脚本 | ✅ | P1 | 2h | `test_code_editor_improved.py` |
+
+**技术实现要点**:
+
+1. **行号区域优化**:
+```dart
+// 行号区域容器
+Container(
+  width: 40, // 固定宽度，比默认更紧凑
+  color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+  padding: EdgeInsets.only(right: 8),
+  child: // ... 行号列表
+)
+```
+
+2. **编辑器边框**:
+```dart
+Container(
+  decoration: BoxDecoration(
+    borderRadius: BorderRadius.circular(6),
+    border: Border.all(
+      color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+    ),
+  ),
+)
+```
+
+3. **语法高亮配色** (参考 UI_UX_GUIDELINES.md JsonSyntaxColors):
+- Key: `#1E40AF` (Blue 800)
+- String: `#15803D` (Green 700)
+- Number: `#2563EB` (Blue 600)
+- Keyword: `#7C3AED` (Violet 600)
+
 **UI 设计规范**:
 
 **1. Body 类型选择器 (Radio 组)**

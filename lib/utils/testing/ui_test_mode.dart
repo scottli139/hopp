@@ -1161,23 +1161,23 @@ class UITestModeManager {
   /// 展开 Raw 子类型下拉菜单（通过状态通知 UI）
   Future<Map<String, dynamic>> _expandRawContentTypeDropdown() async {
     AppLogger.info('[UI_TEST] Expanding Raw content type dropdown');
-    
+
     // 先切换到 Body Tab
     await _switchRequestTab('body');
     await Future.delayed(const Duration(milliseconds: 100));
-    
+
     // 设置 Body 类型为 raw
     final activeTab = _ref!.read(activeTabProvider);
     if (activeTab != null) {
       final updatedRequest = activeTab.request.copyWith(bodyType: 'raw');
       _ref!.read(requestTabProvider.notifier).updateRequest(
-        activeTab.id,
-        updatedRequest,
-      );
+            activeTab.id,
+            updatedRequest,
+          );
       AppLogger.info('[UI_TEST] Body type set to raw');
     }
     await Future.delayed(const Duration(milliseconds: 200));
-    
+
     // 设置状态通知 UI 展开下拉菜单
     _ref!.read(uiTestExpandRawContentTypeDropdownProvider.notifier).state =
         DateTime.now().millisecondsSinceEpoch;
@@ -1201,7 +1201,8 @@ class UITestModeManager {
 
     // 设置目标 Tab
     _ref!.read(uiTestRequestTabProvider.notifier).state = tabLower;
-    AppLogger.info('[UI_TEST] uiTestRequestTabProvider.state set to: $tabLower');
+    AppLogger.info(
+        '[UI_TEST] uiTestRequestTabProvider.state set to: $tabLower');
 
     return {'tab': tabLower};
   }
@@ -1382,7 +1383,8 @@ class UITestModeManager {
     }
 
     final activeTab = _ref!.read(activeTabProvider);
-    print('[UI_TEST] activeTab: ${activeTab?.id}, request: ${activeTab?.request.name}');
+    print(
+        '[UI_TEST] activeTab: ${activeTab?.id}, request: ${activeTab?.request.name}');
     if (activeTab == null) {
       throw Exception('没有活动的请求 Tab');
     }
@@ -1473,7 +1475,8 @@ final uiTestResponseDisplayModeProvider =
 final uiTestExpandMethodDropdownProvider = StateProvider<int?>((ref) => null);
 
 /// UI 测试 - 展开 Raw 子类型下拉菜单触发器（使用时间戳确保每次都能触发）
-final uiTestExpandRawContentTypeDropdownProvider = StateProvider<int?>((ref) => null);
+final uiTestExpandRawContentTypeDropdownProvider =
+    StateProvider<int?>((ref) => null);
 
 /// UI 测试 - Request Editor Tab 切换
 final uiTestRequestTabProvider = StateProvider<String?>((ref) => null);

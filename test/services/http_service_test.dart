@@ -391,7 +391,7 @@ void main() {
         final response = await httpService.sendRequest(request);
 
         // Assert
-        expect(response.error, contains('Certificate error'));
+        expect(response.error, contains('SSL Certificate Error'));
       });
 
       test('should handle unexpected errors', () async {

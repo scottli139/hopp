@@ -32,6 +32,7 @@ dependencies:
   uuid: ^4.5.3
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
+  crypto: ^3.0.3
   
   # UI Components
   flutter_code_editor: ^0.3.2

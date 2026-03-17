@@ -54,7 +54,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -147,6 +147,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               _buildHeadersTab(context, ref, activeTab.request),
               _buildBodyTab(context, ref, activeTab.request),
               _buildAuthTab(context),
+              _buildSettingsTab(context, ref, activeTab.request),
             ],
           ),
         ),
@@ -533,6 +534,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 label: 'Auth',
                 isActive: _tabController.index == 3,
                 onTap: () => _tabController.animateTo(3),
+              ),
+              // Settings Tab
+              _buildTabItem(
+                context: context,
+                icon: Icons.settings_outlined,
+                label: 'Settings',
+                isActive: _tabController.index == 4,
+                onTap: () => _tabController.animateTo(4),
               ),
             ],
           );
@@ -1514,6 +1523,205 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           ),
         ],
       ),
+    );
+  }
+
+  /// 构建 Settings Tab（Request Settings）
+  Widget _buildSettingsTab(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    final theme = Theme.of(context);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppConstants.spaceL),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // SSL 证书验证设置
+          _buildSettingsSection(
+            context: context,
+            title: 'SSL/TLS',
+            children: [
+              _buildSwitchTile(
+                context: context,
+                title: 'Enable SSL certificate verification',
+                subtitle: 'Verify the server\'s SSL certificate chain',
+                value: request.validateCertificates,
+                onChanged: (value) {
+                  final updatedRequest = request.copyWith(
+                    validateCertificates: value,
+                  );
+                  _updateRequest(ref, updatedRequest);
+                },
+              ),
+              const SizedBox(height: AppConstants.spaceM),
+              // 提示信息
+              Container(
+                padding: const EdgeInsets.all(AppConstants.spaceM),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest
+                      .withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusM),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: theme.colorScheme.outline,
+                    ),
+                    const SizedBox(width: AppConstants.spaceS),
+                    Expanded(
+                      child: Text(
+                        'Disable this option to allow self-signed certificates or bypass certificate errors for testing purposes.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppConstants.spaceXL),
+          // 更多设置将在未来版本中实现
+          _buildSettingsSection(
+            context: context,
+            title: 'Coming Soon',
+            children: [
+              _buildDisabledTile(
+                context: context,
+                title: 'Follow redirects',
+                subtitle: 'Automatically follow HTTP redirects',
+              ),
+              _buildDisabledTile(
+                context: context,
+                title: 'Request timeout',
+                subtitle: 'Set the request timeout duration',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建设置分组
+  Widget _buildSettingsSection({
+    required BuildContext context,
+    required String title,
+    required List<Widget> children,
+  }) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: AppConstants.spaceM),
+        Container(
+          padding: const EdgeInsets.all(AppConstants.spaceL),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            border: Border.all(color: theme.dividerColor.withOpacity(0.5)),
+            borderRadius: BorderRadius.circular(AppConstants.radiusM),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 构建开关设置项
+  Widget _buildSwitchTile({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          activeColor: theme.colorScheme.primary,
+        ),
+      ],
+    );
+  }
+
+  /// 构建禁用的设置项（未来功能）
+  Widget _buildDisabledTile({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+  }) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline.withOpacity(0.6),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Icon(
+          Icons.lock_outline,
+          size: 16,
+          color: theme.colorScheme.outline.withOpacity(0.5),
+        ),
+      ],
     );
   }
 

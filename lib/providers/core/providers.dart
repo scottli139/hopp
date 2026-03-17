@@ -10,7 +10,15 @@ final storageServiceProvider = Provider<StorageService>((ref) {
 });
 
 final httpServiceProvider = Provider<HttpService>((ref) {
-  return HttpService();
+  final service = HttpService();
+  // 默认配置（符合 Request Settings 规划：SSL 验证默认 ON）
+  service.configure(
+    timeoutMs: 30000,
+    followRedirects: true,
+    maxRedirects: 10,
+    validateCertificates: true, // 默认启用证书验证（符合安全最佳实践）
+  );
+  return service;
 });
 
 final loggerProvider = Provider<Logger>((ref) {

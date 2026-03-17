@@ -18,11 +18,11 @@ import 'certificate_helper.dart'
     if (dart.library.html) 'certificate_helper_stub.dart';
 
 class HttpService {
-  final Dio _dio;
+  final Dio? _dio;
   final Logger _logger;
 
   HttpService({Dio? dio, Logger? logger})
-      : _dio = dio ?? Dio(),
+      : _dio = dio,
         _logger = logger ?? Logger();
 
   void configure({
@@ -31,7 +31,10 @@ class HttpService {
     required int maxRedirects,
     required bool validateCertificates,
   }) {
-    _dio.options = BaseOptions(
+    final dio = _dio;
+    if (dio == null) return;
+
+    dio.options = BaseOptions(
       connectTimeout: Duration(milliseconds: timeoutMs),
       receiveTimeout: Duration(milliseconds: timeoutMs),
       sendTimeout: Duration(milliseconds: timeoutMs),
@@ -41,7 +44,7 @@ class HttpService {
     );
 
     if (!validateCertificates) {
-      (_dio.httpClientAdapter as dynamic).onHttpClientCreate = (client) {
+      (dio.httpClientAdapter as dynamic).onHttpClientCreate = (client) {
         client.badCertificateCallback = (cert, host, port) => true;
         return client;
       };
@@ -63,6 +66,9 @@ class HttpService {
 
     CertificateInfo? capturedCertificate;
 
+    // 如果有注入的 Dio（测试模式），使用它；否则为每个请求创建新实例
+    final dio = _dio ?? _createDioForRequest(request);
+
     try {
       _logger.i('Sending ${request.method.value} request to ${request.url}');
 
@@ -81,11 +87,19 @@ class HttpService {
       // 检查是否为 HTTPS 请求
       final isHttps = uri.scheme == 'https';
 
-      // 设置证书捕获
+      // 预获取证书信息（对于 HTTPS 请求）
+      // 注意：证书获取失败不应阻止请求继续，只是没有证书信息显示
       if (isHttps) {
-        _setupCertificateCapture((cert) {
-          capturedCertificate = cert;
-        });
+        try {
+          capturedCertificate = await _fetchCertificateInfo(
+            uri.host,
+            uri.port,
+          ).timeout(const Duration(seconds: 3));
+        } catch (e) {
+          _logger.w(
+              '[HttpService] Failed to fetch certificate for ${uri.host}: $e');
+          // 证书获取失败不影响请求，只是没有证书信息
+        }
       }
 
       // TTFB 计时 - 在收到第一个字节时停止
@@ -97,7 +111,7 @@ class HttpService {
         responseType: ResponseType.bytes,
       );
 
-      final response = await _dio.request<Uint8List>(
+      final response = await dio.request<Uint8List>(
         uri.toString(),
         data: body,
         options: options,
@@ -175,11 +189,10 @@ class HttpService {
       _logger.i('Request completed: ${response.statusCode} in ${totalMs}ms '
           '(DNS: ${dnsMs}ms, TCP: ${tcpMs}ms, TLS: ${tlsMs}ms, TTFB: ${ttfbMs}ms, Download: ${downloadMs}ms)');
 
-      // 如果是 HTTPS 请求但没有捕获到证书，使用模拟证书（用于 UI 测试）
+      // 使用获取到的证书信息
       CertificateInfo? finalCertificate = capturedCertificate;
       if (isHttps && finalCertificate == null) {
-        finalCertificate = _generateMockCertificateInfo(uri.host);
-        _logger.d('[HttpService] Using mock certificate for UI testing');
+        _logger.d('[HttpService] No certificate available for ${uri.host}');
       }
 
       // 构建时间信息
@@ -251,13 +264,15 @@ class HttpService {
           timestamp: DateTime.now(),
           timingInfo: timingInfo,
           // 同时保留错误信息用于显示
-          error: _formatDioError(e),
+          error: _formatDioError(e,
+              validateCertificates: request.validateCertificates),
         );
       }
 
       // 如果没有响应数据（网络错误等），返回错误信息
       return HttpResponse(
-        error: _formatDioError(e),
+        error: _formatDioError(e,
+            validateCertificates: request.validateCertificates),
         durationMs: totalStopwatch.elapsedMilliseconds,
         timestamp: DateTime.now(),
       );
@@ -447,14 +462,15 @@ class HttpService {
     }
   }
 
-  String _formatDioError(DioException error) {
+  String _formatDioError(DioException error,
+      {bool validateCertificates = true}) {
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
         return 'Request timeout: ${error.message}';
       case DioExceptionType.badCertificate:
-        return 'Certificate error: ${error.message}';
+        return _formatCertificateError(error, validateCertificates);
       case DioExceptionType.badResponse:
         return 'Server error: ${error.response?.statusCode} ${error.response?.statusMessage}';
       case DioExceptionType.cancel:
@@ -462,8 +478,57 @@ class HttpService {
       case DioExceptionType.connectionError:
         return 'Connection error: ${error.message}';
       case DioExceptionType.unknown:
+        // 检查是否是证书相关错误
+        final errorStr = error.toString().toLowerCase();
+        if (errorStr.contains('certificate') ||
+            errorStr.contains('ssl') ||
+            errorStr.contains('tls') ||
+            errorStr.contains('handshake')) {
+          return _formatCertificateError(error, validateCertificates);
+        }
         return 'Network error: ${error.message}';
     }
+  }
+
+  /// 格式化证书错误信息，提供友好的提示
+  String _formatCertificateError(
+      DioException error, bool validateCertificates) {
+    final buffer = StringBuffer();
+    buffer.writeln('SSL Certificate Error');
+    buffer.writeln();
+
+    // 提取具体的证书错误信息
+    final errorMsg = error.message ?? '';
+    final errorStr = error.toString();
+
+    if (errorMsg.contains('self signed') || errorStr.contains('self signed')) {
+      buffer.writeln('The server is using a self-signed certificate.');
+    } else if (errorMsg.contains('expired') || errorStr.contains('expired')) {
+      buffer.writeln('The server\'s SSL certificate has expired.');
+    } else if (errorMsg.contains('hostname') || errorStr.contains('hostname')) {
+      buffer.writeln(
+          'The server\'s SSL certificate does not match the hostname.');
+    } else if (errorMsg.contains('untrusted') ||
+        errorStr.contains('untrusted')) {
+      buffer.writeln('The server\'s SSL certificate is not trusted.');
+    } else {
+      buffer.writeln('Unable to verify the server\'s SSL certificate.');
+    }
+
+    buffer.writeln();
+    buffer.writeln('Technical details: ${error.message}');
+    buffer.writeln();
+
+    // 提供解决方案
+    if (validateCertificates) {
+      buffer.writeln(
+          '💡 Tip: You can disable "Enable SSL certificate verification" in Settings > SSL/TLS to bypass this error for testing purposes.');
+    } else {
+      buffer.writeln(
+          '💡 SSL verification is already disabled, but the connection still failed.');
+    }
+
+    return buffer.toString();
   }
 
   String _getStatusText(int? statusCode) {
@@ -491,73 +556,66 @@ class HttpService {
     token.cancel(reason ?? 'Cancelled by user');
   }
 
-  /// 设置证书捕获回调
-  ///
-  /// 注意：Dart 的 HttpClient 只有在证书验证失败时才会调用 badCertificateCallback
-  /// 正常成功的 HTTPS 连接不会触发此回调，因此无法直接获取服务器证书信息
-  void _setupCertificateCapture(void Function(CertificateInfo?) onCertificate) {
-    try {
-      final adapter = _dio.httpClientAdapter;
-      if (adapter is IOHttpClientAdapter) {
-        adapter.createHttpClient = () {
-          final client = HttpClient();
-          client.badCertificateCallback = (cert, host, port) {
-            try {
-              _logger.i(
-                  '[HttpService] Certificate callback triggered for host: $host');
-              final info = extractCertificateInfoFromX509(cert);
-              if (info != null) {
-                onCertificate(info);
-                _logger.i('[HttpService] Certificate captured successfully');
-              }
-            } catch (e, stack) {
-              _logger.w('[HttpService] Failed to extract certificate: $e');
-            }
-            // 返回 true 允许连接（即使证书验证失败）
-            return true;
-          };
-          return client;
-        };
-      } else {
-        _logger.d(
-            '[HttpService] Adapter is not IOHttpClientAdapter: ${adapter.runtimeType}');
-      }
-    } catch (e, stack) {
-      _logger.w('[HttpService] Could not setup certificate capture: $e');
+  /// 根据请求创建 Dio 实例，确保每个请求的 SSL 配置独立
+  Dio _createDioForRequest(HttpRequest request) {
+    final dio = Dio();
+
+    // 基础配置
+    dio.options = BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+      followRedirects: true,
+      maxRedirects: 10,
+      validateStatus: (status) => status != null && status < 600,
+    );
+
+    // 配置 SSL 证书验证
+    final adapter = dio.httpClientAdapter;
+    if (adapter is IOHttpClientAdapter) {
+      adapter.onHttpClientCreate = (client) {
+        if (!request.validateCertificates) {
+          // 禁用证书验证（允许自签名证书）
+          client.badCertificateCallback = (cert, host, port) => true;
+          _logger.d(
+            '[HttpService] SSL certificate validation disabled for ${request.url}',
+          );
+        } else {
+          _logger.d(
+            '[HttpService] SSL certificate validation enabled for ${request.url}',
+          );
+        }
+        return client;
+      };
     }
+
+    return dio;
   }
 
-  /// 生成模拟证书信息（用于测试 Certificate Tab UI）
-  CertificateInfo _generateMockCertificateInfo(String host) {
-    final now = DateTime.now();
-    return CertificateInfo(
-      subject: 'CN=$host',
-      issuer: 'CN=DigiCert TLS RSA SHA256 2020 CA1, O=DigiCert Inc, C=US',
-      validFrom: now.subtract(const Duration(days: 30)),
-      validTo: now.add(const Duration(days: 335)),
-      signatureAlgorithm: 'sha256WithRSAEncryption',
-      serialNumber: '0C:00:5A:8D:E0:4D:00:00:00:00:5A:8D:E0',
-      sha256Fingerprint:
-          'A1:B2:C3:D4:E5:F6:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34',
-      subjectAlternativeNames: [host, '*.$host'],
-      publicKeyAlgorithm: 'RSA',
-      publicKeyLength: 2048,
-      chain: [
-        const CertificateChainEntry(
-          subject: 'CN=DigiCert TLS RSA SHA256 2020 CA1, O=DigiCert Inc, C=US',
-          issuer:
-              'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
-          isValid: true,
-        ),
-        const CertificateChainEntry(
-          subject:
-              'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
-          issuer:
-              'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
-          isValid: true,
-        ),
-      ],
-    );
+  /// 获取服务器证书信息
+  ///
+  /// 使用 SecureSocket 预连接获取真实的 SSL/TLS 证书
+  Future<CertificateInfo?> _fetchCertificateInfo(String host, int port) async {
+    try {
+      _logger.i('[HttpService] Fetching certificate for $host:$port');
+
+      final cert = await fetchCertificateFromHost(
+        host,
+        port: port,
+        timeout: const Duration(seconds: 5),
+      );
+
+      if (cert != null) {
+        _logger.i('[HttpService] Certificate fetched successfully for $host');
+      } else {
+        _logger.w('[HttpService] Failed to fetch certificate for $host');
+      }
+
+      return cert;
+    } catch (e, stack) {
+      _logger.w('[HttpService] Error fetching certificate: $e');
+      return null;
+    }
   }
 }
 

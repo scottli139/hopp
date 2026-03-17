@@ -568,6 +568,48 @@ class HoppTestClient:
         print(f"   包含错误信息: {'是' if result.get('has_error_info') else '否'}")
         return result
 
+    def get_certificate_info(self):
+        """获取证书信息"""
+        print("🔒 获取证书信息...")
+        result = self.send_command("get_certificate_info")
+        
+        if result.get('has_certificate'):
+            print("✅ 证书信息:")
+            print(f"   主题 (Subject): {result.get('subject')}")
+            print(f"   颁发者 (Issuer): {result.get('issuer')}")
+            print(f"   有效期: {result.get('validity_period')}")
+            print(f"   是否有效: {'是' if result.get('is_valid') else '否'}")
+            print(f"   剩余天数: {result.get('remaining_days')} 天")
+            print(f"   签名算法: {result.get('signature_algorithm')}")
+            print(f"   序列号: {result.get('serial_number')}")
+            print(f"   SHA-256 指纹: {result.get('sha256_fingerprint')}")
+            if result.get('subject_alternative_names'):
+                print(f"   主题备用名称 (SAN): {', '.join(result.get('subject_alternative_names', []))}")
+            print(f"   公钥算法: {result.get('public_key_algorithm')} ({result.get('public_key_length')} 位)")
+            print(f"   证书链长度: {result.get('chain_length')}")
+        else:
+            print(f"⚠️  {result.get('message')}")
+        
+        return result
+
+    def simulate_certificate_response(self):
+        """模拟带证书信息的 HTTPS 响应"""
+        print("🔒 模拟带证书信息的 HTTPS 响应...")
+        result = self.send_command("simulate_certificate_response")
+        
+        if result.get('simulated'):
+            print("✅ 模拟响应已创建:")
+            print(f"   状态码: {result.get('status_code')}")
+            print(f"   包含证书: {'是' if result.get('has_certificate') else '否'}")
+            if result.get('has_certificate'):
+                print(f"   证书主题: {result.get('certificate_subject')}")
+                print(f"   证书颁发者: {result.get('certificate_issuer')}")
+                print(f"   有效期: {result.get('valid_from')} 至 {result.get('valid_to')}")
+                print(f"   是否有效: {'是' if result.get('is_valid') else '否'}")
+                print(f"   剩余天数: {result.get('remaining_days')} 天")
+        
+        return result
+
     def full_test(self):
         """执行完整测试流程"""
         print("\n" + "="*60)
@@ -618,6 +660,10 @@ def main():
   %(prog)s send_request                  # 发送请求
   %(prog)s switch_response_tab --tab certificate  # 切换 Tab
   %(prog)s full_test                     # 执行完整测试
+  
+证书测试:
+  %(prog)s simulate_certificate_response            # 模拟带证书的响应
+  %(prog)s get_certificate_info                     # 获取证书信息
   
 请求名称编辑:
   %(prog)s rename_request --name "New Name"          # 直接重命名
@@ -803,6 +849,12 @@ def main():
     simulate_5xx_parser.add_argument("--status", type=int, default=500,
                                      help="HTTP 状态码（默认 500）")
 
+    # get_certificate_info
+    subparsers.add_parser("get_certificate_info", help="获取证书信息")
+
+    # simulate_certificate_response
+    subparsers.add_parser("simulate_certificate_response", help="模拟带证书信息的 HTTPS 响应")
+
     # full_test
     subparsers.add_parser("full_test", help="执行完整测试流程")
     
@@ -906,6 +958,10 @@ def main():
             client.simulate_4xx_response(args.status)
         elif args.command == "simulate_5xx_response":
             client.simulate_5xx_response(args.status)
+        elif args.command == "get_certificate_info":
+            client.get_certificate_info()
+        elif args.command == "simulate_certificate_response":
+            client.simulate_certificate_response()
         elif args.command == "full_test":
             client.full_test()
         

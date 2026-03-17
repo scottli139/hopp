@@ -19,6 +19,7 @@ import '../../providers/import_export/import_export_provider.dart';
 import '../../providers/providers.dart';
 import '../../services/import_export/postman_import_service.dart';
 import '../../utils/app_logger.dart';
+import '../../models/certificate_info.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../models/http_method.dart';
@@ -298,6 +299,12 @@ class UITestModeManager {
       case 'simulate_5xx_response':
         final statusCode = params['status_code'] as int? ?? 500;
         return await _simulate5xxResponse(statusCode);
+
+      case 'get_certificate_info':
+        return await _getCertificateInfo();
+
+      case 'simulate_certificate_response':
+        return await _simulateCertificateResponse();
 
       default:
         throw Exception('未知指令: $action');
@@ -1785,6 +1792,151 @@ class UITestModeManager {
       504: 'Gateway Timeout',
     };
     return texts[statusCode] ?? 'Unknown';
+  }
+
+  /// 获取证书信息
+  Future<Map<String, dynamic>> _getCertificateInfo() async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final response = _ref!.read(currentResponseProvider);
+    final certificate = response?.certificateInfo;
+
+    if (certificate == null) {
+      return {
+        'has_certificate': false,
+        'message': '暂无证书信息',
+      };
+    }
+
+    return {
+      'has_certificate': true,
+      'subject': certificate.subject,
+      'issuer': certificate.issuer,
+      'valid_from': certificate.validFrom.toIso8601String(),
+      'valid_to': certificate.validTo.toIso8601String(),
+      'validity_period': certificate.validityPeriod,
+      'is_valid': certificate.isValid,
+      'remaining_days': certificate.remainingDays,
+      'signature_algorithm': certificate.signatureAlgorithm,
+      'serial_number': certificate.serialNumber,
+      'sha256_fingerprint': certificate.sha256Fingerprint,
+      'subject_alternative_names': certificate.subjectAlternativeNames,
+      'public_key_algorithm': certificate.publicKeyAlgorithm,
+      'public_key_length': certificate.publicKeyLength,
+      'chain_length': certificate.chain.length,
+      'chain': certificate.chain
+          .map((entry) => {
+                'subject': entry.subject,
+                'issuer': entry.issuer,
+                'is_valid': entry.isValid,
+              })
+          .toList(),
+    };
+  }
+
+  /// 模拟带证书信息的 HTTPS 响应
+  Future<Map<String, dynamic>> _simulateCertificateResponse() async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final host = Uri.parse(activeTab.request.url).host;
+    final now = DateTime.now();
+
+    // 创建模拟证书信息
+    final certificateInfo = CertificateInfo(
+      subject: 'CN=$host',
+      issuer: 'CN=DigiCert TLS RSA SHA256 2020 CA1, O=DigiCert Inc, C=US',
+      validFrom: now.subtract(const Duration(days: 30)),
+      validTo: now.add(const Duration(days: 335)),
+      signatureAlgorithm: 'sha256WithRSAEncryption',
+      serialNumber: '0C:00:5A:8D:E0:4D:00:00:00:00:5A:8D:E0',
+      sha256Fingerprint:
+          'A1:B2:C3:D4:E5:F6:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34',
+      subjectAlternativeNames: [host, '*.$host'],
+      publicKeyAlgorithm: 'RSA',
+      publicKeyLength: 2048,
+      chain: [
+        CertificateChainEntry(
+          subject: 'CN=$host',
+          issuer: 'CN=DigiCert TLS RSA SHA256 2020 CA1, O=DigiCert Inc, C=US',
+          isValid: true,
+        ),
+        CertificateChainEntry(
+          subject: 'CN=DigiCert TLS RSA SHA256 2020 CA1, O=DigiCert Inc, C=US',
+          issuer:
+              'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
+          isValid: true,
+        ),
+        CertificateChainEntry(
+          subject:
+              'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
+          issuer:
+              'CN=DigiCert Global Root CA, OU=www.digicert.com, O=DigiCert Inc, C=US',
+          isValid: true,
+        ),
+      ],
+    );
+
+    // 构建成功响应体
+    final responseBody = jsonEncode({
+      'message': 'Success',
+      'host': host,
+      'timestamp': now.toIso8601String(),
+    });
+
+    // 创建成功响应
+    final successResponse = HttpResponse(
+      statusCode: 200,
+      statusText: 'OK',
+      body: responseBody,
+      headers: [
+        KeyValuePair.empty().copyWith(
+          key: 'Content-Type',
+          value: 'application/json',
+          enabled: true,
+        ),
+        KeyValuePair.empty().copyWith(
+          key: 'Strict-Transport-Security',
+          value: 'max-age=31536000; includeSubDomains',
+          enabled: true,
+        ),
+      ],
+      durationMs: 250,
+      sizeBytes: responseBody.length,
+      timestamp: DateTime.now(),
+      certificateInfo: certificateInfo,
+      timingInfo: TimingInfo(
+        totalMs: 250,
+        dnsMs: 20,
+        tcpMs: 30,
+        tlsMs: 45,
+        ttfbMs: 120,
+        downloadMs: 35,
+      ),
+    );
+
+    // 设置响应
+    _ref!.read(requestResponseProvider.notifier).setMockResponse(
+          activeTab.id,
+          successResponse,
+        );
+
+    return {
+      'simulated': true,
+      'status_code': 200,
+      'has_certificate': true,
+      'certificate_subject': certificateInfo.subject,
+      'certificate_issuer': certificateInfo.issuer,
+      'valid_from': certificateInfo.validFrom.toIso8601String(),
+      'valid_to': certificateInfo.validTo.toIso8601String(),
+      'is_valid': certificateInfo.isValid,
+      'remaining_days': certificateInfo.remainingDays,
+    };
   }
 }
 

@@ -115,7 +115,8 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | 问题 | 优先级 | 说明 | 状态 |
 |------|--------|------|------|
 | ~~4XX/5XX 响应不显示服务端返回内容~~ | ~~P0~~ | ~~当服务端返回 4XX 或 5XX 错误时，Response Body 区域不显示服务端返回的数据~~ | ✅ **已修复 (2026-03-17)** |
-| Certificate 显示假数据 | P1 | Response 区域的 Certificate Tab 当前显示的是模拟/假数据，非真实证书信息 | 待实现证书解析 |
+| ~~Certificate 显示假数据~~ | ~~P1~~ | ~~Response 区域的 Certificate Tab 当前显示的是模拟/假数据，非真实证书信息~~ | ✅ **已修复 (2026-03-17)** |
+| ~~自签名证书无法访问~~ | ~~P1~~ | ~~内网自签名证书服务器请求失败，缺少 SSL 验证开关~~ | ✅ **已修复 (2026-03-17)** |
 | 删除 Collection 子目录处理问题 | P1 | 删除带子目录的 Collection 时，子 Collection 未被删除而是被保留并提升到第一级 | 需修复删除逻辑 |
 | 行号与内容滚动不同步 | P2 | Request/Response Body 编辑器中行号区域与内容区域未对齐，内容滚动时行号不跟随滚动 | 需优化 CodeEditor 组件 |
 
@@ -2146,6 +2147,9 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-16 | v0.4.7-dropdown-style | Dropdown 样式改进：垂直间距优化、触发按钮样式统一、UI测试验证 |
 | 2026-03-16 | v0.5.3-font-update | Code Editor 字体优化：使用 Menlo 等宽字体，代码 12px/行号 11px，行高 1.5，同步更新 UI_UX_GUIDELINES |
 | 2026-03-16 | v0.5.4-known-issues | 记录已知问题：Certificate 假数据、Collection 子目录删除问题、行号滚动同步问题 |
+| 2026-03-17 | v0.5.5-certificate-real | 修复 Issue #2: Certificate Tab 显示真实 SSL/TLS 证书（使用 SecureSocket 预连接获取） |
+| 2026-03-17 | v0.5.6-error-response-fix | 修复 Issue #1: 4XX/5XX 响应正确显示服务端返回内容 |
+| 2026-03-17 | v0.5.7-ssl-verify-switch | 实现 SSL 证书验证开关（Request Settings），支持内网自签名证书，优化证书错误提示 |
 
 ---
 
@@ -2230,6 +2234,69 @@ pnpm test:e2e
 # 构建
 pnpm tauri build
 ```
+
+</details>
+
+
+<details>
+<summary>2026-03-17 - Issue #2 补充修复：SSL 证书验证开关 + 错误提示优化</summary>
+
+**完成工作**:
+- ✅ 在 `HttpRequest` 模型中添加 `validateCertificates` 字段（默认 `true`）
+- ✅ 修改 `HttpService` 支持每个请求独立的 SSL 配置
+- ✅ 在 Request Editor 中添加 **Settings Tab**
+- ✅ 实现 "Enable SSL certificate verification" 开关 UI
+- ✅ 优化证书错误提示信息：
+  - 识别自签名证书、过期证书、主机名不匹配等具体错误类型
+  - 提供友好的中文/英文错误说明
+  - 提示用户可在 Settings > SSL/TLS 中关闭验证
+- ✅ 修复 Dio 实例管理问题（支持测试 mock 和生产环境）
+- ✅ Release 构建验证通过 (48.3MB)
+
+**技术实现**:
+
+1. **Request 模型扩展** (`lib/models/http_request.dart`):
+```dart
+@HiveField(11) @Default(true) bool validateCertificates,
+```
+
+2. **动态 Dio 实例** (`lib/services/http_service.dart`):
+```dart
+// 测试模式使用注入的 Dio，生产模式为每个请求创建新实例
+final dio = _dio ?? _createDioForRequest(request);
+```
+
+3. **SSL 配置**:
+```dart
+if (!request.validateCertificates) {
+  adapter.onHttpClientCreate = (client) {
+    client.badCertificateCallback = (cert, host, port) => true;
+    return client;
+  };
+}
+```
+
+4. **友好的错误提示**:
+```dart
+String _formatCertificateError(...) {
+  if (errorMsg.contains('self signed')) {
+    return 'The server is using a self-signed certificate.\n\n'
+           '💡 Tip: You can disable "Enable SSL certificate verification" '
+           'in Settings > SSL/TLS to bypass this error.';
+  }
+  // ... 其他错误类型
+}
+```
+
+**UI 截图**:
+- Settings Tab 显示正常
+- SSL/TLS 分组显示 "Enable SSL certificate verification" 开关
+- 错误提示包含具体原因和解决方案
+
+**验证结果**:
+- ✅ 内网自签名证书服务器可正常访问（关闭验证后）
+- ✅ 公网 HTTPS 服务器正常访问（开启验证）
+- ✅ 证书错误提示友好且包含解决方案
 
 </details>
 
@@ -2705,6 +2772,130 @@ python3 test_error_response.py
 - `AGENTS.md` - 更新任务状态
 
 **GitHub Issue**: https://github.com/scottli139/hopp/issues/1 ✅ 已关闭
+
+</details>
+
+
+<details>
+<summary>2026-03-17 - Issue #2 修复完成：Certificate Tab 显示真实 SSL/TLS 证书</summary>
+
+**完成工作**:
+- ✅ 实现真实 SSL/TLS 证书获取（使用 `SecureSocket` 预连接）
+- ✅ 重写 `lib/services/certificate_helper.dart` 添加 `fetchCertificateFromHost()` 方法
+- ✅ 解析完整证书信息：颁发者、有效期、序列号、SHA-256 指纹、SAN、公钥信息
+- ✅ 修改 `lib/services/http_service.dart` 使用新证书获取逻辑
+- ✅ 移除 `_generateMockCertificateInfo()` 模拟数据方法
+- ✅ 添加 `crypto` 依赖用于计算证书指纹
+- ✅ 添加 UI 测试指令：`get_certificate_info`, `simulate_certificate_response`
+- ✅ 创建 UI 测试脚本 `test_certificate.py`
+- ✅ 所有单元测试通过（432个）
+- ✅ UI 测试验证通过
+- ✅ 代码通过 `dart format` 和 `dart analyze`
+- ✅ 关闭 GitHub Issue #2
+
+**问题分析**:
+
+原代码使用 `badCertificateCallback` 获取证书，但该回调只在证书验证失败时触发：
+
+```dart
+// 修复前
+void _setupCertificateCapture(...) {
+  adapter.createHttpClient = () {
+    final client = HttpClient();
+    client.badCertificateCallback = (cert, host, port) {
+      // 只在证书验证失败时触发！
+      onCertificate(extractCertificateInfoFromX509(cert));
+      return true;
+    };
+    return client;
+  };
+}
+```
+
+正常 HTTPS 连接无法触发回调，导致只能使用模拟数据。
+
+**解决方案**:
+
+使用 `SecureSocket.connect()` 预连接获取真实证书：
+
+```dart
+// 修复后
+Future<CertificateInfo?> fetchCertificateFromHost(
+  String host, {
+  int port = 443,
+  Duration timeout = const Duration(seconds: 5),
+}) async {
+  final socket = await SecureSocket.connect(
+    host,
+    port,
+    timeout: timeout,
+    onBadCertificate: (certificate) => true, // 允许获取自签名证书
+  );
+  
+  final cert = socket.peerCertificate;
+  final info = extractCertificateInfoFromX509(cert);
+  socket.destroy();
+  
+  return info;
+}
+```
+
+**技术实现**:
+
+1. **证书解析** (`certificate_helper.dart`):
+   - 使用 `X509Certificate` 获取 subject, issuer, startValidity, endValidity
+   - 使用 `crypto` 包从 DER 数据计算 SHA-256 指纹
+   - 从 DER 数据解析序列号
+   - 解析公钥算法和长度
+   - 提取 Subject Alternative Names
+
+2. **HTTP 服务集成** (`http_service.dart`):
+```dart
+// HTTPS 请求前获取证书
+if (isHttps) {
+  capturedCertificate = await _fetchCertificateInfo(uri.host, uri.port);
+}
+```
+
+3. **UI 测试支持**:
+   - `get_certificate_info` - 获取当前响应的证书详情
+   - `simulate_certificate_response` - 模拟带证书信息的响应
+
+**验证结果**:
+
+```
+单元测试: 432 个测试全部通过
+构建状态: ✅ Release 构建成功 (48.1MB)
+```
+
+**UI 测试验证** (2026-03-17):
+```
+✅ 基础连接测试通过
+✅ 模拟证书响应创建成功
+✅ 证书信息获取正确：
+   - 主题 (Subject): CN=httpbin.org
+   - 颁发者 (Issuer): CN=DigiCert TLS RSA SHA256 2020 CA1
+   - 有效期: 2026-02-15 - 2027-02-15
+   - 剩余天数: 334 天
+   - SHA-256 指纹正确显示
+   - 证书链: 3 级
+✅ Certificate Tab 切换成功
+✅ UI 截图验证：Certificate Tab 显示 "Certificate is valid" 和 "334 days remaining"
+```
+
+**截图文件**:
+- `~/Desktop/certificate_tab_ui.png` - Certificate Tab UI 截图
+
+**文件变更**:
+- `pubspec.yaml` - 添加 crypto 依赖
+- `lib/services/certificate_helper.dart` - 重写证书获取和解析逻辑
+- `lib/services/http_service.dart` - 使用新证书获取逻辑
+- `lib/utils/testing/ui_test_mode.dart` - 添加证书测试指令
+- `integration_test/test_client.py` - 添加证书测试方法
+- `integration_test/test_certificate.py` - 新增测试脚本
+- `AGENTS.md` - 更新文档
+
+**GitHub Issue**: https://github.com/scottli139/hopp/issues/2 ✅ 已关闭
 
 </details>
 

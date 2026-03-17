@@ -22,6 +22,8 @@ class HttpRequest with _$HttpRequest {
     @HiveField(8) String? parentId,
     @HiveField(9) @Default(0) int sortOrder,
     @HiveField(10) @Default('json') String rawContentType,
+    // Request Settings (临时实现，等待完整 Request Settings 功能)
+    @HiveField(11) @Default(true) bool validateCertificates,
   }) = _HttpRequest;
 
   factory HttpRequest.fromJson(Map<String, dynamic> json) =>

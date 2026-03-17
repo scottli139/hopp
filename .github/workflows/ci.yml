@@ -11,6 +11,9 @@ on:
 env:
   FLUTTER_VERSION: "3.27.4"
 
+permissions:
+  contents: write
+
 jobs:
   # 代码分析和测试
   analyze-and-test:

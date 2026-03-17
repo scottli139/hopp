@@ -115,6 +115,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | 问题 | 优先级 | 说明 | 状态 |
 |------|--------|------|------|
 | ~~4XX/5XX 响应不显示服务端返回内容~~ | ~~P0~~ | ~~当服务端返回 4XX 或 5XX 错误时，Response Body 区域不显示服务端返回的数据~~ | ✅ **已修复 (2026-03-17)** - GitHub Issue #1 已关闭 |
+| ~~Postman 导入 Raw Content Type 识别错误~~ | ~~P1~~ | ~~导入 Postman Collection 时，body.options.raw.language 为 json 的请求显示为 text~~ | ✅ **已修复 (2026-03-17)** - GitHub Issue #10 已关闭 |
 | ~~Certificate 显示假数据~~ | ~~P1~~ | ~~Response 区域的 Certificate Tab 当前显示的是模拟/假数据，非真实证书信息~~ | ✅ **已修复 (2026-03-17)** - GitHub Issue #2 已关闭 |
 | ~~自签名证书无法访问~~ | ~~P1~~ | ~~内网自签名证书服务器请求失败，缺少 SSL 验证开关~~ | ✅ **已修复 (2026-03-17)** |
 | 删除 Collection 子目录处理问题 | P1 | 删除带子目录的 Collection 时，子 Collection 未被删除而是被保留并提升到第一级 | 需修复删除逻辑 |
@@ -610,6 +611,68 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-17 - Issue #10 修复完成：Postman 导入 Raw Content Type 映射</summary>
+
+**完成工作**:
+- ✅ 修复 Postman 导入时 Body Raw Content Type 识别错误的问题
+- ✅ 增强 `_mapRawContentType` 方法，支持从 language 字段和 Content-Type header 推断
+- ✅ 支持大小写不敏感匹配（JSON/json/Json）
+- ✅ 添加详细日志记录，帮助调试导入问题
+- ✅ 新增 5 个单元测试覆盖各种场景
+- ✅ 所有 437 个单元测试通过
+- ✅ 代码格式化 (`dart format`)
+- ✅ GitHub Issue #10 已关闭
+
+**修复详情**:
+
+1. **问题原因**: `_mapRawContentType` 仅在 `body.options.raw.language` 字段存在时映射类型，但某些 Postman Collection 可能没有该字段，或 Content-Type 只在 header 中指定
+
+2. **解决方案**: 
+   - 首先尝试从 `language` 字段映射（支持大小写不敏感）
+   - 如果 language 为空，尝试从 `Content-Type` header 推断
+   - 支持 JSON/XML/HTML/JavaScript/Text 类型推断
+
+3. **代码修改** (`lib/services/import_export/postman_mapper.dart`):
+```dart
+static String _mapRawContentType(String? language, List<KeyValuePair> headers) {
+  // 1. 尝试从 language 字段映射
+  if (language != null && language.isNotEmpty) {
+    final normalized = language.toLowerCase().trim();
+    switch (normalized) {
+      case 'json': return 'json';
+      case 'xml': return 'xml';
+      // ...
+    }
+  }
+  
+  // 2. 从 Content-Type header 推断
+  final contentTypeHeader = headers
+      .where((h) => h.key.toLowerCase() == 'content-type')
+      .firstOrNull;
+  if (contentTypeHeader != null) {
+    if (contentTypeHeader.value.contains('application/json')) {
+      return 'json';
+    }
+    // ... 其他类型
+  }
+  
+  return 'text';
+}
+```
+
+**新增测试** (`test/services/postman_mapper_test.dart`):
+- `should map raw body type with uppercase JSON language`
+- `should infer json from Content-Type header when language is null`
+- `should infer xml from Content-Type header`
+- `should default to text when no language and no Content-Type`
+
+**文件变更**:
+- `lib/services/import_export/postman_mapper.dart` - 增强 raw content type 映射逻辑
+- `test/services/postman_mapper_test.dart` - 添加单元测试
+
+</details>
 
 <details>
 <summary>2026-03-17 - Request Settings UI 修复完成 (Issue #9)</summary>
@@ -2194,6 +2257,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-17 | v0.5.5-certificate-real | 修复 Issue #2: Certificate Tab 显示真实 SSL/TLS 证书（使用 SecureSocket 预连接获取） |
 | 2026-03-17 | v0.5.6-error-response-fix | 修复 Issue #1: 4XX/5XX 响应正确显示服务端返回内容 |
 | 2026-03-17 | v0.5.7-ssl-verify-switch | 实现 SSL 证书验证开关（Request Settings），支持内网自签名证书，优化证书错误提示 |
+| 2026-03-17 | v0.5.9-postman-import-fix | 修复 Postman 导入 Raw Content Type 映射问题 (Issue #10): 支持 language 字段和 Content-Type header 推断 |
 | 2026-03-17 | v0.5.8-settings-ui-fix | 修复 Request Settings UI 样式问题 (Issue #9): 字号、Switch 尺寸和颜色规范 |
 
 ---

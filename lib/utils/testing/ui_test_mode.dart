@@ -306,6 +306,11 @@ class UITestModeManager {
       case 'simulate_certificate_response':
         return await _simulateCertificateResponse();
 
+      case 'get_imported_request_info':
+        final collectionIndex = params['collection_index'] as int? ?? 0;
+        final requestIndex = params['request_index'] as int? ?? 0;
+        return await _getImportedRequestInfo(collectionIndex, requestIndex);
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -1936,6 +1941,52 @@ class UITestModeManager {
       'valid_to': certificateInfo.validTo.toIso8601String(),
       'is_valid': certificateInfo.isValid,
       'remaining_days': certificateInfo.remainingDays,
+    };
+  }
+
+  /// 获取导入后的请求信息（用于验证 raw content type 映射）
+  Future<Map<String, dynamic>> _getImportedRequestInfo(
+    int collectionIndex,
+    int requestIndex,
+  ) async {
+    final collectionsAsync = _ref!.read(collectionProvider);
+    final collections = collectionsAsync.valueOrNull ?? [];
+
+    if (collections.isEmpty) {
+      throw Exception('没有导入的 Collection');
+    }
+
+    if (collectionIndex >= collections.length) {
+      throw Exception(
+        'Collection 索引 $collectionIndex 超出范围 (共 ${collections.length} 个)',
+      );
+    }
+
+    final collection = collections[collectionIndex];
+    final allRequests = <HttpRequest>[
+      ...collection.requests,
+      ...collection.children.expand((c) => c.requests),
+    ];
+
+    if (requestIndex >= allRequests.length) {
+      throw Exception(
+        'Request 索引 $requestIndex 超出范围 (共 ${allRequests.length} 个)',
+      );
+    }
+
+    final request = allRequests[requestIndex];
+
+    return {
+      'request_name': request.name,
+      'method': request.method.value,
+      'url': request.url,
+      'body_type': request.bodyType,
+      'raw_content_type': request.rawContentType,
+      'body': request.body,
+      'headers': request.headers
+          .where((h) => h.enabled)
+          .map((h) => {'key': h.key, 'value': h.value})
+          .toList(),
     };
   }
 }

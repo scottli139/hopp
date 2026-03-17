@@ -159,6 +159,120 @@ void main() {
         expect(hoppCollection.requests.first.body, '{"key": "value"}');
       });
 
+      test('should map raw body type with uppercase JSON language', () {
+        final postmanCollection = PostmanCollection(
+          info: const PostmanInfo(name: 'Test'),
+          item: [
+            PostmanItem(
+              name: 'Raw Request',
+              request: PostmanRequest(
+                method: 'POST',
+                url: const PostmanUrl(raw: 'https://example.com'),
+                body: PostmanBody(
+                  mode: 'raw',
+                  raw: '{"key": "value"}',
+                  options: PostmanBodyOptions(
+                    raw: PostmanRawOptions(language: 'JSON'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+
+        final hoppCollection =
+            PostmanMapper.toHoppCollection(postmanCollection);
+        expect(hoppCollection.requests.first.bodyType, 'raw');
+        expect(hoppCollection.requests.first.rawContentType, 'json');
+      });
+
+      test('should infer json from Content-Type header when language is null',
+          () {
+        final postmanCollection = PostmanCollection(
+          info: const PostmanInfo(name: 'Test'),
+          item: [
+            PostmanItem(
+              name: 'Raw Request',
+              request: PostmanRequest(
+                method: 'POST',
+                url: const PostmanUrl(raw: 'https://example.com'),
+                header: [
+                  const PostmanHeader(
+                    key: 'Content-Type',
+                    value: 'application/json',
+                  ),
+                ],
+                body: PostmanBody(
+                  mode: 'raw',
+                  raw: '{"key": "value"}',
+                  // No options.raw.language
+                ),
+              ),
+            ),
+          ],
+        );
+
+        final hoppCollection =
+            PostmanMapper.toHoppCollection(postmanCollection);
+        expect(hoppCollection.requests.first.bodyType, 'raw');
+        expect(hoppCollection.requests.first.rawContentType, 'json');
+      });
+
+      test('should infer xml from Content-Type header', () {
+        final postmanCollection = PostmanCollection(
+          info: const PostmanInfo(name: 'Test'),
+          item: [
+            PostmanItem(
+              name: 'Raw Request',
+              request: PostmanRequest(
+                method: 'POST',
+                url: const PostmanUrl(raw: 'https://example.com'),
+                header: [
+                  const PostmanHeader(
+                    key: 'Content-Type',
+                    value: 'application/xml',
+                  ),
+                ],
+                body: PostmanBody(
+                  mode: 'raw',
+                  raw: '<user>test</user>',
+                ),
+              ),
+            ),
+          ],
+        );
+
+        final hoppCollection =
+            PostmanMapper.toHoppCollection(postmanCollection);
+        expect(hoppCollection.requests.first.bodyType, 'raw');
+        expect(hoppCollection.requests.first.rawContentType, 'xml');
+      });
+
+      test('should default to text when no language and no Content-Type', () {
+        final postmanCollection = PostmanCollection(
+          info: const PostmanInfo(name: 'Test'),
+          item: [
+            PostmanItem(
+              name: 'Raw Request',
+              request: PostmanRequest(
+                method: 'POST',
+                url: const PostmanUrl(raw: 'https://example.com'),
+                body: PostmanBody(
+                  mode: 'raw',
+                  raw: 'plain text',
+                  // No options.raw.language and no Content-Type header
+                ),
+              ),
+            ),
+          ],
+        );
+
+        final hoppCollection =
+            PostmanMapper.toHoppCollection(postmanCollection);
+        expect(hoppCollection.requests.first.bodyType, 'raw');
+        expect(hoppCollection.requests.first.rawContentType, 'text');
+      });
+
       test('should map formdata body type correctly', () {
         final postmanCollection = PostmanCollection(
           info: const PostmanInfo(name: 'Test'),

@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../providers/import_export/import_export_provider.dart';
 import '../../../services/import_export/import_export_exception.dart';
+import '../../../services/import_export/postman_import_service.dart';
 import '../../../utils/app_logger.dart';
 
 /// 显示导入对话框
@@ -122,7 +123,7 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
     );
   }
 
-  Widget _buildSuccess(dynamic result) {
+  Widget _buildSuccess(ImportResult result) {
     final theme = Theme.of(context);
     return Center(
       child: Column(

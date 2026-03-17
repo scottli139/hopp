@@ -536,6 +536,25 @@ class HoppTestClient:
             print(f"⚠️  冲突: {result.get('collection_name')} 已存在")
         return result
     
+    def get_imported_request_info(self, collection_index=0, request_index=0):
+        """获取导入后的请求信息（用于验证 raw content type 映射）
+        
+        Args:
+            collection_index: Collection 索引（默认 0）
+            request_index: Request 索引（默认 0）
+        """
+        print(f"📋 获取导入请求信息: Collection[{collection_index}], Request[{request_index}]")
+        result = self.send_command("get_imported_request_info", {
+            "collection_index": collection_index,
+            "request_index": request_index
+        })
+        print(f"✅ 请求信息:")
+        print(f"   名称: {result.get('request_name')}")
+        print(f"   方法: {result.get('method')}")
+        print(f"   Body 类型: {result.get('body_type')}")
+        print(f"   Raw Content Type: {result.get('raw_content_type')}")
+        return result
+    
     def trigger_import_dialog(self):
         """触发导入对话框"""
         print("📥 触发导入对话框...")
@@ -843,6 +862,11 @@ def main():
     import_parser = subparsers.add_parser("import_collection", help="导入 Postman Collection")
     import_parser.add_argument("--file", required=True, help="文件路径")
     
+    # get_imported_request_info
+    get_imported_parser = subparsers.add_parser("get_imported_request_info", help="获取导入后的请求信息")
+    get_imported_parser.add_argument("--collection-index", type=int, default=0, help="Collection 索引")
+    get_imported_parser.add_argument("--request-index", type=int, default=0, help="Request 索引")
+    
     # trigger_import_dialog
     subparsers.add_parser("trigger_import_dialog", help="触发导入对话框")
     
@@ -960,6 +984,8 @@ def main():
             client.get_collections()
         elif args.command == "import_collection":
             client.import_collection(args.file)
+        elif args.command == "get_imported_request_info":
+            client.get_imported_request_info(args.collection_index, args.request_index)
         elif args.command == "trigger_import_dialog":
             client.trigger_import_dialog()
         elif args.command == "trigger_export_dialog":

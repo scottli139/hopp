@@ -11,6 +11,7 @@ import '../../models/collection.dart';
 import '../../models/http_method.dart';
 import '../../models/http_request.dart';
 import '../../models/key_value_pair.dart';
+import '../../utils/app_logger.dart';
 import 'postman_schema.dart';
 
 /// Postman 模型映射器
@@ -70,6 +71,7 @@ class PostmanMapper {
   /// Postman Item -> Hopp HttpRequest
   static HttpRequest _toHoppRequest(PostmanItem item) {
     final request = item.request!;
+    final headers = _mapHeaders(request.header);
 
     return HttpRequest(
       id: _generateId(),
@@ -77,10 +79,13 @@ class PostmanMapper {
       method: _mapHttpMethod(request.method),
       url: _extractUrl(request.url),
       params: _mapQueryParams(request.url.query),
-      headers: _mapHeaders(request.header),
+      headers: headers,
       body: _extractBody(request.body),
       bodyType: _mapBodyType(request.body?.mode),
-      rawContentType: _mapRawContentType(request.body?.options?.raw?.language),
+      rawContentType: _mapRawContentType(
+        request.body?.options?.raw?.language,
+        headers,
+      ),
     );
   }
 
@@ -245,20 +250,64 @@ class PostmanMapper {
   }
 
   /// 映射 Raw 内容类型
-  static String _mapRawContentType(String? language) {
-    switch (language?.toLowerCase()) {
-      case 'json':
-        return 'json';
-      case 'xml':
-        return 'xml';
-      case 'html':
-        return 'html';
-      case 'javascript':
-        return 'javascript';
-      case 'text':
-      default:
-        return 'text';
+  ///
+  /// 支持从 Postman 的 language 字段或从 Content-Type header 推断
+  static String _mapRawContentType(
+      String? language, List<KeyValuePair> headers) {
+    // 首先尝试从 language 字段映射
+    if (language != null && language.isNotEmpty) {
+      final normalized = language.toLowerCase().trim();
+      AppLogger.info(
+        '[PostmanMapper] Mapping raw content type from language: $normalized',
+      );
+
+      switch (normalized) {
+        case 'json':
+          return 'json';
+        case 'xml':
+          return 'xml';
+        case 'html':
+          return 'html';
+        case 'javascript':
+        case 'js':
+          return 'javascript';
+        case 'text':
+          return 'text';
+      }
     }
+
+    // 如果 language 为空或无法识别，尝试从 Content-Type header 推断
+    final contentTypeHeader = headers
+        .where((h) => h.enabled && h.key.toLowerCase() == 'content-type')
+        .firstOrNull;
+
+    if (contentTypeHeader != null && contentTypeHeader.value.isNotEmpty) {
+      final contentType = contentTypeHeader.value.toLowerCase();
+      AppLogger.info(
+        '[PostmanMapper] Inferring raw content type from Content-Type header: $contentType',
+      );
+
+      if (contentType.contains('application/json') ||
+          contentType.contains('text/json')) {
+        return 'json';
+      } else if (contentType.contains('application/xml') ||
+          contentType.contains('text/xml') ||
+          contentType.contains('application/soap')) {
+        return 'xml';
+      } else if (contentType.contains('text/html')) {
+        return 'html';
+      } else if (contentType.contains('application/javascript') ||
+          contentType.contains('text/javascript')) {
+        return 'javascript';
+      } else if (contentType.contains('text/plain')) {
+        return 'text';
+      }
+    }
+
+    AppLogger.info(
+      '[PostmanMapper] Defaulting to text (language: $language, no matching Content-Type header)',
+    );
+    return 'text';
   }
 
   // ==================== Hopp -> Postman ====================

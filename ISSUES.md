@@ -8,6 +8,149 @@
 
 ## 🔴 P0 - Critical Bug
 
+### #P0-1: 初次使用时缺少创建 Request/Collection 的入口指引
+
+| 属性 | 值 |
+|------|-----|
+| **状态** | 🔴 Open |
+| **标签** | `ux`, `P0`, `onboarding`, `empty-state` |
+| **创建时间** | 2026-03-17 |
+| **指派** | 待分配 |
+| **预计修复** | 待安排 |
+
+#### 问题描述
+当用户初次使用应用时，界面中没有明显的入口或指引告诉用户如何创建第一个 Request 或 Collection。
+
+#### 影响
+- 新用户体验不友好，不知道如何开始使用
+- 可能导致用户误以为应用无法使用而直接退出
+
+#### 当前行为
+初次打开应用时：
+- 左侧 Sidebar 显示 "No collections yet" （文字 + 文件夹图标）
+- 主区域显示 "No requests yet" 和 "Select a request from sidebar or create a new tab"
+- 没有任何可见的按钮或链接来创建 Request 或 Collection
+
+#### 预期行为
+在空状态下提供明确的创建入口：
+1. **Sidebar 空状态**：显示 "Create Collection" 按钮或链接
+2. **主区域空状态**：显示 "Create Request" 按钮或 "Get Started" 引导
+3. **Sidebar Header**：添加可见的 "+" 按钮来创建 Collection
+
+#### 参考截图
+> 初次打开应用时的界面状态
+> ![初次使用界面](https://user-images.githubusercontent.com/placeholder/empty-state.png)
+> 
+> 问题：红框标注区域应该显示创建入口
+> - 左侧 Sidebar: "No collections yet" 下方缺少 "Create Collection" 按钮
+> - 主区域: "No requests yet" 下方缺少 "Create Request" 按钮
+
+#### 修复方案
+
+##### 方案 1: Sidebar 空状态优化
+```dart
+// lib/widgets/layout/sidebar.dart
+// 在 "No collections yet" 区域添加创建按钮
+
+if (collections.isEmpty) {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.folder_open, size: 48, color: Colors.grey),
+        SizedBox(height: 16),
+        Text('No collections yet'),
+        SizedBox(height: 16),
+        // 新增：创建按钮
+        ElevatedButton.icon(
+          onPressed: () => _createNewCollection(),
+          icon: Icon(Icons.add),
+          label: Text('Create Collection'),
+        ),
+      ],
+    ),
+  );
+}
+```
+
+##### 方案 2: 主区域空状态优化
+```dart
+// lib/widgets/layout/main_content.dart
+// 在 "No requests yet" 区域添加创建按钮
+
+if (tabs.isEmpty) {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        LogoWidget(),
+        SizedBox(height: 24),
+        Text('No requests yet', style: titleStyle),
+        SizedBox(height: 8),
+        Text('Get started by creating your first request'),
+        SizedBox(height: 24),
+        // 新增：创建按钮
+        ElevatedButton.icon(
+          onPressed: () => _createNewRequest(),
+          icon: Icon(Icons.add),
+          label: Text('Create Request'),
+          style: ElevatedButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+        ),
+        SizedBox(height: 12),
+        // 可选：快捷键提示
+        Text('or press Cmd+N', style: captionStyle),
+      ],
+    ),
+  );
+}
+```
+
+##### 方案 3: Sidebar Header 优化（建议同时实施）
+```dart
+// lib/widgets/layout/sidebar.dart
+// 在 Sidebar 顶部添加可见的 "+" 按钮
+
+Row(
+  children: [
+    LogoWidget(),
+    Spacer(),
+    // 新增：创建按钮
+    IconButton(
+      onPressed: () => _createNewCollection(),
+      icon: Icon(Icons.add),
+      tooltip: 'Create Collection',
+    ),
+    IconButton(
+      onPressed: () => _showMoreOptions(),
+      icon: Icon(Icons.more_vert),
+    ),
+  ],
+)
+```
+
+#### 相关文件
+- `lib/widgets/layout/sidebar.dart` - Sidebar 空状态显示
+- `lib/widgets/layout/main_content.dart` - 主区域空状态显示
+- `lib/widgets/layout/request_tabs.dart` - Tab 管理（Cmd+N 快捷键）
+
+#### 参考设计
+| 应用 | 空状态设计 |
+|------|----------|
+| Postman | 显示 "Create Collection" 按钮 |
+| Insomnia | 显示 "New Request" 按钮 + 快捷键提示 |
+| Bruno | 显示 "Create Collection" 链接 |
+
+#### 验收标准
+- [ ] Sidebar 空状态显示 "Create Collection" 按钮
+- [ ] 主区域空状态显示 "Create Request" 按钮
+- [ ] 点击按钮能正确创建对应的 Request/Collection
+- [ ] 显示快捷键提示（Cmd+N 创建 Request）
+- [ ] UI 测试覆盖创建流程
+
+---
+
 ### #P0-1: 4XX/5XX 响应不显示服务端返回内容
 
 | 属性 | 值 |
@@ -336,11 +479,11 @@ lib/
 
 | 优先级 | 数量 | 状态 |
 |--------|------|------|
-| 🔴 P0 | 1 | 1 Open |
+| 🔴 P0 | 2 | 2 Open |
 | 🟡 P1 | 3 | 2 Open, 1 Planned |
 | 🟢 P2 | 1 | 1 Open |
 | 📋 Feature | 3 | 1 In Progress, 2 Open |
-| **总计** | **8** | **8 活跃** |
+| **总计** | **9** | **9 活跃** |
 
 ---
 
@@ -348,4 +491,5 @@ lib/
 
 | 日期 | 更新内容 |
 |------|----------|
+| 2026-03-17 | 添加 #P0-1: 初次使用时缺少创建入口指引 |
 | 2026-03-17 | 创建 ISSUES.md，整理已知问题 |

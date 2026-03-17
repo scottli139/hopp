@@ -356,7 +356,7 @@ Container(
 | URL Focus 边框对齐 | ✅ | P0 | 2h | 修复紫色边框与背景区域高度不一致 |
 | Request Editor UI 优化 | ✅ | P1 | 6h | Tab样式、Headers/Params列表、自动完成 |
 | Request Body 区域优化 | ⏳ | P1 | 26h | 参考 Postman 改进 (radio 选择器、Raw 子类型、Beautify、行号、各 body 类型) |
-| 请求设置 (Request Settings) | 🔄 | P1 | 10h | 已实现 SSL 验证开关，其他配置项待完成 |
+| 请求设置 (Request Settings) | 🔄 | P1 | 10h | ✅ SSL/TLS 设置 UI 完成 (Issue #9)，其他配置项待完成 |
 | 主题切换 | ✅ | P1 | 4h | Light/Dark 模式 (基础实现已完成) |
 | 国际化完善 | 🔄 | P1 | 6h | 多语言支持 (框架已搭建，需完善翻译) |
 | 请求时间分析 | ✅ | P1 | 10h | Timing Tab (DNS/TCP/TLS/TTFB/Download) |

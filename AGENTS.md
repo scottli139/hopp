@@ -114,8 +114,8 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 
 | 问题 | 优先级 | 说明 | 状态 |
 |------|--------|------|------|
-| ~~4XX/5XX 响应不显示服务端返回内容~~ | ~~P0~~ | ~~当服务端返回 4XX 或 5XX 错误时，Response Body 区域不显示服务端返回的数据~~ | ✅ **已修复 (2026-03-17)** |
-| ~~Certificate 显示假数据~~ | ~~P1~~ | ~~Response 区域的 Certificate Tab 当前显示的是模拟/假数据，非真实证书信息~~ | ✅ **已修复 (2026-03-17)** |
+| ~~4XX/5XX 响应不显示服务端返回内容~~ | ~~P0~~ | ~~当服务端返回 4XX 或 5XX 错误时，Response Body 区域不显示服务端返回的数据~~ | ✅ **已修复 (2026-03-17)** - GitHub Issue #1 已关闭 |
+| ~~Certificate 显示假数据~~ | ~~P1~~ | ~~Response 区域的 Certificate Tab 当前显示的是模拟/假数据，非真实证书信息~~ | ✅ **已修复 (2026-03-17)** - GitHub Issue #2 已关闭 |
 | ~~自签名证书无法访问~~ | ~~P1~~ | ~~内网自签名证书服务器请求失败，缺少 SSL 验证开关~~ | ✅ **已修复 (2026-03-17)** |
 | 删除 Collection 子目录处理问题 | P1 | 删除带子目录的 Collection 时，子 Collection 未被删除而是被保留并提升到第一级 | 需修复删除逻辑 |
 | 行号与内容滚动不同步 | P2 | Request/Response Body 编辑器中行号区域与内容区域未对齐，内容滚动时行号不跟随滚动 | 需优化 CodeEditor 组件 |
@@ -610,6 +610,50 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-17 - Request Settings UI 修复完成 (Issue #9)</summary>
+
+**完成工作**:
+- ✅ 修复 Settings Tab 分组标题字号 (11px tiny)
+- ✅ 修复设置项标题字号 (12px caption)
+- ✅ 修复描述文字字号 (11px tiny)
+- ✅ 修复 Switch 开关尺寸 (24×14px, Transform.scale 0.6)
+- ✅ 修复 Switch 颜色 (ON: Indigo 500, OFF: outlineVariant)
+- ✅ 添加 ON/OFF 状态文字显示 (12px caption)
+- ✅ 修复 "Coming Soon" 颜色 (改为 onSurfaceVariant 而非紫色)
+- ✅ 更新 UI/UX Guidelines 文档
+- ✅ 添加 UI 测试指令支持 (`switch_request_tab` 支持 'settings')
+- ✅ 创建 UI 测试脚本 `test_request_settings_ui.py`
+- ✅ 所有 432 个单元测试通过
+- ✅ 代码格式化 (`dart format`)
+- ✅ GitHub Issue #9 已关闭
+
+**修改文件**:
+- `lib/widgets/request/request_editor.dart` - 修复 Settings UI 样式
+  - `_buildSettingsSection`: 分组标题使用 AppTextStyles.tiny (11px)
+  - `_buildSwitchTile`: 标题 12px, 描述 11px, Switch 缩放 0.6
+  - `_buildDisabledTile`: 字号调整
+- `lib/utils/testing/ui_test_mode.dart` - 添加 'settings' Tab 支持
+- `integration_test/test_client.py` - 添加 `switch_request_tab` 方法
+- `integration_test/test_request_settings_ui.py` - 新增测试脚本
+- `docs/UI_UX_GUIDELINES.md` - 更新 Request Settings 规范
+
+**最终字体规范**:
+| 元素 | 字号 | 样式 |
+|------|------|------|
+| 分组标题 (SSL/TLS) | 11px | tiny, w600 |
+| 设置项标题 | 12px | caption, w500 |
+| 描述文字 | 11px | tiny |
+| 状态文字 (ON/OFF) | 12px | caption |
+
+**验证结果**:
+- 单元测试: 432 个全部通过
+- 构建状态: ✅ Release 构建成功 (48.3MB)
+- UI 测试: Settings Tab 切换正常
+- 截图验证: 所有文字字号符合规范
+
+</details>
 
 <details>
 <summary>2026-03-16 - Postman 导入/导出功能实现完成</summary>
@@ -2150,6 +2194,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-17 | v0.5.5-certificate-real | 修复 Issue #2: Certificate Tab 显示真实 SSL/TLS 证书（使用 SecureSocket 预连接获取） |
 | 2026-03-17 | v0.5.6-error-response-fix | 修复 Issue #1: 4XX/5XX 响应正确显示服务端返回内容 |
 | 2026-03-17 | v0.5.7-ssl-verify-switch | 实现 SSL 证书验证开关（Request Settings），支持内网自签名证书，优化证书错误提示 |
+| 2026-03-17 | v0.5.8-settings-ui-fix | 修复 Request Settings UI 样式问题 (Issue #9): 字号、Switch 尺寸和颜色规范 |
 
 ---
 

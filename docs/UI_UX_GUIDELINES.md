@@ -727,7 +727,7 @@ AnimatedScale(
 
 ## Request Settings UI 规范
 
-> **功能状态**: ⏳ 规划中 (参考 Postman 请求级别配置)
+> **功能状态**: ✅ 已实现 (SSL/TLS 设置)
 
 ### 整体布局
 
@@ -736,24 +736,18 @@ AnimatedScale(
 │  Settings Tab                                           │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
+│  SSL/TLS                                                │ ← 分组标题 11px
 │  ┌─────────────────────────────────────────────────┐   │
-│  │ HTTP Version                      [Dropdown ▼]  │   │
-│  │ Select the HTTP version...                      │   │
-│  │ Default: Settings                               │   │
+│  │ Enable SSL certificate verification    [●] ON   │   │
+│  │ Verify the server's SSL certificate chain       │   │ ← 描述 11px
+│  │ ℹ️ Disable this option to allow...              │   │ ← 提示 11px
 │  └─────────────────────────────────────────────────┘   │
 │                                                         │
+│  Coming Soon                                            │ ← 分组标题 11px
 │  ┌─────────────────────────────────────────────────┐   │
-│  │ Enable SSL certificate verification    [○] OFF  │   │
-│  │ Verify SSL certificates when...                 │   │
-│  │ Default: Settings                               │   │
+│  │ Follow redirects                     [🔒]       │   │
+│  │ Automatically follow HTTP redirects             │   │ ← 描述 11px
 │  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ Automatically follow redirects         [●] ON   │   │
-│  │ Follow HTTP 3xx responses...                    │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  ... more settings ...                                  │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -782,14 +776,13 @@ AnimatedScale(
 
 ```dart
 class SettingItem extends StatelessWidget {
-  final String title;           // 设置项标题
-  final String description;     // 设置项描述
+  final String title;           // 设置项标题 (12px)
+  final String description;     // 设置项描述 (11px)
   final Widget control;         // 控件（Switch/Dropdown/Input）
-  final String? defaultValue;   // 默认值提示
-  final bool isModified;        // 是否已修改
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: EdgeInsets.all(16),
       decoration: CardStyles.standard,
@@ -800,29 +793,19 @@ class SettingItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(title, style: AppTextStyles.body),
-                    if (isModified) ...[
-                      SizedBox(width: 8),
-                      DotIndicator(color: AppColors.primary),
-                    ],
-                  ],
+                Text(
+                  title,
+                  style: AppTextStyles.caption.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 SizedBox(height: 4),
-                Text(description, 
-                  style: AppTextStyles.caption.copyWith(
-                    color: NeutralColors.textSecondary,
+                Text(
+                  description,
+                  style: AppTextStyles.tiny.copyWith(
+                    color: theme.colorScheme.outline,
                   ),
                 ),
-                if (defaultValue != null) ...[
-                  SizedBox(height: 4),
-                  Text('Default: $defaultValue',
-                    style: AppTextStyles.tiny.copyWith(
-                      color: NeutralColors.textTertiary,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -835,6 +818,17 @@ class SettingItem extends StatelessWidget {
 }
 ```
 
+### 字体规范
+
+| 元素 | 字号 | 字重 | 颜色 |
+|------|------|------|------|
+| 分组标题 (SSL/TLS) | 11px (tiny) | 600 | onSurfaceVariant |
+| 设置项标题 | 12px (caption) | 500 | onSurface |
+| 设置项描述 | 11px (tiny) | 400 | outline |
+| 提示信息 | 11px (tiny) | 400 | outline |
+| 状态文字 (ON/OFF) | 12px (caption) | 500 | primary (ON) / outline (OFF) |
+| 禁用项文字 | 12px (caption) | 500 | outline |
+
 ### 间距规范
 
 | 元素 | 间距 |
@@ -844,6 +838,7 @@ class SettingItem extends StatelessWidget {
 | 标题与描述之间 | 4px |
 | 描述与默认值之间 | 4px |
 | 控件与文字之间 | 16px |
+| 分组之间 | 24px (spaceXL) |
 
 ### 实现规划
 
@@ -877,18 +872,43 @@ lib/
 
 用于布尔类型设置项（ON/OFF）
 
+**样式规范**:
+| 属性 | 值 |
+|------|-----|
+| 尺寸 | 24×14px (Material 默认 40×24 缩放 60%) |
+| ON 状态轨道 | Indigo 500 (#6366F1) |
+| OFF 状态轨道 | outlineVariant |
+| Thumb 颜色 | 白色 |
+| 状态文字 | ON/OFF，使用 caption 样式 |
+
+**实现代码**:
 ```dart
-SettingItem(
-  title: 'Enable SSL certificate verification',
-  description: 'Verify SSL certificates when sending a request...',
-  defaultValue: 'Settings',
-  control: Row(
-    children: [
-      Switch(value: isOn, onChanged: onChanged),
-      SizedBox(width: 8),
-      Text(isOn ? 'ON' : 'OFF', style: AppTextStyles.caption),
-    ],
-  ),
+Row(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    // Switch 缩小到 60% (约 24×14px)
+    Transform.scale(
+      scale: 0.6,
+      child: Switch(
+        value: value,
+        onChanged: onChanged,
+        activeColor: Colors.white,
+        activeTrackColor: AppColors.primary,
+        inactiveThumbColor: Colors.white,
+        inactiveTrackColor: theme.colorScheme.outlineVariant,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    ),
+    SizedBox(width: 8),
+    // 状态文字
+    Text(
+      value ? 'ON' : 'OFF',
+      style: AppTextStyles.caption.copyWith(
+        color: value ? AppColors.primary : theme.colorScheme.outline,
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+  ],
 )
 ```
 

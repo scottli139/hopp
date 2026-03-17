@@ -102,7 +102,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     // 监听测试模式的 Request Tab 切换指令
     ref.listen(uiTestRequestTabProvider, (previous, current) {
       if (current != null && current != previous) {
-        final index = ['params', 'headers', 'body', 'auth'].indexOf(current);
+        final index =
+            ['params', 'headers', 'body', 'auth', 'settings'].indexOf(current);
         if (index != -1 && _tabController.index != index) {
           _tabController.animateTo(index);
           AppLogger.info(
@@ -1576,7 +1577,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     Expanded(
                       child: Text(
                         'Disable this option to allow self-signed certificates or bypass certificate errors for testing purposes.',
-                        style: theme.textTheme.bodySmall?.copyWith(
+                        style: AppTextStyles.tiny.copyWith(
                           color: theme.colorScheme.outline,
                         ),
                       ),
@@ -1622,9 +1623,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       children: [
         Text(
           title,
-          style: theme.textTheme.titleSmall?.copyWith(
+          style: AppTextStyles.tiny.copyWith(
             fontWeight: FontWeight.w600,
-            color: theme.colorScheme.primary,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: AppConstants.spaceM),
@@ -1662,24 +1663,46 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             children: [
               Text(
                 title,
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: AppTextStyles.caption.copyWith(
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
+                style: AppTextStyles.tiny.copyWith(
                   color: theme.colorScheme.outline,
                 ),
               ),
             ],
           ),
         ),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeColor: theme.colorScheme.primary,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Switch with custom size and colors (Small: 28x16px)
+            Transform.scale(
+              scale: 0.6, // Material Switch 默认约 40x24，缩小到 60% = 24x14
+              child: Switch(
+                value: value,
+                onChanged: onChanged,
+                activeColor: Colors.white,
+                activeTrackColor: AppColors.primary,
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: theme.colorScheme.outlineVariant,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Status text
+            Text(
+              value ? 'ON' : 'OFF',
+              style: AppTextStyles.caption.copyWith(
+                color: value ? AppColors.primary : theme.colorScheme.outline,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -1701,7 +1724,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             children: [
               Text(
                 title,
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: AppTextStyles.caption.copyWith(
                   fontWeight: FontWeight.w500,
                   color: theme.colorScheme.outline,
                 ),
@@ -1709,7 +1732,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
+                style: AppTextStyles.tiny.copyWith(
                   color: theme.colorScheme.outline.withOpacity(0.6),
                 ),
               ),

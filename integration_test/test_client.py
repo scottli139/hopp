@@ -148,6 +148,16 @@ class HoppTestClient:
         print(f"✅ 已切换到 {result.get('tab')} Tab")
         return result
 
+    def switch_request_tab(self, tab):
+        """切换 Request Editor Tab"""
+        valid_tabs = ["params", "headers", "body", "auth", "settings"]
+        if tab.lower() not in valid_tabs:
+            raise Exception(f"无效的 Tab: {tab}, 可选: {valid_tabs}")
+        print(f"📑 切换到 Request {tab} Tab...")
+        result = self.send_command("switch_request_tab", {"tab": tab})
+        print(f"✅ 已切换到 Request {result.get('tab')} Tab")
+        return result
+
     def get_timing_info(self):
         """获取请求时间分析信息"""
         result = self.send_command("get_timing_info")

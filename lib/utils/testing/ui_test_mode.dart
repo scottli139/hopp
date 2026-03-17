@@ -1265,7 +1265,7 @@ class UITestModeManager {
   /// 切换 Request Editor Tab
   Future<Map<String, dynamic>> _switchRequestTab(String tab) async {
     AppLogger.info('[UI_TEST] _switchRequestTab called: $tab');
-    final validTabs = ['params', 'headers', 'body', 'auth'];
+    final validTabs = ['params', 'headers', 'body', 'auth', 'settings'];
     final tabLower = tab.toLowerCase();
 
     if (!validTabs.contains(tabLower)) {

@@ -1113,7 +1113,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
               const Divider(),
               const SizedBox(height: 16),
               // Version
-              _buildInfoRow(context, 'Version', '0.1.0 (Beta)'),
+              _buildInfoRow(context, 'Version', '0.6.0'),
               const SizedBox(height: 8),
               _buildInfoRow(context, 'Platform', 'macOS'),
               const SizedBox(height: 8),

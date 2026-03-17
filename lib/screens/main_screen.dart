@@ -231,7 +231,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ),
           const SizedBox(width: 12),
           Text(
-            'v0.1.0',
+            'v0.6.0',
             style: theme.textTheme.bodySmall?.copyWith(
               fontSize: 11,
               color: colorScheme.onSurface.withOpacity(0.6),

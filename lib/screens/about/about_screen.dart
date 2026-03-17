@@ -58,7 +58,7 @@ class AboutScreen extends StatelessWidget {
                 _buildInfoCard(
                   context,
                   title: 'Version',
-                  content: '0.1.0 (Beta)',
+                  content: '0.6.0',
                   icon: Icons.info_outline,
                 ),
                 const SizedBox(height: 16),

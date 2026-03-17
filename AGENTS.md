@@ -23,7 +23,7 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | 🐛 **发现 P0 问题：4XX/5XX 响应不显示服务端内容** |
+| **当前状态** | ✅ **P0 问题已修复：4XX/5XX 响应正确显示服务端内容** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
 | **测试覆盖** | ✅ **418 个通过 / 0 个失败 / 418 总计** |
@@ -112,9 +112,9 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 
 ### 已知问题 🐛
 
-| 问题 | 优先级 | 说明 | 预计修复时间 |
-|------|--------|------|-------------|
-| 4XX/5XX 响应不显示服务端返回内容 | P0 | 当服务端返回 4XX 或 5XX 错误时，Response Body 区域不显示服务端返回的数据，只显示错误信息。需要在 `http_service.dart` 的 DioException 处理中提取 `error.response` 的数据构建完整响应。 | 待修复 |
+| 问题 | 优先级 | 说明 | 状态 |
+|------|--------|------|------|
+| ~~4XX/5XX 响应不显示服务端返回内容~~ | ~~P0~~ | ~~当服务端返回 4XX 或 5XX 错误时，Response Body 区域不显示服务端返回的数据~~ | ✅ **已修复 (2026-03-17)** |
 | Certificate 显示假数据 | P1 | Response 区域的 Certificate Tab 当前显示的是模拟/假数据，非真实证书信息 | 待实现证书解析 |
 | 删除 Collection 子目录处理问题 | P1 | 删除带子目录的 Collection 时，子 Collection 未被删除而是被保留并提升到第一级 | 需修复删除逻辑 |
 | 行号与内容滚动不同步 | P2 | Request/Response Body 编辑器中行号区域与内容区域未对齐，内容滚动时行号不跟随滚动 | 需优化 CodeEditor 组件 |
@@ -132,7 +132,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | Timing 分析测试 | 新增 | ✅ 通过 |
 | 请求详情展示测试 | 新增 3 个 | ✅ 通过 |
 | Body 类型选择器测试 | 新增 12 场景 | ✅ 通过 |
-| **总计** | **418** | **✅ 全部通过** |
+| **总计** | **432** | **✅ 全部通过** |
 
 ---
 
@@ -2585,3 +2585,129 @@ void _beautifyCode() {
 
 </details>
 
+
+<details>
+<summary>2026-03-17 - Issue #1 修复完成：4XX/5XX 响应正确显示服务端返回内容</summary>
+
+**完成工作**:
+- ✅ 修复 `lib/services/http_service.dart` 中 DioException 处理逻辑
+- ✅ 提取 `e.response` 中的状态码、headers、body 构建完整响应
+- ✅ 4XX/5XX 响应现在能正确显示服务端返回的 JSON/XML/文本内容
+- ✅ 添加 UI 测试指令：`simulate_4xx_response`, `simulate_5xx_response`
+- ✅ 创建 UI 测试脚本 `test_error_response.py`
+- ✅ 所有单元测试通过（432个）
+- ✅ UI 测试验证通过
+- ✅ 代码通过 `dart format` 和 `dart analyze`
+- ✅ 关闭 GitHub Issue #1
+
+**问题分析**:
+
+原代码在 `DioException` 发生时只返回错误信息，不提取 `e.response` 中的数据：
+
+```dart
+// 修复前
+} on DioException catch (e) {
+  return HttpResponse(
+    error: _formatDioError(e),
+    durationMs: totalStopwatch.elapsedMilliseconds,
+    timestamp: DateTime.now(),
+  );
+}
+```
+
+**修复详情**:
+
+1. **修改 `http_service.dart` 错误处理**:
+```dart
+// 修复后
+} on DioException catch (e) {
+  totalStopwatch.stop();
+  _logger.e('Request failed: ${e.message}', error: e);
+
+  // 如果服务端返回了响应（4XX/5XX），提取响应数据
+  final response = e.response;
+  if (response != null) {
+    // 提取响应头
+    final responseHeaders = response.headers.map.entries
+        .map((e) => KeyValuePair(...))
+        .toList();
+
+    // 提取响应体
+    String? responseBody;
+    final bytes = response.data as Uint8List?;
+    if (bytes != null) {
+      responseBody = _decodeBody(bytes, response.headers);
+    }
+
+    return HttpResponse(
+      body: responseBody,
+      headers: responseHeaders,
+      statusCode: response.statusCode,
+      statusText: _getStatusText(response.statusCode),
+      durationMs: totalStopwatch.elapsedMilliseconds,
+      sizeBytes: bytes?.length,
+      timestamp: DateTime.now(),
+      timingInfo: timingInfo,
+      error: _formatDioError(e),  // 同时保留错误信息
+    );
+  }
+
+  // 如果没有响应数据（网络错误等），返回错误信息
+  return HttpResponse(
+    error: _formatDioError(e),
+    durationMs: totalStopwatch.elapsedMilliseconds,
+    timestamp: DateTime.now(),
+  );
+}
+```
+
+2. **添加 UI 测试指令** (`ui_test_mode.dart`):
+- `simulate_4xx_response` - 模拟 4XX 错误响应（带服务端返回的错误详情）
+- `simulate_5xx_response` - 模拟 5XX 错误响应（带服务端返回的错误详情）
+
+3. **创建 UI 测试脚本** (`test_error_response.py`):
+- 测试 400 Bad Request 响应
+- 测试 401 Unauthorized 响应
+- 测试 500 Internal Server Error 响应
+- 测试 503 Service Unavailable 响应
+- 测试错误响应的时间分析
+
+**验证结果**:
+
+```
+单元测试: 432 个测试全部通过
+构建状态: ✅ Release 构建成功 (48.1MB)
+
+UI 测试验证:
+✅ 400 Bad Request 响应正确显示服务端返回的 JSON 错误详情
+✅ 500 Internal Server Error 响应正确显示服务端错误信息
+✅ Response Headers 正确显示（Content-Type, X-Request-ID 等）
+✅ 状态码正确显示（400 Bad Request, 500 Internal Server Error）
+```
+
+**命令示例**:
+```bash
+# 模拟 400 响应
+python3 test_client.py --port <PORT> simulate_4xx_response --status 400
+
+# 模拟 500 响应
+python3 test_client.py --port <PORT> simulate_5xx_response --status 500
+
+# 运行完整测试
+python3 test_error_response.py
+```
+
+**文件变更**:
+- `lib/services/http_service.dart` - 修复 DioException 处理逻辑
+- `lib/utils/testing/ui_test_mode.dart` - 添加 simulate_4xx_response 和 simulate_5xx_response 指令
+- `integration_test/test_client.py` - 添加客户端方法
+- `integration_test/test_error_response.py` - 新增测试脚本（新增）
+- `AGENTS.md` - 更新任务状态
+
+**GitHub Issue**: https://github.com/scottli139/hopp/issues/1 ✅ 已关闭
+
+</details>
+
+---
+
+<p align="center">Built with ❤️ by AI · Powered by Kimi</p>

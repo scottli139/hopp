@@ -540,6 +540,34 @@ class HoppTestClient:
         print("✅ 导出对话框已触发")
         return result
 
+    def simulate_4xx_response(self, status_code=400):
+        """模拟 4XX 错误响应（带服务端返回的错误详情）
+        
+        Args:
+            status_code: HTTP 状态码（默认 400）
+        """
+        print(f"🔴 模拟 4XX 错误响应: {status_code}")
+        result = self.send_command("simulate_4xx_response", {"status_code": status_code})
+        print(f"✅ 模拟响应已创建:")
+        print(f"   状态码: {result.get('status_code')} {result.get('status_text')}")
+        print(f"   Body 大小: {result.get('body_size')} bytes")
+        print(f"   包含错误信息: {'是' if result.get('has_error_info') else '否'}")
+        return result
+
+    def simulate_5xx_response(self, status_code=500):
+        """模拟 5XX 错误响应（带服务端返回的错误详情）
+        
+        Args:
+            status_code: HTTP 状态码（默认 500）
+        """
+        print(f"🔴 模拟 5XX 错误响应: {status_code}")
+        result = self.send_command("simulate_5xx_response", {"status_code": status_code})
+        print(f"✅ 模拟响应已创建:")
+        print(f"   状态码: {result.get('status_code')} {result.get('status_text')}")
+        print(f"   Body 大小: {result.get('body_size')} bytes")
+        print(f"   包含错误信息: {'是' if result.get('has_error_info') else '否'}")
+        return result
+
     def full_test(self):
         """执行完整测试流程"""
         print("\n" + "="*60)
@@ -765,6 +793,16 @@ def main():
     # trigger_export_dialog
     subparsers.add_parser("trigger_export_dialog", help="触发导出对话框")
 
+    # simulate_4xx_response
+    simulate_4xx_parser = subparsers.add_parser("simulate_4xx_response", help="模拟 4XX 错误响应")
+    simulate_4xx_parser.add_argument("--status", type=int, default=400, 
+                                     help="HTTP 状态码（默认 400）")
+
+    # simulate_5xx_response
+    simulate_5xx_parser = subparsers.add_parser("simulate_5xx_response", help="模拟 5XX 错误响应")
+    simulate_5xx_parser.add_argument("--status", type=int, default=500,
+                                     help="HTTP 状态码（默认 500）")
+
     # full_test
     subparsers.add_parser("full_test", help="执行完整测试流程")
     
@@ -864,6 +902,10 @@ def main():
             client.trigger_import_dialog()
         elif args.command == "trigger_export_dialog":
             client.trigger_export_dialog()
+        elif args.command == "simulate_4xx_response":
+            client.simulate_4xx_response(args.status)
+        elif args.command == "simulate_5xx_response":
+            client.simulate_5xx_response(args.status)
         elif args.command == "full_test":
             client.full_test()
         

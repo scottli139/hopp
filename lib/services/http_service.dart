@@ -208,6 +208,54 @@ class HttpService {
       totalStopwatch.stop();
       _logger.e('Request failed: ${e.message}', error: e);
 
+      // 如果服务端返回了响应（4XX/5XX），提取响应数据
+      final response = e.response;
+      if (response != null) {
+        _logger.i(
+            '[HttpService] Server returned error response: ${response.statusCode}');
+
+        // 提取响应头
+        final responseHeaders = response.headers.map.entries
+            .map((e) => KeyValuePair(
+                  id: e.key,
+                  key: e.key,
+                  value: e.value.join(', '),
+                  enabled: true,
+                ))
+            .toList();
+
+        // 提取响应体
+        String? responseBody;
+        final bytes = response.data as Uint8List?;
+        if (bytes != null) {
+          responseBody = _decodeBody(bytes, response.headers);
+        }
+
+        final totalMs = totalStopwatch.elapsedMilliseconds;
+
+        // 构建时间信息
+        final timingInfo = TimingInfo(
+          totalMs: totalMs,
+        );
+
+        _logger.i(
+            '[HttpService] Error response body size: ${bytes?.length ?? 0} bytes');
+
+        return HttpResponse(
+          body: responseBody,
+          headers: responseHeaders,
+          statusCode: response.statusCode,
+          statusText: _getStatusText(response.statusCode),
+          durationMs: totalMs,
+          sizeBytes: bytes?.length,
+          timestamp: DateTime.now(),
+          timingInfo: timingInfo,
+          // 同时保留错误信息用于显示
+          error: _formatDioError(e),
+        );
+      }
+
+      // 如果没有响应数据（网络错误等），返回错误信息
       return HttpResponse(
         error: _formatDioError(e),
         durationMs: totalStopwatch.elapsedMilliseconds,

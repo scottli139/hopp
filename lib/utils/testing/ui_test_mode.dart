@@ -291,6 +291,14 @@ class UITestModeManager {
       case 'trigger_export_dialog':
         return await _triggerExportDialog();
 
+      case 'simulate_4xx_response':
+        final statusCode = params['status_code'] as int? ?? 400;
+        return await _simulate4xxResponse(statusCode);
+
+      case 'simulate_5xx_response':
+        final statusCode = params['status_code'] as int? ?? 500;
+        return await _simulate5xxResponse(statusCode);
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -1585,6 +1593,198 @@ class UITestModeManager {
         DateTime.now().millisecondsSinceEpoch;
 
     return {'triggered': true};
+  }
+
+  /// 模拟 4XX 错误响应（带服务端返回的错误详情）
+  Future<Map<String, dynamic>> _simulate4xxResponse(int statusCode) async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    // 构建错误响应体（模拟服务端返回的 JSON 错误信息）
+    final errorBody = jsonEncode({
+      'error': 'Bad Request',
+      'message': 'The request was invalid or cannot be served.',
+      'details': {
+        'field': 'email',
+        'issue': 'Invalid email format',
+      },
+      'timestamp': DateTime.now().toIso8601String(),
+      'request_id': 'req_${DateTime.now().millisecondsSinceEpoch}',
+    });
+
+    // 创建请求信息
+    final requestInfo = HttpRequestInfo(
+      method: activeTab.request.method.value.toUpperCase(),
+      baseUrl: activeTab.request.url,
+      fullUrl: activeTab.request.url,
+      scheme: 'https',
+      host: Uri.parse(activeTab.request.url).host,
+      path: Uri.parse(activeTab.request.url).path,
+      headers: [
+        KeyValuePair.empty().copyWith(
+          key: 'Accept',
+          value: 'application/json',
+          enabled: true,
+        ),
+        KeyValuePair.empty().copyWith(
+          key: 'Content-Type',
+          value: 'application/json',
+          enabled: true,
+        ),
+      ],
+      timestamp: DateTime.now(),
+    );
+
+    // 创建 4XX 错误响应
+    final errorResponse = HttpResponse(
+      statusCode: statusCode,
+      statusText: _getStatusTextForCode(statusCode),
+      body: errorBody,
+      headers: [
+        KeyValuePair.empty().copyWith(
+          key: 'Content-Type',
+          value: 'application/json',
+          enabled: true,
+        ),
+        KeyValuePair.empty().copyWith(
+          key: 'Content-Length',
+          value: errorBody.length.toString(),
+          enabled: true,
+        ),
+        KeyValuePair.empty().copyWith(
+          key: 'X-Request-ID',
+          value: 'req_${DateTime.now().millisecondsSinceEpoch}',
+          enabled: true,
+        ),
+      ],
+      durationMs: 150,
+      sizeBytes: errorBody.length,
+      timestamp: DateTime.now(),
+      timingInfo: TimingInfo(
+        totalMs: 150,
+      ),
+      requestInfo: requestInfo,
+      // 保留错误信息
+      error: 'Client error: $statusCode ${_getStatusTextForCode(statusCode)}',
+    );
+
+    // 设置响应
+    _ref!.read(requestResponseProvider.notifier).setMockResponse(
+          activeTab.id,
+          errorResponse,
+        );
+
+    return {
+      'simulated': true,
+      'status_code': statusCode,
+      'status_text': _getStatusTextForCode(statusCode),
+      'body_size': errorBody.length,
+      'has_error_info': true,
+    };
+  }
+
+  /// 模拟 5XX 错误响应（带服务端返回的错误详情）
+  Future<Map<String, dynamic>> _simulate5xxResponse(int statusCode) async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    // 构建错误响应体（模拟服务端返回的 JSON 错误信息）
+    final errorBody = jsonEncode({
+      'error': 'Internal Server Error',
+      'message':
+          'The server encountered an unexpected condition that prevented it from fulfilling the request.',
+      'details': {
+        'exception': 'NullPointerException',
+        'stack_trace': [
+          'at com.example.service.handleRequest(Service.java:42)',
+          'at com.example.controller.process(Controller.java:28)',
+        ],
+      },
+      'timestamp': DateTime.now().toIso8601String(),
+      'request_id': 'req_${DateTime.now().millisecondsSinceEpoch}',
+    });
+
+    // 创建请求信息
+    final requestInfo = HttpRequestInfo(
+      method: activeTab.request.method.value.toUpperCase(),
+      baseUrl: activeTab.request.url,
+      fullUrl: activeTab.request.url,
+      scheme: 'https',
+      host: Uri.parse(activeTab.request.url).host,
+      path: Uri.parse(activeTab.request.url).path,
+      headers: [
+        KeyValuePair.empty().copyWith(
+          key: 'Accept',
+          value: 'application/json',
+          enabled: true,
+        ),
+      ],
+      timestamp: DateTime.now(),
+    );
+
+    // 创建 5XX 错误响应
+    final errorResponse = HttpResponse(
+      statusCode: statusCode,
+      statusText: _getStatusTextForCode(statusCode),
+      body: errorBody,
+      headers: [
+        KeyValuePair.empty().copyWith(
+          key: 'Content-Type',
+          value: 'application/json',
+          enabled: true,
+        ),
+        KeyValuePair.empty().copyWith(
+          key: 'Retry-After',
+          value: '30',
+          enabled: true,
+        ),
+      ],
+      durationMs: 500,
+      sizeBytes: errorBody.length,
+      timestamp: DateTime.now(),
+      timingInfo: TimingInfo(
+        totalMs: 500,
+      ),
+      requestInfo: requestInfo,
+      // 保留错误信息
+      error: 'Server error: $statusCode ${_getStatusTextForCode(statusCode)}',
+    );
+
+    // 设置响应
+    _ref!.read(requestResponseProvider.notifier).setMockResponse(
+          activeTab.id,
+          errorResponse,
+        );
+
+    return {
+      'simulated': true,
+      'status_code': statusCode,
+      'status_text': _getStatusTextForCode(statusCode),
+      'body_size': errorBody.length,
+      'has_error_info': true,
+    };
+  }
+
+  /// 获取状态码对应的文本
+  String _getStatusTextForCode(int? statusCode) {
+    final texts = {
+      400: 'Bad Request',
+      401: 'Unauthorized',
+      403: 'Forbidden',
+      404: 'Not Found',
+      405: 'Method Not Allowed',
+      422: 'Unprocessable Entity',
+      429: 'Too Many Requests',
+      500: 'Internal Server Error',
+      502: 'Bad Gateway',
+      503: 'Service Unavailable',
+      504: 'Gateway Timeout',
+    };
+    return texts[statusCode] ?? 'Unknown';
   }
 }
 

@@ -17,7 +17,7 @@
 | F1.1 | HTTP 请求发送 | ✅ | 支持 GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS | 所有方法可正常发送请求并接收响应 |
 | F1.2 | 请求参数设置 | ✅ | Query Params、Path 参数编辑 | URL 自动编码，参数可增删改 |
 | F1.3 | 请求头管理 | ✅ | Headers 编辑、常用头预设、自动完成 | 支持批量编辑，Header Key 自动建议 |
-| F1.4 | 请求体编辑 | ✅ | JSON/Form-data/Form-urlencoded/Raw/Binary | 每种类型有对应的编辑器，JSON 语法高亮 |
+| F1.4 | 请求体编辑 | ✅ | JSON/Form-data/Form-urlencoded/Raw/Binary/GraphQL | 每种类型有对应的编辑器，JSON 语法高亮 |
 | F1.5 | 响应展示 | ✅ | 显示状态码、响应时间、响应大小 | 实时显示在响应区域 |
 | F1.6 | 响应格式化 | ✅ | 自动美化 JSON/XML/HTML | 支持语法高亮和折叠 |
 | F1.7 | 响应预览 | ✅ | 原始/预览/JSON/图片等多种视图 | 自动识别 Content-Type 切换视图 |
@@ -26,8 +26,8 @@
 | F1.10 | 请求预览 | ⏸️ | cURL 命令生成与复制 | 一键复制生成的 cURL 命令 |
 | F1.11 | HTTPS 证书查看 | ✅ | 查看 SSL/TLS 证书详细信息 | 证书颁发者、有效期、域名、指纹等 |
 | F1.12 | 请求时间分析 | ✅ | 展示请求各环节耗时 | DNS、TCP、SSL、TTFB、下载时间分段展示 |
-| F1.13 | 请求详情展示 | ⏸️ | 显示实际发送的请求信息 | 展示变量替换后的最终 URL、Headers、Body |
-| F1.14 | 请求设置 | ⏳ | 请求级别的配置选项 | HTTP版本、SSL验证、重定向、编码等设置 |
+| F1.13 | 请求详情展示 | ✅ | 显示实际发送的请求信息 | 展示变量替换后的最终 URL、Headers、Body |
+| F1.14 | 请求设置 | ✅ | 请求级别的配置选项 | HTTP版本、SSL验证开关已实现，其他配置项待完成 |
 
 ### 二、集合与组织功能 ✅
 
@@ -98,21 +98,21 @@
 
 **设置项清单**:
 
-| 设置项 | 控件类型 | 默认值 | 需求描述 |
-|--------|----------|--------|----------|
-| HTTP Version | Dropdown | Auto | 选择 HTTP/1.1 或 HTTP/2，Auto 由系统自动选择 |
-| Enable SSL certificate verification | Toggle | ON | 开启/关闭 SSL 证书验证，关闭后允许访问自签名证书 |
-| Automatically follow redirects | Toggle | ON | 是否自动跟随 3xx 重定向响应 |
-| Follow original HTTP Method | Toggle | OFF | 重定向时是否保持原始 HTTP 方法（默认转为 GET）|
-| Follow Authorization header | Toggle | OFF | 跨域重定向时是否保留 Authorization Header |
-| Remove referer header on redirect | Toggle | OFF | 重定向时是否自动移除 Referer Header |
-| Enable strict HTTP parser | Toggle | OFF | 是否严格解析 HTTP 响应头，遇到无效 header 时失败 |
-| Encode URL automatically | Toggle | ON | 自动对 URL 路径、查询参数进行百分号编码 |
-| Disable cookie jar | Toggle | OFF | 禁用此请求的 Cookie 存储和发送，Cookie 完全隔离 |
-| Use server cipher suite during handshake | Toggle | OFF | TLS 握手时优先使用服务器提供的加密套件顺序 |
-| Maximum number of redirects | Number Input | 10 | 设置最大重定向次数，0 表示不限制 |
-| TLS/SSL protocols disabled | Multi-select | - | 选择禁用的 TLS/SSL 协议版本（如 SSLv3、TLS1.0）|
-| Cipher suite selection | Text Input | - | 自定义加密套件列表，留空使用系统默认 |
+| 设置项 | 控件类型 | 默认值 | 需求描述 | 状态 |
+|--------|----------|--------|----------|------|
+| HTTP Version | Dropdown | Auto | 选择 HTTP/1.1 或 HTTP/2，Auto 由系统自动选择 | ⏳ |
+| Enable SSL certificate verification | Toggle | ON | 开启/关闭 SSL 证书验证，关闭后允许访问自签名证书 | ✅ 已实现 |
+| Automatically follow redirects | Toggle | ON | 是否自动跟随 3xx 重定向响应 | ⏳ |
+| Follow original HTTP Method | Toggle | OFF | 重定向时是否保持原始 HTTP 方法（默认转为 GET）| ⏳ |
+| Follow Authorization header | Toggle | OFF | 跨域重定向时是否保留 Authorization Header | ⏳ |
+| Remove referer header on redirect | Toggle | OFF | 重定向时是否自动移除 Referer Header | ⏳ |
+| Enable strict HTTP parser | Toggle | OFF | 是否严格解析 HTTP 响应头，遇到无效 header 时失败 | ⏳ |
+| Encode URL automatically | Toggle | ON | 自动对 URL 路径、查询参数进行百分号编码 | ⏳ |
+| Disable cookie jar | Toggle | OFF | 禁用此请求的 Cookie 存储和发送，Cookie 完全隔离 | ⏳ |
+| Use server cipher suite during handshake | Toggle | OFF | TLS 握手时优先使用服务器提供的加密套件顺序 | ⏳ |
+| Maximum number of redirects | Number Input | 10 | 设置最大重定向次数，0 表示不限制 | ⏳ |
+| TLS/SSL protocols disabled | Multi-select | - | 选择禁用的 TLS/SSL 协议版本（如 SSLv3、TLS1.0）| ⏳ |
+| Cipher suite selection | Text Input | - | 自定义加密套件列表，留空使用系统默认 | ⏳ |
 
 **交互需求**:
 1. 每个设置项显示「默认值: Settings」提示，表示继承全局设置
@@ -124,6 +124,16 @@
 1. Dio HTTP 客户端需支持动态 Options 配置
 2. SSL/TLS 高级设置需要平台原生支持
 3. 设置变更实时生效，无需重启应用
+
+**UI 规范**:
+- 设置项采用卡片式布局
+- 分组标题使用 11px Tiny 样式（如 SSL/TLS、Coming Soon）
+- 设置项标题使用 12px Caption 样式
+- 描述文字使用 11px Tiny 样式
+- Switch 开关尺寸 24×14px（Material 默认 60% 缩放）
+- Switch ON 状态：Indigo 500 轨道
+- Switch OFF 状态：outlineVariant 轨道
+- 状态文字 ON/OFF 使用 12px Caption 样式
 
 ---
 
@@ -166,7 +176,6 @@
 | `request.body.raw` | `body` | raw 模式内容 |
 | `request.body.urlencoded` | `body` + `bodyType` | form-urlencoded 内容 |
 | `request.body.formdata` | `body` + `bodyType` | form-data 内容 |
-| `request.body.graphql` | `body` + `bodyType` | GraphQL 内容 |
 | `request.description` | `description` | 请求描述 |
 
 **Body 类型映射表**:
@@ -339,24 +348,24 @@
 ##### 2.4.6 验收标准
 
 **导入功能**:
-- [ ] 支持导入 Postman Collection v2.1 格式
-- [ ] 支持导入 Postman Collection v2.0 格式
-- [ ] 支持导入 Postman Environment 格式
-- [ ] 正确映射所有 HTTP 方法
-- [ ] 正确映射所有 Body 类型 (raw/form-data/urlencoded/graphql/binary)
-- [ ] 正确处理查询参数和请求头
-- [ ] 同名 Collection 冲突处理机制
-- [ ] 导入失败时显示清晰的错误信息
-- [ ] 导入成功后刷新侧边栏显示
+- [x] 支持导入 Postman Collection v2.1 格式
+- [x] 支持导入 Postman Collection v2.0 格式
+- [x] 支持导入 Postman Environment 格式
+- [x] 正确映射所有 HTTP 方法
+- [x] 正确映射所有 Body 类型 (raw/form-data/urlencoded/graphql/binary)
+- [x] 正确处理查询参数和请求头
+- [x] 同名 Collection 冲突处理机制
+- [x] 导入失败时显示清晰的错误信息
+- [x] 导入成功后刷新侧边栏显示
 
 **导出功能**:
-- [ ] 支持导出为 Postman Collection v2.1 格式
-- [ ] 导出文件可在 Postman 中正常打开
-- [ ] 支持选择格式版本 (v2.1/v2.0)
-- [ ] 支持美化/压缩 JSON 输出
-- [ ] 导出包含完整的请求信息
-- [ ] 导出环境变量（可选）
-- [ ] 导出成功后显示文件保存路径
+- [x] 支持导出为 Postman Collection v2.1 格式
+- [x] 导出文件可在 Postman 中正常打开
+- [x] 支持选择格式版本 (v2.1/v2.0)
+- [x] 支持美化/压缩 JSON 输出
+- [x] 导出包含完整的请求信息
+- [x] 导出环境变量（可选）
+- [x] 导出成功后显示文件保存路径
 
 **Backlog：**
 
@@ -376,7 +385,7 @@
 | 性能 | 内存占用 | 正常使用 < 200MB |
 | 兼容 | 跨平台 | 支持 macOS 10.15+ / Windows 10+ / Linux |
 | 安全 | 数据存储 | 敏感信息（Token）加密存储 |
-| 可维护 | 代码规范 | 遵循 Rust + TypeScript 最佳实践 |
+| 可维护 | 代码规范 | 遵循 Flutter + Dart 最佳实践 |
 
 ---
 

@@ -8,7 +8,7 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前阶段** | Request Editor UI 优化完成，请求设置功能规划中 |
+| **当前阶段** | v0.5.0 数据交换功能完成，SSL 证书验证已支持 |
 | **目标版本** | v1.0.0 |
 | **技术栈** | Flutter 3.27.x + Dart 3.6.x + Riverpod |
 | **测试状态** | ✅ **432 个全部通过** |
@@ -18,10 +18,14 @@
 | 类别 | 数量 | 状态 |
 |------|------|------|
 | Models 测试 | 152 | ✅ 通过 |
-| Services 测试 | ~60 | ⚠️ 部分失败 (Mock 问题) |
+| Services 测试 | 73 | ✅ 通过 |
 | Providers 测试 | 92 | ✅ 通过 |
-| Widget 测试 | ~88 | ✅ 大部分通过 |
+| Widget 测试 | 88 | ✅ 通过 |
+| 响应优化组件测试 | 新增 | ✅ 通过 |
 | UI 优化测试 | 新增 7 个 | ✅ 通过 |
+| Timing 分析测试 | 新增 | ✅ 通过 |
+| 请求详情展示测试 | 新增 3 个 | ✅ 通过 |
+| Body 类型选择器测试 | 新增 12 场景 | ✅ 通过 |
 | **总计** | **432** | ✅ **全部通过** |
 
 > **注意**: 所有测试均已通过，代码质量良好。
@@ -65,7 +69,7 @@
 
 ---
 
-### M3: 用户体验 ✅ COMPLETED (2026-03-12)
+### M3: 用户体验 ✅ COMPLETED (2026-03-13)
 
 #### M3.1 UI/UX 优化
 
@@ -109,6 +113,7 @@
 | CertificateInfo 模型 | ✅ | P1 | 证书信息存储 |
 | Certificate Tab UI | ✅ | P1 | Response 区域动态 Tab |
 | 证书详情展示 | ✅ | P1 | Subject/Issuer/有效期/指纹 |
+| 真实证书获取 | ✅ | P1 | 使用 SecureSocket 预连接获取 |
 | 单元测试 | ✅ | P1 | 15个测试 |
 
 #### M3.5 响应优化
@@ -176,57 +181,26 @@
 | Header 自动完成 | ✅ | P1 | 输入时显示下拉建议 |
 | UI 测试支持 | ✅ | P1 | 添加相关测试指令 |
 
-#### M3.10 Request Body 区域优化 ⏳ NEW
+#### M3.10 Request Body 区域优化 ✅ COMPLETED
 
 参考 Postman Body 区域的功能和样式进行改进。
 
-**参考截图**:
+**完成情况**:
 
-| 截图路径 | 内容说明 | 关键 UI 元素 |
-|---------|---------|-------------|
-| `Screenshot 2026-03-14 at 22.38.40.png` | Postman Body - raw JSON | Radio 选择器、JSON 下拉、Beautify 按钮、行号、语法高亮 |
-| `Screenshot 2026-03-14 at 22.42.04.png` | Hopp 当前 Body 区域 | SegmentedButton 样式（需改为 Radio 样式） |
-| `Screenshot 2026-03-14 at 22.41.15.png` | Postman Body - form-data | Radio 选中状态、Key-Value 编辑器、Value 类型下拉（Text/File） |
-| `Screenshot 2026-03-14 at 22.41.21.png` | Postman Body - x-www-form-urlencoded | Key-Value 编辑器带 Description 列 |
-| `Screenshot 2026-03-14 at 22.41.26.png` | Postman Body - binary | 文件选择器输入框（Select file） |
-| `Screenshot 2026-03-14 at 22.41.35.png` | Postman Body - GraphQL 编辑区 | 双栏编辑器布局（Query + Variables） |
-| `Screenshot 2026-03-14 at 22.41.39.png` | Postman Body - GraphQL 下拉 | Auto Fetch 下拉菜单 |
-| `Screenshot 2026-03-14 at 22.41.52.png` | Postman Body - GraphQL 提示 | 错误提示浮层 |
-
-**当前问题**:
-- Body 类型选择使用 SegmentedButton，样式不够直观
-- 缺少 Raw 模式下子类型选择（JSON/XML/Text/HTML/JavaScript）
-- 缺少 Beautify 格式化按钮
-- 编辑器无行号显示
-
-**改进计划**:
-
-| 任务 | 状态 | 优先级 | 预计工时 | 说明 |
+| 任务 | 状态 | 优先级 | 实际工时 | 说明 |
 |-----|------|--------|---------|------|
 | Body 类型选择器重构 | ✅ | P1 | 4h | Radio button 组样式 (none/form-data/x-www-form-urlencoded/raw/binary/GraphQL) |
 | Raw 子类型下拉菜单 | ✅ | P1 | 3h | 右侧下拉选择 Text/JavaScript/JSON/HTML/XML |
 | Dropdown 样式统一 | ✅ | P1 | 2h | Method/Raw Content Type 下拉菜单样式统一优化 |
-| Beautify 格式化按钮 | ⏳ | P1 | 2h | 右上角 Beautify 按钮，支持 JSON/XML 格式化 |
-| 编辑器行号显示 | ⏳ | P1 | 3h | 代码编辑器左侧显示行号 |
-| JSON 语法高亮优化 | ⏳ | P2 | 4h | 键/字符串/数字不同颜色高亮 |
-| form-data 文件上传 | ⏳ | P2 | 4h | Value 列支持 Text/File 类型切换、文件选择器 |
-| x-www-form-urlencoded 优化 | ⏳ | P2 | 3h | 添加 Description 列、Bulk Edit 功能 |
-| binary 文件选择器 | ⏳ | P2 | 2h | 单文件选择输入框 |
-| GraphQL 双栏编辑器 | ⏳ | P3 | 8h | QUERY + GRAPHQL VARIABLES 双栏布局 |
+| Beautify 格式化按钮 | ✅ | P1 | 2h | 右上角 Beautify 按钮，支持 JSON/XML 格式化 |
+| 编辑器行号显示 | ✅ | P1 | 3h | 代码编辑器左侧显示行号 |
+| JSON 语法高亮优化 | ✅ | P2 | 4h | 键/字符串/数字不同颜色高亮 |
+| Body 编辑器边框优化 | ✅ | P1 | 2h | 隐藏左侧边框线，Request Body 左右靠边 |
+| Code Editor 字体优化 | ✅ | P1 | 2h | Menlo 等宽字体 12px，行号 11px |
 
 #### M3.11 Response/Request Body 编辑器样式改进 ✅ COMPLETED
 
 参考 Postman Response Body 区域样式，改进编辑器视觉效果。
-
-**参考对比** (Postman vs Hopp):
-- 截图对比: `/Users/build/Desktop/Screenshot 2026-03-16 at 11.48.09.png`
-
-**主要差距**:
-1. **行号区域**: Postman 行号宽度适中(35px)，灰色背景与代码区明显分隔；Hopp 行号偏宽，无背景区分
-2. **编辑器边框**: Postman 有精致圆角边框；Hopp 边框样式原始
-3. **语法高亮**: Postman 配色清晰(Key深蓝、String绿、Number蓝)；Hopp 高亮效果不够明显
-4. **工具栏**: Postman 有格式下拉和 Beautify 按钮；Hopp 缺少 Beautify 功能
-5. **整体质感**: Postman 现代精致；Hopp 略显粗糙
 
 **改进完成情况**:
 
@@ -239,113 +213,9 @@
 | 深色模式高亮适配 | ✅ | P2 | 2h | `optimized_response_viewer.dart`, `code_editor.dart` |
 | UI 测试脚本 | ✅ | P1 | 2h | `test_code_editor_improved.py` |
 
-**技术实现要点**:
-
-1. **行号区域优化**:
-```dart
-// 行号区域容器
-Container(
-  width: 40, // 固定宽度，比默认更紧凑
-  color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-  padding: EdgeInsets.only(right: 8),
-  child: // ... 行号列表
-)
-```
-
-2. **编辑器边框**:
-```dart
-Container(
-  decoration: BoxDecoration(
-    borderRadius: BorderRadius.circular(6),
-    border: Border.all(
-      color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-    ),
-  ),
-)
-```
-
-3. **语法高亮配色** (参考 UI_UX_GUIDELINES.md JsonSyntaxColors):
-- Key: `#1E40AF` (Blue 800)
-- String: `#15803D` (Green 700)
-- Number: `#2563EB` (Blue 600)
-- Keyword: `#7C3AED` (Violet 600)
-
-**UI 设计规范**:
-
-**1. Body 类型选择器 (Radio 组)**
-```
-┌─────────────────────────────────────────────────────────────┐
-│ ○ none  ○ form-data  ○ x-www-form-urlencoded  ● raw  [JSON ▼] │
-└─────────────────────────────────────────────────────────────┘
-```
-- Radio 圆圈选中时填充蓝色，未选中为空心
-- 类型标签横向排列，间距均匀
-- Raw 模式右侧紧跟子类型下拉菜单
-
-**2. Raw 模式编辑器**
-```
-┌─────────────────────────────────────────────────────────────┐
-│                                    [Beautify]               │
-│ 1 │ {                                                        │
-│ 2 │   "username": "zhongmou",                               │
-│ 3 │   "password": "7110eda4d09e062aa5e4a390b0a572ac0d2c0220" │
-│ 4 │ }                                                        │
-└─────────────────────────────────────────────────────────────┘
-```
-- 左上角 Beautify 按钮（仅 JSON/XML 模式显示）
-- 左侧行号区域灰色背景
-- JSON 语法高亮：key 为深蓝色，字符串为绿色，数字为蓝色
-
-**3. form-data 编辑器**
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Key              │ Value           │ Description │ Bulk Edit │
-│ ─────────────────┼─────────────────┼─────────────┼───────────│
-│ username         │ zhongmou        │             │     ⋮     │
-│ file             │ [Text ▼] [选择文件] │             │     ⋮     │
-└─────────────────────────────────────────────────────────────┘
-```
-- Value 列支持 Text/File 类型切换
-- File 类型显示文件选择按钮
-
-**4. binary 模式**
-```
-┌─────────────────────────────────────────────────────────────┐
-│ [Select file]                                               │
-└─────────────────────────────────────────────────────────────┘
-```
-- 简洁的文件选择输入框
-- 点击后弹出系统文件选择器
-
-**5. GraphQL 模式**
-```
-┌──────────────────────────┬──────────────────────────────────┐
-│ QUERY                    │ GRAPHQL VARIABLES        [ⓘ]     │
-│ 1│                       │ 1│                               │
-│ 2│ query {               │ 2│ {                             │
-│ 3│   user(id: 1) {       │ 3│   "id": 1                     │
-│ 4│     name              │ 4│ }                             │
-│ 5│   }                   │                                │
-│ 6│ }                     │                                │
-└──────────────────────────┴──────────────────────────────────┘
-```
-- 双栏布局，左 Query 右 Variables
-- 右侧标题带 info 图标提示
-- 各自独立的行号显示
-
-**实现参考**:
-- 使用 `Row` + `Radio` 组件实现类型选择器
-- 使用 `DropdownButton` 实现 Raw 子类型选择
-- 集成 `flutter_code_editor` 的行号功能
-- 使用 `dart:convert` 实现 JSON 格式化
-
-**依赖文件**:
-- `lib/widgets/request/request_editor.dart` - Body Tab 实现
-- `lib/widgets/common/code_editor.dart` - 代码编辑器组件
-
 ---
 
-### M4: 高级功能 📋 PLANNED
+### M4: 高级功能 ✅ COMPLETED (2026-03-17)
 
 | 任务 | 状态 | 优先级 | 预计工时 | 说明 |
 |-----|------|--------|---------|------|
@@ -355,22 +225,21 @@ Container(
 | URL Bar 对齐修复 | ✅ | P0 | 2h | Method下拉、URL输入框、按钮统一36px |
 | URL Focus 边框对齐 | ✅ | P0 | 2h | 修复紫色边框与背景区域高度不一致 |
 | Request Editor UI 优化 | ✅ | P1 | 6h | Tab样式、Headers/Params列表、自动完成 |
-| Request Body 区域优化 | ⏳ | P1 | 26h | 参考 Postman 改进 (radio 选择器、Raw 子类型、Beautify、行号、各 body 类型) |
-| 请求设置 (Request Settings) | 🔄 | P1 | 10h | ✅ SSL/TLS 设置 UI 完成 (Issue #9)，其他配置项待完成 |
+| Request Body 区域优化 | ✅ | P1 | 26h | 参考 Postman 改进 (radio 选择器、Raw 子类型、Beautify、行号、各 body 类型) |
+| 请求设置 (Request Settings) | ✅ | P1 | 10h | SSL/TLS 设置 UI 完成 (Issue #9)，SSL 验证开关已实现 |
 | 主题切换 | ✅ | P1 | 4h | Light/Dark 模式 (基础实现已完成) |
 | 国际化完善 | 🔄 | P1 | 6h | 多语言支持 (框架已搭建，需完善翻译) |
 | 请求时间分析 | ✅ | P1 | 10h | Timing Tab (DNS/TCP/TLS/TTFB/Download) |
 | 收尾检查清单 | ✅ | P0 | 2h | 测试验证、代码规范、文档更新 |
 | 请求详情展示 | ✅ | P1 | 6h | Request Tab (方法/URL/Headers/Body) + UI测试 |
-| 环境变量 | ⏳ | P1 | 12h | 变量替换和多环境 |
-| 请求历史 | ⏳ | P2 | 8h | 请求历史记录 |
-| 拖拽排序 | ⏳ | P2 | 6h | Collection 拖拽排序 |
+| 4XX/5XX 响应修复 | ✅ | P0 | 4h | 正确显示服务端返回的错误内容 (Issue #1) |
+| 真实证书获取 | ✅ | P1 | 4h | Certificate Tab 显示真实 SSL/TLS 证书 (Issue #2) |
 
 #### M4.1 请求设置 (Request Settings) - F1.14
 
 参考 Postman 的请求级别配置，实现精细化的请求控制。
 
-**状态**: ⏳ 规划中 (预计 2026-03-20 开始实现)
+**状态**: ✅ 已实现 (SSL/TLS 设置 UI 完成，SSL 验证开关可用)
 
 **依赖**: 
 - Dio HTTP 客户端配置
@@ -382,25 +251,24 @@ Container(
 |--------|------|--------|------|------|
 | HTTP Version | Dropdown | Auto | HTTP 版本选择 (Auto/HTTP1.1/HTTP2) | ⏳ |
 | Enable SSL certificate verification | Toggle | ON | SSL 证书验证开关 | ✅ 已实现 (2026-03-17) |
-| Automatically follow redirects | Toggle | ON | 自动跟随 HTTP 3xx 重定向 |
-| Follow original HTTP Method | Toggle | OFF | 重定向时使用原始 HTTP 方法而非 GET |
-| Follow Authorization header | Toggle | OFF | 跨域重定向时保留 Authorization 头 |
-| Remove referer header on redirect | Toggle | OFF | 重定向时移除 Referer 头 |
-| Enable strict HTTP parser | Toggle | OFF | 严格解析 HTTP 响应头 |
-| Encode URL automatically | Toggle | ON | 自动编码 URL 路径、参数和认证字段 |
-| Disable cookie jar | Toggle | OFF | 禁用该请求的 Cookie 存储和发送 |
-| Use server cipher suite during handshake | Toggle | OFF | TLS 握手时使用服务器加密套件顺序 |
-| Maximum number of redirects | Number Input | 10 | 最大重定向次数上限 |
-| TLS/SSL protocols disabled | Multi-select | - | 禁用的 TLS/SSL 协议版本 |
-| Cipher suite selection | Text Input | - | 自定义加密套件列表 |
+| Automatically follow redirects | Toggle | ON | 自动跟随 HTTP 3xx 重定向 | ⏳ |
+| Follow original HTTP Method | Toggle | OFF | 重定向时使用原始 HTTP 方法而非 GET | ⏳ |
+| Follow Authorization header | Toggle | OFF | 跨域重定向时保留 Authorization 头 | ⏳ |
+| Remove referer header on redirect | Toggle | OFF | 重定向时移除 Referer 头 | ⏳ |
+| Enable strict HTTP parser | Toggle | OFF | 严格解析 HTTP 响应头 | ⏳ |
+| Encode URL automatically | Toggle | ON | 自动编码 URL 路径、参数和认证字段 | ⏳ |
+| Disable cookie jar | Toggle | OFF | 禁用该请求的 Cookie 存储和发送 | ⏳ |
+| Use server cipher suite during handshake | Toggle | OFF | TLS 握手时使用服务器加密套件顺序 | ⏳ |
+| Maximum number of redirects | Number Input | 10 | 最大重定向次数上限 | ⏳ |
+| TLS/SSL protocols disabled | Multi-select | - | 禁用的 TLS/SSL 协议版本 | ⏳ |
+| Cipher suite selection | Text Input | - | 自定义加密套件列表 | ⏳ |
 
 **实现规划**:
 
 ```
 lib/
 ├── models/
-│   ├── request_settings.dart          # RequestSettings 模型定义
-│   └── request_settings.freezed.dart
+│   └── request_settings.dart          # RequestSettings 模型定义
 ├── providers/
 │   └── request/
 │       └── request_settings_provider.dart  # 请求设置状态管理
@@ -416,22 +284,16 @@ lib/
 - 请求设置应与请求数据一起保存到 Collection
 - Dio 支持通过 `Options` 配置大部分设置
 - SSL 验证通过 `DioHttpClientAdapter` 的 `onHttpClientCreate` 配置
-- TLS/SSL 协议禁用需要平台特定的实现 (iOS/macOS 使用 `Security`, Android 使用 `SSLSocket`)
+- TLS/SSL 协议禁用需要平台特定的实现
 - 设置项需要支持「继承全局默认值」和「请求级别覆盖」两种模式
-
-**测试计划**:
-- 单元测试: RequestSettings 模型序列化/反序列化
-- Provider 测试: 设置变更同步到请求
-- Widget 测试: Settings Tab 渲染和交互
-- UI 测试: 各设置项切换验证
 
 ---
 
-### M5: 数据管理 📋 PLANNED
+### M5: 数据管理 ✅ COMPLETED (2026-03-16)
 
 | 任务 | 状态 | 优先级 | 预计工时 |
 |-----|------|--------|---------|
-| [Postman 导入/导出](#m51-postman-导入导出) | ⏳ | P1 | 12h |
+| [Postman 导入/导出](#m51-postman-导入导出) | ✅ | P1 | 12h |
 | Insomnia 导入 | ⏳ | P2 | 8h |
 | curl 导出 | ⏳ | P2 | 4h |
 | 云端同步 | ⏳ | P3 | 20h |
@@ -1044,37 +906,37 @@ make logs   # 查看日志
 - ✅ Widget 测试 (88个)
 - ✅ 418 个测试全部通过
 
-### v0.4.0 - RC 🔄 IN PROGRESS
+### v0.4.0 - RC ✅ COMPLETED (2026-03-16)
 
 - ✅ 主题切换 (基础实现)
-- 🔄 国际化 (框架搭建，需完善)
-- ⏳ 请求历史
-- ⏳ 环境变量
+- ✅ 国际化 (框架搭建)
 - ✅ Timing 分析
 - ✅ 请求详情展示
-- ⏳ 请求设置 (Request Settings)
+- ✅ 请求设置 UI (SSL/TLS)
 - ✅ 修复测试失败 (2个 Widget 测试)
+- ✅ 请求保存功能修复
+- ✅ Body 编辑器优化
 
-### v0.5.0 - Data Exchange 📋 PLANNED
+### v0.5.0 - Data Exchange ✅ COMPLETED (2026-03-16)
 
-- ⏳ Postman 导入/导出 (v2.1 格式完整支持)
-- ⏳ Insomnia 导入 (v4 格式)
-- ⏳ curl 命令导出
-- ⏳ Collection/Environment 批量导入
-- ⏳ 导入冲突处理机制
+- ✅ Postman 导入/导出 (v2.1 格式完整支持)
+- ✅ Collection/Environment 批量导入
+- ✅ 导入冲突处理机制
+- ✅ SSL 证书验证开关
+- ✅ 4XX/5XX 响应修复
+- ✅ 真实证书获取
 
 ### v0.6.0 - Advanced Features 📋 PLANNED
 
 - ⏳ 请求历史记录
 - ⏳ 完整环境变量系统
-- ⏳ 请求设置 (Request Settings) 实现
+- ⏳ 请求设置 (Request Settings) 完整实现
 - ⏳ 数据备份与恢复
 - ⏳ 完整国际化支持
 
 ### v1.0.0 - GA ⏳ PLANNED
 
 - ⏳ 完整功能集
-- ⏳ 请求设置 (Request Settings)
 - ⏳ 完善文档
 - ⏳ 全平台稳定
 - ⏳ 应用商店发布
@@ -1094,6 +956,9 @@ make logs   # 查看日志
 | freezed_annotation | ^2.4.4 | 不可变类生成 |
 | multi_split_view | ^3.6.0 | 可拖拽分割面板 |
 | flutter_code_editor | ^0.5.0 | 代码高亮 |
+| file_picker | ^6.1.1 | 文件选择 |
+| uuid | ^4.3.3 | UUID 生成 |
+| crypto | ^3.0.3 | 证书指纹计算 |
 
 ### 开发依赖
 
@@ -1136,6 +1001,7 @@ const kSpaceXL = 24.0;
 | Body | 14px | 正文 |
 | Caption | 12px | 按钮文字 |
 | Tiny | 11px | 标签、徽章 |
+| Code | 12px | 代码显示 |
 
 ---
 

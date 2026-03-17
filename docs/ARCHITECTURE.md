@@ -103,6 +103,7 @@ lib/
 │   ├── http_method.dart         # HTTP 方法枚举
 │   ├── http_request.dart        # HTTP 请求模型
 │   ├── http_response.dart       # HTTP 响应模型 (含 TimingInfo)
+│   ├── http_request_info.dart   # 实际发送的请求信息模型 ✅
 │   ├── key_value_pair.dart      # 键值对模型 (Header/Param)
 │   ├── collection.dart          # Collection 模型
 │   ├── app_settings.dart        # 应用设置模型
@@ -128,15 +129,25 @@ lib/
 │   ├── shortcut_service.dart    # 快捷键服务 ✅
 │   ├── menu_channel.dart        # macOS 菜单通信 ✅
 │   └── services.dart            # 导出文件
+├── services/import_export/      # 导入/导出服务 ✅
+│   ├── postman_schema.dart      # Postman JSON Schema 模型
+│   ├── postman_mapper.dart      # 字段映射转换器
+│   ├── postman_import_service.dart   # 导入服务
+│   ├── postman_export_service.dart   # 导出服务
+│   └── import_export_exception.dart  # 自定义异常
 ├── widgets/                     # UI 组件
 │   ├── layout/                  # 布局组件
 │   │   ├── sidebar.dart         # 侧边栏 (Collection 树)
 │   │   ├── request_tabs.dart    # 请求标签栏 ✅
 │   │   └── split_view.dart      # 可拖拽分割面板
 │   ├── request/                 # 请求组件
-│   │   ├── request_editor.dart  # 请求编辑器 (URL/Headers/Body)
-│   │   ├── response_viewer.dart # 响应查看器 (Body/Headers/Cookies/Certificate/Timing)
-│   │   └── request_settings_tab.dart  # 请求设置面板 (规划中)
+│   │   ├── request_editor.dart  # 请求编辑器 (URL/Headers/Body/Settings)
+│   │   ├── response_viewer.dart # 响应查看器 (Body/Headers/Cookies/Certificate/Timing/Request)
+│   │   └── request_settings_tab.dart  # 请求设置面板 (SSL/TLS 已实现) ✅
+│   ├── import_export/           # 导入/导出组件 ✅
+│   │   ├── import_dialog.dart   # 导入对话框
+│   │   ├── export_dialog.dart   # 导出对话框
+│   │   └── conflict_resolution_dialog.dart  # 冲突处理
 │   ├── common/                  # 通用组件 ✅
 │   │   ├── code_editor.dart     # JSON 代码编辑器
 │   │   ├── key_value_editor.dart # Key-Value 编辑器
@@ -278,9 +289,32 @@ class HttpRequest with _$HttpRequest {
     @HiveField(5) @Default([]) List<KeyValuePair> headers,
     @HiveField(6) @Default('') String body,
     @HiveField(7) @Default('none') String bodyType,
-    @HiveField(8) String? parentId,
-    @HiveField(9) @Default(0) int sortOrder,
+    @HiveField(8) String? rawContentType,      // Raw 子类型 ✅
+    @HiveField(9) @Default(true) bool validateCertificates,  // SSL 验证开关 ✅
+    @HiveField(10) String? parentId,
+    @HiveField(11) @Default(0) int sortOrder,
   }) = _HttpRequest;
+}
+```
+
+#### HttpResponse
+
+```dart
+@freezed
+class HttpResponse with _$HttpResponse {
+  const factory HttpResponse({
+    String? body,
+    List<KeyValuePair>? headers,
+    int? statusCode,
+    String? statusText,
+    String? error,
+    int? durationMs,
+    int? sizeBytes,
+    DateTime? timestamp,
+    TimingInfo? timingInfo,        // 请求时间分析 ✅
+    CertificateInfo? certificateInfo,  // SSL/TLS 证书信息 ✅
+    HttpRequestInfo? requestInfo,  // 实际发送的请求信息 ✅
+  }) = _HttpResponse;
 }
 ```
 
@@ -311,11 +345,36 @@ class CertificateInfo with _$CertificateInfo {
     required DateTime validFrom,   // 有效期开始
     required DateTime validUntil,  // 有效期结束
     required List<String> san,     // 主题备用名称
-    required String fingerprint,   // 指纹
+    required String fingerprint,   // 指纹 (SHA-256)
     required String serialNumber,  // 序列号
     required String version,       // 版本
     required String signatureAlgorithm, // 签名算法
+    required String publicKeyAlgorithm, // 公钥算法 ✅
+    required int publicKeyLength,  // 公钥长度 ✅
   }) = _CertificateInfo;
+}
+```
+
+#### HttpRequestInfo (实际发送的请求信息) ✅
+
+```dart
+@freezed
+class HttpRequestInfo with _$HttpRequestInfo {
+  const factory HttpRequestInfo({
+    required String method,
+    required String baseUrl,
+    required String fullUrl,
+    required String scheme,
+    required String host,
+    int? port,
+    required String path,
+    @Default([]) List<KeyValuePair> queryParams,
+    @Default([]) List<KeyValuePair> headers,
+    String? body,
+    String? bodyType,
+    int? bodySize,
+    required DateTime timestamp,
+  }) = _HttpRequestInfo;
 }
 ```
 
@@ -327,9 +386,9 @@ class CertificateInfo with _$CertificateInfo {
 
 ```dart
 class HttpService {
-  final Dio _dio;
+  Dio? _dio;
 
-  HttpService({Dio? dio}) : _dio = dio ?? _createDio();
+  HttpService({Dio? dio}) : _dio = dio;
 
   static Dio _createDio() {
     return Dio(BaseOptions(
@@ -343,8 +402,11 @@ class HttpService {
   Future<HttpResponse> sendRequest(HttpRequest request) async {
     final stopwatch = Stopwatch()..start();
     
+    // 为每个请求创建新的 Dio 实例以支持独立的 SSL 配置 ✅
+    final dio = _dio ?? _createDioForRequest(request);
+    
     try {
-      final response = await _dio.request(
+      final response = await dio.request(
         request.url,
         options: Options(method: request.method.value),
         data: request.body,
@@ -357,8 +419,30 @@ class HttpService {
         durationMs: stopwatch.elapsedMilliseconds,
       );
     } on DioException catch (e) {
+      // 提取 4XX/5XX 响应中的服务端返回内容 ✅
+      if (e.response != null) {
+        return _extractErrorResponse(e.response!, stopwatch);
+      }
       return HttpResponse.error(_formatError(e));
     }
+  }
+  
+  // 根据请求配置创建 Dio 实例 (支持 SSL 验证开关) ✅
+  Dio _createDioForRequest(HttpRequest request) {
+    final dio = _createDio();
+    
+    if (!request.validateCertificates) {
+      // 禁用 SSL 证书验证
+      final adapter = dio.httpClientAdapter;
+      if (adapter is IOHttpClientAdapter) {
+        adapter.onHttpClientCreate = (client) {
+          client.badCertificateCallback = (cert, host, port) => true;
+          return client;
+        };
+      }
+    }
+    
+    return dio;
   }
 }
 ```
@@ -380,10 +464,10 @@ App
         │       ├── RequestTabs
         │       ├── RequestEditor
         │       │   ├── UrlBar
-        │       │   └── TabBar (Params/Headers/Body/Auth)
+        │       │   └── TabBar (Params/Headers/Body/Auth/Settings) ✅
         │       └── ResponseViewer
         │           ├── InfoBar
-        │           └── TabBar (Body/Headers/Cookies)
+        │           └── TabBar (Body/Headers/Cookies/Certificate/Timing/Request) ✅
         └── StatusBar
 ```
 
@@ -484,7 +568,7 @@ class MainScreen extends StatelessWidget {
    - HTTPS 强制使用
 
 2. **网络安全**
-   - 证书验证可配置
+   - 证书验证可配置 ✅
    - 请求超时设置
 
 3. **代码安全**
@@ -523,10 +607,15 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `create_request` | 创建新请求 |
 | `set_url` | 设置 URL |
 | `send_request` | 发送请求 |
-| `switch_response_tab` | 切换响应 Tab |
+| `switch_response_tab` | 切换响应 Tab (body/headers/cookies/certificate/timing/request/settings) |
+| `switch_request_tab` | 切换请求 Tab (params/headers/body/auth/settings) |
 | `get_response_info` | 获取响应信息 |
 | `rename_request` | 重命名请求 |
 | `get_timing_info` | 获取时间分析 |
+| `get_request_details` | 获取请求详情 |
+| `get_certificate_info` | 获取证书信息 |
+| `simulate_4xx_response` | 模拟 4XX 错误响应 |
+| `simulate_5xx_response` | 模拟 5XX 错误响应 |
 | `full_test` | 完整测试流程 |
 
 ---

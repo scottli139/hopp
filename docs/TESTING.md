@@ -10,6 +10,7 @@
 - [单元测试](#单元测试)
 - [Widget 测试](#widget-测试)
 - [集成测试](#集成测试)
+- [UI 测试模式](#ui-测试模式)
 - [测试覆盖率](#测试覆盖率)
 - [CI/CD 集成](#cicd-集成)
 - [测试工具](#测试工具)
@@ -34,21 +35,21 @@
 | 层级 | 目标覆盖率 | 当前状态 | 测试类型 |
 |-----|-----------|---------|---------|
 | Models | 100% | ✅ 152 个通过 | 单元测试 |
-| Services | 90%+ | ⚠️ ~60 个，部分 Mock 问题 | 单元测试 + Mock |
+| Services | 90%+ | ✅ 73 个通过 | 单元测试 + Mock |
 | Providers | 80%+ | ✅ 92 个通过 | 单元测试 |
-| Widgets | 70%+ | ✅ ~88 个通过 | Widget 测试 |
+| Widgets | 70%+ | ✅ 88 个通过 | Widget 测试 |
 | Integration | 60%+ | ✅ Peekaboo + UI 测试模式 | 集成测试 |
 
 ### 总体统计
 
 | 统计项 | 数值 |
 |--------|------|
-| 测试总数 | ~418 |
-| 通过 | 396 |
-| 失败 | 22 |
-| 跳过 | 2 |
+| 测试总数 | 432 |
+| 通过 | 432 |
+| 失败 | 0 |
+| 跳过 | 0 |
 
-> **注意**: 当前 22 个失败主要是 `http_service_test.dart` 中的 Mock 配置问题（`MissingStubError: 'request'`），不影响实际功能运行。计划在 v0.4.0 修复。
+> **注意**: 所有测试均已通过，代码质量良好。
 
 ---
 
@@ -139,6 +140,9 @@ void main() {
         any,
         data: anyNamed('data'),
         options: anyNamed('options'),
+        cancelToken: anyNamed('cancelToken'),
+        onSendProgress: anyNamed('onSendProgress'),
+        onReceiveProgress: anyNamed('onReceiveProgress'),
       )).thenAnswer((_) async => Response(
         data: Uint8List.fromList(utf8.encode('{"id": 1}')),
         statusCode: 200,
@@ -161,6 +165,9 @@ void main() {
         any,
         data: anyNamed('data'),
         options: anyNamed('options'),
+        cancelToken: anyNamed('cancelToken'),
+        onSendProgress: anyNamed('onSendProgress'),
+        onReceiveProgress: anyNamed('onReceiveProgress'),
       )).thenThrow(DioException(
         requestOptions: RequestOptions(path: ''),
         type: DioExceptionType.connectionTimeout,
@@ -480,6 +487,75 @@ flutter test integration_test/app_test.dart -d windows
 # Linux
 flutter test integration_test/app_test.dart -d linux
 ```
+
+---
+
+## UI 测试模式
+
+Hopp 实现了内置的 UI 测试模式，支持通过 HTTP 指令远程控制应用，用于自动化 UI 测试。
+
+### 架构
+
+```
+测试客户端 (Python) → HTTP POST → UI Test Server → MethodChannel → Flutter Provider
+```
+
+### 使用方式
+
+```bash
+# 1. 以测试模式启动应用
+./hopp.app/Contents/MacOS/hopp --test-mode
+
+# 2. 从日志获取端口
+grep "测试服务器启动在端口" ~/Library/Containers/.../hopp_*.log
+
+# 3. 执行测试
+python3 integration_test/test_client.py --port <PORT> full_test
+```
+
+### 可用指令
+
+| 指令 | 说明 |
+|------|------|
+| `create_request` | 创建新请求 |
+| `set_url` | 设置 URL |
+| `send_request` | 发送请求 |
+| `switch_response_tab` | 切换响应 Tab (body/headers/cookies/certificate/timing/request/settings) |
+| `switch_request_tab` | 切换请求 Tab (params/headers/body/auth/settings) |
+| `get_response_info` | 获取响应信息 |
+| `rename_request` | 重命名请求 |
+| `set_body_type` | 设置 Body 类型 (none/raw/form-data/x-www-form-urlencoded/binary/graphql) |
+| `set_raw_content_type` | 设置 Raw 子类型 (text/javascript/json/html/xml) |
+| `get_timing_info` | 获取时间分析 |
+| `get_request_details` | 获取请求详情 |
+| `get_certificate_info` | 获取证书信息 |
+| `simulate_4xx_response` | 模拟 4XX 错误响应 |
+| `simulate_5xx_response` | 模拟 5XX 错误响应 |
+| `simulate_large_response` | 模拟大响应 |
+| `beautify_code` | 格式化代码 |
+| `full_test` | 完整测试流程 |
+
+### UI 测试脚本列表
+
+| 脚本 | 用途 |
+|------|------|
+| `test_client.py` | Python 测试客户端 |
+| `test_body_type_selector.py` | Body 类型选择器测试 |
+| `test_certificate.py` | Certificate Tab 测试 |
+| `test_code_editor_improved.py` | Code Editor 样式测试 |
+| `test_dropdown_style.py` | Dropdown 样式测试 |
+| `test_error_response.py` | 4XX/5XX 响应测试 |
+| `test_font_update.py` | 字体更新测试 |
+| `test_postman_import.py` | Postman 导入测试 |
+| `test_rename_request.py` | 请求重命名测试 |
+| `test_request_details.py` | 请求详情展示测试 |
+| `test_request_editor_ui.py` | Request Editor UI 测试 |
+| `test_request_info.py` | 请求信息测试 |
+| `test_request_settings_ui.py` | Request Settings UI 测试 |
+| `test_response_optimization.py` | 响应优化测试 |
+| `test_save_and_rename.py` | 保存和重命名测试 |
+| `test_timing_analysis.py` | Timing 分析测试 |
+| `test_ui_optimization.py` | UI 优化测试 |
 
 ---
 

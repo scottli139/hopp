@@ -480,14 +480,12 @@ void main([List<String> args = const []]) {
         await tester.pump(const Duration(seconds: 1));
 
         // 等待错误响应（最多 10 秒）
-        var errorFound = false;
         for (var i = 0; i < 20; i++) {
           await tester.pump(const Duration(milliseconds: 500));
 
           // 检查错误图标或错误文本
           if (find.byIcon(Icons.error_outline).evaluate().isNotEmpty ||
               find.textContaining('error', skipOffstage: false).evaluate().isNotEmpty) {
-            errorFound = true;
             break;
           }
         }

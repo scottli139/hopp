@@ -348,39 +348,6 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     );
   }
 
-
-        onTap: onPressed,
-        child: Tooltip(
-          message: tooltip,
-          child: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? (activeColor ?? theme.colorScheme.primary)
-                      .withValues(alpha: 0.1)
-                  : theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(AppConstants.radiusM),
-              border: Border.all(
-                color: isActive
-                    ? (activeColor ?? theme.colorScheme.primary)
-                        .withValues(alpha: 0.3)
-                    : theme.colorScheme.outlineVariant,
-              ),
-            ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: isActive
-                  ? activeColor ?? theme.colorScheme.primary
-                  : theme.colorScheme.outline,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildSendButton(
     BuildContext context,
     WidgetRef ref,

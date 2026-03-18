@@ -23,7 +23,7 @@
 | F1.7 | 响应预览 | ✅ | 原始/预览/JSON/图片等多种视图 | 自动识别 Content-Type 切换视图 |
 | F1.8 | Cookie 管理 | ⏸️ | 查看/编辑/导入 Cookie | Cookie 列表展示，支持手动添加 |
 | F1.9 | 文件上传/下载 | ⏸️ | multipart/form-data、文件下载 | 支持文件选择、进度显示 |
-| F1.10 | 请求预览 | ⏸️ | cURL 命令生成与复制 | 一键复制生成的 cURL 命令 |
+| F1.10 | cURL 生成 | ⏳ | cURL 命令生成与复制 | 一键复制生成的 cURL 命令 (v0.6.0) |
 | F1.11 | HTTPS 证书查看 | ✅ | 查看 SSL/TLS 证书详细信息 | 证书颁发者、有效期、域名、指纹等 |
 | F1.12 | 请求时间分析 | ✅ | 展示请求各环节耗时 | DNS、TCP、SSL、TTFB、下载时间分段展示 |
 | F1.13 | 请求详情展示 | ✅ | 显示实际发送的请求信息 | 展示变量替换后的最终 URL、Headers、Body |
@@ -38,6 +38,127 @@
 | F2.3 | 文件夹/集合 | 按项目/模块组织请求 | 支持嵌套文件夹，拖拽排序 |
 | F2.4 | [导入/导出](#f24-导入导出-postman-格式) | Postman 集合导入/导出 | 支持 v2.1 格式，数据不丢失 |
 | F2.5 | 请求重命名 | 修改请求名称 | 在编辑器和侧边栏支持修改请求名称 |
+| F2.6 | **cURL 导入** | ⏳ | **解析 cURL 命令创建请求** | **支持从剪贴板/文件导入，快速复现接口 (v0.6.0)** |
+
+#### F2.6 cURL 导入详细需求
+
+**国内痛点**: 后端文档提供 cURL 示例、浏览器开发者工具复制、日志抓取重放，需要快速转换为可视化请求。
+
+**功能概述**:
+- 解析标准 cURL 命令，自动填充 Method、URL、Headers、Body
+- 支持从剪贴板粘贴、文件导入、直接输入三种方式
+- 解析结果可导入当前请求或创建新标签页
+
+**支持的 cURL 选项**:
+
+| 选项 | 说明 | 映射目标 |
+|------|------|----------|
+| `-X, --request` | HTTP 方法 | request.method |
+| `-H, --header` | 请求头 | request.headers |
+| `-d, --data` | POST 数据 (application/x-www-form-urlencoded) | request.body |
+| `--data-raw` | 原始 POST 数据 | request.body |
+| `--data-binary` | 二进制数据 | request.body |
+| `--data-urlencode` | URL 编码数据 | request.body + 编码处理 |
+| `-F, --form` | multipart/form-data | request.bodyType = formData |
+| `-u, --user` | 用户认证 (Basic Auth) | Authorization header |
+| `-k, --insecure` | 跳过 SSL 验证 | validateCertificates = false |
+| `-L, --location` | 跟随重定向 | followRedirects = true |
+| `--max-redirs` | 最大重定向次数 | maxRedirects |
+| `-b, --cookie` | Cookie 数据 | Cookie header |
+| `-A, --user-agent` | User-Agent | User-Agent header |
+| `-e, --referer` | Referer | Referer header |
+| `--compressed` | 接受压缩响应 | Accept-Encoding header |
+
+**复杂场景支持**:
+
+1. **多行 cURL 命令**:
+   ```bash
+   curl -X POST 'https://api.example.com/user' \
+     -H 'Content-Type: application/json' \
+     -H 'Authorization: Bearer token' \
+     -d '{"name":"test"}'
+   ```
+
+2. **文件上传**:
+   ```bash
+   curl -F "file=@/path/to/image.png" \
+        -F "name=avatar" \
+        https://api.example.com/upload
+   ```
+
+3. **URL 编码数据**:
+   ```bash
+   curl --data-urlencode "name=中文内容" \
+        --data-urlencode "page=1" \
+        https://api.example.com/search
+   ```
+
+**导入方式**:
+
+| 方式 | 交互 | 场景 |
+|------|------|------|
+| 剪贴板粘贴 | `Cmd+Shift+V` 或右键菜单 | 从文档/聊天复制后快速导入 |
+| 文件导入 | 选择 `.sh` 或 `.txt` 文件 | 批量导入多个 cURL |
+| 输入框 | 对话框文本框 | 手动输入或调整 |
+
+**UI 设计**:
+```
+┌─────────────────────────────────────────┐
+│  从 cURL 导入                            │
+├─────────────────────────────────────────┤
+│                                         │
+│  粘贴 cURL 命令:                         │
+│  ┌─────────────────────────────────┐    │
+│  │ curl -X POST \\\                │    │
+│  │   -H "Content-Type: json" \\\   │    │
+│  │   -d '{"key":"value"}' \\\      │    │
+│  │   https://api.com/endpoint      │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│  [粘贴] [从文件...]  [清除]              │
+│                                         │
+│  ───────────── 或 ─────────────         │
+│                                         │
+│  [拖放 .sh/.txt 文件到此处]              │
+│                                         │
+├─────────────────────────────────────────┤
+│  [取消]                    [导入并发送]  │
+└─────────────────────────────────────────┘
+```
+
+**解析结果预览**:
+```
+┌─────────────────────────────────────────┐
+│  解析结果                                │
+├─────────────────────────────────────────┤
+│  方法: POST                             │
+│  URL: https://api.example.com/user      │
+│  Headers: 3 个                           │
+│    - Content-Type: application/json     │
+│    - Authorization: Bearer xxx          │
+│    - User-Agent: curl/7.64.1            │
+│  Body: JSON (45 bytes)                  │
+│  SSL验证: 启用                           │
+│  跟随重定向: 否                          │
+├─────────────────────────────────────────┤
+│  [重新编辑]  [仅导入]  [导入并发送]      │
+└─────────────────────────────────────────┘
+```
+
+**快捷键**:
+- `Cmd+Shift+V` - 从剪贴板导入 cURL
+- `Cmd+Shift+I` - 打开导入对话框（含 Postman/cURL 选项）
+
+**错误处理**:
+
+| 错误类型 | 提示 |
+|----------|------|
+| 空输入 | "请输入 cURL 命令" |
+| 格式无效 | "无法解析 cURL 命令，请检查格式" |
+| 不支持的选项 | "警告: 忽略不支持的选项 --xxx" |
+| URL 缺失 | "cURL 命令缺少 URL" |
+
+---
 
 ### 三、环境变量功能 ✅
 
@@ -47,16 +168,53 @@
 | F3.2 | 全局变量 | 跨环境共享变量 | 独立于环境的全局变量 |
 | F3.3 | 变量替换 | URL/Headers/Body 中使用 `{{var}}` | 发送前自动替换变量 |
 
-### 四、测试与脚本功能 ⏸️
+### 四、测试与脚本功能 ✅ (v0.7.0 规划)
 
-> 暂不需要，放入 Backlog
+> 国内接口签名逻辑复杂，脚本灵活度是刚需。将测试功能从 Backlog 提升为核心功能。
 
-| ID | 功能 | 状态 |
-|----|------|------|
-| F4.1 | 响应断言 | Backlog |
-| F4.2 | Pre-request Script | Backlog |
-| F4.3 | Test Script | Backlog |
-| F4.4 | 批量运行 | Backlog |
+| ID | 功能 | 状态 | 需求描述 | 验收标准 |
+|----|------|------|----------|----------|
+| F4.1 | 响应断言 | ⏳ | 可视化断言编辑器，支持状态码、响应字段、响应时间校验 | 无需编写代码，通过 UI 配置断言规则 |
+| F4.2 | Pre-request Script | ⏳ | 请求前执行 JS 脚本，动态生成签名、token、时间戳 | 支持 `pm` 对象，可访问环境变量、生成动态值 |
+| F4.3 | Test Script | ⏳ | 请求后执行 JS 脚本，校验响应数据 | 支持 `pm.test()`、`pm.expect()` 等断言 API |
+| F4.4 | 批量运行 | ⏳ | 集合级别的批量请求执行，生成测试报告 | 支持顺序/并行执行，导出 CSV/HTML 报告 |
+
+#### F4.2 Pre-request Script 详细需求
+
+**国内痛点**: 国内 API 普遍需要动态签名（如阿里系、腾讯系、自研网关），需在请求前计算 sign、timestamp。
+
+**核心 API 设计**:
+```javascript
+// 访问环境变量
+const appKey = pm.environment.get("appKey");
+const appSecret = pm.environment.get("appSecret");
+
+// 生成时间戳
+const timestamp = new Date().getTime();
+pm.environment.set("timestamp", timestamp);
+
+// 计算签名（支持 CryptoJS）
+const sign = CryptoJS.MD5(appKey + timestamp + appSecret).toString();
+pm.environment.set("sign", sign);
+
+// 动态设置请求头
+pm.request.headers.add({key: "X-Sign", value: sign});
+```
+
+**内置库支持**:
+| 库名 | 版本 | 用途 |
+|------|------|------|
+| CryptoJS | 4.2.0 | MD5/SHA1/SHA256/HMAC 等签名算法 |
+| lodash | 4.17.21 | 数据处理、对象操作 |
+| moment | 2.29.4 | 日期时间格式化 |
+| uuid | 9.0.0 | UUID 生成 |
+
+**脚本执行环境**:
+- 沙箱隔离，限制访问 DOM/文件系统
+- 超时限制：5 秒
+- 内存限制：128MB
+
+---
 
 ### 五、UI/UX 功能
 
@@ -74,23 +232,134 @@
 | ID | 功能 | 状态 | 需求描述 | 验收标准 |
 |----|------|------|----------|----------|
 | F6.1 | 本地存储 | ✅ | Hive/SharedPreferences 存储数据 | 数据持久化，应用重启不丢失 |
-| F6.4 | 数据备份 | ⏸️ | 自动/手动备份 | 可导出完整数据备份 |
+| F6.4 | 数据备份 | ⏳ | 自动/手动备份 | 可导出完整数据备份 |
 
-**Backlog：**
+**Backlog（未来规划）：**
 
-| ID | 功能 | 状态 |
-|----|------|------|
-| F6.2 | 云端同步 | Backlog |
-| F6.3 | 团队协作 | Backlog |
+| ID | 功能 | 状态 | 说明 |
+|----|------|------|------|
+| F6.2 | 云端同步 | Backlog | 用户数据云存储，跨设备同步 |
+| F6.3 | 团队协作 | Backlog | 多人实时协作编辑 |
 
 ### 七、高级功能
 
 | ID | 功能 | 状态 | 需求描述 | 验收标准 |
 |----|------|------|----------|----------|
-| F7.1 | WebSocket 测试 | ⏸️ | WebSocket 连接测试 | 支持 ws/wss，消息收发 |
+| F7.1 | WebSocket 测试 | ⏳ | WebSocket 连接测试 | 支持 ws/wss，消息收发 |
+
+#### F7.4 Mock 服务详细需求 (v0.8.0)
+
+**国内痛点**: 前后端分离、敏捷迭代，Mock 是"并行开发"的关键。免费版提供**本地 Mock 服务器**，无需云端依赖。
+
+**功能概述**:
+- 基于本地 HTTP 服务器的 Mock 服务（非云端）
+- 从 Collection 自动生成 Mock 规则
+- 支持动态响应模板、延迟模拟、状态码模拟
+
+**Mock 规则配置**:
+
+| 配置项 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| 匹配路径 | String | /api/example | 支持路径参数 `:id` |
+| HTTP 方法 | Enum | GET | GET/POST/PUT/DELETE 等 |
+| 响应状态码 | Number | 200 | 可模拟 400/500 错误场景 |
+| 响应头 | Object | {} | Content-Type 等 |
+| 响应体 | Text/JSON | {} | 支持模板变量 |
+| 延迟 | Number | 0 | 模拟网络延迟 (ms) |
+
+**模板变量支持**:
+
+| 变量 | 示例 | 说明 |
+|------|------|------|
+| `{{$params.name}}` | `{{$params.id}}` | URL 路径参数 |
+| `{{$query.name}}` | `{{$query.page}}` | Query 参数 |
+| `{{$body.path}}` | `{{$body.user.name}}` | 请求体字段 |
+| `{{$random.uuid}}` | `550e8400-e29b-41d4-a716-446655440000` | 随机 UUID |
+| `{{$random.name}}` | `John Doe` | 随机姓名 |
+| `{{$random.email}}` | `john@example.com` | 随机邮箱 |
+| `{{$timestamp}}` | `1710825600` | 当前时间戳 |
+
+**动态响应示例**:
+```json
+{
+  "code": 200,
+  "data": {
+    "id": "{{$params.id}}",
+    "name": "{{$random.name}}",
+    "email": "{{$random.email}}",
+    "createdAt": "{{$timestamp}}",
+    "orders": [
+      {"id": "{{$random.uuid}}", "amount": 99.99}
+    ]
+  }
+}
+```
+
+**Mock 服务器管理**:
+- 启动/停止按钮
+- 端口配置（默认 3000）
+- CORS 自动启用（支持前端跨域访问）
+- 请求日志实时查看
+
+**从集合生成 Mock**:
+```
+1. 选择 Collection → 右键 "生成 Mock 规则"
+2. 为每个请求配置响应模板
+3. 一键启动 Mock 服务器
+4. 前端切换 baseURL 到 localhost:3000
+```
+
+---
 | F7.3 | API 文档生成 | ⏸️ | 从集合生成文档 | 导出 Markdown/HTML |
 | F7.5 | 代理设置 | ⏸️ | HTTP/HTTPS 代理 | 支持系统代理和自定义代理 |
-| F7.6 | 代码生成 | ⏸️ | 生成 Python/JS/cURL 等代码 | 支持多种语言代码片段 |
+| F7.6 | 代码生成 | ⏳ | 生成 Python/JS/cURL 等代码 | 支持 20+ 语言，一键复制 |
+
+#### F7.6 代码生成详细需求
+
+**国内痛点**: 减少重复编码、降低对接成本，新人快速上手。
+
+**支持语言列表**:
+
+| 语言/工具 | 状态 | 说明 |
+|-----------|------|------|
+| cURL | ✅ | 基础命令行 |
+| JavaScript (fetch) | ⏳ | 原生 fetch API |
+| JavaScript (axios) | ⏳ | 流行的 HTTP 库 |
+| Python (requests) | ⏳ | Python 标准库 |
+| Python (httpx) | ⏳ | 异步 HTTP 库 |
+| Java (OkHttp) | ⏳ | Android/Java 常用 |
+| Java (HttpClient) | ⏳ | Java 11+ 标准库 |
+| Go | ⏳ | net/http 包 |
+| PHP | ⏳ | cURL 扩展 |
+| Ruby | ⏳ | net/http |
+| C# (HttpClient) | ⏳ | .NET 标准库 |
+| Swift | ⏳ | URLSession |
+| Kotlin | ⏳ | OkHttp |
+| Rust (reqwest) | ⏳ | 流行的 Rust HTTP 库 |
+
+**代码模板引擎**:
+- 使用 Mustache 模板引擎
+- 支持自定义模板（高级功能）
+- 自动处理：URL 编码、JSON 转义、特殊字符处理
+
+**UI 设计**:
+```
+┌─────────────────────────────────────────┐
+│  生成代码                                │
+├─────────────────────────────────────────┤
+│  语言: [Python ▼] [复制] [下载]          │
+├─────────────────────────────────────────┤
+│                                         │
+│  ```python                              │
+│  import requests                        │
+│                                         │
+│  url = "https://api.example.com/user"   │
+│  headers = {"Authorization": "Bearer"}  │
+│  response = requests.get(url, ...)      │
+│  ```                                    │
+│                                         │
+└─────────────────────────────────────────┘
+```
 
 #### F1.14 请求设置 (Request Settings) 详细需求
 
@@ -367,12 +636,12 @@
 - [x] 导出环境变量（可选）
 - [x] 导出成功后显示文件保存路径
 
-**Backlog：**
+**Backlog（未来规划）：**
 
-| ID | 功能 | 状态 |
-|----|------|------|
-| F7.2 | gRPC 测试 | Backlog |
-| F7.4 | Mock 服务 | Backlog |
+| ID | 功能 | 状态 | 说明 |
+|----|------|------|------|
+| F7.2 | gRPC 测试 | Backlog | Protocol Buffers 接口测试 |
+| F7.4 | Mock 云端服务 | Backlog | 云端 Mock 服务器（付费功能）|
 
 ---
 

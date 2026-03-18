@@ -8,7 +8,7 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前阶段** | v0.5.0 数据交换功能完成，SSL 证书验证已支持 |
+| **当前阶段** | v0.5.0 数据交换功能完成，SSL 证书验证、Follow Redirects 已支持 |
 | **目标版本** | v1.0.0 |
 | **技术栈** | Flutter 3.27.x + Dart 3.6.x + Riverpod |
 | **测试状态** | ✅ **432 个全部通过** |
@@ -235,6 +235,35 @@
 | 4XX/5XX 响应修复 | ✅ | P0 | 4h | 正确显示服务端返回的错误内容 (Issue #1) |
 | 真实证书获取 | ✅ | P1 | 4h | Certificate Tab 显示真实 SSL/TLS 证书 (Issue #2) |
 | 数据库兼容性修复 | ✅ | P0 | 6h | Hive 数据库版本控制 + 向后兼容适配器 (Issue #5) |
+
+#### M4.2 数据库迁移框架
+
+**状态**: ✅ 已实现 (2026-03-18)
+
+**问题背景**: 
+当 `HttpRequest` 模型新增字段（如 `validateCertificates`, `followRedirects`, `maxRedirects`）时，旧版本存储的数据缺少这些字段，导致 Hive 读取时抛出异常。
+
+**解决方案**:
+
+1. **数据库版本控制** (`database_migration_service.dart`):
+   - 使用 `SharedPreferences` 存储数据库版本号
+   - 启动时检测版本，自动执行迁移脚本
+   - 支持未来版本升级
+
+2. **向后兼容适配器** (`models/adapters/`):
+   ```dart
+   // 处理缺失字段，提供默认值
+   validateCertificates: fields[11] == null ? true : fields[11] as bool,
+   followRedirects: fields[12] == null ? true : fields[12] as bool,
+   maxRedirects: fields[13] == null ? 10 : fields[13] as int,
+   ```
+
+3. **迁移流程**:
+   ```
+   应用启动 → 检查 db_version → 需要升级? → 执行迁移 → 更新版本号 → 正常使用
+                      ↓
+                   不需要 → 直接使用
+   ```
 
 #### M4.1 请求设置 (Request Settings) - F1.14
 
@@ -927,20 +956,287 @@ make logs   # 查看日志
 - ✅ 4XX/5XX 响应修复
 - ✅ 真实证书获取
 
-### v0.6.0 - Advanced Features 📋 PLANNED
+### v0.6.0 - Code Generation & Utils 📋 PLANNED
 
-- ⏳ 请求历史记录
-- ⏳ 完整环境变量系统
-- ⏳ 请求设置 (Request Settings) 完整实现
-- ⏳ 数据备份与恢复
-- ⏳ 完整国际化支持
+**目标**: 实现代码生成和 cURL 双向导入导出，提升对接效率。
+
+| 任务 | 状态 | 优先级 | 预计工时 | 说明 |
+|-----|------|--------|---------|------|
+| **cURL 导入 (F2.6)** | ⏳ | **P0** | 10h | **解析 cURL 命令创建请求** |
+| 代码片段生成 (F7.6) | ⏳ | P1 | 8h | 20+ 语言支持 |
+| cURL 命令生成 (F1.10) | ⏳ | P1 | 4h | 请求 → cURL 导出 |
+| 请求历史记录 (F2.1) | ⏳ | P1 | 6h | 自动保存最近请求 |
+| 响应体搜索 (F5.4) | ⏳ | P2 | 4h | 在响应内容中搜索 |
+| 数据备份与恢复 (F6.4) | ⏳ | P2 | 6h | 导出完整数据备份 |
+| 完整国际化支持 | ⏳ | P2 | 8h | 多语言翻译完善 |
+
+#### M6.1 cURL 导入详细设计
+
+**状态**: ⏳ 规划中 (P0 - 最高优先级)
+
+**技术方案**:
+
+```
+lib/
+├── services/
+│   └── curl/
+│       ├── curl_parser.dart            # cURL 命令解析器
+│       ├── curl_tokenizer.dart         # 词法分析器
+│       └── curl_import_service.dart    # 导入服务
+├── models/
+│   └── curl_parsed_result.dart         # 解析结果模型
+└── widgets/
+    └── import/
+        └── curl_import_dialog.dart     # 导入对话框
+```
+
+**解析器实现**:
+
+1. **Tokenizer** - 词法分析:
+```dart
+class CurlTokenizer {
+  List<CurlToken> tokenize(String command) {
+    // 处理多行、转义字符、引号
+    // 支持单引号、双引号、无引号参数
+  }
+}
+```
+
+2. **Parser** - 语法分析:
+```dart
+class CurlParser {
+  CurlParsedResult parse(List<CurlToken> tokens) {
+    // 识别选项和参数
+    // 映射到 HttpRequest 模型
+  }
+}
+```
+
+3. **支持选项映射**:
+| cURL 选项 | Dart 处理 |
+|-----------|-----------|
+| `-X POST` | `HttpMethod.post` |
+| `-H "key:value"` | `KeyValuePair` 列表 |
+| `-d "data"` | Body 内容 + 自动识别 Content-Type |
+| `-F "key=value"` | `BodyType.formData` |
+| `--data-urlencode` | URL 编码处理 |
+| `-u user:pass` | Base64 编码 Authorization |
+| `-k` | `validateCertificates = false` |
+| `-L` | `followRedirects = true` |
+
+**UI 组件**:
+
+```dart
+class CurlImportDialog extends ConsumerStatefulWidget {
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('从 cURL 导入'),
+      content: Column(
+        children: [
+          // 文本输入区
+          TextField(
+            controller: _curlController,
+            maxLines: 10,
+            decoration: InputDecoration(
+              hintText: '粘贴 cURL 命令...',
+              suffixIcon: IconButton(
+                icon: Icon(Icons.paste),
+                onPressed: _pasteFromClipboard,
+              ),
+            ),
+          ),
+          // 拖放区域
+          DropTarget(
+            onDragDone: _handleFileDrop,
+            child: Container(...),
+          ),
+          // 解析结果预览
+          if (_parsedResult != null)
+            ParsedResultPreview(result: _parsedResult),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: _cancel, child: Text('取消')),
+        ElevatedButton(
+          onPressed: _parsedResult != null ? _import : null,
+          child: Text('导入'),
+        ),
+        ElevatedButton(
+          onPressed: _parsedResult != null ? _importAndSend : null,
+          child: Text('导入并发送'),
+        ),
+      ],
+    );
+  }
+}
+```
+
+**快捷键集成**:
+```dart
+// lib/widgets/common/shortcut_wrapper.dart
+SingleActivator(LogicalKeyboardKey.keyV, meta: true, shift: true): 
+    const ImportCurlIntent(),
+```
+
+**测试计划**:
+
+```dart
+group('CurlParser', () {
+  test('should parse simple GET request', () {
+    final result = parser.parse('curl https://api.example.com/users');
+    expect(result.method, HttpMethod.get);
+    expect(result.url, 'https://api.example.com/users');
+  });
+  
+  test('should parse POST with JSON body', () {
+    final result = parser.parse(
+      'curl -X POST -H "Content-Type: application/json" '
+      '-d \'{"name":"test"}\' https://api.example.com/users'
+    );
+    expect(result.method, HttpMethod.post);
+    expect(result.headers['Content-Type'], 'application/json');
+    expect(result.body, '{"name":"test"}');
+  });
+  
+  test('should parse multipart form data', () {
+    final result = parser.parse(
+      'curl -F "file=@/path/to/file.png" '
+      '-F "name=avatar" https://api.example.com/upload'
+    );
+    expect(result.bodyType, BodyType.formData);
+    expect(result.formData.length, 2);
+  });
+  
+  test('should handle URL-encoded data', () {
+    final result = parser.parse(
+      'curl --data-urlencode "name=中文" https://api.example.com/search'
+    );
+    expect(result.body, 'name=%E4%B8%AD%E6%96%87');
+  });
+  
+  test('should parse multiline command with backslash', () {
+    final result = parser.parse(
+      'curl -X POST \\\n'
+      '  -H "Authorization: Bearer token" \\\n'
+      '  https://api.example.com/users'
+    );
+    expect(result.headers['Authorization'], 'Bearer token');
+  });
+});
+```
+
+**验收标准**:
+- [ ] 支持 90% 以上常用 cURL 选项
+- [ ] 正确解析浏览器开发者工具复制的 cURL
+- [ ] 支持多行命令（反斜杠续行）
+- [ ] 支持从剪贴板、文件、拖放导入
+- [ ] 解析错误时提供清晰的错误提示
+- [ ] 单元测试覆盖率 > 80%
+
+---
+
+---
+
+### v0.7.0 - Testing & Automation 📋 PLANNED
+
+**目标**: 实现完整的测试脚本功能，解决国内接口签名复杂的痛点。
+
+| 任务 | 状态 | 优先级 | 预计工时 | 说明 |
+|-----|------|--------|---------|------|
+| 脚本引擎架构 | ⏳ | P0 | 8h | JavaScript 沙箱环境 (quickjs/flutter_js) |
+| Pre-request Script | ⏳ | P0 | 10h | F4.2 请求前脚本，支持签名生成 |
+| Test Script | ⏳ | P0 | 10h | F4.3 请求后断言脚本 |
+| 可视化断言 | ⏳ | P1 | 6h | F4.1 无需代码的断言配置 |
+| 批量运行 | ⏳ | P1 | 8h | F4.4 集合级别批量执行 |
+| 测试报告 | ⏳ | P1 | 6h | HTML/CSV 报告导出 |
+| CryptoJS 集成 | ⏳ | P0 | 4h | MD5/SHA/HMAC 等签名算法 |
+
+**技术方案**:
+```
+lib/
+├── services/
+│   └── script/
+│       ├── script_engine.dart          # JS 引擎封装
+│       ├── pre_request_runner.dart     # Pre-request 执行器
+│       ├── test_runner.dart            # Test 脚本执行器
+│       └── crypto_js_bridge.dart       # CryptoJS 桥接
+├── models/
+│   └── test_result.dart                # 测试结果模型
+└── widgets/
+    └── test/
+        ├── script_editor.dart          # 脚本编辑器
+        ├── assertion_builder.dart      # 可视化断言构建器
+        └── batch_runner_dialog.dart    # 批量运行对话框
+```
+
+**依赖库选择**:
+| 库名 | 用途 | 备选 |
+|------|------|------|
+| flutter_js | JavaScript 引擎 | quickjs_flutter |
+| crypto | Dart 加密算法 | pointycastle |
+
+---
+
+### v0.8.0 - Mock & Advanced Features 📋 PLANNED
+
+**目标**: 实现本地 Mock 服务，支持前后端并行开发。
+
+| 任务 | 状态 | 优先级 | 预计工时 | 说明 |
+|-----|------|--------|---------|------|
+| 本地 Mock 服务器 | ⏳ | P0 | 12h | F7.4 基于 shelf 的本地 HTTP 服务器 |
+| Mock 规则配置 | ⏳ | P0 | 8h | 从集合自动生成 Mock 规则 |
+| 动态响应模板 | ⏳ | P1 | 6h | 支持模板变量、随机数据生成 |
+| 延迟模拟 | ⏳ | P1 | 2h | 模拟网络延迟 |
+| 代理设置 | ⏳ | P2 | 6h | F7.5 HTTP/HTTPS 代理 |
+| WebSocket 测试 | ⏳ | P2 | 10h | F7.1 ws/wss 支持 |
+
+**Mock 服务器架构**:
+```
+lib/
+├── services/
+│   └── mock/
+│       ├── mock_server.dart            # shelf 服务器
+│       ├── mock_router.dart            # 路由匹配
+│       ├── mock_response_builder.dart  # 响应构建
+│       └── mock_rule_manager.dart      # 规则管理
+├── models/
+│   └── mock_rule.dart                  # Mock 规则模型
+└── widgets/
+    └── mock/
+        ├── mock_config_dialog.dart     # Mock 配置对话框
+        └── mock_status_panel.dart      # 运行状态面板
+```
+
+**Mock 规则示例**:
+```json
+{
+  "path": "/api/user/:id",
+  "method": "GET",
+  "response": {
+    "statusCode": 200,
+    "headers": {"Content-Type": "application/json"},
+    "body": {
+      "id": "{{$params.id}}",
+      "name": "{{$random.name}}",
+      "email": "{{$random.email}}"
+    }
+  },
+  "delay": 500
+}
+```
 
 ### v1.0.0 - GA ⏳ PLANNED
 
-- ⏳ 完整功能集
-- ⏳ 完善文档
-- ⏳ 全平台稳定
-- ⏳ 应用商店发布
+**目标**: 功能完整的 API 测试工具，替代 Postman 免费版核心功能。
+
+- ✅ 完整功能集（请求构建、环境变量、集合管理、测试脚本、Mock）
+- ✅ 全平台稳定（macOS/Windows/Linux）
+- ⏳ gRPC 测试 (F7.2) - Backlog
+- ⏳ 云端同步 (F6.2) - Backlog
+- ⏳ 团队协作 (F6.3) - Backlog
+- ⏳ 完善文档与视频教程
+- ⏳ 应用商店发布 (Mac App Store, Microsoft Store)
 
 ---
 

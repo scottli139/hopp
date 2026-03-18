@@ -1588,16 +1588,49 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             ],
           ),
           const SizedBox(height: AppConstants.spaceXL),
+          // 重定向设置
+          _buildSettingsSection(
+            context: context,
+            title: 'Redirects',
+            children: [
+              _buildSwitchTile(
+                context: context,
+                title: 'Follow redirects',
+                subtitle: 'Automatically follow HTTP 3xx redirects',
+                value: request.followRedirects,
+                onChanged: (value) {
+                  final updatedRequest = request.copyWith(
+                    followRedirects: value,
+                  );
+                  _updateRequest(ref, updatedRequest);
+                },
+              ),
+              const SizedBox(height: AppConstants.spaceM),
+              // Max redirects (only show when followRedirects is enabled)
+              if (request.followRedirects)
+                _buildNumberInputTile(
+                  context: context,
+                  title: 'Maximum redirects',
+                  subtitle:
+                      'Limit the number of redirects to follow (0 = unlimited)',
+                  value: request.maxRedirects,
+                  min: 0,
+                  max: 50,
+                  onChanged: (value) {
+                    final updatedRequest = request.copyWith(
+                      maxRedirects: value,
+                    );
+                    _updateRequest(ref, updatedRequest);
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: AppConstants.spaceXL),
           // 更多设置将在未来版本中实现
           _buildSettingsSection(
             context: context,
             title: 'Coming Soon',
             children: [
-              _buildDisabledTile(
-                context: context,
-                title: 'Follow redirects',
-                subtitle: 'Automatically follow HTTP redirects',
-              ),
               _buildDisabledTile(
                 context: context,
                 title: 'Request timeout',
@@ -1743,6 +1776,107 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           Icons.lock_outline,
           size: 16,
           color: theme.colorScheme.outline.withOpacity(0.5),
+        ),
+      ],
+    );
+  }
+
+  /// 构建数字输入设置项
+  Widget _buildNumberInputTile({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required int value,
+    required int min,
+    required int max,
+    required ValueChanged<int> onChanged,
+  }) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: AppTextStyles.tiny.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppConstants.spaceM),
+        // Number input with +/- buttons
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(AppConstants.radiusS),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Decrement button
+              InkWell(
+                onTap: value > min ? () => onChanged(value - 1) : null,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.remove,
+                    size: 16,
+                    color: value > min
+                        ? theme.colorScheme.onSurface
+                        : theme.colorScheme.outline.withOpacity(0.3),
+                  ),
+                ),
+              ),
+              // Value display
+              Container(
+                width: 40,
+                height: 28,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(color: theme.colorScheme.outlineVariant),
+                    right: BorderSide(color: theme.colorScheme.outlineVariant),
+                  ),
+                ),
+                child: Text(
+                  value.toString(),
+                  style: AppTextStyles.caption.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              // Increment button
+              InkWell(
+                onTap: value < max ? () => onChanged(value + 1) : null,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.add,
+                    size: 16,
+                    color: value < max
+                        ? theme.colorScheme.onSurface
+                        : theme.colorScheme.outline.withOpacity(0.3),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

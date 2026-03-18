@@ -7,6 +7,9 @@ import 'key_value_pair.dart';
 part 'http_request.freezed.dart';
 part 'http_request.g.dart';
 
+/// HTTP 请求模型
+///
+/// 包含请求的所有配置信息，包括 URL、方法、头部、Body 和请求级别设置。
 @freezed
 @HiveType(typeId: 2)
 class HttpRequest with _$HttpRequest {
@@ -22,8 +25,10 @@ class HttpRequest with _$HttpRequest {
     @HiveField(8) String? parentId,
     @HiveField(9) @Default(0) int sortOrder,
     @HiveField(10) @Default('json') String rawContentType,
-    // Request Settings (临时实现，等待完整 Request Settings 功能)
+    // Request Settings (请求级别配置)
     @HiveField(11) @Default(true) bool validateCertificates,
+    @HiveField(12) @Default(true) bool followRedirects,
+    @HiveField(13) @Default(10) int maxRedirects,
   }) = _HttpRequest;
 
   factory HttpRequest.fromJson(Map<String, dynamic> json) =>

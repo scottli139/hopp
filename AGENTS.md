@@ -613,6 +613,60 @@ genhtml coverage/lcov.info -o coverage/html
 ## 会话记录
 
 <details>
+<summary>2026-03-18 - Issue #5 修复完成：Hive 数据库兼容性修复 + Follow Redirects 功能</summary>
+
+**完成工作**:
+- ✅ 实现数据库版本控制和迁移框架
+- ✅ 创建向后兼容的 Hive 适配器，处理缺失字段
+- ✅ 修复 Issue #5：数据结构变更导致 Hive 数据库不兼容问题
+- ✅ 实现 Request Settings "Follow Redirects" 功能
+- ✅ 实现 Request Settings "Max Redirects" 配置
+- ✅ 添加数据库迁移相关 UI 测试指令
+- ✅ 创建数据库迁移 UI 测试脚本
+- ✅ 新增 10 个单元测试全部通过
+- ✅ 代码格式化 (`dart format`)
+- ✅ 所有 442 个单元测试通过
+
+**问题分析**:
+
+当 `HttpRequest` 模型新增 `validateCertificates` 字段（`@HiveField(11)`）时：
+1. 自动生成的 `HttpRequestAdapter.read()` 使用 `fields[11] as bool` 读取字段
+2. 旧版本存储的数据只有字段 0-10，没有字段 11
+3. 访问不存在的字段会抛出异常，导致应用启动时黑屏
+
+**解决方案**:
+
+1. **数据库迁移服务** (`lib/services/database_migration_service.dart`):
+   - 使用 SharedPreferences 存储数据库版本号
+   - 自动检测并执行必要的迁移
+   - 支持未来版本升级
+
+2. **向后兼容适配器** (`lib/models/adapters/http_request_adapter.dart`):
+   ```dart
+   validateCertificates: fields[11] == null ? true : fields[11] as bool,
+   followRedirects: fields[12] == null ? true : fields[12] as bool,
+   maxRedirects: fields[13] == null ? 10 : fields[13] as int,
+   ```
+
+3. **Request Settings UI 更新**:
+   - 添加 "Follow Redirects" 开关
+   - 添加 "Maximum Redirects" 数字输入
+   - 使用请求级别配置
+
+**新增文件**:
+- `lib/utils/database_consts.dart` - 数据库常量
+- `lib/services/database_migration_service.dart` - 迁移服务
+- `lib/models/adapters/http_request_adapter.dart` - 自定义适配器
+- `lib/models/adapters/app_settings_adapter.dart` - 自定义适配器
+- `test/services/database_migration_service_test.dart` - 单元测试
+- `test/models/adapters/http_request_adapter_test.dart` - 单元测试
+- `integration_test/test_database_migration.py` - UI 测试脚本
+
+**GitHub Issue**: https://github.com/scottli139/hopp/issues/5 ✅ 已关闭
+
+</details>
+
+<details>
 <summary>2026-03-17 - Issue #10 修复完成：Postman 导入 Raw Content Type 映射</summary>
 
 **完成工作**:

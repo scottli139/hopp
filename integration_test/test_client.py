@@ -676,6 +676,91 @@ class HoppTestClient:
         
         return {"success": True}
 
+    # ==================== 数据库迁移测试方法 ====================
+
+    def reset_database(self):
+        """重置数据库（用于测试）"""
+        print("\n🗑️  重置数据库...")
+        result = self.send_command("reset_database")
+        print(f"✅ 数据库已重置")
+        return result
+
+    def simulate_old_data(self, version=1):
+        """模拟旧版本数据
+        
+        Args:
+            version: 要模拟的旧版本号 (默认 1)
+        """
+        print(f"\n📦 模拟旧版本数据 (v{version})...")
+        result = self.send_command("simulate_old_data", {"version": version})
+        print(f"✅ 已创建旧版本测试数据")
+        print(f"   Request ID: {result.get('request_id')}")
+        print(f"   Collection ID: {result.get('collection_id')}")
+        return result
+
+    def verify_migration(self, expected_version=None):
+        """验证迁移结果
+        
+        Args:
+            expected_version: 期望的数据库版本号
+        """
+        print("\n🔍 验证迁移结果...")
+        params = {}
+        if expected_version is not None:
+            params["expected_version"] = expected_version
+        
+        result = self.send_command("verify_migration", params)
+        
+        print(f"当前版本: {result.get('current_version')}")
+        print(f"期望版本: {result.get('expected_version')}")
+        print(f"版本匹配: {'✅' if result.get('version_matches') else '❌'}")
+        print(f"请求数量: {result.get('request_count')}")
+        print(f"所有字段有默认值: {'✅' if result.get('all_have_defaults') else '❌'}")
+        
+        # 显示每个请求的字段状态
+        for req in result.get('requests', []):
+            print(f"\n  Request: {req.get('name')} ({req.get('id')})")
+            print(f"    validate_certificates: {req.get('validate_certificates')}")
+            print(f"    follow_redirects: {req.get('follow_redirects')}")
+            print(f"    max_redirects: {req.get('max_redirects')}")
+            print(f"    默认值正确: {'✅' if req.get('has_valid_defaults') else '❌'}")
+        
+        return result
+
+    def set_request_settings(self, validate_certificates=None, follow_redirects=None, max_redirects=None):
+        """设置请求级别配置
+        
+        Args:
+            validate_certificates: SSL 证书验证开关
+            follow_redirects: 是否跟随重定向
+            max_redirects: 最大重定向次数
+        """
+        print("\n⚙️  设置请求配置...")
+        params = {}
+        if validate_certificates is not None:
+            params["validate_certificates"] = validate_certificates
+        if follow_redirects is not None:
+            params["follow_redirects"] = follow_redirects
+        if max_redirects is not None:
+            params["max_redirects"] = max_redirects
+        
+        result = self.send_command("set_request_settings", params)
+        print(f"✅ 配置已更新")
+        print(f"   validate_certificates: {result.get('validate_certificates')}")
+        print(f"   follow_redirects: {result.get('follow_redirects')}")
+        print(f"   max_redirects: {result.get('max_redirects')}")
+        return result
+
+    def get_request_settings(self):
+        """获取请求级别配置"""
+        print("\n📋 获取请求配置...")
+        result = self.send_command("get_request_settings")
+        print(f"Request: {result.get('request_name')} ({result.get('request_id')})")
+        print(f"   validate_certificates: {result.get('validate_certificates')}")
+        print(f"   follow_redirects: {result.get('follow_redirects')}")
+        print(f"   max_redirects: {result.get('max_redirects')}")
+        return result
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -693,6 +778,11 @@ def main():
 证书测试:
   %(prog)s simulate_certificate_response            # 模拟带证书的响应
   %(prog)s get_certificate_info                     # 获取证书信息
+
+数据库迁移测试:
+  %(prog)s reset_database                            # 重置数据库
+  %(prog)s simulate_old_data --version 1             # 模拟旧版本数据
+  %(prog)s verify_migration --expected-version 2     # 验证迁移结果
   
 请求名称编辑:
   %(prog)s rename_request --name "New Name"          # 直接重命名
@@ -889,6 +979,31 @@ def main():
     # simulate_certificate_response
     subparsers.add_parser("simulate_certificate_response", help="模拟带证书信息的 HTTPS 响应")
 
+    # ==================== 数据库迁移测试命令 ====================
+
+    # reset_database
+    subparsers.add_parser("reset_database", help="重置数据库（用于测试）")
+
+    # simulate_old_data
+    simulate_old_parser = subparsers.add_parser("simulate_old_data", help="模拟旧版本数据")
+    simulate_old_parser.add_argument("--version", type=int, default=1, help="旧版本号")
+
+    # verify_migration
+    verify_migration_parser = subparsers.add_parser("verify_migration", help="验证迁移结果")
+    verify_migration_parser.add_argument("--expected-version", type=int, help="期望的数据库版本")
+
+    # set_request_settings
+    set_settings_parser = subparsers.add_parser("set_request_settings", help="设置请求级别配置")
+    set_settings_parser.add_argument("--validate-certificates", type=lambda x: x.lower() == 'true',
+                                     help="SSL 证书验证开关 (true/false)")
+    set_settings_parser.add_argument("--follow-redirects", type=lambda x: x.lower() == 'true',
+                                     help="是否跟随重定向 (true/false)")
+    set_settings_parser.add_argument("--max-redirects", type=int,
+                                     help="最大重定向次数")
+
+    # get_request_settings
+    subparsers.add_parser("get_request_settings", help="获取请求级别配置")
+
     # full_test
     subparsers.add_parser("full_test", help="执行完整测试流程")
     
@@ -998,6 +1113,23 @@ def main():
             client.get_certificate_info()
         elif args.command == "simulate_certificate_response":
             client.simulate_certificate_response()
+
+        # ==================== 数据库迁移测试命令 ====================
+        elif args.command == "reset_database":
+            client.reset_database()
+        elif args.command == "simulate_old_data":
+            client.simulate_old_data(args.version)
+        elif args.command == "verify_migration":
+            client.verify_migration(args.expected_version)
+        elif args.command == "set_request_settings":
+            client.set_request_settings(
+                validate_certificates=args.validate_certificates,
+                follow_redirects=args.follow_redirects,
+                max_redirects=args.max_redirects,
+            )
+        elif args.command == "get_request_settings":
+            client.get_request_settings()
+
         elif args.command == "full_test":
             client.full_test()
         

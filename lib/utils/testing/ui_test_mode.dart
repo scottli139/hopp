@@ -311,6 +311,30 @@ class UITestModeManager {
         final requestIndex = params['request_index'] as int? ?? 0;
         return await _getImportedRequestInfo(collectionIndex, requestIndex);
 
+      case 'reset_database':
+        return await _resetDatabase();
+
+      case 'simulate_old_data':
+        final version = params['version'] as int? ?? 1;
+        return await _simulateOldData(version);
+
+      case 'verify_migration':
+        final expectedVersion = params['expected_version'] as int?;
+        return await _verifyMigration(expectedVersion);
+
+      case 'set_request_settings':
+        final validateCertificates = params['validate_certificates'] as bool?;
+        final followRedirects = params['follow_redirects'] as bool?;
+        final maxRedirects = params['max_redirects'] as int?;
+        return await _setRequestSettings(
+          validateCertificates: validateCertificates,
+          followRedirects: followRedirects,
+          maxRedirects: maxRedirects,
+        );
+
+      case 'get_request_settings':
+        return await _getRequestSettings();
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -1987,6 +2011,149 @@ class UITestModeManager {
           .where((h) => h.enabled)
           .map((h) => {'key': h.key, 'value': h.value})
           .toList(),
+    };
+  }
+
+  /// 重置数据库（用于测试）
+  Future<Map<String, dynamic>> _resetDatabase() async {
+    final storage = _ref!.read(storageServiceProvider);
+    await storage.resetForTesting();
+    return {'reset': true};
+  }
+
+  /// 模拟旧版本数据
+  ///
+  /// 创建一些数据但不包含新字段，模拟旧版本应用的数据
+  Future<Map<String, dynamic>> _simulateOldData(int version) async {
+    // 创建测试请求
+    final testRequest = HttpRequest.empty().copyWith(
+      id: 'old_request_test',
+      name: 'Old Request (v$version)',
+      url: 'https://httpbin.org/get',
+      // 不设置 validateCertificates, followRedirects, maxRedirects
+      // 这些字段在旧版本中不存在
+    );
+
+    // 保存到存储
+    final storage = _ref!.read(storageServiceProvider);
+    await storage.saveRequest(testRequest);
+
+    // 创建测试 collection
+    final testCollection = Collection.empty().copyWith(
+      id: 'old_collection_test',
+      name: 'Old Collection (v$version)',
+      requests: [testRequest],
+    );
+    await storage.saveCollection(testCollection);
+
+    // 重置数据库版本，模拟旧版本
+    await storage.prefs?.setInt('hopp_db_version', version);
+
+    return {
+      'simulated_version': version,
+      'request_id': testRequest.id,
+      'collection_id': testCollection.id,
+    };
+  }
+
+  /// 验证迁移结果
+  Future<Map<String, dynamic>> _verifyMigration(int? expectedVersion) async {
+    final storage = _ref!.read(storageServiceProvider);
+    final prefs = storage.prefs;
+
+    final currentVersion = prefs?.getInt('hopp_db_version') ?? 1;
+
+    // 获取所有请求，验证字段完整性
+    final requests = await storage.getRequests();
+    final requestChecks = <Map<String, dynamic>>[];
+
+    for (final request in requests) {
+      requestChecks.add({
+        'id': request.id,
+        'name': request.name,
+        'validate_certificates': request.validateCertificates,
+        'follow_redirects': request.followRedirects,
+        'max_redirects': request.maxRedirects,
+        // 验证字段有正确的默认值（不是 null）
+        'has_valid_defaults': request.validateCertificates == true &&
+            request.followRedirects == true &&
+            request.maxRedirects == 10,
+      });
+    }
+
+    final result = {
+      'current_version': currentVersion,
+      'expected_version': expectedVersion,
+      'version_matches':
+          expectedVersion == null || currentVersion == expectedVersion,
+      'request_count': requests.length,
+      'requests': requestChecks,
+      'all_have_defaults':
+          requestChecks.every((r) => r['has_valid_defaults'] as bool),
+    };
+
+    return result;
+  }
+
+  /// 设置请求级别配置
+  Future<Map<String, dynamic>> _setRequestSettings({
+    bool? validateCertificates,
+    bool? followRedirects,
+    int? maxRedirects,
+  }) async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    var updatedRequest = activeTab.request;
+
+    if (validateCertificates != null) {
+      updatedRequest = updatedRequest.copyWith(
+        validateCertificates: validateCertificates,
+      );
+    }
+
+    if (followRedirects != null) {
+      updatedRequest = updatedRequest.copyWith(
+        followRedirects: followRedirects,
+      );
+    }
+
+    if (maxRedirects != null) {
+      updatedRequest = updatedRequest.copyWith(
+        maxRedirects: maxRedirects,
+      );
+    }
+
+    _ref!.read(requestTabProvider.notifier).updateRequest(
+          activeTab.id,
+          updatedRequest,
+        );
+
+    return {
+      'request_id': activeTab.id,
+      'validate_certificates': updatedRequest.validateCertificates,
+      'follow_redirects': updatedRequest.followRedirects,
+      'max_redirects': updatedRequest.maxRedirects,
+    };
+  }
+
+  /// 获取请求级别配置
+  Future<Map<String, dynamic>> _getRequestSettings() async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final request = activeTab.request;
+
+    return {
+      'request_id': request.id,
+      'request_name': request.name,
+      'validate_certificates': request.validateCertificates,
+      'follow_redirects': request.followRedirects,
+      'max_redirects': request.maxRedirects,
     };
   }
 }

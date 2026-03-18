@@ -226,7 +226,7 @@
 | URL Focus 边框对齐 | ✅ | P0 | 2h | 修复紫色边框与背景区域高度不一致 |
 | Request Editor UI 优化 | ✅ | P1 | 6h | Tab样式、Headers/Params列表、自动完成 |
 | Request Body 区域优化 | ✅ | P1 | 26h | 参考 Postman 改进 (radio 选择器、Raw 子类型、Beautify、行号、各 body 类型) |
-| 请求设置 (Request Settings) | ✅ | P1 | 10h | SSL/TLS 设置 UI 完成 (Issue #9)，SSL 验证开关已实现 |
+| 请求设置 (Request Settings) | ✅ | P1 | 10h | SSL/TLS + Follow Redirects 实现完成 (Issue #5, #9) |
 | 主题切换 | ✅ | P1 | 4h | Light/Dark 模式 (基础实现已完成) |
 | 国际化完善 | 🔄 | P1 | 6h | 多语言支持 (框架已搭建，需完善翻译) |
 | 请求时间分析 | ✅ | P1 | 10h | Timing Tab (DNS/TCP/TLS/TTFB/Download) |
@@ -234,6 +234,7 @@
 | 请求详情展示 | ✅ | P1 | 6h | Request Tab (方法/URL/Headers/Body) + UI测试 |
 | 4XX/5XX 响应修复 | ✅ | P0 | 4h | 正确显示服务端返回的错误内容 (Issue #1) |
 | 真实证书获取 | ✅ | P1 | 4h | Certificate Tab 显示真实 SSL/TLS 证书 (Issue #2) |
+| 数据库兼容性修复 | ✅ | P0 | 6h | Hive 数据库版本控制 + 向后兼容适配器 (Issue #5) |
 
 #### M4.1 请求设置 (Request Settings) - F1.14
 
@@ -251,7 +252,7 @@
 |--------|------|--------|------|------|
 | HTTP Version | Dropdown | Auto | HTTP 版本选择 (Auto/HTTP1.1/HTTP2) | ⏳ |
 | Enable SSL certificate verification | Toggle | ON | SSL 证书验证开关 | ✅ 已实现 (2026-03-17) |
-| Automatically follow redirects | Toggle | ON | 自动跟随 HTTP 3xx 重定向 | ⏳ |
+| Automatically follow redirects | Toggle | ON | 自动跟随 HTTP 3xx 重定向 | ✅ 已实现 (2026-03-18) |
 | Follow original HTTP Method | Toggle | OFF | 重定向时使用原始 HTTP 方法而非 GET | ⏳ |
 | Follow Authorization header | Toggle | OFF | 跨域重定向时保留 Authorization 头 | ⏳ |
 | Remove referer header on redirect | Toggle | OFF | 重定向时移除 Referer 头 | ⏳ |
@@ -259,7 +260,7 @@
 | Encode URL automatically | Toggle | ON | 自动编码 URL 路径、参数和认证字段 | ⏳ |
 | Disable cookie jar | Toggle | OFF | 禁用该请求的 Cookie 存储和发送 | ⏳ |
 | Use server cipher suite during handshake | Toggle | OFF | TLS 握手时使用服务器加密套件顺序 | ⏳ |
-| Maximum number of redirects | Number Input | 10 | 最大重定向次数上限 | ⏳ |
+| Maximum number of redirects | Number Input | 10 | 最大重定向次数上限 | ✅ 已实现 (2026-03-18) |
 | TLS/SSL protocols disabled | Multi-select | - | 禁用的 TLS/SSL 协议版本 | ⏳ |
 | Cipher suite selection | Text Input | - | 自定义加密套件列表 | ⏳ |
 

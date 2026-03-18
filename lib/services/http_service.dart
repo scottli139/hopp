@@ -556,17 +556,22 @@ class HttpService {
     token.cancel(reason ?? 'Cancelled by user');
   }
 
-  /// 根据请求创建 Dio 实例，确保每个请求的 SSL 配置独立
+  /// 根据请求创建 Dio 实例，确保每个请求的配置独立
+  ///
+  /// 使用请求级别的设置：
+  /// - validateCertificates: SSL 证书验证开关
+  /// - followRedirects: 是否自动跟随重定向
+  /// - maxRedirects: 最大重定向次数
   Dio _createDioForRequest(HttpRequest request) {
     final dio = Dio();
 
-    // 基础配置
+    // 基础配置（使用请求级别设置）
     dio.options = BaseOptions(
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       sendTimeout: const Duration(seconds: 30),
-      followRedirects: true,
-      maxRedirects: 10,
+      followRedirects: request.followRedirects,
+      maxRedirects: request.maxRedirects,
       validateStatus: (status) => status != null && status < 600,
     );
 

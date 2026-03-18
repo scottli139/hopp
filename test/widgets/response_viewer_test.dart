@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hopp/models/certificate_info.dart';
+
 import 'package:hopp/models/http_request.dart';
 import 'package:hopp/models/http_response.dart';
 import 'package:hopp/models/key_value_pair.dart';
 import 'package:hopp/models/request_tab.dart';
 import 'package:hopp/providers/providers.dart';
-import 'package:hopp/widgets/common/code_editor.dart';
+
 import 'package:hopp/widgets/common/optimized_response_viewer.dart';
 import 'package:hopp/widgets/request/response_viewer.dart';
 import 'package:mockito/mockito.dart';

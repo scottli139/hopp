@@ -348,20 +348,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     );
   }
 
-  Widget _buildIconButton({
-    required BuildContext context,
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback? onPressed,
-    bool isActive = false,
-    Color? activeColor,
-  }) {
-    final theme = Theme.of(context);
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(AppConstants.radiusM),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppConstants.radiusM),
+
         onTap: onPressed,
         child: Tooltip(
           message: tooltip,
@@ -1271,7 +1258,6 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     WidgetRef ref,
     HttpRequest request,
   ) {
-    final theme = Theme.of(context);
     final options = [
       _BodyTypeOption('none', 'none'),
       _BodyTypeOption('form-data', 'form-data'),
@@ -1466,38 +1452,6 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       default:
         return CodeLanguage.text;
     }
-  }
-
-  /// 构建 Body 编辑器（根据 bodyType 决定）
-  Widget _buildBodyEditor(
-    BuildContext context,
-    WidgetRef ref,
-    HttpRequest request,
-  ) {
-    // 根据 bodyType 选择对应的编辑器
-    if (request.bodyType == 'raw') {
-      final language = _getLanguageForRawContentType(request.rawContentType);
-      return CodeEditor(
-        key: ValueKey('code_editor_${request.id}'),
-        code: request.body,
-        language: language,
-        expands: true,
-        onChanged: (value) {
-          _updateRequest(ref, request.copyWith(body: value));
-        },
-      );
-    }
-
-    // 其他类型使用简单编辑器
-    return SimpleCodeEditor(
-      key: ValueKey('simple_code_editor_${request.id}'),
-      code: request.body,
-      language: CodeLanguage.text,
-      expands: true,
-      onChanged: (value) {
-        _updateRequest(ref, request.copyWith(body: value));
-      },
-    );
   }
 
   Widget _buildAuthTab(BuildContext context) {
@@ -1898,8 +1852,6 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
   /// Handle save button press - always allow save
   void _handleSaveButtonPress(WidgetRef ref, HttpRequest request) {
-    final isDirty = ref.read(activeTabProvider)?.isDirty ?? false;
-
     // Always allow save - if no changes, just save current state
     // This allows saving newly created requests immediately
     _saveRequest(ref, request);

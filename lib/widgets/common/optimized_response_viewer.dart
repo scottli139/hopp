@@ -112,9 +112,6 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   final ScrollController _scrollController = ScrollController();
   final ScrollController _lineNumberScrollController = ScrollController();
 
-  // 同步滚动
-  bool _isSyncing = false;
-
   @override
   void initState() {
     super.initState();

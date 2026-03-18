@@ -98,8 +98,6 @@ class _SidebarState extends ConsumerState<Sidebar> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
       height: AppConstants.appBarHeight,
       padding: const EdgeInsets.symmetric(horizontal: AppConstants.spaceS),
@@ -259,7 +257,6 @@ class _SidebarState extends ConsumerState<Sidebar> {
     HttpRequest request,
     int depth,
   ) {
-    final theme = Theme.of(context);
     final isActive = ref.watch(activeTabIdProvider) == request.id;
 
     // 使用 StatefulBuilder 管理编辑状态

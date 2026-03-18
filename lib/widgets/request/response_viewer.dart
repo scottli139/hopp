@@ -13,7 +13,7 @@ import '../../providers/request/request_tab_provider.dart';
 import '../../providers/providers.dart';
 import '../../utils/constants.dart';
 import '../../utils/testing/ui_test_mode.dart';
-import '../common/code_editor.dart';
+
 import '../common/optimized_response_viewer.dart';
 
 // 全局 ScrollController 用于 UI 测试控制滚动
@@ -30,7 +30,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     with TickerProviderStateMixin {
   TabController? _tabController;
   bool _isErrorExpanded = false;
-  String? _lastResponseId;
 
   @override
   void initState() {
@@ -93,8 +92,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     if (scrollCommand != null) {
       final direction = scrollCommand['direction'] as String;
       final amount = scrollCommand['amount'] as int;
-      final timestamp = scrollCommand['timestamp'] as int;
-
       // 使用 timestamp 确保每次都能触发
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _certificateScrollController.hasClients) {
@@ -865,8 +862,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     BuildContext context,
     List<KeyValuePair> headers,
   ) {
-    final theme = Theme.of(context);
-
     return _buildCompactInfoSection(
       context: context,
       title: 'Headers (${headers.length})',
@@ -1473,8 +1468,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     TimingInfo timing,
     Map<String, double> percentages,
   ) {
-    final theme = Theme.of(context);
-
     return _buildCompactInfoSection(
       context: context,
       title: 'Timeline',
@@ -1928,73 +1921,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           ),
         );
       }).toList(),
-    );
-  }
-
-  Widget _buildInfoSection({
-    required BuildContext context,
-    required String title,
-    required List<Widget> children,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest
-            .withOpacity(0.5),
-        borderRadius: BorderRadius.circular(AppConstants.radiusM),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.5),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: AppTextStyles.caption.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Divider(height: 1),
-          const SizedBox(height: 8),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(BuildContext context, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                color: Theme.of(context).colorScheme.outline,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(
-            child: SelectableText(
-              value,
-              style: TextStyle(
-                fontSize: 11,
-                fontFamily: 'monospace',
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

@@ -36,13 +36,13 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Analyze code
-        run: flutter analyze --no-fatal-infos || true
+        run: flutter analyze --no-fatal-infos
 
       - name: Format check
         run: dart format --output=none --set-exit-if-changed lib/ test/
 
       - name: Run tests
-        run: flutter test --coverage || true
+        run: flutter test --coverage
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -66,11 +66,19 @@ jobs:
           channel: "stable"
           cache: true
 
+      - name: Install CocoaPods
+        run: sudo gem install cocoapods
+
       - name: Get dependencies
         run: flutter pub get
 
       - name: Generate code
         run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Install macOS pods
+        run: |
+          cd macos
+          pod install --repo-update
 
       - name: Build macOS
         run: flutter build macos --release

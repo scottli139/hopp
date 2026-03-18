@@ -30,7 +30,8 @@ void main() {
           url: 'https://example.com/api',
           params: [KeyValuePair.empty().copyWith(key: 'q', value: 'test')],
           headers: [
-            KeyValuePair.empty().copyWith(key: 'Accept', value: 'application/json')
+            KeyValuePair.empty()
+                .copyWith(key: 'Accept', value: 'application/json')
           ],
           body: '{"key": "value"}',
           bodyType: 'json',

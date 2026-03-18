@@ -37,8 +37,6 @@ class UITestModeManager {
   int _port = 0;
   WidgetRef? _ref;
 
-
-
   /// 是否处于测试模式
   bool get isTestMode => _isTestMode;
 

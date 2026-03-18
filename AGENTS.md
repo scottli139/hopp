@@ -8,6 +8,7 @@
 
 - [项目概述](#项目概述)
 - [开发环境配置](#开发环境配置)
+- [项目文档说明](#项目文档说明)
 - [任务状态](#任务状态)
 - [知识积累](#知识积累)
 - [会话记录](#会话记录)
@@ -60,6 +61,62 @@ fvm flutter pub get
 export PUB_HOSTED_URL=https://pub.flutter-io.cn
 export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 ```
+
+---
+
+## 项目文档说明
+
+`/docs` 目录包含项目的各类文档，按功能分类如下：
+
+### 📋 产品文档
+
+| 文档 | 功能说明 | 更新时机 |
+|------|----------|----------|
+| [PRD.md](./docs/PRD.md) | **产品需求规格说明书**，定义产品功能、用户故事、非功能需求 | 新增/修改产品功能时 |
+| [BACKLOG.md](./docs/BACKLOG.md) | **待办任务清单**，记录暂不实现但未来可能考虑的功能 | 发现新需求但暂不实现时 |
+
+### 🏗️ 技术文档
+
+| 文档 | 功能说明 | 更新时机 |
+|------|----------|----------|
+| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | **架构设计文档**，描述系统架构、技术选型、设计决策 | 架构变更、技术选型调整时 |
+| [DEVELOPMENT_PLAN.md](./docs/DEVELOPMENT_PLAN.md) | **开发计划与里程碑**，记录任务进度、发布计划 | 每完成一个里程碑/任务时 |
+| [IMPLEMENTATION_NOTES.md](./docs/IMPLEMENTATION_NOTES.md) | **实现说明文档**，详细的技术实现方案、代码示例 | 实现复杂功能时 |
+| [SHORTCUTS_IMPLEMENTATION_PLAN.md](./docs/SHORTCUTS_IMPLEMENTATION_PLAN.md) | **快捷键实现计划**，记录快捷键设计方案 | 添加/修改快捷键时 |
+
+### 🎨 设计文档
+
+| 文档 | 功能说明 | 更新时机 |
+|------|----------|----------|
+| [UI_UX_GUIDELINES.md](./docs/UI_UX_GUIDELINES.md) | **UI/UX 设计规范**，定义视觉设计、交互设计、组件规范 | UI 样式变更、新增组件时 |
+| [CODING_STANDARDS.md](./docs/CODING_STANDARDS.md) | **代码规范与风格指南**，定义 Flutter/Dart 编码规范 | 代码规范调整时 |
+
+### 🧪 测试文档
+
+| 文档 | 功能说明 | 更新时机 |
+|------|----------|----------|
+| [TESTING.md](./docs/TESTING.md) | **自动化测试方案**，测试策略、工具配置、最佳实践 | 测试策略变更、新增测试类型时 |
+| [PEEKABOO_CLI_LEARNING.md](./docs/PEEKABOO_CLI_LEARNING.md) | **Peekaboo CLI 学习笔记**，E2E 测试工具使用文档 | 学习/使用 Peekaboo 时 |
+
+### 🔧 工程文档
+
+| 文档 | 功能说明 | 更新时机 |
+|------|----------|----------|
+| [DEVELOPMENT_ENVIRONMENT.md](./docs/DEVELOPMENT_ENVIRONMENT.md) | **开发环境搭建指南**，Flutter 环境配置说明 | 环境配置变更时 |
+| [GITHUB_SETTINGS.md](./docs/GITHUB_SETTINGS.md) | **GitHub 仓库设置指南**，仓库配置、About 信息设置 | GitHub 配置变更时 |
+
+### 文档使用指南
+
+**添加新文档时**：
+1. 根据文档内容选择合适的功能分类
+2. 如果现有分类不适用，可新增分类
+3. 在此表格中添加文档条目，说明功能和使用时机
+4. 在文档开头添加清晰的标题和说明
+
+**更新文档时**：
+- 同步更新 AGENTS.md 中的相关描述
+- 如涉及架构/技术变更，同步更新 ARCHITECTURE.md
+- 如涉及功能变更，同步更新 DEVELOPMENT_PLAN.md
 
 ---
 

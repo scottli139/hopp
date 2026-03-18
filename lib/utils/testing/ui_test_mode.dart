@@ -15,8 +15,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../providers/curl/curl_import_provider.dart';
 import '../../providers/import_export/import_export_provider.dart';
 import '../../providers/providers.dart';
+import '../../services/curl/curl_import_service.dart';
 import '../../services/import_export/postman_import_service.dart';
 import '../../utils/app_logger.dart';
 import '../../models/certificate_info.dart';
@@ -334,6 +336,18 @@ class UITestModeManager {
 
       case 'get_request_settings':
         return await _getRequestSettings();
+
+      case 'parse_curl':
+        final command = params['command'] as String;
+        return await _parseCurl(command);
+
+      case 'import_curl':
+        final command = params['command'] as String;
+        final openTab = params['open_tab'] as bool? ?? true;
+        return await _importCurl(command, openTab);
+
+      case 'trigger_curl_import_dialog':
+        return await _triggerCurlImportDialog();
 
       default:
         throw Exception('未知指令: $action');
@@ -2156,6 +2170,92 @@ class UITestModeManager {
       'max_redirects': request.maxRedirects,
     };
   }
+
+  /// 解析 cURL 命令（不导入，仅返回解析结果）
+  Future<Map<String, dynamic>> _parseCurl(String command) async {
+    AppLogger.info('[UI_TEST] _parseCurl called');
+
+    final service = CurlImportService();
+    final result = service.parse(command);
+
+    if (result.success && result.request != null) {
+      final request = result.request!;
+      return {
+        'success': true,
+        'request': {
+          'name': request.name,
+          'method': request.method.value,
+          'url': request.url,
+          'headers_count': request.headers.where((h) => h.enabled).length,
+          'body_type': request.bodyType,
+          'body_length': request.body.length,
+          'validate_certificates': request.validateCertificates,
+          'follow_redirects': request.followRedirects,
+        },
+        'warnings': result.warnings,
+      };
+    } else {
+      return {
+        'success': false,
+        'error': result.errorMessage ?? 'Unknown error',
+      };
+    }
+  }
+
+  /// 导入 cURL 命令并创建请求
+  Future<Map<String, dynamic>> _importCurl(String command, bool openTab) async {
+    AppLogger.info('[UI_TEST] _importCurl called, openTab: $openTab');
+
+    final service = CurlImportService();
+    final result = service.parse(command);
+
+    if (!result.success || result.request == null) {
+      return {
+        'success': false,
+        'error': result.errorMessage ?? 'Failed to parse cURL command',
+      };
+    }
+
+    final request = result.request!;
+
+    // 打开请求 Tab
+    if (openTab) {
+      _ref!.read(requestTabProvider.notifier).openTab(request);
+      _ref!.read(activeTabIdProvider.notifier).state = request.id;
+    }
+
+    // 存储解析结果供 UI 使用
+    _ref!.read(uiTestCurlParseResultProvider.notifier).state = {
+      'request_id': request.id,
+      'name': request.name,
+      'method': request.method.value,
+      'url': request.url,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    return {
+      'success': true,
+      'request_id': request.id,
+      'name': request.name,
+      'method': request.method.value,
+      'url': request.url,
+      'warnings': result.warnings,
+    };
+  }
+
+  /// 触发 cURL 导入对话框
+  Future<Map<String, dynamic>> _triggerCurlImportDialog() async {
+    AppLogger.info('[UI_TEST] _triggerCurlImportDialog called');
+
+    // 触发对话框显示
+    _ref!.read(uiTestCurlImportDialogProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {
+      'triggered': true,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
 }
 
 /// UI 测试目标 Tab 状态
@@ -2215,3 +2315,10 @@ final uiTestImportDialogProvider = StateProvider<int?>((ref) => null);
 
 /// UI 测试 - 导出对话框触发器
 final uiTestExportDialogProvider = StateProvider<int?>((ref) => null);
+
+/// UI 测试 - cURL 导入对话框触发器
+final uiTestCurlImportDialogProvider = StateProvider<int?>((ref) => null);
+
+/// UI 测试 - cURL 解析结果
+final uiTestCurlParseResultProvider =
+    StateProvider<Map<String, dynamic>?>((ref) => null);

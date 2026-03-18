@@ -34,15 +34,18 @@ from pathlib import Path
 import requests
 
 
+# 全局默认端口
+DEFAULT_PORT = None
+
 class HoppTestClient:
     """Hopp UI 测试客户端"""
     
     def __init__(self, port=None):
-        self.port = port
+        self.port = port or DEFAULT_PORT
         self.base_url = None
         
-        if port:
-            self.base_url = f"http://localhost:{port}"
+        if self.port:
+            self.base_url = f"http://localhost:{self.port}"
     
     def _get_port_from_log(self):
         """从日志文件读取端口号"""
@@ -1140,3 +1143,48 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    def parse_curl(self, command):
+        """解析 cURL 命令（不导入）"""
+        print(f"🔍 解析 cURL 命令...")
+        result = self.send_command("parse_curl", {"command": command})
+        if result.get("success"):
+            print(f"✅ 解析成功:")
+            print(f"   名称: {result['request']['name']}")
+            print(f"   方法: {result['request']['method'].upper()}")
+            print(f"   URL: {result['request']['url']}")
+            print(f"   Headers: {result['request']['headers_count']} 个")
+            print(f"   Body 类型: {result['request']['body_type']}")
+            if result.get("warnings"):
+                print(f"   警告: {len(result['warnings'])} 个")
+                for warning in result["warnings"]:
+                    print(f"     - {warning}")
+        else:
+            print(f"❌ 解析失败: {result.get('error')}")
+        return result
+
+    def import_curl(self, command, open_tab=True):
+        """导入 cURL 命令并创建请求"""
+        print(f"📥 导入 cURL 命令...")
+        result = self.send_command("import_curl", {
+            "command": command,
+            "open_tab": open_tab
+        })
+        if result.get("success"):
+            print(f"✅ 导入成功:")
+            print(f"   请求 ID: {result['request_id']}")
+            print(f"   名称: {result['name']}")
+            print(f"   方法: {result['method'].upper()}")
+            print(f"   URL: {result['url']}")
+            if result.get("warnings"):
+                print(f"   警告: {len(result['warnings'])} 个")
+        else:
+            print(f"❌ 导入失败: {result.get('error')}")
+        return result
+
+    def trigger_curl_import_dialog(self):
+        """触发 cURL 导入对话框"""
+        print(f"📂 触发 cURL 导入对话框...")
+        result = self.send_command("trigger_curl_import_dialog")
+        print(f"✅ 对话框已触发")
+        return result

@@ -10,6 +10,7 @@ import '../../screens/about/about_screen.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
 import '../../utils/testing/ui_test_mode.dart';
+import '../../widgets/import/curl_import_dialog.dart';
 import '../../widgets/import_export/export_dialog.dart';
 import '../../widgets/import_export/import_dialog.dart';
 
@@ -954,6 +955,9 @@ class _SidebarState extends ConsumerState<Sidebar> {
           case 'import':
             _showImportDialog(context);
             break;
+          case 'import_curl':
+            _showCurlImportDialog(context);
+            break;
         }
       },
       itemBuilder: (context) => [
@@ -984,7 +988,25 @@ class _SidebarState extends ConsumerState<Sidebar> {
                   size: 14, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 8),
               Text(
-                'Import',
+                'Import Postman',
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'import_curl',
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              Icon(Icons.terminal,
+                  size: 14, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Text(
+                'Import from cURL',
                 style: AppTextStyles.caption.copyWith(
                   fontWeight: FontWeight.w500,
                 ),
@@ -1036,6 +1058,11 @@ class _SidebarState extends ConsumerState<Sidebar> {
   /// Show import dialog
   void _showImportDialog(BuildContext context) {
     showImportDialog(context);
+  }
+
+  /// Show cURL import dialog
+  void _showCurlImportDialog(BuildContext context) {
+    showCurlImportDialog(context);
   }
 
   /// Show about dialog

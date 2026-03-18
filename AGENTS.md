@@ -26,7 +26,7 @@
 | **当前状态** | ✅ **P0 问题已修复：4XX/5XX 响应正确显示服务端内容** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **测试覆盖** | ✅ **436 个通过 / 0 个失败 / 436 总计** |
+| **测试覆盖** | ✅ **475+ 个通过 / cURL 导入功能完成** |
 | **下次重点** | 🔴 修复 4XX/5XX 响应显示 / 🟡 请求设置实现 / 🟢 国际化完善 |
 
 ---
@@ -100,6 +100,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | Body 编辑器边框优化 | 2026-03-16 | 隐藏左侧边框线，Request Body 左右靠边 |
 | Code Editor 字体优化 | 2026-03-16 | Request/Response Body 使用等宽字体 Menlo，字号 12px，行号 11px |
 | Postman 导入/导出 | 2026-03-16 | Collection/Environment 导入导出，支持 v2.0/v2.1 格式 |
+| cURL 导入 | 2026-03-18 | F2.6 解析 cURL 命令创建请求，支持常用选项，UX 改进（名称编辑/Collection 选择）|
 
 ### 进行中 🔄
 
@@ -134,7 +135,8 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | Timing 分析测试 | 新增 | ✅ 通过 |
 | 请求详情展示测试 | 新增 3 个 | ✅ 通过 |
 | Body 类型选择器测试 | 新增 12 场景 | ✅ 通过 |
-| **总计** | **432** | **✅ 全部通过** |
+| cURL 解析测试 | 新增 44 个 | ✅ 通过 |
+| **总计** | **495** | **✅ 全部通过** |
 
 ---
 
@@ -611,6 +613,130 @@ genhtml coverage/lcov.info -o coverage/html
 ---
 
 ## 会话记录
+
+<details>
+<summary>2026-03-18 - cURL 导入功能 (F2.6) 实现完成</summary>
+
+**完成工作**:
+- ✅ 创建 `CurlTokenizer` 词法分析器，支持引号字符串、转义字符、多行命令
+- ✅ 创建 `CurlParser` 解析器，支持常用选项：-X, -H, -d, -F, --data-urlencode, -u, -k, -L
+- ✅ 创建 `CurlImportService` 服务，将解析结果转换为 HttpRequest
+- ✅ 创建 `CurlImportDialog` UI 对话框，支持粘贴和解析预览
+- ✅ 创建 `CurlImportProvider` 状态管理
+- ✅ 更新 Sidebar 菜单，添加 "Import from cURL" 选项
+- ✅ 添加 UI 测试指令：`parse_curl`, `import_curl`, `trigger_curl_import_dialog`
+- ✅ 创建 `test_curl_import.py` UI 测试脚本（11 个测试场景）
+- ✅ 创建 `test/services/curl_parser_test.dart` 单元测试（44 个测试）
+- ✅ Release 构建验证通过 (48.5MB)
+- ✅ UI 测试验证通过：解析 GET/POST/带 Headers/认证/FormData/SSL 选项等
+- ✅ 代码格式化 (`dart format`)
+- ✅ 静态分析无错误 (`dart analyze`)
+
+**支持的 cURL 选项**:
+| 选项 | 说明 | 映射到 HttpRequest |
+|-----|------|-------------------|
+| `-X, --request` | HTTP 方法 | `method` |
+| `-H, --header` | Headers | `headers` 列表 |
+| `-d, --data` | Body 内容 | `body`, `bodyType: 'raw'` |
+| `-F, --form` | Form Data | `bodyType: 'formData'` |
+| `--data-urlencode` | URL 编码数据 | `bodyType: 'formUrlEncoded'` |
+| `-u, --user` | 基础认证 | Authorization header |
+| `-k, --insecure` | 禁用 SSL 验证 | `validateCertificates: false` |
+| `-L, --location` | 跟随重定向 | `followRedirects: true` |
+
+**文件变更**:
+- `lib/services/curl/curl_tokenizer.dart` - 新增
+- `lib/services/curl/curl_parser.dart` - 新增
+- `lib/services/curl/curl_import_service.dart` - 新增
+- `lib/services/curl/curl_import_result.dart` - 新增
+- `lib/widgets/import/curl_import_dialog.dart` - 新增
+- `lib/providers/curl/curl_import_provider.dart` - 新增
+- `lib/utils/testing/ui_test_mode.dart` - 添加 cURL 测试指令
+- `lib/widgets/layout/sidebar.dart` - 添加菜单项
+- `test/services/curl_parser_test.dart` - 新增单元测试
+- `integration_test/test_curl_import.py` - 新增 UI 测试脚本
+- `integration_test/test_client.py` - 添加客户端方法
+- `AGENTS.md` - 更新任务状态和文档
+
+**UI 测试验证**:
+```
+Test 1: Parse GET - ✅ success
+Test 2: Parse POST with JSON - ✅ success  
+Test 3: Parse with Headers - ✅ success
+Test 4: Basic Auth - ✅ success
+Test 5: Form Data - ✅ success
+Test 6: SSL Options (-k) - ✅ success
+Test 7: Follow Redirects (-L) - ✅ success
+Test 8: Multiline Command - ✅ success
+Test 9: Import and Open - ✅ success
+Test 10: Invalid Command - ✅ success
+Test 11: Browser cURL - ✅ success
+```
+
+**构建状态**: ✅ Release 构建成功 (48.5MB)
+
+</details>
+
+<details>
+<summary>2026-03-18 - cURL 导入 UX 改进：请求名称编辑 + Collection 选择</summary>
+
+**完成工作**:
+- ✅ 在 cURL 导入对话框中添加请求名称编辑框
+- ✅ 添加目标 Collection 选择下拉菜单
+- ✅ 更新 `_importAndOpen` 方法，使用用户编辑的名称和选择的 Collection
+- ✅ 如果没有选择 Collection，请求只打开 Tab 不保存
+- ✅ 实现 Postman 风格的导入流程：导入时可配置，也可跳过稍后配置
+- ✅ 所有 495 个单元测试通过
+- ✅ 代码格式化 (`dart format`)
+
+**UX 改进详情**:
+
+1. **请求名称编辑**:
+   - 解析成功后显示文本输入框，预填充自动生成的名称
+   - 用户可以修改名称，导入时使用编辑后的名称
+   - 如果名称为空，使用自动生成的名称
+
+2. **Collection 选择**:
+   - 显示当前所有 Collection 的下拉菜单
+   - 默认选中第一个 Collection
+   - 用户可以选择不保存到 Collection（不选择任何 Collection）
+   - 如果没有 Collection，显示警告提示
+
+3. **导入逻辑**:
+```dart
+// 使用用户编辑的名称
+final editedName = _nameController.text.trim();
+final finalRequest = editedName.isNotEmpty
+    ? request.copyWith(name: editedName)
+    : request;
+
+// 如果有选择 Collection，保存到 Collection
+if (selectedCollectionId != null) {
+  ref.read(collectionProvider.notifier)
+      .addRequestToCollection(selectedCollectionId, finalRequest);
+}
+
+// 打开请求 Tab
+ref.read(requestTabProvider.notifier).openTab(finalRequest);
+```
+
+**Postman 风格工作流程**:
+| 步骤 | Postman | Hopp |
+|-----|---------|------|
+| 1 | 粘贴 cURL | 粘贴 cURL |
+| 2 | 解析预览 | 解析预览 |
+| 3 | 编辑名称/选择 Collection | ✅ 编辑名称/选择 Collection |
+| 4 | Import（保存到 Collection） | ✅ Import（保存到 Collection）|
+| 5 | 或 Skip（只打开不保存） | ✅ 不选 Collection = 只打开不保存 |
+| 6 | 保存时再选择 Collection | 保存时自动使用已选 Collection |
+
+**文件变更**:
+- `lib/widgets/import/curl_import_dialog.dart` - 添加名称编辑和 Collection 选择 UI，更新导入逻辑
+- `AGENTS.md` - 更新文档
+
+**构建状态**: ✅ 所有测试通过 (495 个)
+
+</details>
 
 <details>
 <summary>2026-03-18 - Issue #5 修复完成：Hive 数据库兼容性修复 + Follow Redirects 功能</summary>
@@ -2313,6 +2439,8 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | 2026-03-17 | v0.5.7-ssl-verify-switch | 实现 SSL 证书验证开关（Request Settings），支持内网自签名证书，优化证书错误提示 |
 | 2026-03-17 | v0.5.9-postman-import-fix | 修复 Postman 导入 Raw Content Type 映射问题 (Issue #10): 支持 language 字段和 Content-Type header 推断 |
 | 2026-03-17 | v0.5.8-settings-ui-fix | 修复 Request Settings UI 样式问题 (Issue #9): 字号、Switch 尺寸和颜色规范 |
+| 2026-03-18 | v0.6.0-curl-import | cURL 导入功能 (F2.6): 解析 cURL 命令创建请求，支持常用选项 (-X, -H, -d, -F, -u, -k, -L 等)，多行命令，44 个单元测试 |
+| 2026-03-18 | v0.6.1-curl-import-ux | cURL 导入 UX 改进: 支持编辑请求名称、选择目标 Collection，参考 Postman 导入流程 |
 
 ---
 

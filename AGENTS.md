@@ -43,11 +43,11 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **Issue #7 已修复：Import/Export/Delete Collection 对话框 UI/UX 规范** |
+| **当前状态** | ✅ **Issue #11 已完成：URL-Params 双向联动 + Postman 导入重复参数修复** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **测试覆盖** | ✅ **495 个通过 / Issue #7 UI 修复完成** |
-| **下次重点** | 🔴 修复 4XX/5XX 响应显示 / 🟡 请求设置实现 / 🟢 国际化完善 |
+| **测试覆盖** | ✅ **534 个通过 / Postman 导入重复参数修复完成** |
+| **下次重点** | 🟡 请求设置完善 / 🟢 国际化完善 / ⏳ 行号滚动同步问题 |
 
 > **历史参考**: 项目曾使用 Tauri (React + Rust) 技术栈，详见 [ARCHIVED_TAURI.md](./docs/ARCHIVED_TAURI.md)
 
@@ -177,6 +177,8 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | Code Editor 字体优化 | 2026-03-16 | Request/Response Body 使用等宽字体 Menlo，字号 12px，行号 11px |
 | Postman 导入/导出 | 2026-03-16 | Collection/Environment 导入导出，支持 v2.0/v2.1 格式 |
 | cURL 导入 | 2026-03-18 | F2.6 解析 cURL 命令创建请求，支持常用选项，UX 改进（名称编辑/Collection 选择）|
+| URL-Params 双向联动 | 2026-03-18 | Issue #11: URL 查询参数与 Params Tab 双向同步 (36个单元测试 + UI测试) |
+| Postman 导入重复参数修复 | 2026-03-18 | 修复导入时 URL raw 含查询参数导致重复的问题 |
 
 ### 进行中 🔄
 
@@ -211,7 +213,9 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | 请求详情展示测试 | 新增 3 个 | ✅ 通过 |
 | Body 类型选择器测试 | 新增 12 场景 | ✅ 通过 |
 | cURL 解析测试 | 新增 44 个 | ✅ 通过 |
-| **总计** | **495** | **✅ 全部通过** |
+| URL 参数同步测试 | 新增 36 个 | ✅ 通过 |
+| Postman 导入参数测试 | 新增 3 个 | ✅ 通过 |
+| **总计** | **534** | **✅ 全部通过** |
 
 ---
 
@@ -263,6 +267,51 @@ lib/
 - 显示「Default: Settings」提示继承关系
 - 修改后显示紫色圆点指示器
 - 支持分组（SSL/TLS、重定向、编码等）
+
+#### URL-Params 双向联动实现 (Issue #11)
+
+**问题**: URL 中的查询参数与 Params Tab 需要双向同步
+- URL 输入 `?key=value` → 自动解析到 Params Tab
+- Params Tab 修改 → 自动更新 URL
+
+**关键挑战**:
+1. 避免循环更新（URL → Params → URL）
+2. 输入框焦点不丢失（避免实时更新导致 widget 重建）
+3. Postman 导入时 URL raw 含查询参数导致重复
+
+**解决方案**:
+1. **状态同步标志**: 使用 `_isSyncingFromUrl` 和 `_isSyncingFromParams` 防止循环
+2. **onSubmitted/onEditingComplete**: 使用提交事件而非实时更新，避免重建丢失焦点
+3. **Controller 缓存**: 使用 `_keyControllers`/`_valueControllers` Map 缓存 TextEditingController
+4. **Postman 导入修复**: `_extractUrl()` 从 raw URL 中提取 base URL，移除查询参数部分
+
+**核心代码**:
+```dart
+// URL → Params 同步
+onChanged: (value) {
+  if (!_isSyncingFromParams) {
+    _isSyncingFromUrl = true;
+    final params = parseQueryParamsFromUrl(value);
+    _updateRequest(ref, request.copyWith(params: params));
+    _isSyncingFromUrl = false;
+  }
+}
+
+// Params → URL 同步 (使用 onSubmitted 避免实时重建)
+onSubmitted: (_) {
+  final newItems = [...items];
+  newItems[index] = item.copyWith(
+    key: keyController.text,
+    value: valueController.text,
+  );
+  _updateRequest(ref, updateFn(newItems));
+}
+```
+
+**测试覆盖**:
+- 36 个单元测试（URL 解析、同步、边界情况）
+- 3 个 Postman 导入测试（重复参数处理）
+- UI 自动化测试验证
 
 ---
 
@@ -521,6 +570,72 @@ static String _mapRawContentType(String? language, List<KeyValuePair> headers) {
    - 添加 `integration_test/test_dialog_ui_fix.py` 测试脚本
    - 支持截图验证对话框样式
 
+#### Postman 导入重复参数问题
+
+**问题**: 导入 Postman Collection 时，如果 `request.url.raw` 包含查询参数（如 `http://api.com?token=123`），同时 `request.url.query` 数组也包含参数定义，会导致参数重复。
+
+**原因**: `_extractUrl` 方法直接返回了完整的 `raw` URL（含参数），而 `_mapQueryParams` 又从 `query` 数组映射了参数，两者叠加导致重复。
+
+**解决方案**: 修改 `_extractUrl` 方法，从 `raw` URL 中移除查询参数部分：
+```dart
+static String _extractUrl(PostmanUrl url) {
+  if (url.raw.isNotEmpty) {
+    // 从 raw URL 中移除查询参数部分
+    final queryIndex = url.raw.indexOf('?');
+    if (queryIndex > 0) {
+      return url.raw.substring(0, queryIndex);
+    }
+    return url.raw;
+  }
+  // ... 其他逻辑
+}
+```
+
+**测试**: 添加 `postman_import_duplicate_params_test.dart` (3个测试用例)
+
+#### URL 查询参数与 Params Tab 双向联动 (Issue #11)
+
+**问题**: URL 中的查询参数与 Params Tab 的内容没有联动。当在 URL 中输入 `?abc=123` 时，Params Tab 不会自动同步显示这些参数；反之，在 Params Tab 中添加参数也不会同步更新到 URL。
+
+**解决方案**:
+1. **创建工具函数** (`lib/utils/url_params_sync.dart`):
+   - `parseQueryParamsFromUrl()`: 从 URL 解析查询参数
+   - `extractBaseUrl()`: 提取不含查询参数的 base URL
+   - `buildQueryString()`: 将 Params 列表构建为查询字符串
+   - `syncParamsToUrl()`: 将 Params 同步到 URL
+
+2. **URL → Params 同步** (`request_editor.dart`):
+   - 使用 `_isSyncingFromUrl` 标志位防止循环更新
+   - URL 输入框 `onChanged` 时解析查询参数并更新 `request.params`
+   - 更新 URL 显示为 base URL（不含查询参数）
+
+3. **Params → URL 同步** (`request_editor.dart`):
+   - 使用 `_isSyncingFromParams` 标志位防止循环更新
+   - Params 列表变化时构建查询字符串并更新 URL
+   - 只同步 enabled=true 且 key 非空的参数
+
+4. **循环更新避免**:
+   ```dart
+   // URL 更新时
+   if (!_isSyncingFromParams) {
+     _isSyncingFromUrl = true;
+     // ... 解析 URL，更新 params
+     _isSyncingFromUrl = false;
+   }
+   
+   // Params 更新时
+   if (!_isSyncingFromUrl) {
+     _isSyncingFromParams = true;
+     // ... 构建查询字符串，更新 URL
+     _isSyncingFromParams = false;
+   }
+   ```
+
+5. **测试覆盖**:
+   - 单元测试: `test/utils/url_params_sync_test.dart` (36个测试)
+   - UI 测试: `integration_test/test_url_params_sync.py`
+   - 测试场景: URL→Params、Params→URL、禁用参数、特殊字符
+
 ### UI/UX 设计规范
 
 #### 间距系统
@@ -729,6 +844,8 @@ genhtml coverage/lcov.info -o coverage/html
 | 2026-03-18 | v0.6.0-curl-import | cURL 导入功能 (F2.6): 解析 cURL 命令创建请求，支持常用选项 (-X, -H, -d, -F, -u, -k, -L 等)，多行命令，44 个单元测试 |
 | 2026-03-18 | v0.6.1-curl-import-ux | cURL 导入 UX 改进: 支持编辑请求名称、选择目标 Collection，参考 Postman 导入流程 |
 | 2026-03-18 | v0.6.2-dialog-ui-fix | 修复 Issue #7: Import/Export/Delete Collection 对话框 UI/UX 规范 - 统一英文语言、规范字号和按钮样式 |
+| 2026-03-18 | v0.6.3-url-params-sync | 实现 Issue #11: URL 查询参数与 Params Tab 双向联动 - URL→Params、Params→URL 同步，36个单元测试 |
+| 2026-03-18 | v0.6.4-import-params-fix | 修复 Postman 导入重复参数问题: URL raw 含查询参数时正确提取 base URL |
 
 ---
 

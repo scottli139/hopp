@@ -17,6 +17,7 @@ import '../../providers/import_export/import_export_provider.dart';
 import '../../providers/providers.dart';
 import '../../services/curl/curl_import_service.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/url_params_sync.dart';
 import '../../models/certificate_info.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
@@ -345,6 +346,9 @@ class UITestModeManager {
       case 'trigger_curl_import_dialog':
         return await _triggerCurlImportDialog();
 
+      case 'verify_url_params_sync':
+        return await _verifyUrlParamsSync();
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -369,13 +373,20 @@ class UITestModeManager {
       throw Exception('没有活动的请求 Tab');
     }
 
-    final updatedRequest = activeTab.request.copyWith(url: url);
+    // URL → Params 同步：解析 URL 中的查询参数
+    final params = parseQueryParamsFromUrl(url);
+    final baseUrl = extractBaseUrl(url);
+
+    final updatedRequest = activeTab.request.copyWith(
+      url: baseUrl,
+      params: params,
+    );
     _ref!.read(requestTabProvider.notifier).updateRequest(
           activeTab.id,
           updatedRequest,
         );
 
-    return {'url': url};
+    return {'url': url, 'base_url': baseUrl, 'parsed_params': params.length};
   }
 
   /// 设置 HTTP 方法
@@ -2259,6 +2270,42 @@ class UITestModeManager {
     return {
       'triggered': true,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+
+  /// 验证 URL 与 Params 双向同步功能
+  Future<Map<String, dynamic>> _verifyUrlParamsSync() async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final request = activeTab.request;
+
+    // 获取当前 URL 和 Params
+    final url = request.url;
+    final params = request.params;
+
+    // 获取 enabled 的 params
+    final enabledParams =
+        params.where((p) => p.enabled && p.key.isNotEmpty).toList();
+
+    // 构建完整的 URL（包含查询参数）
+    final fullUrl = syncParamsToUrl(url, params);
+
+    return {
+      'url': url,
+      'full_url': fullUrl,
+      'params_count': params.length,
+      'enabled_params_count': enabledParams.length,
+      'params': params
+          .map((p) => {
+                'key': p.key,
+                'value': p.value,
+                'enabled': p.enabled,
+              })
+          .toList(),
+      'has_query_params': hasQueryParams(fullUrl),
     };
   }
 }

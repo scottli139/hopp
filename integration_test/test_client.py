@@ -771,6 +771,23 @@ class HoppTestClient:
         print(f"   max_redirects: {result.get('max_redirects')}")
         return result
 
+    def verify_url_params_sync(self):
+        """验证 URL 与 Params 双向同步功能"""
+        print("\n🔗 验证 URL 与 Params 双向同步...")
+        result = self.send_command("verify_url_params_sync")
+        print(f"✅ URL 参数同步验证:")
+        print(f"   URL: {result.get('full_url')}")
+        print(f"   基础 URL: {result.get('url')}")
+        print(f"   参数总数: {result.get('params_count')}")
+        print(f"   启用参数数: {result.get('enabled_params_count')}")
+        print(f"   包含查询参数: {'是' if result.get('has_query_params') else '否'}")
+        if result.get('params'):
+            print("   参数列表:")
+            for param in result.get('params', []):
+                enabled_mark = "✓" if param.get('enabled') else "✗"
+                print(f"     [{enabled_mark}] {param.get('key')}: {param.get('value')}")
+        return result
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -1014,6 +1031,9 @@ def main():
     # get_request_settings
     subparsers.add_parser("get_request_settings", help="获取请求级别配置")
 
+    # verify_url_params_sync
+    subparsers.add_parser("verify_url_params_sync", help="验证 URL 与 Params 双向同步功能")
+
     # full_test
     subparsers.add_parser("full_test", help="执行完整测试流程")
     
@@ -1139,6 +1159,9 @@ def main():
             )
         elif args.command == "get_request_settings":
             client.get_request_settings()
+
+        elif args.command == "verify_url_params_sync":
+            client.verify_url_params_sync()
 
         elif args.command == "full_test":
             client.full_test()

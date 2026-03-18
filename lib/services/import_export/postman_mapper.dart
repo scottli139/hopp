@@ -89,10 +89,15 @@ class PostmanMapper {
     );
   }
 
-  /// 提取 URL
+  /// 提取 URL（不含查询参数）
   static String _extractUrl(PostmanUrl url) {
-    // 如果 raw 存在，直接使用
+    // 如果 raw 存在，去除查询参数后使用
     if (url.raw.isNotEmpty) {
+      // 从 raw URL 中移除查询参数部分
+      final queryIndex = url.raw.indexOf('?');
+      if (queryIndex > 0) {
+        return url.raw.substring(0, queryIndex);
+      }
       return url.raw;
     }
 

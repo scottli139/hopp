@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,6 +10,7 @@ import '../../providers/providers.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
 import '../../utils/testing/ui_test_mode.dart';
+import '../../utils/url_params_sync.dart';
 import '../common/code_editor.dart';
 
 class RequestEditor extends ConsumerStatefulWidget {
@@ -26,6 +29,10 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   final _methodMenuController = MenuController();
   final _rawContentTypeMenuController = MenuController();
   String? _lastTabId;
+
+  // 防止 URL 和 Params 循环更新的标志位
+  bool _isSyncingFromUrl = false;
+  bool _isSyncingFromParams = false;
 
   // 常见 HTTP Headers 用于自动完成和提示
   static const Map<String, String> _commonHeaders = {
@@ -51,6 +58,13 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   final Map<int, LayerLink> _keyLayerLinks = {};
   OverlayEntry? _autocompleteOverlay;
 
+  // Key-Value 输入框的 Controller 缓存
+  final Map<int, TextEditingController> _keyControllers = {};
+  final Map<int, TextEditingController> _valueControllers = {};
+  
+  // 防抖定时器
+  Timer? _updateTimer;
+
   @override
   void initState() {
     super.initState();
@@ -68,6 +82,13 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     for (final node in _keyFocusNodes.values) {
       node.dispose();
     }
+    for (final controller in _keyControllers.values) {
+      controller.dispose();
+    }
+    for (final controller in _valueControllers.values) {
+      controller.dispose();
+    }
+    _updateTimer?.cancel();
     super.dispose();
   }
 
@@ -88,7 +109,12 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     // Only update controllers when tab changes, not on every build
     if (_lastTabId != activeTab.id) {
       _lastTabId = activeTab.id;
-      _urlController.text = activeTab.request.url;
+      // 构建完整的 URL（包含查询参数）
+      final fullUrl = syncParamsToUrl(
+        activeTab.request.url,
+        activeTab.request.params,
+      );
+      _urlController.text = fullUrl;
       _nameController.text = activeTab.request.name;
     }
 
@@ -302,7 +328,25 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   height: 1.0,
                 ),
                 onChanged: (value) {
-                  _updateRequest(ref, request.copyWith(url: value));
+                  // URL → Params 同步
+                  if (!_isSyncingFromParams) {
+                    _isSyncingFromUrl = true;
+                    try {
+                      final params = parseQueryParamsFromUrl(value);
+                      final baseUrl = extractBaseUrl(value);
+                      _updateRequest(
+                        ref,
+                        request.copyWith(
+                          url: baseUrl,
+                          params: params,
+                        ),
+                      );
+                      // 注意：不更新 _urlController.text，保持用户输入的完整 URL
+                      // 查询参数会同步显示在 Params Tab 中
+                    } finally {
+                      _isSyncingFromUrl = false;
+                    }
+                  }
                 },
               ),
             ),
@@ -596,12 +640,38 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
   Widget _buildParamsTab(
       BuildContext context, WidgetRef ref, HttpRequest request) {
+    // Params → URL 同步的更新函数
+    HttpRequest updateRequestWithParams(List<KeyValuePair> params) {
+      // 同步 Params 到 URL
+      if (!_isSyncingFromUrl) {
+        _isSyncingFromParams = true;
+        try {
+          // 从 provider 读取最新的 request，避免使用捕获的旧 request
+          final currentRequest = ref.read(activeTabProvider)?.request;
+          final effectiveRequest = currentRequest ?? request;
+          final baseUrl = extractBaseUrl(effectiveRequest.url);
+          final newUrl = syncParamsToUrl(baseUrl, params);
+          // Sync params to URL
+          _urlController.text = newUrl;
+          return effectiveRequest.copyWith(
+            url: baseUrl,
+            params: params,
+          );
+        } finally {
+          _isSyncingFromParams = false;
+        }
+      }
+      // Skipped sync because _isSyncingFromUrl=true
+      return request.copyWith(params: params);
+    }
+
     return _buildKeyValueEditor(
       context,
       ref,
       request,
       request.params,
-      (params) => request.copyWith(params: params),
+      updateRequestWithParams,
+      showAutocomplete: false,
     );
   }
 
@@ -613,6 +683,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       request,
       request.headers,
       (headers) => request.copyWith(headers: headers),
+      showAutocomplete: true,
     );
   }
 
@@ -621,8 +692,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     WidgetRef ref,
     HttpRequest request,
     List<KeyValuePair> items,
-    HttpRequest Function(List<KeyValuePair>) updateFn,
-  ) {
+    HttpRequest Function(List<KeyValuePair>) updateFn, {
+    bool showAutocomplete = false,
+  }) {
     final theme = Theme.of(context);
 
     return Column(
@@ -697,6 +769,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 items: items,
                 index: index,
                 updateFn: updateFn,
+                showAutocomplete: showAutocomplete,
               );
             },
           ),
@@ -718,7 +791,20 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          final newItems = [...items, _createEmptyKeyValue()];
+          // 先把当前 controller 中的值同步到 items
+          final updatedItems = <KeyValuePair>[];
+          for (var i = 0; i < items.length; i++) {
+            final keyController = _keyControllers[i];
+            final valueController = _valueControllers[i];
+            updatedItems.add(
+              items[i].copyWith(
+                key: keyController?.text ?? items[i].key,
+                value: valueController?.text ?? items[i].value,
+              ),
+            );
+          }
+          // 然后添加新行
+          final newItems = [...updatedItems, _createEmptyKeyValue()];
           _updateRequest(ref, updateFn(newItems));
         },
         child: Container(
@@ -756,11 +842,28 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     required List<KeyValuePair> items,
     required int index,
     required HttpRequest Function(List<KeyValuePair>) updateFn,
+    bool showAutocomplete = false,
   }) {
     final theme = Theme.of(context);
     final item = items[index];
-    final keyController = TextEditingController(text: item.key);
-    final valueController = TextEditingController(text: item.value);
+    
+    // 使用缓存的 Controller，避免每次重建都创建新的
+    final keyController = _keyControllers.putIfAbsent(
+      index,
+      () => TextEditingController(text: item.key),
+    );
+    final valueController = _valueControllers.putIfAbsent(
+      index,
+      () => TextEditingController(text: item.value),
+    );
+    
+    // 如果 item 的值变化了，更新 controller
+    if (keyController.text != item.key) {
+      keyController.text = item.key;
+    }
+    if (valueController.text != item.value) {
+      valueController.text = item.value;
+    }
 
     // 获取或创建 FocusNode 和 LayerLink
     final keyFocusNode = _keyFocusNodes.putIfAbsent(index, () => FocusNode());
@@ -815,18 +918,36 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       ? theme.colorScheme.onSurface
                       : theme.colorScheme.onSurface,
                 ),
-                onChanged: (value) {
+                onChanged: showAutocomplete
+                    ? (value) {
+                        // 只显示自动完成，不更新 provider
+                        _showAutocompleteOverlay(context, keyLayerLink,
+                            keyFocusNode, index, value, items, updateFn, ref);
+                      }
+                    : null,
+                onSubmitted: (_) {
+                  // 回车时更新 provider（从 controller 读取最新值）
                   final newItems = [...items];
-                  newItems[index] = item.copyWith(key: value);
+                  newItems[index] = item.copyWith(
+                    key: keyController.text,
+                    value: valueController.text,
+                  );
                   _updateRequest(ref, updateFn(newItems));
-                  _showAutocompleteOverlay(context, keyLayerLink, keyFocusNode,
-                      index, value, items, updateFn, ref);
+                },
+                onEditingComplete: () {
+                  // 编辑完成时更新 provider（从 controller 读取最新值）
+                  final newItems = [...items];
+                  newItems[index] = item.copyWith(
+                    key: keyController.text,
+                    value: valueController.text,
+                  );
+                  _updateRequest(ref, updateFn(newItems));
                 },
               ),
             ),
           ),
-          // Info icon for common headers
-          if (isCommonHeader)
+          // Info icon for common headers (只在 Headers tab 显示)
+          if (showAutocomplete && isCommonHeader)
             Tooltip(
               message: headerDescription,
               child: Container(
@@ -861,9 +982,22 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     ? theme.colorScheme.outline
                     : theme.colorScheme.onSurface,
               ),
-              onChanged: (value) {
+              onSubmitted: (_) {
+                // 回车时更新 provider（从 controller 读取最新值）
                 final newItems = [...items];
-                newItems[index] = item.copyWith(value: value);
+                newItems[index] = item.copyWith(
+                  key: keyController.text,
+                  value: valueController.text,
+                );
+                _updateRequest(ref, updateFn(newItems));
+              },
+              onEditingComplete: () {
+                // 编辑完成时更新 provider（从 controller 读取最新值）
+                final newItems = [...items];
+                newItems[index] = item.copyWith(
+                  key: keyController.text,
+                  value: valueController.text,
+                );
                 _updateRequest(ref, updateFn(newItems));
               },
             ),
@@ -898,6 +1032,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               onPressed: () {
                 final newItems = [...items]..removeAt(index);
                 _updateRequest(ref, updateFn(newItems));
+                // 清理被删除行的 controller
+                _cleanupControllers(newItems.length);
               },
               tooltip: 'Delete',
               splashRadius: 16,
@@ -906,6 +1042,34 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         ],
       ),
     );
+  }
+
+  /// 清理多余的 controller
+  void _cleanupControllers(int itemCount) {
+    // 清理超出 itemCount 的 controller
+    _keyControllers.removeWhere((index, controller) {
+      if (index >= itemCount) {
+        controller.dispose();
+        return true;
+      }
+      return false;
+    });
+    _valueControllers.removeWhere((index, controller) {
+      if (index >= itemCount) {
+        controller.dispose();
+        return true;
+      }
+      return false;
+    });
+    // 清理对应的 FocusNode 和 LayerLink
+    _keyFocusNodes.removeWhere((index, node) {
+      if (index >= itemCount) {
+        node.dispose();
+        return true;
+      }
+      return false;
+    });
+    _keyLayerLinks.removeWhere((index, link) => index >= itemCount);
   }
 
   /// 显示自动完成下拉框

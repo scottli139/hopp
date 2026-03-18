@@ -11,15 +11,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../providers/curl/curl_import_provider.dart';
 import '../../providers/import_export/import_export_provider.dart';
 import '../../providers/providers.dart';
 import '../../services/curl/curl_import_service.dart';
-import '../../services/import_export/postman_import_service.dart';
 import '../../utils/app_logger.dart';
 import '../../models/certificate_info.dart';
 import '../../models/collection.dart';
@@ -41,8 +37,7 @@ class UITestModeManager {
   int _port = 0;
   WidgetRef? _ref;
 
-  // 指令处理完成后的回调
-  final _completers = <String, Completer<dynamic>>{};
+
 
   /// 是否处于测试模式
   bool get isTestMode => _isTestMode;

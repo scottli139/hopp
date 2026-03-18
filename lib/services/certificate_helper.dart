@@ -110,7 +110,7 @@ String _calculateSha256Fingerprint(X509Certificate cert) {
   try {
     // 尝试获取 DER 编码的证书数据
     final derData = cert.der;
-    if (derData != null && derData.isNotEmpty) {
+    if (derData.isNotEmpty) {
       final digest = sha256.convert(derData);
       // 格式化为冒号分隔的十六进制字符串
       return digest.bytes
@@ -136,7 +136,7 @@ String _extractSerialNumber(X509Certificate cert) {
   try {
     // 尝试从 DER 数据解析序列号
     final derData = cert.der;
-    if (derData != null && derData.isNotEmpty) {
+    if (derData.isNotEmpty) {
       // 解析 DER 编码的序列号
       // X.509 证书结构：SEQUENCE { TBSCertificate, ... }
       // TBSCertificate 包含 [0] Version, SerialNumber, ...
@@ -231,7 +231,7 @@ _PublicKeyInfo _extractPublicKeyInfo(X509Certificate cert) {
   try {
     // 从 DER 数据尝试检测公钥算法
     final derData = cert.der;
-    if (derData != null && derData.isNotEmpty) {
+    if (derData.isNotEmpty) {
       // 查找 RSA 或 EC 算法 OID
       // RSA: 1.2.840.113549.1.1.1 (2A 86 48 86 F7 0D 01 01 01)
       // EC: 1.2.840.10045.2.1 (2A 86 48 CE 3D 02 01)
@@ -308,7 +308,7 @@ int? _detectRsaKeyLength(Uint8List der) {
 String _detectSignatureAlgorithm(X509Certificate cert) {
   try {
     final derData = cert.der;
-    if (derData != null && derData.isNotEmpty) {
+    if (derData.isNotEmpty) {
       // 查找常见签名算法 OID
       // sha256WithRSAEncryption: 1.2.840.113549.1.1.11
       // sha384WithRSAEncryption: 1.2.840.113549.1.1.12

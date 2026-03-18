@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -617,7 +616,7 @@ class HttpService {
       }
 
       return cert;
-    } catch (e, stack) {
+    } catch (e) {
       _logger.w('[HttpService] Error fetching certificate: $e');
       return null;
     }

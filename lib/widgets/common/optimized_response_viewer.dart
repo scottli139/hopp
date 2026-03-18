@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
-import 'package:highlight/highlight.dart';
 import 'package:highlight/languages/json.dart';
 
 import '../../utils/app_logger.dart';
@@ -135,17 +134,6 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     _scrollController.dispose();
     _lineNumberScrollController.dispose();
     super.dispose();
-  }
-
-  /// 同步滚动行号区域
-  void _syncLineNumberScroll() {
-    if (_isSyncing) return;
-    _isSyncing = true;
-    if (_lineNumberScrollController.hasClients &&
-        _scrollController.hasClients) {
-      _lineNumberScrollController.jumpTo(_scrollController.offset);
-    }
-    _isSyncing = false;
   }
 
   /// 初始化内容

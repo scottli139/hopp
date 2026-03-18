@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 
-import '../utils/constants.dart';
 import '../utils/testing/ui_test_mode.dart';
 
 import '../providers/providers.dart';

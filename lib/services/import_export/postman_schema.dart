@@ -40,6 +40,7 @@ class PostmanInfo with _$PostmanInfo {
     required String name,
     String? description,
     String? version,
+    // ignore: invalid_annotation_target
     @JsonKey(name: '_postman_id') String? postmanId,
     String? schema,
   }) = _PostmanInfo;
@@ -235,6 +236,7 @@ class PostmanEnvironment with _$PostmanEnvironment {
   const factory PostmanEnvironment({
     required String name,
     String? id,
+    // ignore: invalid_annotation_target
     @JsonKey(name: '_postman_variable_scope') String? scope,
     List<PostmanEnvironmentValue>? values,
   }) = _PostmanEnvironment;

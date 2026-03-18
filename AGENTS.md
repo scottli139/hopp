@@ -43,10 +43,10 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **P0 问题已修复：4XX/5XX 响应正确显示服务端内容** |
+| **当前状态** | ✅ **Issue #7 已修复：Import/Export/Delete Collection 对话框 UI/UX 规范** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **测试覆盖** | ✅ **475+ 个通过 / cURL 导入功能完成** |
+| **测试覆盖** | ✅ **495 个通过 / Issue #7 UI 修复完成** |
 | **下次重点** | 🔴 修复 4XX/5XX 响应显示 / 🟡 请求设置实现 / 🟢 国际化完善 |
 
 > **历史参考**: 项目曾使用 Tauri (React + Rust) 技术栈，详见 [ARCHIVED_TAURI.md](./docs/ARCHIVED_TAURI.md)
@@ -491,6 +491,36 @@ static String _mapRawContentType(String? language, List<KeyValuePair> headers) {
 }
 ```
 
+#### Import/Export/Delete Collection 对话框 UI 规范修复 (Issue #7)
+
+**问题**: Import/Export 对话框及 Delete Collection 对话框不符合 UI_UX_GUIDELINES.md 规范
+
+**修复内容**:
+1. **语言统一**: 所有对话框文本改为英文
+   - Import 对话框: "Import Postman Data" / "Select File" / "Cancel" / "Done"
+   - Export 对话框: "Export Postman Collection" / "Select Collection" / "Prettify JSON Output"
+   - Delete Collection: "Delete Collection" / "Cancel" / "Delete"
+
+2. **字号规范**: 使用 AppTextStyles 预定义样式
+   - 标题: `AppTextStyles.title` (16px, FontWeight.w600)
+   - 正文: `AppTextStyles.body` (14px) / `AppTextStyles.bodySmall` (13px)
+   - 按钮文字: `AppTextStyles.caption` (12px)
+
+3. **按钮样式规范**: 使用 AppComponentStyles
+   - 主要按钮: `AppComponentStyles.primaryButton()` (高度 36px, Indigo 500)
+   - 幽灵按钮: `AppComponentStyles.ghostButton()` (Cancel 按钮)
+   - 危险按钮: 红色背景 (Delete 按钮), 高度 36px
+
+4. **相关文件**:
+   - `lib/widgets/import_export/import_dialog.dart`
+   - `lib/widgets/import_export/export_dialog.dart`
+   - `lib/widgets/import_export/conflict_resolution_dialog.dart`
+   - `lib/widgets/layout/sidebar.dart` (Delete Collection 对话框)
+
+5. **UI 测试**: 
+   - 添加 `integration_test/test_dialog_ui_fix.py` 测试脚本
+   - 支持截图验证对话框样式
+
 ### UI/UX 设计规范
 
 #### 间距系统
@@ -698,6 +728,7 @@ genhtml coverage/lcov.info -o coverage/html
 | 2026-03-17 | v0.5.8-settings-ui-fix | 修复 Request Settings UI 样式问题 (Issue #9): 字号、Switch 尺寸和颜色规范 |
 | 2026-03-18 | v0.6.0-curl-import | cURL 导入功能 (F2.6): 解析 cURL 命令创建请求，支持常用选项 (-X, -H, -d, -F, -u, -k, -L 等)，多行命令，44 个单元测试 |
 | 2026-03-18 | v0.6.1-curl-import-ux | cURL 导入 UX 改进: 支持编辑请求名称、选择目标 Collection，参考 Postman 导入流程 |
+| 2026-03-18 | v0.6.2-dialog-ui-fix | 修复 Issue #7: Import/Export/Delete Collection 对话框 UI/UX 规范 - 统一英文语言、规范字号和按钮样式 |
 
 ---
 

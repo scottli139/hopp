@@ -572,6 +572,13 @@ class HoppTestClient:
         print("✅ 导出对话框已触发")
         return result
 
+    def trigger_delete_collection_dialog(self):
+        """触发删除 Collection 对话框"""
+        print("🗑️ 触发删除 Collection 对话框...")
+        result = self.send_command("trigger_delete_collection_dialog")
+        print("✅ 删除 Collection 对话框已触发")
+        return result
+
     def simulate_4xx_response(self, status_code=400):
         """模拟 4XX 错误响应（带服务端返回的错误详情）
         

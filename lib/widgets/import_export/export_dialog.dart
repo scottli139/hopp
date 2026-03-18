@@ -1,9 +1,7 @@
-/// Postman 导出对话框
+/// Postman Export Dialog
 ///
-/// 将 Hopp Collection 导出为 Postman 格式。
+/// Export Hopp Collection to Postman format.
 library;
-
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +12,9 @@ import '../../../providers/collection/collection_provider.dart';
 import '../../../providers/import_export/import_export_provider.dart';
 import '../../../services/import_export/postman_schema.dart';
 import '../../../utils/app_logger.dart';
+import '../../../utils/constants.dart';
 
-/// 显示导出对话框
+/// Show export dialog
 Future<void> showExportDialog(
   BuildContext context, {
   String? collectionId,
@@ -26,7 +25,7 @@ Future<void> showExportDialog(
   );
 }
 
-/// 导出对话框
+/// Export dialog
 class ExportDialog extends ConsumerStatefulWidget {
   final String? initialCollectionId;
 
@@ -62,12 +61,30 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
       data: (collections) => _buildDialog(context, state, collections),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => AlertDialog(
-        title: const Text('导出'),
-        content: const Text('无法加载集合列表'),
+        title: Row(
+          children: [
+            Icon(Icons.error_outline,
+                color: Theme.of(context).colorScheme.error, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Export',
+              style: AppTextStyles.title.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Unable to load collection list',
+          style: AppTextStyles.body.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('确定'),
+            style: AppComponentStyles.ghostButton(context),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -83,16 +100,32 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
 
     if (state.isLoading) {
       return AlertDialog(
-        title: const Text('导出中...'),
-        content: const SizedBox(
+        title: Row(
+          children: [
+            Icon(Icons.upload, color: theme.colorScheme.primary, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Exporting...',
+              style: AppTextStyles.title.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
           height: 100,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('正在导出集合...'),
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  'Exporting collection...',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ),
@@ -100,7 +133,8 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
+            style: AppComponentStyles.ghostButton(context),
+            child: const Text('Cancel'),
           ),
         ],
       );
@@ -110,26 +144,39 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
       return AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.check_circle, color: theme.colorScheme.primary),
+            Icon(Icons.check_circle,
+                color: theme.colorScheme.primary, size: 20),
             const SizedBox(width: 8),
-            const Text('导出成功'),
+            Text(
+              'Export Successful',
+              style: AppTextStyles.title.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('文件已保存到:'),
+            Text(
+              'File saved to:',
+              style: AppTextStyles.body.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppConstants.radiusM),
               ),
               child: SelectableText(
                 state.exportPath!,
-                style: theme.textTheme.bodySmall,
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontFamily: AppTextStyles.monoFontFamily,
+                ),
               ),
             ),
           ],
@@ -137,7 +184,8 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
         actions: [
           FilledButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('完成'),
+            style: AppComponentStyles.primaryButton(context),
+            child: const Text('Done'),
           ),
         ],
       );
@@ -145,36 +193,82 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
 
     if (state.error != null) {
       return AlertDialog(
-        title: const Text('导出失败'),
-        content: Text(state.error!),
+        title: Row(
+          children: [
+            Icon(Icons.error_outline, color: theme.colorScheme.error, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Export Failed',
+              style: AppTextStyles.title.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          state.error!,
+          style: AppTextStyles.body.copyWith(
+            color: theme.colorScheme.error,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('确定'),
+            style: AppComponentStyles.ghostButton(context),
+            child: const Text('OK'),
           ),
         ],
       );
     }
 
     return AlertDialog(
-      title: const Text('导出 Postman Collection'),
+      title: Row(
+        children: [
+          Icon(Icons.upload, color: theme.colorScheme.primary, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            'Export Postman Collection',
+            style: AppTextStyles.title.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
       content: SizedBox(
         width: 400,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 集合选择
+            // Collection selection
             DropdownButtonFormField<String>(
               value: _selectedCollectionId,
-              decoration: const InputDecoration(
-                labelText: '选择集合',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'Select Collection',
+                labelStyle: AppTextStyles.bodySmall.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppConstants.radiusM),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.spaceM,
+                  vertical: AppConstants.spaceS,
+                ),
+                isDense: true,
+              ),
+              style: AppTextStyles.bodySmall.copyWith(
+                color: theme.colorScheme.onSurface,
               ),
               items: collections.map((collection) {
                 return DropdownMenuItem(
                   value: collection.id,
-                  child: Text(collection.name),
+                  child: Text(
+                    collection.name,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
                 );
               }).toList(),
               onChanged: (value) {
@@ -185,17 +279,35 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
             ),
             const SizedBox(height: 16),
 
-            // 格式版本
+            // Format version
             DropdownButtonFormField<PostmanVersion>(
               value: _version,
-              decoration: const InputDecoration(
-                labelText: '格式版本',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'Format Version',
+                labelStyle: AppTextStyles.bodySmall.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppConstants.radiusM),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.spaceM,
+                  vertical: AppConstants.spaceS,
+                ),
+                isDense: true,
+              ),
+              style: AppTextStyles.bodySmall.copyWith(
+                color: theme.colorScheme.onSurface,
               ),
               items: PostmanVersion.values.map((version) {
                 return DropdownMenuItem(
                   value: version,
-                  child: Text(version.value),
+                  child: Text(
+                    version.value,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
                 );
               }).toList(),
               onChanged: (value) {
@@ -206,10 +318,20 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
             ),
             const SizedBox(height: 16),
 
-            // 美化输出
+            // Prettify output
             CheckboxListTile(
-              title: const Text('美化 JSON 输出'),
-              subtitle: const Text('格式化缩进，便于阅读'),
+              title: Text(
+                'Prettify JSON Output',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              subtitle: Text(
+                'Format with indentation for readability',
+                style: AppTextStyles.tiny.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
               value: _prettyPrint,
               onChanged: (value) {
                 setState(() {
@@ -217,6 +339,7 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
                 });
               },
               contentPadding: EdgeInsets.zero,
+              dense: true,
             ),
           ],
         ),
@@ -224,11 +347,13 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
+          style: AppComponentStyles.ghostButton(context),
+          child: const Text('Cancel'),
         ),
         FilledButton(
           onPressed: _selectedCollectionId == null ? null : _export,
-          child: const Text('导出'),
+          style: AppComponentStyles.primaryButton(context),
+          child: const Text('Export'),
         ),
       ],
     );
@@ -238,9 +363,9 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
     if (_selectedCollectionId == null) return;
 
     try {
-      // 选择保存路径
+      // Select save path
       final result = await FilePicker.platform.saveFile(
-        dialogTitle: '保存 Postman Collection',
+        dialogTitle: 'Save Postman Collection',
         fileName: _generateFileName(),
         allowedExtensions: ['json'],
         type: FileType.custom,

@@ -294,6 +294,9 @@ class UITestModeManager {
       case 'trigger_export_dialog':
         return await _triggerExportDialog();
 
+      case 'trigger_delete_collection_dialog':
+        return await _triggerDeleteCollectionDialog();
+
       case 'simulate_4xx_response':
         final statusCode = params['status_code'] as int? ?? 400;
         return await _simulate4xxResponse(statusCode);
@@ -1645,6 +1648,15 @@ class UITestModeManager {
     return {'triggered': true};
   }
 
+  /// 触发删除 Collection 对话框
+  Future<Map<String, dynamic>> _triggerDeleteCollectionDialog() async {
+    // 设置状态通知 UI 显示删除 Collection 对话框
+    _ref!.read(uiTestDeleteCollectionDialogProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {'triggered': true};
+  }
+
   /// 模拟 4XX 错误响应（带服务端返回的错误详情）
   Future<Map<String, dynamic>> _simulate4xxResponse(int statusCode) async {
     final activeTab = _ref!.read(activeTabProvider);
@@ -2315,6 +2327,9 @@ final uiTestImportDialogProvider = StateProvider<int?>((ref) => null);
 
 /// UI 测试 - 导出对话框触发器
 final uiTestExportDialogProvider = StateProvider<int?>((ref) => null);
+
+/// UI 测试 - 删除 Collection 对话框触发器
+final uiTestDeleteCollectionDialogProvider = StateProvider<int?>((ref) => null);
 
 /// UI 测试 - cURL 导入对话框触发器
 final uiTestCurlImportDialogProvider = StateProvider<int?>((ref) => null);

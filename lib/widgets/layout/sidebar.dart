@@ -38,6 +38,26 @@ class _SidebarState extends ConsumerState<Sidebar> {
     final collections = ref.watch(collectionProvider);
     final theme = Theme.of(context);
 
+    // Listen to UI test dialog triggers
+    ref.listen<int?>(uiTestImportDialogProvider, (previous, current) {
+      if (current != null && current != previous) {
+        _showImportDialog(context);
+      }
+    });
+
+    ref.listen<int?>(uiTestExportDialogProvider, (previous, current) {
+      if (current != null && current != previous) {
+        _showExportDialog(context);
+      }
+    });
+
+    // Listen to delete collection dialog trigger
+    ref.listen<int?>(uiTestDeleteCollectionDialogProvider, (previous, current) {
+      if (current != null && current != previous) {
+        _triggerDeleteCollection(context);
+      }
+    });
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -888,21 +908,46 @@ class _SidebarState extends ConsumerState<Sidebar> {
     BuildContext context,
     Collection collection,
   ) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Collection'),
+        title: Row(
+          children: [
+            Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Delete Collection',
+              style: AppTextStyles.title.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
         content: Text(
           'Are you sure you want to delete "${collection.name}"? This action cannot be undone.',
+          style: AppTextStyles.body.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: AppComponentStyles.ghostButton(context),
             child: const Text('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusM),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.spaceL,
+                vertical: 10,
+              ),
+              minimumSize: const Size(0, AppConstants.buttonHeightM),
             ),
             onPressed: () {
               ref.read(collectionProvider.notifier).deleteCollection(
@@ -1063,6 +1108,21 @@ class _SidebarState extends ConsumerState<Sidebar> {
   /// Show cURL import dialog
   void _showCurlImportDialog(BuildContext context) {
     showCurlImportDialog(context);
+  }
+
+  /// Show export dialog
+  void _showExportDialog(BuildContext context) {
+    showExportDialog(context);
+  }
+
+  /// Trigger delete collection dialog for UI testing
+  void _triggerDeleteCollection(BuildContext context) {
+    final collectionsAsync = ref.read(collectionProvider);
+    collectionsAsync.whenData((collections) {
+      if (collections.isNotEmpty) {
+        _showDeleteConfirmation(context, collections.first);
+      }
+    });
   }
 
   /// Show about dialog

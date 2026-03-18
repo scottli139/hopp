@@ -1,13 +1,14 @@
-/// 冲突解决对话框
+/// Conflict Resolution Dialog
 ///
-/// 当导入的集合名称已存在时显示此对话框。
+/// Displayed when importing a collection with a name that already exists.
 library;
 
 import 'package:flutter/material.dart';
 
 import '../../../services/import_export/import_export_exception.dart';
+import '../../../utils/constants.dart';
 
-/// 显示冲突解决对话框
+/// Show conflict resolution dialog
 Future<ConflictResolution?> showConflictResolutionDialog(
   BuildContext context, {
   required String collectionName,
@@ -20,7 +21,7 @@ Future<ConflictResolution?> showConflictResolutionDialog(
   );
 }
 
-/// 冲突解决对话框
+/// Conflict resolution dialog
 class ConflictResolutionDialog extends StatefulWidget {
   final String collectionName;
 
@@ -45,9 +46,14 @@ class _ConflictResolutionDialogState extends State<ConflictResolutionDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          Icon(Icons.warning_amber, color: theme.colorScheme.warning),
+          Icon(Icons.warning_amber, color: theme.colorScheme.warning, size: 20),
           const SizedBox(width: 8),
-          const Text('发现同名集合'),
+          Text(
+            'Duplicate Collection Name',
+            style: AppTextStyles.title.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
         ],
       ),
       content: SizedBox(
@@ -57,13 +63,25 @@ class _ConflictResolutionDialogState extends State<ConflictResolutionDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '"${widget.collectionName}" 已存在，请选择处理方式:',
-              style: theme.textTheme.bodyMedium,
+              '"${widget.collectionName}" already exists. Please choose how to handle this:',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 16),
             RadioListTile<ConflictResolution>(
-              title: const Text('重命名导入'),
-              subtitle: const Text('将导入的集合重命名为 "集合名 (1)"'),
+              title: Text(
+                'Rename Import',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              subtitle: Text(
+                'Rename imported collection to "${widget.collectionName} (1)"',
+                style: AppTextStyles.tiny.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
               value: ConflictResolution.rename,
               groupValue: _selectedResolution,
               onChanged: (value) {
@@ -72,10 +90,21 @@ class _ConflictResolutionDialogState extends State<ConflictResolutionDialog> {
                 });
               },
               contentPadding: EdgeInsets.zero,
+              dense: true,
             ),
             RadioListTile<ConflictResolution>(
-              title: const Text('覆盖现有集合'),
-              subtitle: const Text('用导入的内容替换现有集合'),
+              title: Text(
+                'Overwrite Existing',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              subtitle: Text(
+                'Replace existing collection with imported content',
+                style: AppTextStyles.tiny.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
               value: ConflictResolution.overwrite,
               groupValue: _selectedResolution,
               onChanged: (value) {
@@ -84,10 +113,21 @@ class _ConflictResolutionDialogState extends State<ConflictResolutionDialog> {
                 });
               },
               contentPadding: EdgeInsets.zero,
+              dense: true,
             ),
             RadioListTile<ConflictResolution>(
-              title: const Text('合并集合'),
-              subtitle: const Text('保留现有请求，添加新请求'),
+              title: Text(
+                'Merge Collections',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              subtitle: Text(
+                'Keep existing requests and add new ones',
+                style: AppTextStyles.tiny.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
               value: ConflictResolution.merge,
               groupValue: _selectedResolution,
               onChanged: (value) {
@@ -96,9 +136,15 @@ class _ConflictResolutionDialogState extends State<ConflictResolutionDialog> {
                 });
               },
               contentPadding: EdgeInsets.zero,
+              dense: true,
             ),
             RadioListTile<ConflictResolution>(
-              title: const Text('跳过此集合'),
+              title: Text(
+                'Skip This Collection',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
               value: ConflictResolution.skip,
               groupValue: _selectedResolution,
               onChanged: (value) {
@@ -107,10 +153,16 @@ class _ConflictResolutionDialogState extends State<ConflictResolutionDialog> {
                 });
               },
               contentPadding: EdgeInsets.zero,
+              dense: true,
             ),
             const SizedBox(height: 8),
             CheckboxListTile(
-              title: const Text('对所有冲突应用相同选择'),
+              title: Text(
+                'Apply to all conflicts',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
               value: _applyToAll,
               onChanged: (value) {
                 setState(() {
@@ -118,6 +170,7 @@ class _ConflictResolutionDialogState extends State<ConflictResolutionDialog> {
                 });
               },
               contentPadding: EdgeInsets.zero,
+              dense: true,
             ),
           ],
         ),
@@ -125,18 +178,20 @@ class _ConflictResolutionDialogState extends State<ConflictResolutionDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(ConflictResolution.skip),
-          child: const Text('跳过'),
+          style: AppComponentStyles.ghostButton(context),
+          child: const Text('Skip'),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_selectedResolution),
-          child: const Text('确认'),
+          style: AppComponentStyles.primaryButton(context),
+          child: const Text('Confirm'),
         ),
       ],
     );
   }
 }
 
-/// 扩展主题颜色
+/// Theme color extension
 extension ConflictThemeExtension on ColorScheme {
   Color get warning => const Color(0xFFF59E0B);
 }

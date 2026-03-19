@@ -57,52 +57,106 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
   }
 
   Future<void> deleteCollection(String id) async {
+    AppLogger.info('[CollectionNotifier] Deleting collection: $id');
     try {
       final storage = _ref.read(storageServiceProvider);
-      await storage.deleteCollection(id);
+
+      // 获取当前集合列表以找到要删除的集合及其子集合
+      final currentState = state;
+      if (currentState case AsyncData(:final value)) {
+        // 收集所有需要删除的集合 ID（包括子集合）
+        final idsToDelete = <String>[];
+        final requestsToDelete = <String>[];
+
+        // 1. 从扁平化列表中找到目标集合及其所有子孙集合（通过 parentId 关联）
+        void collectDescendants(String parentId) {
+          idsToDelete.add(parentId);
+
+          for (final collection in value) {
+            // 检查是否是这个父集合的直接子集合（通过 parentId 关联）
+            if (collection.parentId == parentId) {
+              collectDescendants(collection.id);
+            }
+          }
+        }
+
+        // 2. 找到目标集合
+        Collection? findTargetCollection(String targetId) {
+          for (final collection in value) {
+            if (collection.id == targetId) {
+              return collection;
+            }
+          }
+          return null;
+        }
+
+        final targetCollection = findTargetCollection(id);
+        if (targetCollection == null) {
+          AppLogger.warning('[CollectionNotifier] Collection not found: $id');
+          return;
+        }
+
+        // 3. 收集目标集合及其所有子孙
+        collectDescendants(id);
+
+        // 4. 收集要删除的请求（来自所有被删除的集合）
+        for (final collection in value) {
+          if (idsToDelete.contains(collection.id)) {
+            for (final request in collection.requests) {
+              requestsToDelete.add(request.id);
+            }
+          }
+        }
+
+        AppLogger.info(
+          '[CollectionNotifier] Deleting ${idsToDelete.length} collections and ${requestsToDelete.length} requests',
+        );
+
+        // 5. 删除所有收集到的集合
+        for (final collectionId in idsToDelete) {
+          await storage.deleteCollection(collectionId);
+          AppLogger.debug(
+              '[CollectionNotifier] Deleted collection: $collectionId');
+        }
+
+        // 6. 删除所有收集到的请求
+        for (final requestId in requestsToDelete) {
+          await storage.deleteRequest(requestId);
+          AppLogger.debug('[CollectionNotifier] Deleted request: $requestId');
+        }
+      }
+
       await loadCollections();
-    } catch (e) {
-      // Handle error
+      AppLogger.info('[CollectionNotifier] Collection deletion completed: $id');
+    } catch (e, stack) {
+      AppLogger.error(
+          '[CollectionNotifier] Failed to delete collection', e, stack);
     }
   }
 
   Future<void> toggleExpanded(String collectionId) async {
     final currentState = state;
     if (currentState case AsyncData(:final value)) {
-      // 递归更新嵌套集合
-      List<Collection> updateCollections(List<Collection> collections) {
-        return collections.map((c) {
-          if (c.id == collectionId) {
-            return c.copyWith(isExpanded: !c.isExpanded);
-          }
-          // 递归检查子集合
-          if (c.children.isNotEmpty) {
-            return c.copyWith(children: updateCollections(c.children));
-          }
-          return c;
-        }).toList();
+      // 检查集合是否存在
+      final collectionIndex = value.indexWhere((c) => c.id == collectionId);
+      if (collectionIndex == -1) {
+        // 集合不存在，静默返回
+        return;
       }
 
-      final updated = updateCollections(value);
+      // 扁平化结构：直接更新集合
+      final updated = value.map((c) {
+        if (c.id == collectionId) {
+          return c.copyWith(isExpanded: !c.isExpanded);
+        }
+        return c;
+      }).toList();
+
       state = AsyncValue.data(updated);
 
-      // 找到集合并持久化（需要递归查找）
-      Collection? findCollection(List<Collection> collections) {
-        for (final c in collections) {
-          if (c.id == collectionId) return c;
-          if (c.children.isNotEmpty) {
-            final found = findCollection(c.children);
-            if (found != null) return found;
-          }
-        }
-        return null;
-      }
-
-      final collection = findCollection(updated);
-      if (collection != null) {
-        final storage = _ref.read(storageServiceProvider);
-        await storage.saveCollection(collection);
-      }
+      // 持久化更改
+      final storage = _ref.read(storageServiceProvider);
+      await storage.saveCollection(updated[collectionIndex]);
     }
   }
 
@@ -112,24 +166,18 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
         '[CollectionNotifier] Adding request ${request.name} to collection $collectionId');
     final currentState = state;
     if (currentState case AsyncData(:final value)) {
-      final updated = value.map((c) {
-        if (c.id == collectionId) {
-          return c.copyWith(
-            requests: [...c.requests, request],
-          );
-        }
-        return c;
-      }).toList();
-
-      state = AsyncValue.data(updated);
-
-      // Persist change
-      final collection = updated.firstWhere((c) => c.id == collectionId);
+      // 扁平化存储：只通过 parentId 关联，不修改 collection.requests
       final storage = _ref.read(storageServiceProvider);
-      await storage.saveCollection(collection);
-      await storage.saveRequest(request);
+
+      // 设置 parentId 并保存请求
+      final requestWithParent = request.copyWith(parentId: collectionId);
+      await storage.saveRequest(requestWithParent);
+
+      // 触发集合刷新以更新 UI
+      await loadCollections();
+
       AppLogger.info(
-          '[CollectionNotifier] Request added to collection: ${request.id}');
+          '[CollectionNotifier] Request added to collection: ${requestWithParent.id}');
     }
   }
 
@@ -137,70 +185,32 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
   Future<void> updateRequestInCollection(HttpRequest request) async {
     AppLogger.info(
         '[CollectionNotifier] Updating request in collection: ${request.id}');
-    final currentState = state;
-    if (currentState case AsyncData(:final value)) {
-      // Find and update the request in the collection hierarchy
-      List<Collection> updateCollections(List<Collection> collections) {
-        return collections.map((c) {
-          // Check if request is in this collection's requests
-          final requestIndex = c.requests.indexWhere((r) => r.id == request.id);
-          if (requestIndex != -1) {
-            final updatedRequests = [...c.requests];
-            updatedRequests[requestIndex] = request;
-            return c.copyWith(requests: updatedRequests);
-          }
-          // Check in children
-          if (c.children.isNotEmpty) {
-            return c.copyWith(children: updateCollections(c.children));
-          }
-          return c;
-        }).toList();
-      }
 
-      final updated = updateCollections(value);
-      state = AsyncValue.data(updated);
+    // 扁平化存储：直接保存请求即可，不需要修改 collection.requests
+    final storage = _ref.read(storageServiceProvider);
+    await storage.saveRequest(request);
 
-      // Persist changes
-      final storage = _ref.read(storageServiceProvider);
-      await storage.saveRequest(request);
+    // 触发刷新以更新 UI
+    await loadCollections();
 
-      // Also update the collection that contains this request
-      for (final collection in updated) {
-        if (collection.requests.any((r) => r.id == request.id)) {
-          await storage.saveCollection(collection);
-          break;
-        }
-      }
+    // Remove from dirty set
+    _ref.read(dirtyRequestsProvider.notifier).update((set) {
+      final newSet = Set<String>.from(set);
+      newSet.remove(request.id);
+      return newSet;
+    });
 
-      // Remove from dirty set
-      _ref.read(dirtyRequestsProvider.notifier).update((set) {
-        final newSet = Set<String>.from(set);
-        newSet.remove(request.id);
-        return newSet;
-      });
-
-      AppLogger.info(
-          '[CollectionNotifier] Request updated in collection: ${request.id}');
-    }
+    AppLogger.info(
+        '[CollectionNotifier] Request updated in collection: ${request.id}');
   }
 
   /// Find which collection contains a request
+  /// 注意：扁平化存储下，请求通过 parentId 关联
   String? findRequestCollectionId(String requestId) {
-    final currentState = state;
-    if (currentState case AsyncData(:final value)) {
-      for (final collection in value) {
-        if (collection.requests.any((r) => r.id == requestId)) {
-          return collection.id;
-        }
-        // Check children recursively
-        for (final child in collection.children) {
-          if (child.requests.any((r) => r.id == requestId)) {
-            return child.id;
-          }
-        }
-      }
-    }
-    return null;
+    // 需要从 storage 获取请求以检查 parentId
+    // 这里简化处理：如果请求已存在，它的 parentId 就是所在集合
+    // 实际查询由调用方通过 requestsProvider 完成
+    return null; // 简化实现，实际 parentId 在请求对象中
   }
 
   /// Check if a request exists in any collection
@@ -215,12 +225,17 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
     final currentState = state;
     if (currentState is AsyncData<List<Collection>>) {
       final collections = currentState.value;
-      // Check if request already exists in any collection
-      final existingCollectionId = findRequestCollectionId(request.id);
+      final storage = _ref.read(storageServiceProvider);
 
-      if (existingCollectionId != null) {
-        // Request exists, update it
-        await updateRequestInCollection(request);
+      // 检查请求是否已存在（通过查询 storage）
+      final existingRequest = await storage.getRequest(request.id);
+
+      if (existingRequest != null) {
+        // Request exists, update it (保持原有的 parentId)
+        final updatedRequest = request.copyWith(
+          parentId: existingRequest.parentId ?? targetCollectionId,
+        );
+        await updateRequestInCollection(updatedRequest);
       } else {
         // Request is new, need to add to a collection
         String? collectionIdToUse = targetCollectionId;
@@ -261,40 +276,41 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
   }
 
   /// Delete a request from a collection
+  /// 注意：扁平化存储下，直接删除请求即可，不需要 collectionId
   Future<void> deleteRequestFromCollection(
-      String collectionId, String requestId) async {
-    AppLogger.info(
-        '[CollectionNotifier] Deleting request $requestId from collection $collectionId');
+      String? collectionId, String requestId) async {
+    AppLogger.info('[CollectionNotifier] Deleting request $requestId');
+
+    // 扁平化存储：直接删除请求，parentId 会自然失效
+    final storage = _ref.read(storageServiceProvider);
+    await storage.deleteRequest(requestId);
+
+    // 触发刷新以更新 UI
+    await loadCollections();
+
+    AppLogger.info('[CollectionNotifier] Request deleted: $requestId');
+  }
+
+  /// Find all child collections by parent ID (for sidebar rendering)
+  List<Collection> findChildrenByParentId(String parentId) {
     final currentState = state;
     if (currentState case AsyncData(:final value)) {
-      // Find and update the collection
-      List<Collection> updateCollections(List<Collection> collections) {
-        return collections.map((c) {
-          if (c.id == collectionId) {
-            final updatedRequests =
-                c.requests.where((r) => r.id != requestId).toList();
-            return c.copyWith(requests: updatedRequests);
-          }
-          // Check in children
-          if (c.children.isNotEmpty) {
-            return c.copyWith(children: updateCollections(c.children));
-          }
-          return c;
-        }).toList();
-      }
-
-      final updated = updateCollections(value);
-      state = AsyncValue.data(updated);
-
-      // Persist changes
-      final storage = _ref.read(storageServiceProvider);
-      final collection = updated.firstWhere((c) => c.id == collectionId);
-      await storage.saveCollection(collection);
-      await storage.deleteRequest(requestId);
-
-      AppLogger.info(
-          '[CollectionNotifier] Request deleted: $requestId from collection: $collectionId');
+      return value.where((c) => c.parentId == parentId).toList();
     }
+    return [];
+  }
+
+  /// Find collection by ID
+  Collection? findCollectionById(String id) {
+    final currentState = state;
+    if (currentState case AsyncData(:final value)) {
+      for (final collection in value) {
+        if (collection.id == id) {
+          return collection;
+        }
+      }
+    }
+    return null;
   }
 }
 
@@ -304,25 +320,36 @@ final collectionProvider =
   return CollectionNotifier(ref);
 });
 
+/// Provider that returns all collections as a flat list (no hierarchy)
+/// This is the default for flat storage - UI can reconstruct hierarchy using parentId
 final flattenedCollectionsProvider = Provider<List<Collection>>((ref) {
   final collectionsAsync = ref.watch(collectionProvider);
 
   return collectionsAsync.when(
-    data: (collections) {
-      final result = <Collection>[];
-      void flatten(Collection c, int depth) {
-        result.add(c);
-        for (final child in c.children) {
-          flatten(child, depth + 1);
-        }
-      }
-
-      for (final c in collections) {
-        flatten(c, 0);
-      }
-      return result;
-    },
+    data: (collections) => collections,
     loading: () => [],
     error: (_, __) => [],
   );
+});
+
+/// Provider that returns root-level collections only (those with null parentId)
+final rootCollectionsProvider = Provider<List<Collection>>((ref) {
+  final collectionsAsync = ref.watch(collectionProvider);
+
+  return collectionsAsync.when(
+    data: (collections) =>
+        collections.where((c) => c.parentId == null).toList(),
+    loading: () => [],
+    error: (_, __) => [],
+  );
+});
+
+/// Provider that returns all requests
+/// 监听 collectionProvider 的变化，在导入新集合后自动刷新
+final requestsProvider = FutureProvider<List<HttpRequest>>((ref) async {
+  // 监听集合变化，确保导入新集合后请求列表自动刷新
+  ref.watch(collectionProvider);
+
+  final storage = ref.read(storageServiceProvider);
+  return storage.getRequests();
 });

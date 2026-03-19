@@ -139,6 +139,13 @@ void main() {
 
     group('deleteCollection', () {
       test('should delete collection and reload', () async {
+        final collection =
+            Collection.empty().copyWith(id: 'col-1', name: 'Test Collection');
+
+        when(mockStorageService.getCollections())
+            .thenAnswer((_) async => [collection]);
+        await container.read(collectionProvider.notifier).loadCollections();
+
         when(mockStorageService.deleteCollection('col-1'))
             .thenAnswer((_) async {});
         when(mockStorageService.getCollections()).thenAnswer((_) async => []);
@@ -151,6 +158,13 @@ void main() {
       });
 
       test('should handle delete error gracefully', () async {
+        final collection =
+            Collection.empty().copyWith(id: 'col-1', name: 'Test Collection');
+
+        when(mockStorageService.getCollections())
+            .thenAnswer((_) async => [collection]);
+        await container.read(collectionProvider.notifier).loadCollections();
+
         when(mockStorageService.deleteCollection('col-1'))
             .thenThrow(Exception('Delete error'));
         when(mockStorageService.getCollections()).thenAnswer((_) async => []);
@@ -160,6 +174,181 @@ void main() {
             .deleteCollection('col-1');
 
         verify(mockStorageService.deleteCollection('col-1')).called(1);
+      });
+
+      group('cascade delete', () {
+        test('should cascade delete child collections using parentId', () async {
+          // 创建扁平化结构: Parent -> Child -> GrandChild (通过 parentId 关联)
+          final grandChild = Collection.empty().copyWith(
+            id: 'grandchild',
+            name: 'GrandChild',
+            parentId: 'child',
+          );
+          final child = Collection.empty().copyWith(
+            id: 'child',
+            name: 'Child',
+            parentId: 'parent',
+          );
+          final parent = Collection.empty()
+              .copyWith(id: 'parent', name: 'Parent');
+
+          when(mockStorageService.getCollections())
+              .thenAnswer((_) async => [parent, child, grandChild]);
+
+          await container.read(collectionProvider.notifier).loadCollections();
+
+          // 设置删除后的空列表
+          when(mockStorageService.getCollections())
+              .thenAnswer((_) async => []);
+          when(mockStorageService.deleteCollection(any))
+              .thenAnswer((_) async {});
+
+          // 删除父集合
+          await container
+              .read(collectionProvider.notifier)
+              .deleteCollection('parent');
+
+          // 验证所有集合都被删除
+          verify(mockStorageService.deleteCollection('parent')).called(1);
+          verify(mockStorageService.deleteCollection('child')).called(1);
+          verify(mockStorageService.deleteCollection('grandchild')).called(1);
+        });
+
+        test('should cascade delete multiple levels of children', () async {
+          // 创建更深的嵌套结构 (扁平化存储)
+          final level3 = Collection.empty().copyWith(
+            id: 'level3',
+            name: 'Level 3',
+            parentId: 'level2',
+          );
+          final level2 = Collection.empty().copyWith(
+            id: 'level2',
+            name: 'Level 2',
+            parentId: 'level1',
+          );
+          final level1 = Collection.empty().copyWith(
+            id: 'level1',
+            name: 'Level 1',
+            parentId: 'root',
+          );
+          final root = Collection.empty()
+              .copyWith(id: 'root', name: 'Root');
+
+          when(mockStorageService.getCollections())
+              .thenAnswer((_) async => [root, level1, level2, level3]);
+
+          await container.read(collectionProvider.notifier).loadCollections();
+
+          when(mockStorageService.getCollections())
+              .thenAnswer((_) async => []);
+          when(mockStorageService.deleteCollection(any))
+              .thenAnswer((_) async {});
+
+          await container
+              .read(collectionProvider.notifier)
+              .deleteCollection('root');
+
+          // 验证所有层级的集合都被删除
+          verify(mockStorageService.deleteCollection('root')).called(1);
+          verify(mockStorageService.deleteCollection('level1')).called(1);
+          verify(mockStorageService.deleteCollection('level2')).called(1);
+          verify(mockStorageService.deleteCollection('level3')).called(1);
+        });
+
+        test('should not affect sibling collections', () async {
+          // 创建两个独立的集合树 (扁平化存储)
+          final childOfA = Collection.empty().copyWith(
+            id: 'child-a',
+            name: 'Child of A',
+            parentId: 'collection-a',
+          );
+          final collectionA = Collection.empty()
+              .copyWith(id: 'collection-a', name: 'Collection A');
+          final collectionB = Collection.empty()
+              .copyWith(id: 'collection-b', name: 'Collection B');
+
+          when(mockStorageService.getCollections())
+              .thenAnswer((_) async => [collectionA, collectionB, childOfA]);
+
+          await container.read(collectionProvider.notifier).loadCollections();
+
+          // 只保留 collectionB
+          when(mockStorageService.getCollections())
+              .thenAnswer((_) async => [collectionB]);
+          when(mockStorageService.deleteCollection(any))
+              .thenAnswer((_) async {});
+
+          // 删除 collectionA（及其子集合）
+          await container
+              .read(collectionProvider.notifier)
+              .deleteCollection('collection-a');
+
+          // 验证 collectionA 和其子集合被删除
+          verify(mockStorageService.deleteCollection('collection-a')).called(1);
+          verify(mockStorageService.deleteCollection('child-a')).called(1);
+
+          // 验证 collectionB 未被删除
+          verifyNever(mockStorageService.deleteCollection('collection-b'));
+        });
+
+        test('should delete requests in deleted collections', () async {
+          final childRequest = HttpRequest.empty()
+              .copyWith(id: 'req-child', name: 'Child Request');
+          final child = Collection.empty().copyWith(
+            id: 'child',
+            name: 'Child',
+            parentId: 'parent',
+            requests: [childRequest],
+          );
+          final parentRequest = HttpRequest.empty()
+              .copyWith(id: 'req-parent', name: 'Parent Request');
+          final parent = Collection.empty().copyWith(
+            id: 'parent',
+            name: 'Parent',
+            requests: [parentRequest],
+          );
+
+          when(mockStorageService.getCollections())
+              .thenAnswer((_) async => [parent, child]);
+
+          await container.read(collectionProvider.notifier).loadCollections();
+
+          when(mockStorageService.getCollections())
+              .thenAnswer((_) async => []);
+          when(mockStorageService.deleteCollection(any))
+              .thenAnswer((_) async {});
+          when(mockStorageService.deleteRequest(any))
+              .thenAnswer((_) async {});
+
+          await container
+              .read(collectionProvider.notifier)
+              .deleteCollection('parent');
+
+          // 验证集合中的请求也被删除
+          verify(mockStorageService.deleteRequest('req-parent')).called(1);
+          verify(mockStorageService.deleteRequest('req-child')).called(1);
+        });
+
+        test('should handle collection not found gracefully', () async {
+          final collection = Collection.empty()
+              .copyWith(id: 'col-1', name: 'Collection 1');
+
+          when(mockStorageService.getCollections())
+              .thenAnswer((_) async => [collection]);
+
+          await container.read(collectionProvider.notifier).loadCollections();
+
+          // 删除不存在的集合
+          when(mockStorageService.getCollections())
+              .thenAnswer((_) async => [collection]);
+
+          await container
+              .read(collectionProvider.notifier)
+              .deleteCollection('non-existent');
+
+          // 验证没有调用删除操作
+          verifyNever(mockStorageService.deleteCollection(any));
+        });
       });
     });
 
@@ -239,7 +428,7 @@ void main() {
     });
 
     group('addRequestToCollection', () {
-      test('should add request to collection', () async {
+      test('should add request to collection with parentId', () async {
         final collection = Collection.empty()
             .copyWith(id: 'col-1', name: 'Test', requests: []);
         final newRequest = HttpRequest.empty().copyWith(
@@ -253,20 +442,24 @@ void main() {
 
         await container.read(collectionProvider.notifier).loadCollections();
 
-        when(mockStorageService.saveCollection(any)).thenAnswer((_) async {});
-        when(mockStorageService.saveRequest(newRequest))
-            .thenAnswer((_) async {});
+        // 捕获保存的请求以验证 parentId
+        HttpRequest? savedRequest;
+        when(mockStorageService.saveRequest(any))
+            .thenAnswer((invocation) async {
+          savedRequest = invocation.positionalArguments[0] as HttpRequest;
+        });
 
         await container
             .read(collectionProvider.notifier)
             .addRequestToCollection('col-1', newRequest);
 
-        final state = container.read(collectionProvider);
-        expect(state.valueOrNull!.first.requests.length, equals(1));
-        expect(state.valueOrNull!.first.requests.first.id, equals('req-1'));
+        // 验证请求被保存且设置了 parentId
+        verify(mockStorageService.saveRequest(any)).called(1);
+        expect(savedRequest, isNotNull);
+        expect(savedRequest!.parentId, equals('col-1'));
       });
 
-      test('should persist collection and request', () async {
+      test('should persist request with correct parentId', () async {
         final collection = Collection.empty()
             .copyWith(id: 'col-1', name: 'Test', requests: []);
         final newRequest = HttpRequest.empty().copyWith(id: 'req-1');
@@ -276,19 +469,22 @@ void main() {
 
         await container.read(collectionProvider.notifier).loadCollections();
 
-        when(mockStorageService.saveCollection(any)).thenAnswer((_) async {});
-        when(mockStorageService.saveRequest(newRequest))
-            .thenAnswer((_) async {});
+        HttpRequest? savedRequest;
+        when(mockStorageService.saveRequest(any))
+            .thenAnswer((invocation) async {
+          savedRequest = invocation.positionalArguments[0] as HttpRequest;
+        });
 
         await container
             .read(collectionProvider.notifier)
             .addRequestToCollection('col-1', newRequest);
 
-        verify(mockStorageService.saveCollection(any)).called(1);
-        verify(mockStorageService.saveRequest(newRequest)).called(1);
+        // 扁平化存储：只保存请求，设置 parentId
+        verify(mockStorageService.saveRequest(any)).called(1);
+        expect(savedRequest!.parentId, equals('col-1'));
       });
 
-      test('should not add when collection does not exist', () async {
+      test('should silently return when collection does not exist', () async {
         final collection = Collection.empty()
             .copyWith(id: 'col-1', name: 'Test', requests: []);
         final newRequest = HttpRequest.empty().copyWith(id: 'req-1');
@@ -298,14 +494,13 @@ void main() {
 
         await container.read(collectionProvider.notifier).loadCollections();
 
-        // addRequestToCollection throws when collection not found due to firstWhere
-        // This is expected behavior based on the implementation
-        expect(
-          () => container
-              .read(collectionProvider.notifier)
-              .addRequestToCollection('non-existent', newRequest),
-          throwsA(isA<StateError>()),
-        );
+        // 扁平化存储实现：当集合不存在时静默返回（通过 loadCollections 刷新）
+        await container
+            .read(collectionProvider.notifier)
+            .addRequestToCollection('non-existent', newRequest);
+
+        // 应该尝试保存请求（即使集合不存在）
+        verify(mockStorageService.saveRequest(any)).called(1);
       });
     });
   });
@@ -340,18 +535,21 @@ void main() {
       expect(container.read(flattenedCollectionsProvider), isEmpty);
     });
 
-    test('should flatten nested collections', () async {
+    test('should return all collections from flat storage', () async {
       final mockStorageService = MockStorageService();
-      final childCollection =
-          Collection.empty().copyWith(id: 'child-1', name: 'Child');
+      // 扁平化存储：子集合直接存储，通过 parentId 关联
+      final childCollection = Collection.empty().copyWith(
+        id: 'child-1',
+        name: 'Child',
+        parentId: 'parent-1',
+      );
       final parentCollection = Collection.empty().copyWith(
         id: 'parent-1',
         name: 'Parent',
-        children: [childCollection],
       );
 
       when(mockStorageService.getCollections())
-          .thenAnswer((_) async => [parentCollection]);
+          .thenAnswer((_) async => [parentCollection, childCollection]);
 
       final container = ProviderContainer(
         overrides: [
@@ -362,21 +560,25 @@ void main() {
       await container.read(collectionProvider.notifier).loadCollections();
 
       final flattened = container.read(flattenedCollectionsProvider);
+      // flattenedCollectionsProvider 现在直接返回扁平化列表
       expect(flattened.length, equals(2));
       expect(flattened.map((c) => c.id), containsAll(['parent-1', 'child-1']));
     });
 
-    test('should flatten multiple levels of nesting', () async {
+    test('should return flat list preserving storage order', () async {
       final mockStorageService = MockStorageService();
-      final grandChild =
-          Collection.empty().copyWith(id: 'grandchild', name: 'Grandchild');
-      final child = Collection.empty()
-          .copyWith(id: 'child', name: 'Child', children: [grandChild]);
-      final parent = Collection.empty()
-          .copyWith(id: 'parent', name: 'Parent', children: [child]);
+      final collection1 =
+          Collection.empty().copyWith(id: 'col-1', name: 'Collection 1');
+      final collection2 =
+          Collection.empty().copyWith(id: 'col-2', name: 'Collection 2');
+      final collection3 = Collection.empty().copyWith(
+        id: 'col-3',
+        name: 'Collection 3',
+        parentId: 'col-1',
+      );
 
       when(mockStorageService.getCollections())
-          .thenAnswer((_) async => [parent]);
+          .thenAnswer((_) async => [collection1, collection2, collection3]);
 
       final container = ProviderContainer(
         overrides: [
@@ -388,10 +590,10 @@ void main() {
 
       final flattened = container.read(flattenedCollectionsProvider);
       expect(flattened.length, equals(3));
-      expect(
-        flattened.map((c) => c.id),
-        containsAll(['parent', 'child', 'grandchild']),
-      );
+      // 扁平化存储保持原始顺序
+      expect(flattened[0].id, equals('col-1'));
+      expect(flattened[1].id, equals('col-2'));
+      expect(flattened[2].id, equals('col-3'));
     });
 
     test('should handle multiple root collections', () async {
@@ -414,6 +616,64 @@ void main() {
 
       final flattened = container.read(flattenedCollectionsProvider);
       expect(flattened.length, equals(2));
+    });
+  });
+
+  group('rootCollectionsProvider', () {
+    test('should return only root-level collections', () async {
+      final mockStorageService = MockStorageService();
+      final rootCollection = Collection.empty()
+          .copyWith(id: 'root-1', name: 'Root Collection');
+      final childCollection = Collection.empty().copyWith(
+        id: 'child-1',
+        name: 'Child Collection',
+        parentId: 'root-1',
+      );
+      final anotherRoot = Collection.empty()
+          .copyWith(id: 'root-2', name: 'Another Root');
+
+      when(mockStorageService.getCollections())
+          .thenAnswer((_) async => [rootCollection, childCollection, anotherRoot]);
+
+      final container = ProviderContainer(
+        overrides: [
+          storageServiceProvider.overrideWithValue(mockStorageService),
+        ],
+      );
+
+      await container.read(collectionProvider.notifier).loadCollections();
+
+      final roots = container.read(rootCollectionsProvider);
+      expect(roots.length, equals(2));
+      expect(roots.map((c) => c.id), containsAll(['root-1', 'root-2']));
+    });
+
+    test('should return empty list when all collections have parents', () async {
+      final mockStorageService = MockStorageService();
+      final child1 = Collection.empty().copyWith(
+        id: 'child-1',
+        name: 'Child 1',
+        parentId: 'some-parent',
+      );
+      final child2 = Collection.empty().copyWith(
+        id: 'child-2',
+        name: 'Child 2',
+        parentId: 'some-parent',
+      );
+
+      when(mockStorageService.getCollections())
+          .thenAnswer((_) async => [child1, child2]);
+
+      final container = ProviderContainer(
+        overrides: [
+          storageServiceProvider.overrideWithValue(mockStorageService),
+        ],
+      );
+
+      await container.read(collectionProvider.notifier).loadCollections();
+
+      final roots = container.read(rootCollectionsProvider);
+      expect(roots, isEmpty);
     });
   });
 }

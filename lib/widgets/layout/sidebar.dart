@@ -36,6 +36,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
   @override
   Widget build(BuildContext context) {
     final collections = ref.watch(collectionProvider);
+    final requestsAsync = ref.watch(requestsProvider);
     final theme = Theme.of(context);
 
     // Listen to UI test dialog triggers
@@ -78,7 +79,23 @@ class _SidebarState extends ConsumerState<Sidebar> {
           // Collection tree
           Expanded(
             child: collections.when(
-              data: (data) => _buildCollectionTree(context, data),
+              data: (data) {
+                return requestsAsync.when(
+                  data: (requests) =>
+                      _buildCollectionTree(context, data, requests),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  error: (err, _) => Center(
+                    child: Text(
+                      'Error: $err',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ),
+                );
+              },
               loading: () => const Center(
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
@@ -128,17 +145,114 @@ class _SidebarState extends ConsumerState<Sidebar> {
   Widget _buildCollectionTree(
     BuildContext context,
     List<Collection> collections,
+    List<HttpRequest> requests,
   ) {
     if (collections.isEmpty) {
       return _buildEmptyState(context);
     }
 
+    // 构建树形结构：将扁平化的 parentId 关联转换为嵌套结构
+    final rootCollections = _buildHierarchy(collections, requests);
+
     return ListView.builder(
-      itemCount: collections.length,
+      itemCount: rootCollections.length,
       itemBuilder: (context, index) {
-        return _buildCollectionItem(context, collections[index], 0);
+        return _buildCollectionItem(
+          context,
+          rootCollections[index],
+          0,
+          collections,
+          requests,
+        );
       },
     );
+  }
+
+  /// 将扁平化的集合列表构建为层级结构，并关联请求
+  List<Collection> _buildHierarchy(
+    List<Collection> collections,
+    List<HttpRequest> requests,
+  ) {
+    // 创建集合映射（ID -> 集合）
+    final collectionMap = {
+      for (final c in collections) c.id: c,
+    };
+
+    // 找出所有子集合 ID（通过 parentId 关联的）
+    final childIdsViaParentId = <String>{};
+    for (final c in collections) {
+      if (c.parentId != null && collectionMap.containsKey(c.parentId)) {
+        childIdsViaParentId.add(c.id);
+      }
+    }
+
+    // 找出所有出现在其他集合 children 列表中的子集合 ID
+    final childIdsViaNested = <String>{};
+    for (final c in collections) {
+      for (final child in c.children) {
+        if (collectionMap.containsKey(child.id)) {
+          childIdsViaNested.add(child.id);
+        }
+      }
+    }
+
+    // 所有子集合的 ID（两种来源的并集）
+    final allChildIds = {...childIdsViaParentId, ...childIdsViaNested};
+
+    // 递归构建树形结构
+    Collection buildTree(String collectionId, Set<String> visited) {
+      if (visited.contains(collectionId)) {
+        // 避免循环引用
+        return collectionMap[collectionId]!.copyWith(id: '__circular__');
+      }
+      visited.add(collectionId);
+
+      final collection = collectionMap[collectionId]!;
+
+      // 收集通过 parentId 关联的子集合
+      final childrenViaParentId = collections
+          .where((c) => c.parentId == collectionId)
+          .map((c) => buildTree(c.id, {...visited}))
+          .where((c) => c.id != '__circular__')
+          .toList();
+
+      // 收集嵌套在 children 中的子集合（但只在扁平列表中存在的）
+      final childrenViaNested = collection.children
+          .where((c) =>
+              collectionMap.containsKey(c.id) &&
+              !childIdsViaParentId.contains(c.id)) // 避免重复添加
+          .map((c) => buildTree(c.id, {...visited}))
+          .where((c) => c.id != '__circular__')
+          .toList();
+
+      // 合并两种来源的子集合
+      final allChildren = [...childrenViaParentId, ...childrenViaNested];
+
+      // 收集与该集合关联的请求（通过 parentId）
+      final collectionRequests =
+          requests.where((r) => r.parentId == collectionId).toList();
+
+      // 合并请求：集合原有的请求 + 通过 parentId 关联的请求
+      final allRequests = [...collection.requests, ...collectionRequests];
+
+      return collection.copyWith(
+        children: allChildren,
+        requests: allRequests,
+      );
+    }
+
+    // 找到所有根集合并构建树
+    final roots = collections.where((c) => !allChildIds.contains(c.id));
+    final result = <Collection>[];
+
+    for (final root in roots) {
+      final tree = buildTree(root.id, {});
+      if (tree.id != '__circular__') {
+        result.add(tree);
+      }
+    }
+
+    return result;
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -169,6 +283,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
     BuildContext context,
     Collection collection,
     int depth,
+    List<Collection> allCollections,
+    List<HttpRequest> allRequests,
   ) {
     final isExpanded = collection.isExpanded;
     final theme = Theme.of(context);
@@ -237,7 +353,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
           secondChild: Column(
             children: [
               ...collection.children.map(
-                (child) => _buildCollectionItem(context, child, depth + 1),
+                (child) => _buildCollectionItem(
+                    context, child, depth + 1, allCollections, allRequests),
               ),
               ...collection.requests.map(
                 (request) => _buildRequestItem(context, request, depth + 1),
@@ -686,16 +803,11 @@ class _SidebarState extends ConsumerState<Sidebar> {
       ref.read(requestTabProvider.notifier).closeTab(request.id);
     }
 
-    // 从 Collection 中删除
-    final collectionId = ref
-        .read(collectionProvider.notifier)
-        .findRequestCollectionId(request.id);
-    if (collectionId != null) {
-      ref.read(collectionProvider.notifier).deleteRequestFromCollection(
-            collectionId,
-            request.id,
-          );
-    }
+    // 从 Collection 中删除（扁平化存储：直接删除请求）
+    ref.read(collectionProvider.notifier).deleteRequestFromCollection(
+          '', // collectionId 在扁平化存储下不再需要
+          request.id,
+        );
   }
 
   Widget _buildCollectionActions(
@@ -851,6 +963,11 @@ class _SidebarState extends ConsumerState<Sidebar> {
                 AppLogger.info(
                     '[Sidebar] New request created and tab opened: ${newRequest.name}');
                 break;
+              case 'add_folder':
+                AppLogger.info(
+                    '[Sidebar] Adding new folder to collection: ${collection.name}');
+                _showAddFolderDialog(context, collection);
+                break;
               case 'export':
                 AppLogger.info(
                     '[Sidebar] Exporting collection: ${collection.name}');
@@ -862,6 +979,43 @@ class _SidebarState extends ConsumerState<Sidebar> {
             }
           },
         ),
+      ),
+    );
+  }
+
+  void _showAddFolderDialog(BuildContext context, Collection parentCollection) {
+    final controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('New Folder'),
+        content: TextField(
+          controller: controller,
+          decoration: AppComponentStyles.outlineInputDecoration(
+            hintText: 'Enter folder name',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                final newFolder = Collection.empty().copyWith(
+                  name: controller.text,
+                  parentId: parentCollection.id,
+                );
+                ref.read(collectionProvider.notifier).addCollection(newFolder);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Create'),
+          ),
+        ],
       ),
     );
   }

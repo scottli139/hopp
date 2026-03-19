@@ -1034,6 +1034,20 @@ def main():
     # verify_url_params_sync
     subparsers.add_parser("verify_url_params_sync", help="验证 URL 与 Params 双向同步功能")
 
+    # ==================== Collection 级联删除测试命令 ====================
+
+    # create_collection
+    create_collection_parser = subparsers.add_parser("create_collection", help="创建 Collection（用于测试）")
+    create_collection_parser.add_argument("--name", required=True, help="Collection 名称")
+    create_collection_parser.add_argument("--parent-id", help="父 Collection ID（可选）")
+
+    # delete_collection
+    delete_collection_parser = subparsers.add_parser("delete_collection", help="删除 Collection（用于测试级联删除）")
+    delete_collection_parser.add_argument("--id", required=True, help="Collection ID")
+
+    # get_collection_tree
+    subparsers.add_parser("get_collection_tree", help="获取 Collection 树结构")
+
     # full_test
     subparsers.add_parser("full_test", help="执行完整测试流程")
     
@@ -1163,6 +1177,14 @@ def main():
         elif args.command == "verify_url_params_sync":
             client.verify_url_params_sync()
 
+        # ==================== Collection 级联删除测试命令 ====================
+        elif args.command == "create_collection":
+            client.create_collection(args.name, args.parent_id)
+        elif args.command == "delete_collection":
+            client.delete_collection(args.id)
+        elif args.command == "get_collection_tree":
+            client.get_collection_tree()
+
         elif args.command == "full_test":
             client.full_test()
         
@@ -1218,3 +1240,55 @@ if __name__ == "__main__":
         result = self.send_command("trigger_curl_import_dialog")
         print(f"✅ 对话框已触发")
         return result
+
+    def create_collection(self, name, parent_id=None):
+        """创建 Collection（用于测试级联删除）
+        
+        Args:
+            name: Collection 名称
+            parent_id: 父 Collection ID（可选）
+        """
+        print(f"📁 创建 Collection: {name}")
+        params = {"name": name}
+        if parent_id:
+            params["parent_id"] = parent_id
+        result = self.send_command("create_collection", params)
+        if result.get('created'):
+            print(f"✅ Collection 已创建: {result.get('collection_id')}")
+            if parent_id:
+                print(f"   父 ID: {parent_id}")
+        return result
+
+    def delete_collection(self, collection_id):
+        """删除 Collection（用于测试级联删除）
+        
+        Args:
+            collection_id: 要删除的 Collection ID
+        """
+        print(f"🗑️  删除 Collection: {collection_id}")
+        result = self.send_command("delete_collection", {"collection_id": collection_id})
+        if result.get('deleted'):
+            info = result.get('collection_info', {})
+            print(f"✅ Collection 已删除: {info.get('name')}")
+            print(f"   子集合数: {result.get('total_children', 0)}")
+            print(f"   剩余根集合: {result.get('remaining_root_collections', 0)}")
+            print(f"   子集合已删除: {'是' if result.get('children_deleted') else '否'}")
+        return result
+
+    def get_collection_tree(self):
+        """获取集合树结构（用于验证级联删除）"""
+        print(f"🌲 获取 Collection 树结构...")
+        result = self.send_command("get_collection_tree")
+        print(f"✅ 根集合数量: {result.get('collection_count', 0)}")
+        
+        def print_tree(tree, indent=0):
+            for node in tree:
+                prefix = "  " * indent + "└─ " if indent > 0 else ""
+                print(f"{'  ' * indent}{prefix}{node.get('name')} ({node.get('id')[:8]}...)")
+                children = node.get('children', [])
+                if children:
+                    print_tree(children, indent + 1)
+        
+        print_tree(result.get('tree', []))
+        return result
+

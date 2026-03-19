@@ -174,18 +174,18 @@ void main() {
         expect(find.byIcon(Icons.folder_open), findsWidgets);
       });
 
-      testWidgets('should render nested collection items', (tester) async {
+      testWidgets('should render nested collection items using parentId', (tester) async {
+        // 扁平化存储：使用 parentId 关联子集合
         final collections = [
           Collection.empty().copyWith(
             id: 'col1',
             name: 'Parent Collection',
             isExpanded: true,
-            children: [
-              Collection.empty().copyWith(
-                id: 'child1',
-                name: 'Child Collection',
-              ),
-            ],
+          ),
+          Collection.empty().copyWith(
+            id: 'child1',
+            name: 'Child Collection',
+            parentId: 'col1',
           ),
         ];
 
@@ -264,17 +264,17 @@ void main() {
 
     group('interactions', () {
       testWidgets('should toggle collection expand on tap', (tester) async {
+        // 扁平化存储：使用 parentId 关联子集合
         final collections = [
           Collection.empty().copyWith(
             id: 'col1',
             name: 'Expandable Collection',
             isExpanded: false,
-            children: [
-              Collection.empty().copyWith(
-                id: 'child1',
-                name: 'Child Hidden',
-              ),
-            ],
+          ),
+          Collection.empty().copyWith(
+            id: 'child1',
+            name: 'Child Hidden',
+            parentId: 'col1',
           ),
         ];
 
@@ -443,25 +443,24 @@ void main() {
     });
 
     group('nested collections', () {
-      testWidgets('should render deeply nested collections', (tester) async {
+      testWidgets('should render deeply nested collections using parentId', (tester) async {
+        // 扁平化存储：所有集合在同一层级，通过 parentId 关联
         final collections = [
           Collection.empty().copyWith(
             id: 'level1',
             name: 'Level 1',
             isExpanded: true,
-            children: [
-              Collection.empty().copyWith(
-                id: 'level2',
-                name: 'Level 2',
-                isExpanded: true,
-                children: [
-                  Collection.empty().copyWith(
-                    id: 'level3',
-                    name: 'Level 3',
-                  ),
-                ],
-              ),
-            ],
+          ),
+          Collection.empty().copyWith(
+            id: 'level2',
+            name: 'Level 2',
+            parentId: 'level1',
+            isExpanded: true,
+          ),
+          Collection.empty().copyWith(
+            id: 'level3',
+            name: 'Level 3',
+            parentId: 'level2',
           ),
         ];
 

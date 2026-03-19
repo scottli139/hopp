@@ -7,7 +7,7 @@ import 'package:hopp/services/import_export/postman_schema.dart';
 
 void main() {
   group('PostmanMapper', () {
-    group('toHoppCollection', () {
+    group('toHoppCollectionFlat', () {
       test('should map simple collection', () {
         // Arrange
         final postmanCollection = PostmanCollection(
@@ -24,14 +24,16 @@ void main() {
         );
 
         // Act
-        final hoppCollection =
-            PostmanMapper.toHoppCollection(postmanCollection);
+        final (root, children, requests) =
+            PostmanMapper.toHoppCollectionFlat(postmanCollection);
 
         // Assert
-        expect(hoppCollection.name, 'Test Collection');
-        expect(hoppCollection.requests.length, 1);
-        expect(hoppCollection.requests.first.name, 'GET Request');
-        expect(hoppCollection.requests.first.method, HttpMethod.get);
+        expect(root.name, 'Test Collection');
+        expect(children.length, 0);
+        expect(requests.length, 1);
+        expect(requests.first.name, 'GET Request');
+        expect(requests.first.method, HttpMethod.get);
+        expect(requests.first.parentId, root.id);
       });
 
       test('should map nested folders', () {
@@ -55,13 +57,17 @@ void main() {
         );
 
         // Act
-        final hoppCollection =
-            PostmanMapper.toHoppCollection(postmanCollection);
+        final (root, children, requests) =
+            PostmanMapper.toHoppCollectionFlat(postmanCollection);
 
         // Assert
-        expect(hoppCollection.children.length, 1);
-        expect(hoppCollection.children.first.name, 'Folder');
-        expect(hoppCollection.children.first.requests.length, 1);
+        expect(root.name, 'Test Collection');
+        expect(children.length, 1);
+        expect(children.first.name, 'Folder');
+        expect(children.first.parentId, root.id);
+        expect(requests.length, 1);
+        expect(requests.first.name, 'Nested Request');
+        expect(requests.first.parentId, children.first.id);
       });
 
       test('should map all HTTP methods', () {
@@ -98,9 +104,9 @@ void main() {
             ],
           );
 
-          final hoppCollection =
-              PostmanMapper.toHoppCollection(postmanCollection);
-          expect(hoppCollection.requests.first.method, expectedMethods[i]);
+          final (_, __, requests) =
+              PostmanMapper.toHoppCollectionFlat(postmanCollection);
+          expect(requests.first.method, expectedMethods[i]);
         }
       });
     });
@@ -108,25 +114,71 @@ void main() {
     group('toPostmanCollection', () {
       test('should map simple collection back to Postman format', () {
         // Arrange
+        final rootId = 'root-id';
         final hoppCollection = Collection.empty().copyWith(
+          id: rootId,
           name: 'Test Collection',
-          requests: [
-            HttpRequest.empty().copyWith(
-              name: 'GET Request',
-              method: HttpMethod.get,
-              url: 'https://example.com/api',
-            ),
-          ],
+          requests: [],
         );
+        final allRequests = [
+          HttpRequest.empty().copyWith(
+            name: 'GET Request',
+            method: HttpMethod.get,
+            url: 'https://example.com/api',
+            parentId: rootId,
+          ),
+        ];
 
         // Act
-        final postmanCollection =
-            PostmanMapper.toPostmanCollection(hoppCollection);
+        final postmanCollection = PostmanMapper.toPostmanCollection(
+          hoppCollection,
+          allRequests: allRequests,
+        );
 
         // Assert
         expect(postmanCollection.info.name, 'Test Collection');
         expect(postmanCollection.item.length, 1);
         expect(postmanCollection.item.first.name, 'GET Request');
+      });
+
+      test('should map nested folders to Postman format', () {
+        // Arrange
+        final rootId = 'root-id';
+        final folderId = 'folder-id';
+        final hoppCollection = Collection.empty().copyWith(
+          id: rootId,
+          name: 'Test Collection',
+          requests: [],
+        );
+        final allCollections = [
+          Collection.empty().copyWith(
+            id: folderId,
+            name: 'Folder',
+            parentId: rootId,
+          ),
+        ];
+        final allRequests = [
+          HttpRequest.empty().copyWith(
+            name: 'Nested Request',
+            method: HttpMethod.post,
+            url: 'https://example.com/post',
+            parentId: folderId,
+          ),
+        ];
+
+        // Act
+        final postmanCollection = PostmanMapper.toPostmanCollection(
+          hoppCollection,
+          allCollections: allCollections,
+          allRequests: allRequests,
+        );
+
+        // Assert
+        expect(postmanCollection.info.name, 'Test Collection');
+        expect(postmanCollection.item.length, 1);
+        expect(postmanCollection.item.first.name, 'Folder');
+        expect(postmanCollection.item.first.item?.length, 1);
+        expect(postmanCollection.item.first.item?.first.name, 'Nested Request');
       });
     });
 
@@ -152,11 +204,11 @@ void main() {
           ],
         );
 
-        final hoppCollection =
-            PostmanMapper.toHoppCollection(postmanCollection);
-        expect(hoppCollection.requests.first.bodyType, 'raw');
-        expect(hoppCollection.requests.first.rawContentType, 'json');
-        expect(hoppCollection.requests.first.body, '{"key": "value"}');
+        final (_, __, requests) =
+            PostmanMapper.toHoppCollectionFlat(postmanCollection);
+        expect(requests.first.bodyType, 'raw');
+        expect(requests.first.rawContentType, 'json');
+        expect(requests.first.body, '{"key": "value"}');
       });
 
       test('should map raw body type with uppercase JSON language', () {
@@ -180,10 +232,10 @@ void main() {
           ],
         );
 
-        final hoppCollection =
-            PostmanMapper.toHoppCollection(postmanCollection);
-        expect(hoppCollection.requests.first.bodyType, 'raw');
-        expect(hoppCollection.requests.first.rawContentType, 'json');
+        final (_, __, requests) =
+            PostmanMapper.toHoppCollectionFlat(postmanCollection);
+        expect(requests.first.bodyType, 'raw');
+        expect(requests.first.rawContentType, 'json');
       });
 
       test('should infer json from Content-Type header when language is null',
@@ -212,10 +264,10 @@ void main() {
           ],
         );
 
-        final hoppCollection =
-            PostmanMapper.toHoppCollection(postmanCollection);
-        expect(hoppCollection.requests.first.bodyType, 'raw');
-        expect(hoppCollection.requests.first.rawContentType, 'json');
+        final (_, __, requests) =
+            PostmanMapper.toHoppCollectionFlat(postmanCollection);
+        expect(requests.first.bodyType, 'raw');
+        expect(requests.first.rawContentType, 'json');
       });
 
       test('should infer xml from Content-Type header', () {
@@ -242,10 +294,10 @@ void main() {
           ],
         );
 
-        final hoppCollection =
-            PostmanMapper.toHoppCollection(postmanCollection);
-        expect(hoppCollection.requests.first.bodyType, 'raw');
-        expect(hoppCollection.requests.first.rawContentType, 'xml');
+        final (_, __, requests) =
+            PostmanMapper.toHoppCollectionFlat(postmanCollection);
+        expect(requests.first.bodyType, 'raw');
+        expect(requests.first.rawContentType, 'xml');
       });
 
       test('should default to text when no language and no Content-Type', () {
@@ -267,10 +319,10 @@ void main() {
           ],
         );
 
-        final hoppCollection =
-            PostmanMapper.toHoppCollection(postmanCollection);
-        expect(hoppCollection.requests.first.bodyType, 'raw');
-        expect(hoppCollection.requests.first.rawContentType, 'text');
+        final (_, __, requests) =
+            PostmanMapper.toHoppCollectionFlat(postmanCollection);
+        expect(requests.first.bodyType, 'raw');
+        expect(requests.first.rawContentType, 'text');
       });
 
       test('should map formdata body type correctly', () {
@@ -294,9 +346,9 @@ void main() {
           ],
         );
 
-        final hoppCollection =
-            PostmanMapper.toHoppCollection(postmanCollection);
-        expect(hoppCollection.requests.first.bodyType, 'form-data');
+        final (_, __, requests) =
+            PostmanMapper.toHoppCollectionFlat(postmanCollection);
+        expect(requests.first.bodyType, 'form-data');
       });
 
       test('should map urlencoded body type correctly', () {
@@ -319,9 +371,9 @@ void main() {
           ],
         );
 
-        final hoppCollection =
-            PostmanMapper.toHoppCollection(postmanCollection);
-        expect(hoppCollection.requests.first.bodyType, 'x-www-form-urlencoded');
+        final (_, __, requests) =
+            PostmanMapper.toHoppCollectionFlat(postmanCollection);
+        expect(requests.first.bodyType, 'x-www-form-urlencoded');
       });
     });
   });

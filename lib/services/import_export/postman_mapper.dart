@@ -26,46 +26,73 @@ class PostmanMapper {
 
   // ==================== Postman -> Hopp ====================
 
-  /// Postman Collection -> Hopp Collection
-  static Collection toHoppCollection(PostmanCollection postmanCollection) {
-    return Collection(
-      id: _generateId(),
+  /// Postman Collection -> Hopp Collection（扁平化存储）
+  /// 
+  /// 返回元组：(根集合, [所有子集合], [所有请求])
+  /// 所有集合通过 parentId 建立层级关系，不再使用嵌套的 children
+  static (Collection, List<Collection>, List<HttpRequest>) toHoppCollectionFlat(
+    PostmanCollection postmanCollection,
+  ) {
+    final rootId = _generateId();
+    final allCollections = <Collection>[];
+    final allRequests = <HttpRequest>[];
+
+    // 创建根集合
+    final rootCollection = Collection(
+      id: rootId,
       name: postmanCollection.info.name,
       description: postmanCollection.info.description,
-      children: _extractFolders(postmanCollection.item),
-      requests: _extractRootRequests(postmanCollection.item),
+      requests: [], // 根集合的请求会在下面提取
     );
-  }
 
-  /// 提取文件夹（递归）
-  static List<Collection> _extractFolders(List<PostmanItem> items) {
-    final folders = <Collection>[];
-
-    for (final item in items) {
-      if (item.isFolder) {
-        folders.add(
-          Collection(
-            id: _generateId(),
+    // 递归提取所有子集合和请求
+    void extractItems(List<PostmanItem> items, String parentId) {
+      for (final item in items) {
+        if (item.isFolder) {
+          // 创建子集合
+          final folderId = _generateId();
+          final folder = Collection(
+            id: folderId,
             name: item.name,
             description: item.description,
-            children: _extractFolders(item.item ?? []),
-            requests: _extractRequests(item.item ?? []),
-          ),
-        );
+            parentId: parentId,
+            requests: [], // 文件夹的请求会在下面提取
+          );
+          allCollections.add(folder);
+
+          // 递归处理子项
+          extractItems(item.item ?? [], folderId);
+        } else if (item.isRequest) {
+          // 创建请求
+          final request = _toHoppRequest(item).copyWith(parentId: parentId);
+          allRequests.add(request);
+        }
       }
     }
 
-    return folders;
+    // 提取根级别的请求
+    for (final item in postmanCollection.item) {
+      if (item.isRequest) {
+        final request = _toHoppRequest(item).copyWith(parentId: rootId);
+        allRequests.add(request);
+      }
+    }
+
+    // 提取所有子集合和它们的请求
+    for (final item in postmanCollection.item) {
+      if (item.isFolder) {
+        extractItems([item], rootId);
+      }
+    }
+
+    return (rootCollection, allCollections, allRequests);
   }
 
-  /// 提取根级请求
-  static List<HttpRequest> _extractRootRequests(List<PostmanItem> items) {
-    return items.where((i) => i.isRequest).map(_toHoppRequest).toList();
-  }
-
-  /// 提取文件夹内的请求
-  static List<HttpRequest> _extractRequests(List<PostmanItem> items) {
-    return items.where((i) => i.isRequest).map(_toHoppRequest).toList();
+  /// 已废弃：使用 toHoppCollectionFlat 替代
+  @deprecated
+  static Collection toHoppCollection(PostmanCollection postmanCollection) {
+    final (root, _, _) = toHoppCollectionFlat(postmanCollection);
+    return root;
   }
 
   /// Postman Item -> Hopp HttpRequest
@@ -317,39 +344,89 @@ class PostmanMapper {
 
   // ==================== Hopp -> Postman ====================
 
-  /// Hopp Collection -> Postman Collection
+  /// Hopp Collection -> Postman Collection（扁平化存储版本）
+  /// 
+  /// [rootCollection] 根集合
+  /// [allCollections] 所有子集合列表（通过 parentId 关联）
+  /// [allRequests] 所有请求列表（通过 parentId 关联）
   static PostmanCollection toPostmanCollection(
-    Collection collection, {
+    Collection rootCollection, {
     PostmanVersion version = PostmanVersion.v2_1,
+    List<Collection> allCollections = const [],
+    List<HttpRequest> allRequests = const [],
   }) {
+    // 构建子集合映射（parentId -> children）
+    final childrenMap = <String, List<Collection>>{};
+    for (final c in allCollections) {
+      final parentId = c.parentId ?? rootCollection.id;
+      childrenMap.putIfAbsent(parentId, () => []);
+      childrenMap[parentId]!.add(c);
+    }
+
+    // 构建请求映射（parentId -> requests）
+    final requestsMap = <String, List<HttpRequest>>{};
+    for (final r in allRequests) {
+      final parentId = r.parentId ?? rootCollection.id;
+      requestsMap.putIfAbsent(parentId, () => []);
+      requestsMap[parentId]!.add(r);
+    }
+
+    // 递归构建 Postman Item 列表
+    List<PostmanItem> buildItems(String parentId) {
+      final items = <PostmanItem>[];
+
+      // 添加子文件夹
+      final children = childrenMap[parentId] ?? [];
+      for (final child in children) {
+        items.add(_toPostmanFolder(child, childrenMap, requestsMap));
+      }
+
+      // 添加请求
+      final requests = requestsMap[parentId] ?? [];
+      for (final request in requests) {
+        items.add(_toPostmanRequestItem(request));
+      }
+
+      return items;
+    }
+
     return PostmanCollection(
       info: PostmanInfo(
-        name: collection.name,
-        description: collection.description ?? '',
+        name: rootCollection.name,
+        description: rootCollection.description ?? '',
         postmanId: _generateUuid(),
         schema:
             'https://schema.getpostman.com/json/collection/${version.value}/collection.json',
       ),
-      item: [
-        // 映射子文件夹
-        ...collection.children.map(_toPostmanFolder),
-        // 映射根级请求
-        ...collection.requests.map(_toPostmanRequestItem),
-      ],
+      item: buildItems(rootCollection.id),
     );
   }
 
   /// Hopp Collection -> Postman Folder Item
-  static PostmanItem _toPostmanFolder(Collection collection) {
+  static PostmanItem _toPostmanFolder(
+    Collection collection,
+    Map<String, List<Collection>> childrenMap,
+    Map<String, List<HttpRequest>> requestsMap,
+  ) {
+    // 递归构建子项
+    final items = <PostmanItem>[];
+
+    // 添加子文件夹
+    final children = childrenMap[collection.id] ?? [];
+    for (final child in children) {
+      items.add(_toPostmanFolder(child, childrenMap, requestsMap));
+    }
+
+    // 添加请求
+    final requests = requestsMap[collection.id] ?? [];
+    for (final request in requests) {
+      items.add(_toPostmanRequestItem(request));
+    }
+
     return PostmanItem(
       name: collection.name,
       description: collection.description,
-      item: [
-        // 递归映射子文件夹
-        ...collection.children.map(_toPostmanFolder),
-        // 映射请求
-        ...collection.requests.map(_toPostmanRequestItem),
-      ],
+      item: items,
     );
   }
 

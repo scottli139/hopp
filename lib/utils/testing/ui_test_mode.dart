@@ -349,6 +349,18 @@ class UITestModeManager {
       case 'verify_url_params_sync':
         return await _verifyUrlParamsSync();
 
+      case 'create_collection':
+        final name = params['name'] as String;
+        final parentId = params['parent_id'] as String?;
+        return await _createCollection(name, parentId);
+
+      case 'delete_collection':
+        final collectionId = params['collection_id'] as String;
+        return await _deleteCollection(collectionId);
+
+      case 'get_collection_tree':
+        return await _getCollectionTree();
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -2307,6 +2319,122 @@ class UITestModeManager {
           .toList(),
       'has_query_params': hasQueryParams(fullUrl),
     };
+  }
+
+  /// 创建 Collection（用于测试级联删除）
+  Future<Map<String, dynamic>> _createCollection(String name, String? parentId) async {
+    AppLogger.info('[UI_TEST] Creating collection: $name, parentId: $parentId');
+    
+    final collection = Collection.empty().copyWith(
+      name: name,
+      parentId: parentId,
+    );
+    
+    await _ref!.read(collectionProvider.notifier).addCollection(collection);
+    
+    return {
+      'created': true,
+      'collection_id': collection.id,
+      'name': collection.name,
+      'parent_id': parentId,
+    };
+  }
+
+  /// 删除 Collection（用于测试级联删除）
+  Future<Map<String, dynamic>> _deleteCollection(String collectionId) async {
+    AppLogger.info('[UI_TEST] Deleting collection: $collectionId');
+    
+    // 获取删除前的集合信息
+    final collectionsAsync = _ref!.read(collectionProvider);
+    Map<String, dynamic>? deletedCollectionInfo;
+    int childCount = 0;
+    
+    if (collectionsAsync case AsyncData(:final value)) {
+      void findCollectionInfo(List<Collection> collections) {
+        for (final collection in collections) {
+          if (collection.id == collectionId) {
+            deletedCollectionInfo = {
+              'id': collection.id,
+              'name': collection.name,
+              'child_count': collection.children.length,
+              'request_count': collection.requests.length,
+            };
+            // 计算所有子集合数量
+            void countChildren(Collection c) {
+              for (final child in c.children) {
+                childCount++;
+                countChildren(child);
+              }
+            }
+            countChildren(collection);
+            break;
+          }
+          if (collection.children.isNotEmpty) {
+            findCollectionInfo(collection.children);
+          }
+        }
+      }
+      findCollectionInfo(value);
+    }
+    
+    await _ref!.read(collectionProvider.notifier).deleteCollection(collectionId);
+    
+    // 获取删除后的集合信息
+    final afterDeleteAsync = _ref!.read(collectionProvider);
+    int remainingCollections = 0;
+    bool childrenDeleted = true;
+    
+    if (afterDeleteAsync case AsyncData(:final value)) {
+      remainingCollections = value.length;
+      
+      // 检查子集合是否被删除
+      void checkChildrenDeleted(List<Collection> collections) {
+        for (final collection in collections) {
+          if (collection.id == collectionId || 
+              (deletedCollectionInfo != null && 
+               collection.parentId == collectionId)) {
+            childrenDeleted = false;
+          }
+          if (collection.children.isNotEmpty) {
+            checkChildrenDeleted(collection.children);
+          }
+        }
+      }
+      checkChildrenDeleted(value);
+    }
+    
+    return {
+      'deleted': true,
+      'collection_id': collectionId,
+      'collection_info': deletedCollectionInfo,
+      'total_children': childCount,
+      'remaining_root_collections': remainingCollections,
+      'children_deleted': childrenDeleted,
+    };
+  }
+
+  /// 获取集合树结构（用于验证级联删除）
+  Future<Map<String, dynamic>> _getCollectionTree() async {
+    final collectionsAsync = _ref!.read(collectionProvider);
+    
+    if (collectionsAsync case AsyncData(:final value)) {
+      List<Map<String, dynamic>> buildTree(List<Collection> collections) {
+        return collections.map((c) => {
+          'id': c.id,
+          'name': c.name,
+          'parent_id': c.parentId,
+          'request_count': c.requests.length,
+          'children': buildTree(c.children),
+        }).toList();
+      }
+      
+      return {
+        'collection_count': value.length,
+        'tree': buildTree(value),
+      };
+    }
+    
+    return {'collection_count': 0, 'tree': []};
   }
 }
 

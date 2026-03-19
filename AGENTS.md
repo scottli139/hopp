@@ -43,10 +43,10 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **Issue #11 已完成：URL-Params 双向联动 + Postman 导入重复参数修复** |
+| **当前状态** | ✅ **Issue #3 已修复：Collection 数据模型扁平化重构 - 统一使用 parentId 建立层级关系** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **测试覆盖** | ✅ **534 个通过 / Postman 导入重复参数修复完成** |
+| **测试覆盖** | ✅ **542 个通过 / Collection 扁平化存储重构完成** |
 | **下次重点** | 🟡 请求设置完善 / 🟢 国际化完善 / ⏳ 行号滚动同步问题 |
 
 > **历史参考**: 项目曾使用 Tauri (React + Rust) 技术栈，详见 [ARCHIVED_TAURI.md](./docs/ARCHIVED_TAURI.md)
@@ -196,7 +196,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | ~~Postman 导入 Raw Content Type 识别错误~~ | ~~P1~~ | ~~导入 Postman Collection 时，body.options.raw.language 为 json 的请求显示为 text~~ | ✅ **已修复 (2026-03-17)** - GitHub Issue #10 已关闭 |
 | ~~Certificate 显示假数据~~ | ~~P1~~ | ~~Response 区域的 Certificate Tab 当前显示的是模拟/假数据，非真实证书信息~~ | ✅ **已修复 (2026-03-17)** - GitHub Issue #2 已关闭 |
 | ~~自签名证书无法访问~~ | ~~P1~~ | ~~内网自签名证书服务器请求失败，缺少 SSL 验证开关~~ | ✅ **已修复 (2026-03-17)** |
-| 删除 Collection 子目录处理问题 | P1 | 删除带子目录的 Collection 时，子 Collection 未被删除而是被保留并提升到第一级 | 需修复删除逻辑 |
+| ~~删除 Collection 子目录处理问题~~ | ~~P1~~ | ~~删除带子目录的 Collection 时，子 Collection 未被删除而是被保留并提升到第一级~~ | ✅ **已修复 (2026-03-19)** - GitHub Issue #3 已关闭 |
 | 行号与内容滚动不同步 | P2 | Request/Response Body 编辑器中行号区域与内容区域未对齐，内容滚动时行号不跟随滚动 | 需优化 CodeEditor 组件 |
 
 ### 质量保障
@@ -215,13 +215,90 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | cURL 解析测试 | 新增 44 个 | ✅ 通过 |
 | URL 参数同步测试 | 新增 36 个 | ✅ 通过 |
 | Postman 导入参数测试 | 新增 3 个 | ✅ 通过 |
-| **总计** | **534** | **✅ 全部通过** |
+| Collection 级联删除测试 | 新增 6 个 | ✅ 通过 |
+| Collection 扁平化存储测试 | 更新 28 个 | ✅ 通过 |
+| **总计** | **542** | **✅ 全部通过** |
 
 ---
 
 ## 知识积累
 
 ### 技术决策记录
+
+#### Collection 扁平化存储重构 (Issue #3)
+
+**问题**: Collection 数据模型存在双重存储结构 - Postman 导入创建嵌套 `children` + `parentId`，而 "Add Folder" 只设置 `parentId`，导致：
+1. 级联删除时子集合未被正确删除
+2. Sidebar 只渲染 `children`，忽略 `parentId` 关系
+3. 数据一致性难以维护
+
+**解决方案**: 统一使用扁平化存储结构（只使用 `parentId` 建立层级关系）
+
+**架构变更**:
+```
+Before (嵌套存储):
+Collection {
+  id: "root",
+  children: [
+    Collection {
+      id: "child",
+      children: [...]  // 嵌套递归
+    }
+  ]
+}
+
+After (扁平化存储):
+[
+  Collection { id: "root", parentId: null },
+  Collection { id: "child", parentId: "root" },
+  Collection { id: "grandchild", parentId: "child" }
+]
+```
+
+**关键改动**:
+1. **Collection 模型**: 保留 `children` 字段但标记为废弃，默认空列表
+2. **Collection Provider**: 
+   - `deleteCollection`: 通过 `parentId` 查询递归删除子集合
+   - `flattenedCollectionsProvider`: 直接返回扁平列表
+   - 新增 `rootCollectionsProvider`: 返回根级集合（parentId == null）
+3. **Postman Mapper**: 
+   - `toHoppCollectionFlat()`: 返回 `(root, children, requests)` 元组
+   - `toPostmanCollection()`: 从扁平结构重建嵌套结构导出
+4. **Import Service**: 支持扁平化数据的冲突解决（覆盖/重命名/合并）
+
+**层级查询方法**:
+```dart
+// 查找子集合
+List<Collection> findChildren(String parentId) => 
+  allCollections.where((c) => c.parentId == parentId).toList();
+
+// 级联删除
+void deleteCollection(String id) {
+  final idsToDelete = [id];
+  void collectChildren(String parentId) {
+    for (final c in allCollections) {
+      if (c.parentId == parentId) {
+        idsToDelete.add(c.id);
+        collectChildren(c.id);
+      }
+    }
+  }
+  collectChildren(id);
+  // 删除所有 idsToDelete 中的集合
+}
+```
+
+**向后兼容**:
+- `children` 字段保留但默认空列表，避免现有数据崩溃
+- Hive 适配器保持兼容性
+
+**测试覆盖**:
+- 级联删除: 5 个测试用例
+- 扁平化 Provider: 5 个测试用例  
+- Postman 导入/导出: 12 个测试用例
+- Sidebar 渲染: 3 个测试用例
+
+---
 
 #### Request Settings 功能规划 (F1.14)
 
@@ -593,6 +670,58 @@ static String _extractUrl(PostmanUrl url) {
 
 **测试**: 添加 `postman_import_duplicate_params_test.dart` (3个测试用例)
 
+#### Collection 级联删除与层级显示问题 (Issue #3)
+
+**问题**: 
+1. 删除带子目录的 Collection 时，子 Collection 未被删除而是被保留并提升到第一级
+2. Sidebar 渲染层级结构时，通过 "Add Folder" 创建的子集合不显示（因为只设置了 `parentId`，而 Sidebar 只渲染 `children`）
+
+**根本原因**: 双重存储结构
+- Postman 导入创建嵌套 `children` + `parentId`
+- "Add Folder" 只设置 `parentId`
+- Sidebar 只渲染 `children`，忽略 `parentId` 关系
+
+**解决方案**: 扁平化存储重构 - 统一使用 `parentId` 建立层级关系
+
+**核心改动**:
+1. **Collection 模型**: 保留 `children` 字段但标记为废弃（向后兼容）
+2. **Collection Provider**: 
+   - `deleteCollection`: 通过 `parentId` 查询递归删除子集合
+   - 新增 `rootCollectionsProvider`: 返回根级集合
+3. **Postman Mapper**: `toHoppCollectionFlat()` 返回扁平化数据
+
+**级联删除代码**:
+```dart
+Future<void> deleteCollection(String id) async {
+  final currentState = state;
+  if (currentState case AsyncData(:final value)) {
+    final idsToDelete = <String>[];
+    
+    // 通过 parentId 递归收集所有子集合
+    void collectDescendants(String parentId) {
+      idsToDelete.add(parentId);
+      for (final collection in value) {
+        if (collection.parentId == parentId) {
+          collectDescendants(collection.id);
+        }
+      }
+    }
+    
+    collectDescendants(id);
+    
+    // 删除所有收集到的集合
+    for (final collectionId in idsToDelete) {
+      await storage.deleteCollection(collectionId);
+    }
+  }
+}
+```
+
+**测试覆盖**:
+- 单元测试: `collection_provider_test.dart` 新增/更新 11 个测试
+- Postman 导入/导出测试: 更新 12 个测试
+- Sidebar 测试: 更新 3 个测试
+
 #### URL 查询参数与 Params Tab 双向联动 (Issue #11)
 
 **问题**: URL 中的查询参数与 Params Tab 的内容没有联动。当在 URL 中输入 `?abc=123` 时，Params Tab 不会自动同步显示这些参数；反之，在 Params Tab 中添加参数也不会同步更新到 URL。
@@ -846,6 +975,8 @@ genhtml coverage/lcov.info -o coverage/html
 | 2026-03-18 | v0.6.2-dialog-ui-fix | 修复 Issue #7: Import/Export/Delete Collection 对话框 UI/UX 规范 - 统一英文语言、规范字号和按钮样式 |
 | 2026-03-18 | v0.6.3-url-params-sync | 实现 Issue #11: URL 查询参数与 Params Tab 双向联动 - URL→Params、Params→URL 同步，36个单元测试 |
 | 2026-03-18 | v0.6.4-import-params-fix | 修复 Postman 导入重复参数问题: URL raw 含查询参数时正确提取 base URL |
+| 2026-03-19 | v0.6.5-collection-cascade-delete | 修复 Issue #3: Collection 级联删除 - 删除父集合时自动删除所有子集合 |
+| 2026-03-19 | v0.6.6-collection-flat-storage | Collection 扁平化存储重构 - 统一使用 parentId 建立层级关系，修复级联删除和显示层级问题 |
 
 ---
 

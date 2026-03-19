@@ -169,36 +169,32 @@ void main() {
     });
 
     group('isFolder getter', () {
-      test('should return true when collection has children', () {
+      test('should return true when collection has no requests', () {
         final collection = Collection(
           id: 'col-1',
           name: 'Parent',
-          children: [
-            Collection.empty(),
-          ],
-        );
-
-        expect(collection.isFolder, isTrue);
-      });
-
-      test('should return true when collection has no children and no requests',
-          () {
-        final collection = Collection(
-          id: 'col-1',
-          name: 'Empty Folder',
-          children: [],
           requests: [],
         );
 
         expect(collection.isFolder, isTrue);
       });
 
-      test('should return false when collection has requests but no children',
+      test('should return true when collection has empty requests list',
+          () {
+        final collection = Collection(
+          id: 'col-1',
+          name: 'Empty Folder',
+          requests: [],
+        );
+
+        expect(collection.isFolder, isTrue);
+      });
+
+      test('should return false when collection has requests',
           () {
         final collection = Collection(
           id: 'col-1',
           name: 'Request Container',
-          children: [],
           requests: [
             HttpRequest.empty(),
           ],
@@ -207,20 +203,18 @@ void main() {
         expect(collection.isFolder, isFalse);
       });
 
-      test('should return false when collection has both children and requests',
+      test('should return false when collection has multiple requests',
           () {
         final collection = Collection(
           id: 'col-1',
           name: 'Mixed Container',
-          children: [
-            Collection.empty(),
-          ],
           requests: [
+            HttpRequest.empty(),
             HttpRequest.empty(),
           ],
         );
 
-        expect(collection.isFolder, isTrue);
+        expect(collection.isFolder, isFalse);
       });
     });
 

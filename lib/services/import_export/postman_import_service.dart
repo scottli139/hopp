@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../models/collection.dart';
+import '../../models/http_request.dart';
 import '../../services/storage_service.dart';
 import '../../utils/app_logger.dart';
 import 'import_export_exception.dart';
@@ -45,6 +46,12 @@ class ImportResult {
   /// 错误信息
   final String? errorMessage;
 
+  /// 冲突时的子集合列表（扁平化存储）
+  final List<Collection>? childCollections;
+
+  /// 冲突时的所有请求列表
+  final List<HttpRequest>? allRequests;
+
   const ImportResult({
     required this.success,
     this.collectionId,
@@ -56,6 +63,8 @@ class ImportResult {
     this.conflictCollection,
     this.existingId,
     this.errorMessage,
+    this.childCollections,
+    this.allRequests,
   });
 
   factory ImportResult.success({
@@ -77,11 +86,15 @@ class ImportResult {
   factory ImportResult.conflict({
     required Collection collection,
     required String existingId,
+    List<Collection>? childCollections,
+    List<HttpRequest>? allRequests,
   }) =>
       ImportResult(
         success: false,
         conflictCollection: collection,
         existingId: existingId,
+        childCollections: childCollections,
+        allRequests: allRequests,
       );
 
   factory ImportResult.skipped() =>
@@ -136,7 +149,7 @@ class PostmanImportService with LogMixin {
     }
   }
 
-  /// 导入 Collection
+  /// 导入 Collection（扁平化存储）
   Future<ImportResult> importCollection(String json) async {
     logInfo('Importing collection...');
 
@@ -160,30 +173,41 @@ class PostmanImportService with LogMixin {
         );
       }
 
-      // 转换为 Hopp 模型
-      final hoppCollection = PostmanMapper.toHoppCollection(collection);
+      // 转换为扁平化的 Hopp 模型
+      final (rootCollection, childCollections, allRequests) =
+          PostmanMapper.toHoppCollectionFlat(collection);
 
       // 检查冲突
-      final existing = await _findExistingCollection(hoppCollection.name);
+      final existing = await _findExistingCollection(rootCollection.name);
       if (existing != null) {
-        logInfo('Collection with same name exists: ${hoppCollection.name}');
+        logInfo('Collection with same name exists: ${rootCollection.name}');
+        // 将扁平化数据存储到 ImportResult 以便后续处理
         return ImportResult.conflict(
-          collection: hoppCollection,
+          collection: rootCollection,
           existingId: existing.id,
+          childCollections: childCollections,
+          allRequests: allRequests,
         );
       }
 
-      // 保存集合
-      await _storage.saveCollection(hoppCollection);
+      // 保存根集合
+      await _storage.saveCollection(rootCollection);
+
+      // 保存所有子集合
+      for (final child in childCollections) {
+        await _storage.saveCollection(child);
+      }
 
       // 保存所有请求
-      await _saveRequestsRecursively(hoppCollection);
+      for (final request in allRequests) {
+        await _storage.saveRequest(request);
+      }
 
-      logInfo('Collection imported successfully: ${hoppCollection.id}');
+      logInfo('Collection imported successfully: ${rootCollection.id}');
 
       return ImportResult.success(
-        collectionId: hoppCollection.id,
-        importedRequestCount: _countRequests(collection.item),
+        collectionId: rootCollection.id,
+        importedRequestCount: allRequests.length,
       );
     } on ImportException {
       rethrow;
@@ -227,64 +251,154 @@ class PostmanImportService with LogMixin {
     required Collection collection,
     required ConflictResolution resolution,
     String? existingId,
+    List<Collection>? childCollections,
+    List<HttpRequest>? allRequests,
   }) async {
     logInfo('Resolving conflict with strategy: ${resolution.name}');
 
     switch (resolution) {
       case ConflictResolution.overwrite:
-        return _overwriteCollection(collection, existingId);
+        return _overwriteCollection(
+          collection,
+          existingId,
+          childCollections: childCollections,
+          allRequests: allRequests,
+        );
       case ConflictResolution.rename:
-        return _renameAndImport(collection);
+        return _renameAndImport(
+          collection,
+          childCollections: childCollections,
+          allRequests: allRequests,
+        );
       case ConflictResolution.merge:
-        return _mergeCollections(collection, existingId);
+        return _mergeCollections(
+          collection,
+          existingId,
+          childCollections: childCollections,
+          allRequests: allRequests,
+        );
       case ConflictResolution.skip:
         return ImportResult.skipped();
     }
   }
 
-  /// 覆盖现有集合
+  /// 覆盖现有集合（扁平化存储）
   Future<ImportResult> _overwriteCollection(
     Collection collection,
-    String? existingId,
-  ) async {
+    String? existingId, {
+    List<Collection>? childCollections,
+    List<HttpRequest>? allRequests,
+  }) async {
     logInfo('Overwriting collection: ${collection.name}');
 
+    // 获取所有子集合的 ID 用于级联删除
+    final allChildIds = <String>[];
     if (existingId != null) {
+      final allCollections = await _storage.getCollections();
+      _collectAllChildIds(existingId, allCollections, allChildIds);
+
+      // 删除现有集合及其所有子集合
       await _storage.deleteCollection(existingId);
+      for (final childId in allChildIds) {
+        await _storage.deleteCollection(childId);
+      }
     }
 
+    // 保存新的根集合
     await _storage.saveCollection(collection);
-    await _saveRequestsRecursively(collection);
+
+    // 保存所有子集合
+    final children = childCollections ?? [];
+    for (final child in children) {
+      await _storage.saveCollection(child);
+    }
+
+    // 保存所有请求
+    final requests = allRequests ?? [];
+    for (final request in requests) {
+      await _storage.saveRequest(request);
+    }
 
     return ImportResult.success(
       collectionId: collection.id,
-      importedRequestCount: _countHoppRequests(collection),
+      importedRequestCount: requests.length,
     );
   }
 
-  /// 重命名并导入
-  Future<ImportResult> _renameAndImport(Collection collection) async {
+  /// 收集所有子集合 ID
+  void _collectAllChildIds(
+    String parentId,
+    List<Collection> allCollections,
+    List<String> result,
+  ) {
+    final children =
+        allCollections.where((c) => c.parentId == parentId).toList();
+    for (final child in children) {
+      result.add(child.id);
+      _collectAllChildIds(child.id, allCollections, result);
+    }
+  }
+
+  /// 重命名并导入（扁平化存储）
+  Future<ImportResult> _renameAndImport(
+    Collection collection, {
+    List<Collection>? childCollections,
+    List<HttpRequest>? allRequests,
+  }) async {
     final newName = await _generateUniqueName(collection.name);
-    final renamed = collection.copyWith(name: newName);
+
+    // 更新根集合名称
+    final renamedRoot = collection.copyWith(name: newName);
+
+    // 为子集合更新 parentId（因为根集合 ID 已改变）
+    final originalRootId = collection.id;
+    final newRootId = renamedRoot.id;
+
+    final renamedChildren = (childCollections ?? []).map((child) {
+      if (child.parentId == originalRootId) {
+        return child.copyWith(parentId: newRootId);
+      }
+      return child;
+    }).toList();
+
+    // 更新所有请求的 collectionId
+    final updatedRequests = (allRequests ?? []).map((request) {
+      if (request.parentId == originalRootId) {
+        return request.copyWith(parentId: newRootId);
+      }
+      return request;
+    }).toList();
 
     logInfo('Renaming and importing: $newName');
 
-    await _storage.saveCollection(renamed);
-    await _saveRequestsRecursively(renamed);
+    // 保存根集合
+    await _storage.saveCollection(renamedRoot);
+
+    // 保存所有子集合
+    for (final child in renamedChildren) {
+      await _storage.saveCollection(child);
+    }
+
+    // 保存所有请求
+    for (final request in updatedRequests) {
+      await _storage.saveRequest(request);
+    }
 
     return ImportResult.success(
-      collectionId: renamed.id,
-      importedRequestCount: _countHoppRequests(renamed),
+      collectionId: renamedRoot.id,
+      importedRequestCount: updatedRequests.length,
       renamed: true,
       newName: newName,
     );
   }
 
-  /// 合并集合
+  /// 合并集合（扁平化存储）
   Future<ImportResult> _mergeCollections(
     Collection newCollection,
-    String? existingId,
-  ) async {
+    String? existingId, {
+    List<Collection>? childCollections,
+    List<HttpRequest>? allRequests,
+  }) async {
     if (existingId == null) {
       return ImportResult.error('无法找到现有集合');
     }
@@ -296,39 +410,43 @@ class PostmanImportService with LogMixin {
 
     logInfo('Merging collections: ${existing.name}');
 
-    // 合并请求：保留现有，添加新的
+    // 为新请求更新 collectionId
+    final requestsToAdd = (allRequests ?? []).map((request) {
+      if (request.parentId == newCollection.id) {
+        return request.copyWith(parentId: existingId);
+      }
+      return request;
+    }).toList();
+
+    // 为子集合更新 parentId
+    final childrenToAdd = (childCollections ?? []).map((child) {
+      if (child.parentId == newCollection.id) {
+        return child.copyWith(parentId: existingId);
+      }
+      return child;
+    }).toList();
+
+    // 更新现有集合
     final merged = existing.copyWith(
-      requests: [...existing.requests, ...newCollection.requests],
-      children: [...existing.children, ...newCollection.children],
+      requests: [...existing.requests, ...requestsToAdd],
     );
-
     await _storage.saveCollection(merged);
-    await _saveRequestsRecursively(merged);
 
-    return ImportResult.success(
-      collectionId: merged.id,
-      importedRequestCount: _countHoppRequests(newCollection),
-      merged: true,
-    );
-  }
-
-  /// 递归保存所有请求（子集合只作为嵌套对象，不单独保存）
-  Future<void> _saveRequestsRecursively(Collection collection,
-      {bool isTopLevel = true}) async {
-    // 只有顶层集合才保存到 storage
-    if (isTopLevel) {
-      await _storage.saveCollection(collection);
+    // 添加所有子集合
+    for (final child in childrenToAdd) {
+      await _storage.saveCollection(child);
     }
 
-    // 保存当前集合的请求
-    for (final request in collection.requests) {
+    // 保存所有请求
+    for (final request in requestsToAdd) {
       await _storage.saveRequest(request);
     }
 
-    // 递归处理子集合（不单独保存）
-    for (final child in collection.children) {
-      await _saveRequestsRecursively(child, isTopLevel: false);
-    }
+    return ImportResult.success(
+      collectionId: existingId,
+      importedRequestCount: requestsToAdd.length,
+      merged: true,
+    );
   }
 
   /// 查找同名集合
@@ -404,15 +522,6 @@ class PostmanImportService with LogMixin {
       } else if (item.isFolder) {
         count += _countRequests(item.item ?? []);
       }
-    }
-    return count;
-  }
-
-  /// 计算 Hopp 请求数量
-  int _countHoppRequests(Collection collection) {
-    var count = collection.requests.length;
-    for (final child in collection.children) {
-      count += _countHoppRequests(child);
     }
     return count;
   }

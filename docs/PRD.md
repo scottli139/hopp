@@ -27,18 +27,21 @@
 | F1.11 | HTTPS 证书查看 | ✅ | 查看 SSL/TLS 证书详细信息 | 证书颁发者、有效期、域名、指纹等 |
 | F1.12 | 请求时间分析 | ✅ | 展示请求各环节耗时 | DNS、TCP、SSL、TTFB、下载时间分段展示 |
 | F1.13 | 请求详情展示 | ✅ | 显示实际发送的请求信息 | 展示变量替换后的最终 URL、Headers、Body |
-| F1.14 | 请求设置 | ✅ | 请求级别的配置选项 | HTTP版本、SSL验证开关已实现，其他配置项待完成 |
+| F1.14 | 请求设置 | ⏳ | 请求级别的配置选项 | SSL验证、Follow Redirects、Max Redirects 已实现，其他配置项待完成 |
 
-### 二、集合与组织功能 ✅
+### 二、集合与组织功能 ⏳
 
-| ID | 功能 | 需求描述 | 验收标准 |
-|----|------|----------|----------|
-| F2.1 | 请求历史 | 自动保存最近请求记录 | 保留最近 100 条，支持搜索 |
-| F2.2 | 收藏请求 | 手动收藏常用请求 | 收藏列表独立展示 |
-| F2.3 | 文件夹/集合 | 按项目/模块组织请求 | 支持嵌套文件夹，拖拽排序 |
-| F2.4 | [导入/导出](#f24-导入导出-postman-格式) | Postman 集合导入/导出 | 支持 v2.1 格式，数据不丢失 |
-| F2.5 | 请求重命名 | 修改请求名称 | 在编辑器和侧边栏支持修改请求名称 |
-| F2.6 | **cURL 导入** | ⏳ | **解析 cURL 命令创建请求** | **支持从剪贴板/文件导入，快速复现接口 (v0.6.0)** |
+> **状态说明**: 基础 Collection/Folder/Request 管理已完成，但请求历史、收藏、拖拽排序待实现。
+
+| ID | 功能 | 状态 | 需求描述 | 验收标准 |
+|----|------|------|----------|----------|
+| F2.1 | 请求历史 | ⏳ | 自动保存最近请求记录 | 保留最近 100 条，支持搜索 |
+| F2.2 | 收藏请求 | ⏳ | 手动收藏常用请求 | 收藏列表独立展示 |
+| F2.3 | 文件夹/集合 | ✅ | 按项目/模块组织请求 | 支持嵌套文件夹 |
+| F2.4 | [导入/导出](#f24-导入导出-postman-格式) | ✅ | Postman 集合导入/导出 | 支持 v2.1 格式，数据不丢失 |
+| F2.5 | 请求重命名 | ✅ | 修改请求名称 | 在编辑器和侧边栏支持修改请求名称 |
+| F2.6 | cURL 导入 | ✅ | 解析 cURL 命令创建请求 | 支持从剪贴板/文件导入，快速复现接口 (v0.6.0) |
+| F2.7 | 拖拽排序 | ⏳ | Collection/Folder/Request 拖拽排序 | 支持拖拽调整顺序和层级 |
 
 #### F2.6 cURL 导入详细需求
 
@@ -160,13 +163,15 @@
 
 ---
 
-### 三、环境变量功能 ✅
+### 三、环境变量功能 ⏳
 
-| ID | 功能 | 需求描述 | 验收标准 |
-|----|------|----------|----------|
-| F3.1 | 环境变量 | 不同环境（开发/测试/生产） | 可创建多个环境配置 |
-| F3.2 | 全局变量 | 跨环境共享变量 | 独立于环境的全局变量 |
-| F3.3 | 变量替换 | URL/Headers/Body 中使用 `{{var}}` | 发送前自动替换变量 |
+> **状态说明**: 目前仅实现了 Postman Environment 格式的导入导出支持，核心功能（环境管理、变量替换）待实现。
+
+| ID | 功能 | 状态 | 需求描述 | 验收标准 |
+|----|------|------|----------|----------|
+| F3.1 | 环境变量 | ⏳ | 不同环境（开发/测试/生产） | 可创建多个环境配置 |
+| F3.2 | 全局变量 | ⏳ | 跨环境共享变量 | 独立于环境的全局变量 |
+| F3.3 | 变量替换 | ⏳ | URL/Headers/Body 中使用 `{{var}}` | 发送前自动替换变量 |
 
 ### 四、测试与脚本功能 ✅ (v0.7.0 规划)
 
@@ -312,6 +317,7 @@ pm.request.headers.add({key: "X-Sign", value: sign});
 ---
 | F7.3 | API 文档生成 | ⏸️ | 从集合生成文档 | 导出 Markdown/HTML |
 | F7.5 | 代理设置 | ⏸️ | HTTP/HTTPS 代理 | 支持系统代理和自定义代理 |
+| F7.7 | gRPC 测试 | Backlog | Protocol Buffers 接口测试 | 支持 .proto 文件导入和测试 |
 | F7.6 | 代码生成 | ⏳ | 生成 Python/JS/cURL 等代码 | 支持 20+ 语言，一键复制 |
 
 #### F7.6 代码生成详细需求
@@ -371,7 +377,7 @@ pm.request.headers.add({key: "X-Sign", value: sign});
 |--------|----------|--------|----------|------|
 | HTTP Version | Dropdown | Auto | 选择 HTTP/1.1 或 HTTP/2，Auto 由系统自动选择 | ⏳ |
 | Enable SSL certificate verification | Toggle | ON | 开启/关闭 SSL 证书验证，关闭后允许访问自签名证书 | ✅ 已实现 |
-| Automatically follow redirects | Toggle | ON | 是否自动跟随 3xx 重定向响应 | ⏳ |
+| Automatically follow redirects | Toggle | ON | 是否自动跟随 3xx 重定向响应 | ✅ 已实现 |
 | Follow original HTTP Method | Toggle | OFF | 重定向时是否保持原始 HTTP 方法（默认转为 GET）| ⏳ |
 | Follow Authorization header | Toggle | OFF | 跨域重定向时是否保留 Authorization Header | ⏳ |
 | Remove referer header on redirect | Toggle | OFF | 重定向时是否自动移除 Referer Header | ⏳ |
@@ -379,7 +385,7 @@ pm.request.headers.add({key: "X-Sign", value: sign});
 | Encode URL automatically | Toggle | ON | 自动对 URL 路径、查询参数进行百分号编码 | ⏳ |
 | Disable cookie jar | Toggle | OFF | 禁用此请求的 Cookie 存储和发送，Cookie 完全隔离 | ⏳ |
 | Use server cipher suite during handshake | Toggle | OFF | TLS 握手时优先使用服务器提供的加密套件顺序 | ⏳ |
-| Maximum number of redirects | Number Input | 10 | 设置最大重定向次数，0 表示不限制 | ⏳ |
+| Maximum number of redirects | Number Input | 10 | 设置最大重定向次数，0 表示不限制 | ✅ 已实现 |
 | TLS/SSL protocols disabled | Multi-select | - | 选择禁用的 TLS/SSL 协议版本（如 SSLv3、TLS1.0）| ⏳ |
 | Cipher suite selection | Text Input | - | 自定义加密套件列表，留空使用系统默认 | ⏳ |
 

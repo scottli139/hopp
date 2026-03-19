@@ -8,10 +8,10 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前阶段** | v0.5.0 数据交换功能完成，SSL 证书验证、Follow Redirects 已支持 |
+| **当前阶段** | v0.6.x 代码生成与工具集完成，cURL 导入、URL 参数同步已支持 |
 | **目标版本** | v1.0.0 |
 | **技术栈** | Flutter 3.27.x + Dart 3.6.x + Riverpod |
-| **测试状态** | ✅ **432 个全部通过** |
+| **测试状态** | ✅ **542 个全部通过** |
 
 ### 测试统计
 
@@ -26,7 +26,13 @@
 | Timing 分析测试 | 新增 | ✅ 通过 |
 | 请求详情展示测试 | 新增 3 个 | ✅ 通过 |
 | Body 类型选择器测试 | 新增 12 场景 | ✅ 通过 |
-| **总计** | **432** | ✅ **全部通过** |
+| cURL 解析测试 | 新增 44 个 | ✅ 通过 |
+| URL 参数同步测试 | 新增 36 个 | ✅ 通过 |
+| Postman 导入参数测试 | 新增 3 个 | ✅ 通过 |
+| Collection 级联删除测试 | 新增 6 个 | ✅ 通过 |
+| Collection 扁平化存储测试 | 更新 28 个 | ✅ 通过 |
+| Issue #6 空状态 UI 测试 | 新增 2 个场景 | ✅ 通过 |
+| **总计** | **542** | ✅ **全部通过** |
 
 > **注意**: 所有测试均已通过，代码质量良好。
 
@@ -284,13 +290,14 @@
 
 ### M5: 数据管理 ✅ COMPLETED (2026-03-16)
 
-| 任务 | 状态 | 优先级 | 预计工时 |
-|-----|------|--------|---------|
-| Postman 导入/导出 | ✅ | P1 | 12h |
-| Insomnia 导入 | ⏳ | P2 | 8h |
-| curl 导出 | ⏳ | P2 | 4h |
-| 云端同步 | ⏳ | P3 | 20h |
-| 团队协作 | ⏳ | P3 | 40h |
+| 任务 | 状态 | 优先级 | 预计工时 | 说明 |
+|-----|------|--------|---------|------|
+| Postman 导入/导出 | ✅ | P1 | 12h | Collection/Environment v2.0/v2.1 |
+| Environment 格式支持 | ✅ | P1 | 4h | 导入导出时支持环境变量格式 |
+| Insomnia 导入 | ⏳ | P2 | 8h | Insomnia 数据格式支持 |
+| curl 导出 | ⏳ | P2 | 4h | 请求 → cURL 导出 |
+| 云端同步 | ⏳ | P3 | 20h | 用户数据云存储 |
+| 团队协作 | ⏳ | P3 | 40h | 多人实时协作编辑 |
 
 #### M5.1 Postman 导入/导出
 
@@ -326,7 +333,80 @@ dependencies:
 
 ---
 
-### M6: 测试与质量保障 ✅ COMPLETED
+### M6: 环境变量功能 ⏳ PLANNED
+
+**目标**: 实现完整的环境变量管理系统，支持多环境切换和变量替换（PRD F3.1-F3.3）。
+
+> **注意**: 目前仅实现了 Postman Environment 的导入导出格式支持，核心功能待实现。
+
+| 任务 | 状态 | 优先级 | 预计工时 | 说明 |
+|-----|------|--------|---------|------|
+| Environment 模型 | ⏳ | P0 | 4h | 环境变量数据模型 (name/variables) |
+| 环境管理界面 | ⏳ | P0 | 8h | 创建/编辑/删除环境，变量列表编辑 |
+| 环境切换器 | ⏳ | P0 | 4h | 下拉选择当前激活的环境 |
+| 变量替换引擎 | ⏳ | P0 | 6h | `{{variable}}` 语法解析与替换 |
+| 全局变量 | ⏳ | P1 | 4h | 跨环境共享的变量 (F3.2) |
+| 变量作用域 | ⏳ | P1 | 4h | 全局 > 环境 > 本地 优先级 |
+| 动态变量 | ⏳ | P2 | 6h | `{{$timestamp}}`, `{{$randomUUID}}` 等 |
+| 变量预览 | ⏳ | P1 | 3h | 悬停显示变量值，快速复制 |
+| 快速编辑 | ⏳ | P2 | 4h | URL/Body 中双击变量快速编辑 |
+| 环境导入/导出 | ✅ | P1 | - | 已支持 Postman Environment 格式 |
+
+#### M6.1 功能详细设计
+
+**数据模型**:
+```dart
+@freezed
+class Environment with _$Environment {
+  const factory Environment({
+    required String id,
+    required String name,
+    required List<EnvironmentVariable> variables,
+    String? description,
+  }) = _Environment;
+}
+
+@freezed
+class EnvironmentVariable with _$EnvironmentVariable {
+  const factory EnvironmentVariable({
+    required String key,
+    required String value,
+    @Default(VariableType.string) VariableType type,
+    @Default(true) bool enabled,
+  }) = _EnvironmentVariable;
+}
+
+enum VariableType { string, secret }
+```
+
+**变量替换流程**:
+```
+1. 用户发送请求前
+2. 提取当前激活的 Environment
+3. 扫描 URL/Headers/Body 中的 {{variable}} 占位符
+4. 按优先级查找变量值 (全局 > 环境 > 本地)
+5. 替换占位符为实际值
+6. 发送请求 (使用替换后的值)
+7. 在 Request Tab 中显示替换前后的对比
+```
+
+**UI 设计**:
+- 环境管理对话框 (类似 Postman)
+- 侧边栏或顶部工具栏环境切换器
+- 变量输入框支持 `{{` 触发自动建议
+- 颜色区分：已解析变量 (蓝色) / 未定义变量 (红色)
+
+**验收标准** (PRD F3.1-F3.3):
+- [ ] 可创建多个环境配置 (开发/测试/生产)
+- [ ] 可创建跨环境共享的全局变量
+- [ ] URL/Headers/Body 中支持 `{{var}}` 语法
+- [ ] 发送前自动替换变量为实际值
+- [ ] 未定义变量在 UI 中明显标记
+- [ ] 变量值支持字符串和密文类型
+
+---
+
+### M7: 测试与质量保障 ✅ COMPLETED
 
 | 任务 | 状态 | 优先级 | 数量 |
 |-----|------|--------|------|
@@ -349,7 +429,7 @@ make logs   # 查看日志
 
 ## 🚀 发布计划
 
-### v0.1.0 - Alpha ✅ CURRENT
+### v0.1.0 - Alpha ✅ COMPLETED
 
 - ✅ 基础 HTTP 请求
 - ✅ Collection 管理
@@ -397,19 +477,22 @@ make logs   # 查看日志
 - ✅ 4XX/5XX 响应修复
 - ✅ 真实证书获取
 
-### v0.6.0 - Code Generation & Utils 📋 PLANNED
+### v0.6.0 - Code Generation & Utils ✅ COMPLETED (2026-03-18)
 
 **目标**: 实现代码生成和 cURL 双向导入导出，提升对接效率。
 
 | 任务 | 状态 | 优先级 | 预计工时 | 说明 |
 |-----|------|--------|---------|------|
-| **cURL 导入 (F2.6)** | ✅ | **P0** | 10h | **解析 cURL 命令创建请求 (已完成 2026-03-18)** |
+| **cURL 导入 (F2.6)** | ✅ | **P0** | 10h | **解析 cURL 命令创建请求** |
+| cURL 导入 UX 改进 | ✅ | P1 | 4h | 支持编辑名称、选择 Collection |
+| 对话框 UI 规范修复 (Issue #7) | ✅ | P1 | 2h | Import/Export/Delete 对话框样式统一 |
+| URL 参数双向联动 (Issue #11) | ✅ | P0 | 8h | URL 与 Params Tab 双向同步 |
+| Postman 导入重复参数修复 | ✅ | P1 | 2h | 修复 raw URL 含查询参数导致重复问题 |
+| Collection 级联删除 (Issue #3) | ✅ | P0 | 4h | 删除父集合时自动删除子集合 |
+| Collection 扁平化存储 | ✅ | P1 | 6h | 统一使用 parentId 建立层级关系 |
+| 空状态入口指引 (Issue #6) | ✅ | P0 | 4h | 初次使用添加明显的创建入口 |
 | 代码片段生成 (F7.6) | ⏳ | P1 | 8h | 20+ 语言支持 |
 | cURL 命令生成 (F1.10) | ⏳ | P1 | 4h | 请求 → cURL 导出 |
-| 请求历史记录 (F2.1) | ⏳ | P1 | 6h | 自动保存最近请求 |
-| 响应体搜索 (F5.4) | ⏳ | P2 | 4h | 在响应内容中搜索 |
-| 数据备份与恢复 (F6.4) | ⏳ | P2 | 6h | 导出完整数据备份 |
-| 完整国际化支持 | ⏳ | P2 | 8h | 多语言翻译完善 |
 
 #### M6.1 cURL 导入详细设计
 
@@ -434,21 +517,80 @@ make logs   # 查看日志
 
 详细实现说明请查看 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md#curl-导入)。
 
+#### M6.2 URL 参数双向联动 (Issue #11)
+
+**状态**: ✅ 已完成 (2026-03-18)
+
+**功能概述**:
+- URL 输入 `?key=value` → 自动解析到 Params Tab
+- Params Tab 修改 → 自动更新 URL
+- 使用标志位防止循环更新
+- 36 个单元测试覆盖
+
+详细实现说明请查看 [AGENTS.md](../AGENTS.md#url-查询参数与-params-tab-双向联动-issue-11)。
+
+#### M6.3 Collection 扁平化存储重构 (Issue #3)
+
+**状态**: ✅ 已完成 (2026-03-19)
+
+**问题**: 双重存储结构导致级联删除和层级显示问题
+
+**解决方案**: 统一使用扁平化存储结构（只使用 `parentId` 建立层级关系）
+
+**核心改动**:
+- `children` 字段保留但标记为废弃（向后兼容）
+- `deleteCollection`: 通过 `parentId` 查询递归删除子集合
+- `rootCollectionsProvider`: 返回根级集合
+
+详细实现说明请查看 [AGENTS.md](../AGENTS.md#collection-扁平化存储重构-issue-3)。
+
+#### M6.4 空状态入口指引 (Issue #6)
+
+**状态**: ✅ 已完成 (2026-03-19)
+
+**问题**: 初次使用缺少明显的创建 Request/Collection 入口
+
+**解决方案**:
+- Sidebar 空状态添加 "Create Collection" 按钮
+- 主区域空状态添加 "Create Request" 按钮
+- Sidebar Header 添加可见的 "+" 按钮
+
+详细实现说明请查看 [AGENTS.md](../AGENTS.md#issue-6-空状态入口指引-ux-优化)。
+
 ---
 
-### v0.7.0 - Testing & Automation 📋 PLANNED
+### v0.7.0 - Environment & Testing 📋 PLANNED
 
-**目标**: 实现完整的测试脚本功能，解决国内接口签名复杂的痛点。
+**目标**: 实现环境变量管理系统和测试脚本功能。
 
 | 任务 | 状态 | 优先级 | 预计工时 | 说明 |
 |-----|------|--------|---------|------|
-| 脚本引擎架构 | ⏳ | P0 | 8h | JavaScript 沙箱环境 |
-| Pre-request Script | ⏳ | P0 | 10h | F4.2 请求前脚本，支持签名生成 |
-| Test Script | ⏳ | P0 | 10h | F4.3 请求后断言脚本 |
-| 可视化断言 | ⏳ | P1 | 6h | F4.1 无需代码的断言配置 |
-| 批量运行 | ⏳ | P1 | 8h | F4.4 集合级别批量执行 |
-| 测试报告 | ⏳ | P1 | 6h | HTML/CSV 报告导出 |
-| CryptoJS 集成 | ⏳ | P0 | 4h | MD5/SHA/HMAC 等签名算法 |
+| **环境变量功能 (M6)** | ⏳ | **P0** | **35h** | **F3.1-F3.3 完整实现** |
+| ├─ Environment 模型 | ⏳ | P0 | 4h | 环境变量数据模型 |
+| ├─ 环境管理界面 | ⏳ | P0 | 8h | 创建/编辑/删除环境 |
+| ├─ 环境切换器 | ⏳ | P0 | 4h | 下拉选择激活环境 |
+| ├─ 变量替换引擎 | ⏳ | P0 | 6h | `{{variable}}` 语法解析 |
+| ├─ 全局变量 | ⏳ | P1 | 4h | 跨环境共享变量 |
+| ├─ 变量作用域 | ⏳ | P1 | 4h | 优先级管理 |
+| ├─ 动态变量 | ⏳ | P2 | 6h | `$timestamp`, `$randomUUID` 等 |
+| ├─ 变量预览 | ⏳ | P1 | 3h | 悬停显示变量值 |
+| **测试脚本功能** | ⏳ | **P1** | **52h** | **F4.1-F4.4 测试自动化** |
+| ├─ 脚本引擎架构 | ⏳ | P0 | 8h | JavaScript 沙箱环境 |
+| ├─ Pre-request Script | ⏳ | P0 | 10h | F4.2 请求前脚本 |
+| ├─ Test Script | ⏳ | P0 | 10h | F4.3 请求后断言脚本 |
+| ├─ 可视化断言 | ⏳ | P1 | 6h | F4.1 无需代码的断言配置 |
+| ├─ 批量运行 | ⏳ | P1 | 8h | F4.4 集合级别批量执行 |
+| ├─ 测试报告 | ⏳ | P1 | 6h | HTML/CSV 报告导出 |
+| ├─ CryptoJS 集成 | ⏳ | P0 | 4h | MD5/SHA/HMAC 签名算法 |
+| 其他功能 | ⏳ | P2 | 42h | |
+| ├─ 请求历史记录 (F2.1) | ⏳ | P1 | 6h | 自动保存最近请求 |
+| ├─ 收藏请求 (F2.2) | ⏳ | P2 | 4h | 手动收藏常用请求 |
+| ├─ 响应体搜索 (F5.4) | ⏳ | P2 | 4h | 在响应内容中搜索 |
+| ├─ 数据备份与恢复 (F6.4) | ⏳ | P2 | 6h | 导出完整数据备份 |
+| ├─ 字体缩放 (F5.6) | ⏳ | P2 | 4h | 编辑器字体大小调整 |
+| ├─ Cookie 管理 (F1.8) | ⏸️ | P2 | 10h | 查看/编辑/导入 Cookie |
+| ├─ API 文档生成 (F7.3) | ⏸️ | P3 | 8h | 从集合生成 Markdown/HTML 文档 |
+| └─ 完整国际化支持 | ⏳ | P2 | 8h | 多语言翻译完善 |
 
 详细实现说明请查看 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md#测试与自动化)。
 
@@ -466,8 +608,42 @@ make logs   # 查看日志
 | 延迟模拟 | ⏳ | P1 | 2h | 模拟网络延迟 |
 | 代理设置 | ⏳ | P2 | 6h | F7.5 HTTP/HTTPS 代理 |
 | WebSocket 测试 | ⏳ | P2 | 10h | F7.1 ws/wss 支持 |
+| 代码片段生成 (F7.6) | ⏳ | P1 | 8h | 20+ 语言代码生成 |
+| cURL 命令生成 (F1.10) | ⏳ | P1 | 4h | 请求 → cURL 导出 |
+| 拖拽排序 (F2.7) | ⏳ | P2 | 8h | Collection/Folder/Request 拖拽调整顺序 |
+| 文件上传/下载 (F1.9) | ⏸️ | P2 | 12h | multipart/form-data、文件下载进度 |
 
 详细实现说明请查看 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md#mock-服务器)。
+
+---
+
+### v0.9.0 - Polish & Stabilization 📋 PLANNED
+
+**目标**: 功能完善和稳定性提升，准备 GA 发布。
+
+| 任务 | 状态 | 优先级 | 预计工时 | 说明 |
+|-----|------|--------|---------|------|
+| 请求设置完善 | ⏳ | P1 | 12h | F1.14 剩余配置项实现 |
+| 性能优化 | ⏳ | P1 | 10h | 大集合加载、内存优化 |
+| 完善文档 | ⏳ | P1 | 8h | 用户文档、API 文档 |
+| 视频教程 | ⏳ | P2 | 6h | 快速入门、功能演示 |
+| Bug 修复 | ⏳ | P0 | - | 社区反馈问题 |
+
+---
+
+### Backlog (未来规划)
+
+暂不实现但未来可能考虑的功能：
+
+| ID | 功能 | 状态 | 说明 |
+|----|------|------|------|
+| F1.8 | Cookie 管理 | ⏸️ | 查看/编辑/导入 Cookie |
+| F1.9 | 文件上传/下载 | ⏸️ | multipart/form-data、文件下载 |
+| F5.6 | 字体缩放 | ⏸️ | 编辑器字体大小调整 (Ctrl+滚轮) |
+| F7.3 | API 文档生成 | ⏸️ | 从集合生成 Markdown/HTML 文档 |
+| F7.7 | gRPC 测试 | Backlog | Protocol Buffers 接口测试 |
+| F6.2 | 云端同步 | Backlog | 用户数据云存储，跨设备同步 |
+| F6.3 | 团队协作 | Backlog | 多人实时协作编辑 |
 
 ---
 
@@ -477,11 +653,23 @@ make logs   # 查看日志
 
 - ✅ 完整功能集（请求构建、环境变量、集合管理、测试脚本、Mock）
 - ✅ 全平台稳定（macOS/Windows/Linux）
-- ⏳ gRPC 测试 (F7.2) - Backlog
-- ⏳ 云端同步 (F6.2) - Backlog
-- ⏳ 团队协作 (F6.3) - Backlog
-- ⏳ 完善文档与视频教程
 - ⏳ 应用商店发布 (Mac App Store, Microsoft Store)
+
+---
+
+## 🐛 已知问题修复记录
+
+| Issue | 问题描述 | 状态 | 修复时间 |
+|-------|----------|------|----------|
+| #1 | 4XX/5XX 响应不显示服务端返回内容 | ✅ 已修复 | 2026-03-17 |
+| #2 | Certificate 显示假数据 | ✅ 已修复 | 2026-03-17 |
+| #3 | 删除 Collection 子目录处理问题 | ✅ 已修复 | 2026-03-19 |
+| #5 | Hive 数据库兼容性修复 | ✅ 已修复 | 2026-03-17 |
+| #6 | 初次使用缺少创建入口 | ✅ 已修复 | 2026-03-19 |
+| #7 | Import/Export/Delete 对话框 UI 规范 | ✅ 已修复 | 2026-03-18 |
+| #9 | Request Settings UI 样式问题 | ✅ 已修复 | 2026-03-17 |
+| #10 | Postman 导入 Raw Content Type 识别错误 | ✅ 已修复 | 2026-03-17 |
+| #11 | URL 查询参数与 Params Tab 双向联动 | ✅ 已实现 | 2026-03-18 |
 
 ---
 
@@ -550,6 +738,8 @@ const kSpaceXL = 24.0;
 ## 🔗 参考链接
 
 - [详细实现说明](./IMPLEMENTATION_NOTES.md)
+- [产品需求规格说明书](./PRD.md)
+- [项目知识积累](../AGENTS.md)
 - [Flutter 文档](https://docs.flutter.dev/)
 - [Riverpod 文档](https://riverpod.dev/)
 - [Material Design 3](https://m3.material.io/)

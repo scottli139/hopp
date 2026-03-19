@@ -512,5 +512,4 @@ class PostmanImportService with LogMixin {
     }
     return PostmanVersion.v2_1;
   }
-
 }

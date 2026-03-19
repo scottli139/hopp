@@ -165,7 +165,7 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
     AppLogger.info(
         '[CollectionNotifier] Adding request ${request.name} to collection $collectionId');
     final currentState = state;
-    if (currentState case AsyncData(:final value)) {
+    if (currentState case AsyncData()) {
       // 扁平化存储：只通过 parentId 关联，不修改 collection.requests
       final storage = _ref.read(storageServiceProvider);
 

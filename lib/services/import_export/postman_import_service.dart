@@ -513,16 +513,4 @@ class PostmanImportService with LogMixin {
     return PostmanVersion.v2_1;
   }
 
-  /// 计算 Postman 请求数量
-  int _countRequests(List<PostmanItem> items) {
-    var count = 0;
-    for (final item in items) {
-      if (item.isRequest) {
-        count++;
-      } else if (item.isFolder) {
-        count += _countRequests(item.item ?? []);
-      }
-    }
-    return count;
-  }
 }

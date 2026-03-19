@@ -788,6 +788,55 @@ class HoppTestClient:
                 print(f"     [{enabled_mark}] {param.get('key')}: {param.get('value')}")
         return result
 
+    def get_empty_state_info(self):
+        """获取空状态信息（用于测试 Issue #6）"""
+        print("\n📊 获取空状态信息...")
+        result = self.send_command("get_empty_state_info")
+        print(f"✅ 空状态信息:")
+        print(f"   Sidebar 为空: {'是' if result.get('sidebar_empty') else '否'}")
+        print(f"   主区域为空: {'是' if result.get('main_empty') else '否'}")
+        print(f"   Collection 数量: {result.get('collection_count')}")
+        print(f"   Tab 数量: {result.get('tab_count')}")
+        return result
+
+    def trigger_create_collection_from_empty(self):
+        """触发从空状态创建 Collection（用于测试 Issue #6）"""
+        print("\n📁 触发从空状态创建 Collection...")
+        result = self.send_command("trigger_create_collection_from_empty")
+        print("✅ 已触发创建 Collection 对话框")
+        return result
+
+    def create_collection(self, name, parent_id=None):
+        """创建 Collection（用于测试）"""
+        print(f"\n📁 创建 Collection: {name}")
+        params = {"name": name}
+        if parent_id:
+            params["parent_id"] = parent_id
+        result = self.send_command("create_collection", params)
+        if result.get('created'):
+            print(f"✅ Collection 已创建: {result.get('collection_id')}")
+            if parent_id:
+                print(f"   父 ID: {parent_id}")
+        return result
+
+    def delete_collection(self, collection_id):
+        """删除 Collection（用于测试）"""
+        print(f"\n🗑️ 删除 Collection: {collection_id}")
+        result = self.send_command("delete_collection", {"collection_id": collection_id})
+        if result.get('deleted'):
+            info = result.get('collection_info', {})
+            print(f"✅ Collection 已删除: {info.get('name')}")
+            print(f"   子集合数: {result.get('total_children', 0)}")
+            print(f"   剩余根集合: {result.get('remaining_root_collections', 0)}")
+        return result
+
+    def get_collection_tree(self):
+        """获取集合树结构"""
+        print(f"\n🌲 获取 Collection 树结构...")
+        result = self.send_command("get_collection_tree")
+        print(f"✅ 根集合数量: {result.get('collection_count', 0)}")
+        return result
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -1034,6 +1083,15 @@ def main():
     # verify_url_params_sync
     subparsers.add_parser("verify_url_params_sync", help="验证 URL 与 Params 双向同步功能")
 
+    # ==================== Issue #6 空状态测试命令 ====================
+
+    # get_empty_state_info
+    subparsers.add_parser("get_empty_state_info", help="获取空状态信息（用于测试 Issue #6）")
+
+    # trigger_create_collection_from_empty
+    subparsers.add_parser("trigger_create_collection_from_empty", 
+                          help="触发从空状态创建 Collection（用于测试 Issue #6）")
+
     # ==================== Collection 级联删除测试命令 ====================
 
     # create_collection
@@ -1176,6 +1234,12 @@ def main():
 
         elif args.command == "verify_url_params_sync":
             client.verify_url_params_sync()
+
+        # ==================== Issue #6 空状态测试命令 ====================
+        elif args.command == "get_empty_state_info":
+            client.get_empty_state_info()
+        elif args.command == "trigger_create_collection_from_empty":
+            client.trigger_create_collection_from_empty()
 
         # ==================== Collection 级联删除测试命令 ====================
         elif args.command == "create_collection":

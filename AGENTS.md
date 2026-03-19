@@ -43,10 +43,10 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前状态** | ✅ **Issue #3 已修复：Collection 数据模型扁平化重构 - 统一使用 parentId 建立层级关系** |
+| **当前状态** | ✅ **Issue #6 已修复：初次使用空状态入口指引优化** |
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **测试覆盖** | ✅ **542 个通过 / Collection 扁平化存储重构完成** |
+| **测试覆盖** | ✅ **542 个通过 / Issue #6 UI测试完成** |
 | **下次重点** | 🟡 请求设置完善 / 🟢 国际化完善 / ⏳ 行号滚动同步问题 |
 
 > **历史参考**: 项目曾使用 Tauri (React + Rust) 技术栈，详见 [ARCHIVED_TAURI.md](./docs/ARCHIVED_TAURI.md)
@@ -179,6 +179,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | cURL 导入 | 2026-03-18 | F2.6 解析 cURL 命令创建请求，支持常用选项，UX 改进（名称编辑/Collection 选择）|
 | URL-Params 双向联动 | 2026-03-18 | Issue #11: URL 查询参数与 Params Tab 双向同步 (36个单元测试 + UI测试) |
 | Postman 导入重复参数修复 | 2026-03-18 | 修复导入时 URL raw 含查询参数导致重复的问题 |
+| Issue #6 空状态入口指引 | 2026-03-19 | Sidebar/主区域空状态添加 Create 按钮，Header 添加 + 按钮 |
 
 ### 进行中 🔄
 
@@ -197,6 +198,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | ~~Certificate 显示假数据~~ | ~~P1~~ | ~~Response 区域的 Certificate Tab 当前显示的是模拟/假数据，非真实证书信息~~ | ✅ **已修复 (2026-03-17)** - GitHub Issue #2 已关闭 |
 | ~~自签名证书无法访问~~ | ~~P1~~ | ~~内网自签名证书服务器请求失败，缺少 SSL 验证开关~~ | ✅ **已修复 (2026-03-17)** |
 | ~~删除 Collection 子目录处理问题~~ | ~~P1~~ | ~~删除带子目录的 Collection 时，子 Collection 未被删除而是被保留并提升到第一级~~ | ✅ **已修复 (2026-03-19)** - GitHub Issue #3 已关闭 |
+| ~~初次使用缺少创建入口~~ | ~~P0~~ | ~~初次使用时界面没有明显的创建 Request/Collection 入口，用户体验不友好~~ | ✅ **已修复 (2026-03-19)** - GitHub Issue #6 已关闭 |
 | 行号与内容滚动不同步 | P2 | Request/Response Body 编辑器中行号区域与内容区域未对齐，内容滚动时行号不跟随滚动 | 需优化 CodeEditor 组件 |
 
 ### 质量保障
@@ -217,6 +219,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 | Postman 导入参数测试 | 新增 3 个 | ✅ 通过 |
 | Collection 级联删除测试 | 新增 6 个 | ✅ 通过 |
 | Collection 扁平化存储测试 | 更新 28 个 | ✅ 通过 |
+| Issue #6 空状态 UI 测试 | 新增 2 个场景 | ✅ 通过 |
 | **总计** | **542** | **✅ 全部通过** |
 
 ---
@@ -224,6 +227,31 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 ## 知识积累
 
 ### 技术决策记录
+
+#### Issue #6 空状态入口指引 UX 优化
+
+**问题**: 初次使用应用时，界面缺少明显的创建 Request/Collection 入口指引，导致新用户不知道如何开始使用。
+
+**解决方案**:
+1. **Sidebar 空状态优化**: 在 "No collections yet" 下方添加 "Create Collection" 按钮
+2. **主区域空状态优化**: 在 "No requests yet" 下方添加 "Create Request" 按钮和 Cmd+N 快捷键提示
+3. **Sidebar Header 优化**: 在 Logo 右侧添加可见的 "+" 按钮，快速创建 Collection
+
+**UI 设计规范**:
+- 按钮使用 FilledButton 样式，主色背景 (Indigo 500)
+- 高度: 36px (Sidebar) / 44px (主区域)
+- 圆角: 6px
+- 图标 + 文字组合
+
+**相关文件**:
+- `lib/widgets/layout/sidebar.dart`: Sidebar 空状态和 Header + 按钮
+- `lib/screens/main_screen.dart`: 主区域空状态 "Create Request" 按钮
+
+**UI 测试**:
+- `integration_test/test_issue_6_empty_state.py`: 完整 UI 测试脚本
+- 新增指令: `get_empty_state_info`, `trigger_create_collection_from_empty`
+
+---
 
 #### Collection 扁平化存储重构 (Issue #3)
 
@@ -977,6 +1005,7 @@ genhtml coverage/lcov.info -o coverage/html
 | 2026-03-18 | v0.6.4-import-params-fix | 修复 Postman 导入重复参数问题: URL raw 含查询参数时正确提取 base URL |
 | 2026-03-19 | v0.6.5-collection-cascade-delete | 修复 Issue #3: Collection 级联删除 - 删除父集合时自动删除所有子集合 |
 | 2026-03-19 | v0.6.6-collection-flat-storage | Collection 扁平化存储重构 - 统一使用 parentId 建立层级关系，修复级联删除和显示层级问题 |
+| 2026-03-19 | v0.6.7-empty-state-ux | 修复 Issue #6: 初次使用空状态入口指引 - Sidebar/主区域添加 Create 按钮，优化新用户体验 |
 
 ---
 

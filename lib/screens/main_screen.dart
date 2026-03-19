@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 
 import '../utils/testing/ui_test_mode.dart';
+import '../utils/constants.dart';
 
 import '../providers/providers.dart';
 import '../widgets/layout/sidebar.dart';
 import '../widgets/layout/request_tabs.dart';
 import '../widgets/request/request_editor.dart';
 import '../widgets/request/response_viewer.dart';
+import '../models/http_request.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -112,6 +114,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildEmptyState() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -122,23 +127,58 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             height: 80,
             opacity: const AlwaysStoppedAnimation(0.5),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
             'No requests yet',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: colorScheme.outline,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Select a request from sidebar or create a new tab',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.7),
-                ),
+            'Get started by creating your first request',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.outline.withOpacity(0.7),
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Create Request button
+          FilledButton.icon(
+            onPressed: () => _createNewRequest(),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Create Request'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.spaceXL,
+                vertical: AppConstants.spaceM,
+              ),
+              minimumSize: const Size(0, AppConstants.buttonHeightL),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusM),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Keyboard shortcut hint
+          Text(
+            'or press Cmd+N',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 12,
+              color: colorScheme.outline.withOpacity(0.6),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  /// Create a new request and open it in a tab
+  void _createNewRequest() {
+    final newRequest = HttpRequest.empty();
+    ref.read(requestTabProvider.notifier).openTab(newRequest);
+    ref.read(activeTabIdProvider.notifier).state = newRequest.id;
   }
 
   Widget _buildNoActiveTabState() {

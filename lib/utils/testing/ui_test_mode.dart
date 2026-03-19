@@ -361,9 +361,45 @@ class UITestModeManager {
       case 'get_collection_tree':
         return await _getCollectionTree();
 
+      case 'get_empty_state_info':
+        return await _getEmptyStateInfo();
+
+      case 'trigger_create_collection_from_empty':
+        return await _triggerCreateCollectionFromEmpty();
+
       default:
         throw Exception('未知指令: $action');
     }
+  }
+
+  /// 获取空状态信息
+  Future<Map<String, dynamic>> _getEmptyStateInfo() async {
+    final collectionsAsync = _ref!.read(collectionProvider);
+    final tabs = _ref!.read(requestTabProvider);
+
+    final collectionCount = collectionsAsync.when(
+      data: (value) => value.length,
+      loading: () => -1,
+      error: (_, __) => -1,
+    );
+
+    return {
+      'sidebar_empty': collectionCount == 0,
+      'main_empty': tabs.isEmpty,
+      'collection_count': collectionCount,
+      'tab_count': tabs.length,
+    };
+  }
+
+  /// 触发从空状态创建 Collection（设置状态通知 UI）
+  Future<Map<String, dynamic>> _triggerCreateCollectionFromEmpty() async {
+    _ref!.read(uiTestCreateCollectionFromEmptyProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {
+      'triggered': true,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
   }
 
   /// 创建新请求
@@ -2322,16 +2358,17 @@ class UITestModeManager {
   }
 
   /// 创建 Collection（用于测试级联删除）
-  Future<Map<String, dynamic>> _createCollection(String name, String? parentId) async {
+  Future<Map<String, dynamic>> _createCollection(
+      String name, String? parentId) async {
     AppLogger.info('[UI_TEST] Creating collection: $name, parentId: $parentId');
-    
+
     final collection = Collection.empty().copyWith(
       name: name,
       parentId: parentId,
     );
-    
+
     await _ref!.read(collectionProvider.notifier).addCollection(collection);
-    
+
     return {
       'created': true,
       'collection_id': collection.id,
@@ -2343,12 +2380,12 @@ class UITestModeManager {
   /// 删除 Collection（用于测试级联删除）
   Future<Map<String, dynamic>> _deleteCollection(String collectionId) async {
     AppLogger.info('[UI_TEST] Deleting collection: $collectionId');
-    
+
     // 获取删除前的集合信息
     final collectionsAsync = _ref!.read(collectionProvider);
     Map<String, dynamic>? deletedCollectionInfo;
     int childCount = 0;
-    
+
     if (collectionsAsync case AsyncData(:final value)) {
       void findCollectionInfo(List<Collection> collections) {
         for (final collection in collections) {
@@ -2366,6 +2403,7 @@ class UITestModeManager {
                 countChildren(child);
               }
             }
+
             countChildren(collection);
             break;
           }
@@ -2374,25 +2412,28 @@ class UITestModeManager {
           }
         }
       }
+
       findCollectionInfo(value);
     }
-    
-    await _ref!.read(collectionProvider.notifier).deleteCollection(collectionId);
-    
+
+    await _ref!
+        .read(collectionProvider.notifier)
+        .deleteCollection(collectionId);
+
     // 获取删除后的集合信息
     final afterDeleteAsync = _ref!.read(collectionProvider);
     int remainingCollections = 0;
     bool childrenDeleted = true;
-    
+
     if (afterDeleteAsync case AsyncData(:final value)) {
       remainingCollections = value.length;
-      
+
       // 检查子集合是否被删除
       void checkChildrenDeleted(List<Collection> collections) {
         for (final collection in collections) {
-          if (collection.id == collectionId || 
-              (deletedCollectionInfo != null && 
-               collection.parentId == collectionId)) {
+          if (collection.id == collectionId ||
+              (deletedCollectionInfo != null &&
+                  collection.parentId == collectionId)) {
             childrenDeleted = false;
           }
           if (collection.children.isNotEmpty) {
@@ -2400,9 +2441,10 @@ class UITestModeManager {
           }
         }
       }
+
       checkChildrenDeleted(value);
     }
-    
+
     return {
       'deleted': true,
       'collection_id': collectionId,
@@ -2416,24 +2458,26 @@ class UITestModeManager {
   /// 获取集合树结构（用于验证级联删除）
   Future<Map<String, dynamic>> _getCollectionTree() async {
     final collectionsAsync = _ref!.read(collectionProvider);
-    
+
     if (collectionsAsync case AsyncData(:final value)) {
       List<Map<String, dynamic>> buildTree(List<Collection> collections) {
-        return collections.map((c) => {
-          'id': c.id,
-          'name': c.name,
-          'parent_id': c.parentId,
-          'request_count': c.requests.length,
-          'children': buildTree(c.children),
-        }).toList();
+        return collections
+            .map((c) => {
+                  'id': c.id,
+                  'name': c.name,
+                  'parent_id': c.parentId,
+                  'request_count': c.requests.length,
+                  'children': buildTree(c.children),
+                })
+            .toList();
       }
-      
+
       return {
         'collection_count': value.length,
         'tree': buildTree(value),
       };
     }
-    
+
     return {'collection_count': 0, 'tree': []};
   }
 }
@@ -2505,3 +2549,7 @@ final uiTestCurlImportDialogProvider = StateProvider<int?>((ref) => null);
 /// UI 测试 - cURL 解析结果
 final uiTestCurlParseResultProvider =
     StateProvider<Map<String, dynamic>?>((ref) => null);
+
+/// UI 测试 - 从空状态创建 Collection 触发器
+final uiTestCreateCollectionFromEmptyProvider =
+    StateProvider<int?>((ref) => null);

@@ -123,9 +123,36 @@ class _SidebarState extends ConsumerState<Sidebar> {
           // Brand Logo
           _buildBrandLogo(context),
           const Spacer(),
+          // Quick add button
+          _buildQuickAddButton(context),
+          const SizedBox(width: AppConstants.spaceXS),
           // Actions menu
           _buildActionsMenu(context),
         ],
+      ),
+    );
+  }
+
+  /// Build quick add button for creating new collection
+  Widget _buildQuickAddButton(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppConstants.radiusS),
+        onTap: () => _showNewCollectionDialog(context),
+        child: Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          child: Icon(
+            Icons.add,
+            size: 18,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
       ),
     );
   }
@@ -272,6 +299,25 @@ class _SidebarState extends ConsumerState<Sidebar> {
             'No collections yet',
             style: AppTextStyles.body.copyWith(
               color: theme.colorScheme.outline,
+            ),
+          ),
+          const SizedBox(height: AppConstants.spaceL),
+          // Create Collection button
+          FilledButton.icon(
+            onPressed: () => _showNewCollectionDialog(context),
+            icon: const Icon(Icons.add, size: 16),
+            label: const Text('Create Collection'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.spaceL,
+                vertical: AppConstants.spaceS,
+              ),
+              minimumSize: const Size(0, AppConstants.buttonHeightM),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusM),
+              ),
             ),
           ),
         ],

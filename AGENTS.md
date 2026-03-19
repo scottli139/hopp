@@ -1026,6 +1026,7 @@ genhtml coverage/lcov.info -o coverage/html
 | 2026-03-19 | v0.6.6-collection-flat-storage | Collection 扁平化存储重构 - 统一使用 parentId 建立层级关系，修复级联删除和显示层级问题 |
 | 2026-03-19 | v0.6.7-empty-state-ux | 修复 Issue #6: 初次使用空状态入口指引 - Sidebar/主区域添加 Create 按钮，优化新用户体验 |
 | 2026-03-19 | v0.6.8-ci-fix | 修复 GitHub CI 配置: pr-check.yml 使用 `--no-fatal-infos` 与 ci.yml 保持一致，添加生成文件存在性检查 |
+| 2026-03-19 | v0.6.9-ci-success | ✅ CI 修复完成: 修复 analysis warnings (unused variable/function/import)，所有任务通过 (analyze-and-test + 3平台构建) |
 
 ---
 

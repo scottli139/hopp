@@ -174,7 +174,8 @@ void main() {
         expect(find.byIcon(Icons.folder_open), findsWidgets);
       });
 
-      testWidgets('should render nested collection items using parentId', (tester) async {
+      testWidgets('should render nested collection items using parentId',
+          (tester) async {
         // 扁平化存储：使用 parentId 关联子集合
         final collections = [
           Collection.empty().copyWith(
@@ -443,7 +444,8 @@ void main() {
     });
 
     group('nested collections', () {
-      testWidgets('should render deeply nested collections using parentId', (tester) async {
+      testWidgets('should render deeply nested collections using parentId',
+          (tester) async {
         // 扁平化存储：所有集合在同一层级，通过 parentId 关联
         final collections = [
           Collection.empty().copyWith(

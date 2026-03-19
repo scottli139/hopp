@@ -61,7 +61,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   // Key-Value 输入框的 Controller 缓存
   final Map<int, TextEditingController> _keyControllers = {};
   final Map<int, TextEditingController> _valueControllers = {};
-  
+
   // 防抖定时器
   Timer? _updateTimer;
 
@@ -846,7 +846,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   }) {
     final theme = Theme.of(context);
     final item = items[index];
-    
+
     // 使用缓存的 Controller，避免每次重建都创建新的
     final keyController = _keyControllers.putIfAbsent(
       index,
@@ -856,7 +856,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       index,
       () => TextEditingController(text: item.value),
     );
-    
+
     // 如果 item 的值变化了，更新 controller
     if (keyController.text != item.key) {
       keyController.text = item.key;

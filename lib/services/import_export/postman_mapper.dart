@@ -27,7 +27,7 @@ class PostmanMapper {
   // ==================== Postman -> Hopp ====================
 
   /// Postman Collection -> Hopp Collection（扁平化存储）
-  /// 
+  ///
   /// 返回元组：(根集合, [所有子集合], [所有请求])
   /// 所有集合通过 parentId 建立层级关系，不再使用嵌套的 children
   static (Collection, List<Collection>, List<HttpRequest>) toHoppCollectionFlat(
@@ -345,7 +345,7 @@ class PostmanMapper {
   // ==================== Hopp -> Postman ====================
 
   /// Hopp Collection -> Postman Collection（扁平化存储版本）
-  /// 
+  ///
   /// [rootCollection] 根集合
   /// [allCollections] 所有子集合列表（通过 parentId 关联）
   /// [allRequests] 所有请求列表（通过 parentId 关联）

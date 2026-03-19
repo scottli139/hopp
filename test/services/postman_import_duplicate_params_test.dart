@@ -7,13 +7,15 @@ void main() {
     test('should extract URL without query params when raw contains them', () {
       // 模拟用户提供的 Postman URL 结构
       final postmanUrl = PostmanUrl(
-        raw: 'http://172.24.0.190/api/rest/v2.0/acsToken?token=1513120666&confNumericId=98134842',
+        raw:
+            'http://172.24.0.190/api/rest/v2.0/acsToken?token=1513120666&confNumericId=98134842',
         protocol: 'http',
         host: ['172', '24', '0', '190'],
         path: ['api', 'rest', 'v2.0', 'acsToken'],
         query: [
           PostmanQueryParam(key: 'token', value: '1513120666', enabled: true),
-          PostmanQueryParam(key: 'confNumericId', value: '98134842', enabled: true),
+          PostmanQueryParam(
+              key: 'confNumericId', value: '98134842', enabled: true),
         ],
       );
 
@@ -58,7 +60,7 @@ void main() {
 
       // URL 不应该包含查询参数
       expect(url, 'http://example.com');
-      
+
       // Params 应该正确映射
       expect(params.length, 2);
       expect(params[0]['key'], 'key1');
@@ -101,7 +103,8 @@ String _extractUrlForTest(PostmanUrl url) {
   return buffer.toString();
 }
 
-List<Map<String, dynamic>> _mapQueryParamsForTest(List<PostmanQueryParam>? params) {
+List<Map<String, dynamic>> _mapQueryParamsForTest(
+    List<PostmanQueryParam>? params) {
   if (params == null || params.isEmpty) return [];
 
   return params

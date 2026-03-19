@@ -179,8 +179,7 @@ void main() {
         expect(collection.isFolder, isTrue);
       });
 
-      test('should return true when collection has empty requests list',
-          () {
+      test('should return true when collection has empty requests list', () {
         final collection = Collection(
           id: 'col-1',
           name: 'Empty Folder',
@@ -190,8 +189,7 @@ void main() {
         expect(collection.isFolder, isTrue);
       });
 
-      test('should return false when collection has requests',
-          () {
+      test('should return false when collection has requests', () {
         final collection = Collection(
           id: 'col-1',
           name: 'Request Container',
@@ -203,8 +201,7 @@ void main() {
         expect(collection.isFolder, isFalse);
       });
 
-      test('should return false when collection has multiple requests',
-          () {
+      test('should return false when collection has multiple requests', () {
         final collection = Collection(
           id: 'col-1',
           name: 'Mixed Container',

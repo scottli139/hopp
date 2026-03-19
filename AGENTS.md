@@ -460,6 +460,25 @@ onSubmitted: (_) {
 
 ### 关键问题解决
 
+#### GitHub CI 配置修复
+
+**问题**: 
+1. `pr-check.yml` 使用 `flutter analyze --fatal-infos`，而 `ci.yml` 使用 `--no-fatal-infos`，导致 PR 检查比主 CI 更严格
+2. 项目存在 1300+ 个 info 级别的 lint 建议（主要是 `prefer_const_constructors`、`avoid_redundant_argument_values` 等），使用 `--fatal-infos` 会导致 CI 失败
+
+**解决方案**:
+1. 统一 `pr-check.yml` 使用 `--no-fatal-infos`，与 `ci.yml` 保持一致
+2. 在 `ci.yml` 中添加生成文件存在性检查步骤，确保 `.g.dart` 等生成文件已提交到仓库
+
+**相关修改**:
+- `.github/workflows/pr-check.yml`: 将 `--fatal-infos` 改为 `--no-fatal-infos`
+- `.github/workflows/ci.yml`: 添加生成文件检查步骤
+
+**代码格式化修复**:
+- 格式化 8 个文件：lib/models/collection.dart、lib/services/import_export/postman_mapper.dart、lib/widgets/request/request_editor.dart 等
+
+---
+
 #### URL 输入框自动全选问题
 
 **问题**: 每输入字符就自动全选
@@ -1006,6 +1025,7 @@ genhtml coverage/lcov.info -o coverage/html
 | 2026-03-19 | v0.6.5-collection-cascade-delete | 修复 Issue #3: Collection 级联删除 - 删除父集合时自动删除所有子集合 |
 | 2026-03-19 | v0.6.6-collection-flat-storage | Collection 扁平化存储重构 - 统一使用 parentId 建立层级关系，修复级联删除和显示层级问题 |
 | 2026-03-19 | v0.6.7-empty-state-ux | 修复 Issue #6: 初次使用空状态入口指引 - Sidebar/主区域添加 Create 按钮，优化新用户体验 |
+| 2026-03-19 | v0.6.8-ci-fix | 修复 GitHub CI 配置: pr-check.yml 使用 `--no-fatal-infos` 与 ci.yml 保持一致，添加生成文件存在性检查 |
 
 ---
 

@@ -177,7 +177,8 @@ void main() {
       });
 
       group('cascade delete', () {
-        test('should cascade delete child collections using parentId', () async {
+        test('should cascade delete child collections using parentId',
+            () async {
           // 创建扁平化结构: Parent -> Child -> GrandChild (通过 parentId 关联)
           final grandChild = Collection.empty().copyWith(
             id: 'grandchild',
@@ -189,8 +190,8 @@ void main() {
             name: 'Child',
             parentId: 'parent',
           );
-          final parent = Collection.empty()
-              .copyWith(id: 'parent', name: 'Parent');
+          final parent =
+              Collection.empty().copyWith(id: 'parent', name: 'Parent');
 
           when(mockStorageService.getCollections())
               .thenAnswer((_) async => [parent, child, grandChild]);
@@ -198,8 +199,7 @@ void main() {
           await container.read(collectionProvider.notifier).loadCollections();
 
           // 设置删除后的空列表
-          when(mockStorageService.getCollections())
-              .thenAnswer((_) async => []);
+          when(mockStorageService.getCollections()).thenAnswer((_) async => []);
           when(mockStorageService.deleteCollection(any))
               .thenAnswer((_) async {});
 
@@ -231,16 +231,14 @@ void main() {
             name: 'Level 1',
             parentId: 'root',
           );
-          final root = Collection.empty()
-              .copyWith(id: 'root', name: 'Root');
+          final root = Collection.empty().copyWith(id: 'root', name: 'Root');
 
           when(mockStorageService.getCollections())
               .thenAnswer((_) async => [root, level1, level2, level3]);
 
           await container.read(collectionProvider.notifier).loadCollections();
 
-          when(mockStorageService.getCollections())
-              .thenAnswer((_) async => []);
+          when(mockStorageService.getCollections()).thenAnswer((_) async => []);
           when(mockStorageService.deleteCollection(any))
               .thenAnswer((_) async {});
 
@@ -313,12 +311,10 @@ void main() {
 
           await container.read(collectionProvider.notifier).loadCollections();
 
-          when(mockStorageService.getCollections())
-              .thenAnswer((_) async => []);
+          when(mockStorageService.getCollections()).thenAnswer((_) async => []);
           when(mockStorageService.deleteCollection(any))
               .thenAnswer((_) async {});
-          when(mockStorageService.deleteRequest(any))
-              .thenAnswer((_) async {});
+          when(mockStorageService.deleteRequest(any)).thenAnswer((_) async {});
 
           await container
               .read(collectionProvider.notifier)
@@ -330,8 +326,8 @@ void main() {
         });
 
         test('should handle collection not found gracefully', () async {
-          final collection = Collection.empty()
-              .copyWith(id: 'col-1', name: 'Collection 1');
+          final collection =
+              Collection.empty().copyWith(id: 'col-1', name: 'Collection 1');
 
           when(mockStorageService.getCollections())
               .thenAnswer((_) async => [collection]);
@@ -622,18 +618,18 @@ void main() {
   group('rootCollectionsProvider', () {
     test('should return only root-level collections', () async {
       final mockStorageService = MockStorageService();
-      final rootCollection = Collection.empty()
-          .copyWith(id: 'root-1', name: 'Root Collection');
+      final rootCollection =
+          Collection.empty().copyWith(id: 'root-1', name: 'Root Collection');
       final childCollection = Collection.empty().copyWith(
         id: 'child-1',
         name: 'Child Collection',
         parentId: 'root-1',
       );
-      final anotherRoot = Collection.empty()
-          .copyWith(id: 'root-2', name: 'Another Root');
+      final anotherRoot =
+          Collection.empty().copyWith(id: 'root-2', name: 'Another Root');
 
-      when(mockStorageService.getCollections())
-          .thenAnswer((_) async => [rootCollection, childCollection, anotherRoot]);
+      when(mockStorageService.getCollections()).thenAnswer(
+          (_) async => [rootCollection, childCollection, anotherRoot]);
 
       final container = ProviderContainer(
         overrides: [
@@ -648,7 +644,8 @@ void main() {
       expect(roots.map((c) => c.id), containsAll(['root-1', 'root-2']));
     });
 
-    test('should return empty list when all collections have parents', () async {
+    test('should return empty list when all collections have parents',
+        () async {
       final mockStorageService = MockStorageService();
       final child1 = Collection.empty().copyWith(
         id: 'child-1',

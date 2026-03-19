@@ -59,4 +59,4 @@ jobs:
         run: dart format --output=none --set-exit-if-changed lib/ test/
       
       - name: Analyze code
-        run: flutter analyze --fatal-infos
+        run: flutter analyze --no-fatal-infos

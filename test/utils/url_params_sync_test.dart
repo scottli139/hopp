@@ -27,7 +27,8 @@ void main() {
       });
 
       test('should decode URL-encoded values', () {
-        final params = parseQueryParamsFromUrl('https://api.com?name=hello+world');
+        final params =
+            parseQueryParamsFromUrl('https://api.com?name=hello+world');
 
         expect(params.length, 1);
         expect(params[0].key, 'name');
@@ -35,7 +36,8 @@ void main() {
       });
 
       test('should decode URL-encoded keys', () {
-        final params = parseQueryParamsFromUrl('https://api.com?hello%20world=test');
+        final params =
+            parseQueryParamsFromUrl('https://api.com?hello%20world=test');
 
         expect(params.length, 1);
         expect(params[0].key, 'hello world');
@@ -82,7 +84,8 @@ void main() {
 
       test('should handle Chinese characters', () {
         // Uri.encodeQueryComponent encodes Chinese characters
-        final params = parseQueryParamsFromUrl('https://api.com?name=%E4%B8%AD%E6%96%87');
+        final params =
+            parseQueryParamsFromUrl('https://api.com?name=%E4%B8%AD%E6%96%87');
 
         // Note: Dart's Uri.parse handles the encoding correctly
         expect(params.isEmpty || params[0].value == '中文', isTrue);
@@ -97,7 +100,8 @@ void main() {
       });
 
       test('should extract base URL with path', () {
-        final baseUrl = extractBaseUrl('https://api.com/path/to/resource?a=1&b=2');
+        final baseUrl =
+            extractBaseUrl('https://api.com/path/to/resource?a=1&b=2');
 
         expect(baseUrl, 'https://api.com/path/to/resource');
       });
@@ -133,7 +137,8 @@ void main() {
       });
 
       test('should handle URL with user info', () {
-        final baseUrl = extractBaseUrl('https://user:pass@api.com/path?key=value');
+        final baseUrl =
+            extractBaseUrl('https://user:pass@api.com/path?key=value');
 
         expect(baseUrl, 'https://user:pass@api.com/path');
       });
@@ -152,7 +157,8 @@ void main() {
 
       test('should encode special characters', () {
         final params = [
-          KeyValuePair(id: '1', key: 'name', value: 'hello world', enabled: true),
+          KeyValuePair(
+              id: '1', key: 'name', value: 'hello world', enabled: true),
         ];
         final queryString = buildQueryString(params);
 

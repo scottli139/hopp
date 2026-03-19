@@ -41,6 +41,11 @@ jobs:
       - name: Format check
         run: dart format --output=none --set-exit-if-changed lib/ test/
 
+      - name: Check generated files exist
+        run: |
+          # 验证关键生成文件存在，如果缺失需要在本地生成后提交
+          test -f lib/services/import_export/postman_schema.g.dart || (echo "Error: Generated files missing. Run 'dart run build_runner build' locally and commit the changes." && exit 1)
+
       - name: Run tests
         run: flutter test --coverage
 

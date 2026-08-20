@@ -1,6 +1,6 @@
 # 🐰 Hopp
 
-> 轻量级、跨平台的 API 请求测试工具，Postman 的开源替代品
+> 本地优先、数据不出机器的 AI API 工作台
 
 [English](./README.md) | 简体中文
 
@@ -8,9 +8,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Flutter](https://img.shields.io/badge/Flutter-3.27.x-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.6.x-0175C2?logo=dart)](https://dart.dev)
-[![AI Powered](https://img.shields.io/badge/AI%20Powered-Kimi-orange?logo=artificial-intelligence)](https://www.moonshot.cn)
+[![AI Powered](https://img.shields.io/badge/AI%20Powered-Kimi%20K3%20%26%20DeepSeek-orange?logo=artificial-intelligence)](https://www.moonshot.cn)
 
-**🤖 100% AI 开发** — 由 [Kimi Code CLI](https://www.moonshot.cn/) 构建 · 基于 [Kimi 2.5 Model](https://www.moonshot.cn/)
+**🤖 100% AI 开发** — 由 [Kimi Code CLI](https://www.moonshot.cn/) 构建 · 基于 [Kimi K3](https://www.moonshot.cn/) 与 [DeepSeek V4 Pro](https://platform.deepseek.com/)
+
+**定位** — 不是 Postman 替代品：把 AI 的便利嫁接在本地工具的隐私上，默认数据不出机器。
 
 ---
 
@@ -31,6 +33,19 @@
 | 📄 **大响应优化** | 虚拟化渲染，支持 >50KB 响应 | ✅ |
 | ⌨️ **快捷键** | Cmd+N、Cmd+Enter、Cmd+S、Cmd+W 等 | ✅ |
 | 🧪 **UI 测试模式** | 内置 HTTP 指令服务器，支持自动化测试 | ✅ |
+
+---
+
+## 🧭 方向
+
+Hopp 正在从「又一个 Postman 克隆」转向**本地优先、私有 AI 的工作台**：
+
+- **环境变量** — 可复用的 `{{var}}`，作用域（全局 > 环境 > 本地）
+- **预请求链 + 变量转换** — 登录 → token、密码 sha1/aes 加密，声明式（无 JS 沙箱）
+- **三层 AI** — Tier 0 确定性（OpenAPI/Swagger 文件或 URL 导入）、Tier 1 本地模型（Ollama/LM Studio）、Tier 2 BYOK 云端（可选）
+- **轻量断言 + CLI** — 状态码/Header/Body/JSONPath，AI 生成，`hopp run` 供 CI 使用
+
+> 状态：规划中 — 见 [PRD](docs/PRD.md) 与 [FEATURE_UI_DESIGN](docs/FEATURE_UI_DESIGN.md)。
 
 ---
 

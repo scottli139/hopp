@@ -1,6 +1,6 @@
 # 🐰 Hopp
 
-> Lightweight, cross-platform API testing tool built with Flutter
+> Local-first, private AI API workbench — keep your data on your machine
 
 [简体中文](./README.zh-CN.md) | English
 
@@ -8,9 +8,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Flutter](https://img.shields.io/badge/Flutter-3.27.x-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.6.x-0175C2?logo=dart)](https://dart.dev)
-[![AI Powered](https://img.shields.io/badge/AI%20Powered-Kimi-orange?logo=artificial-intelligence)](https://www.moonshot.cn)
+[![AI Powered](https://img.shields.io/badge/AI%20Powered-Kimi%20K3%20%26%20DeepSeek-orange?logo=artificial-intelligence)](https://www.moonshot.cn)
 
-**🤖 100% AI Developed** — Built with [Kimi Code CLI](https://www.moonshot.cn/) · Powered by [Kimi 2.5 Model](https://www.moonshot.cn/)
+**🤖 100% AI Developed** — Built with [Kimi Code CLI](https://www.moonshot.cn/) · Powered by [Kimi K3](https://www.moonshot.cn/) & [DeepSeek V4 Pro](https://platform.deepseek.com/)
+
+**Positioning** — not a Postman clone: Hopp puts AI convenience on top of local API tooling, private by default.
 
 ---
 
@@ -29,6 +31,19 @@
 - ⚡ **Optimized Display** - Virtualized rendering for large responses (>50KB)
 - ⌨️ **Keyboard Shortcuts** - Cmd+N, Cmd+Enter, Cmd+S, Cmd+W, etc.
 - 🧪 **UI Test Mode** - Built-in HTTP command server for automated testing
+
+---
+
+## 🧭 Direction
+
+Hopp is moving from "another Postman clone" to a **local-first, private AI workbench**:
+
+- **Environment variables** — reusable `{{var}}` with scopes (global > environment > local)
+- **Pre-request chain + variable transforms** — login → token, password sha1/aes encryption, declarative (no JS sandbox)
+- **Three-tier AI** — Tier 0 deterministic (OpenAPI/Swagger file or URL import), Tier 1 local model (Ollama/LM Studio), Tier 2 BYOK cloud (opt-in)
+- **Lightweight assertions + CLI** — status/header/body/JSONPath, AI-generated, `hopp run` for CI
+
+> Status: planned — see [PRD](docs/PRD.md) and [FEATURE_UI_DESIGN](docs/FEATURE_UI_DESIGN.md).
 
 ---
 

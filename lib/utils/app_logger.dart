@@ -4,10 +4,21 @@ import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// 自定义日志过滤器 - 允许所有级别的日志
+///
+/// 例外：`flutter test` 环境（test runner 注入的进程环境变量
+/// FLUTTER_TEST=true）下只输出 warning 及以上级别，避免 trace/debug/info
+/// 的 PrettyPrinter 多行框刷屏污染测试输出。
 class _AllLogFilter extends LogFilter {
+  /// 是否处于 flutter test 环境
+  static final bool _isFlutterTest =
+      Platform.environment['FLUTTER_TEST'] == 'true';
+
   @override
   bool shouldLog(LogEvent event) {
-    return true; // 允许所有日志
+    if (_isFlutterTest && event.level.value < Level.warning.value) {
+      return false;
+    }
+    return true;
   }
 }
 

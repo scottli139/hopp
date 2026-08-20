@@ -149,8 +149,8 @@
 | 问题 | 优先级 | 状态 |
 |------|--------|------|
 | 行号与内容滚动不同步 | P2 | 待修（CodeEditor 组件） |
-| 导出对话框主按钮疑似缺失/文字重叠 | P1 | 待人工复核（OCR 未识别到 Export 按钮、"Select Collection" 被识别为 "lect Collection"） |
-| 测试日志噪音 | P2 | `fvm flutter test` 输出大量 debug 日志与堆栈，污染测试输出 |
+| ~~导出对话框主按钮疑似缺失/文字重叠~~ | ~~P1~~ | ✅ 已复核排除（2026-08-20，RepaintBoundary 截图 + 像素级复核）：Export 按钮存在，未选 Collection 时为禁用态（低对比度导致 OCR 漏识别）；"Select Collection" 显示完整，"lect Collection" 系 OCR 误读 |
+| ~~测试日志噪音~~ | ~~P2~~ | ✅ 已修复（2026-08-20）：`_AllLogFilter` 在 `flutter test` 环境（进程环境变量 `FLUTTER_TEST=true`）下只输出 warning 及以上级别，trace/debug/info 不再刷屏；单个测试文件输出 120 行 → 10 行。注意编译期 `bool.fromEnvironment('FLUTTER_TEST')` 在 Flutter 3.27.4 下为 false，必须用 `Platform.environment` 检测 |
 
 > 已修复并移除：删除 Collection 子目录处理问题（Issue #3，2026-03-19 已修复）。
 

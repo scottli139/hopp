@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hopp — 轻量级跨平台 API 测试工具</title>
+  <meta name="description" content="Hopp 是一款基于 Flutter 构建的轻量级、跨平台 API 请求测试工具，面向 macOS、Windows 和 Linux 的 Postman 开源替代品。">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a class="nav-logo" href="index.zh-CN.html"><span class="mark">🐰</span>Hopp</a>
+      <div class="nav-links">
+        <a href="#features">特性</a>
+        <a href="#quickstart">快速开始</a>
+        <a href="#architecture">架构</a>
+        <a href="#testing">测试</a>
+        <a href="#docs">文档</a>
+        <a href="#contributing">贡献</a>
+      </div>
+      <a class="nav-cta" href="index.html">English</a>
+      <a class="nav-cta" href="https://github.com/scottli139/hopp">GitHub</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container hero-inner">
+      <h1>🐰 Hopp</h1>
+      <p class="tagline">轻量级、跨平台的 API 请求测试工具 — Postman 的开源替代品</p>
+      <div class="ai-badge">🤖 100% AI 开发 · 使用 <a href="https://www.moonshot.cn/" target="_blank">Kimi Code CLI</a> 构建 · 基于 <a href="https://www.moonshot.cn/" target="_blank">Kimi 2.5</a></div>
+      <div class="badges">
+        <img src="https://github.com/scottli139/hopp/actions/workflows/ci.yml/badge.svg" alt="CI">
+        <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
+        <img src="https://img.shields.io/badge/Flutter-3.27.x-02569B?logo=flutter" alt="Flutter">
+        <img src="https://img.shields.io/badge/Dart-3.6.x-0175C2?logo=dart" alt="Dart">
+        <img src="https://img.shields.io/badge/version-0.7.0-7c5cff" alt="Version">
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/scottli139/hopp/releases">下载安装</a>
+        <a class="btn" href="https://github.com/scottli139/hopp">查看源码</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">功能特性</span>
+        <h2>测试 API 所需的一切</h2>
+        <p>专注、快速、隐私安全的 API 客户端，面向日常开发与调试。</p>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="icon">🚀</div><h3>轻量快速</h3><p>基于 Flutter 构建，原生性能体验，无 Electron 负担。</p></div>
+        <div class="card"><div class="icon">💻</div><h3>跨平台</h3><p>支持 macOS、Windows、Linux。</p></div>
+        <div class="card"><div class="icon">📝</div><h3>请求编辑器</h3><p>Params、Headers、Body，支持 JSON / Form / Text。</p></div>
+        <div class="card"><div class="icon">🗂️</div><h3>集合管理</h3><p>嵌套文件夹组织请求，支持导入 / 导出。</p></div>
+        <div class="card"><div class="icon">📑</div><h3>多标签页</h3><p>同时处理多个请求。</p></div>
+        <div class="card"><div class="icon">🌓</div><h3>深色模式</h3><p>支持浅色 / 深色 / 跟随系统主题。</p></div>
+        <div class="card"><div class="icon">🌍</div><h3>国际化</h3><p>内置简体中文和英语。</p></div>
+        <div class="card"><div class="icon">📊</div><h3>响应查看器</h3><p>响应体、Headers、状态码、大小、耗时一览。</p></div>
+        <div class="card"><div class="icon">🔒</div><h3>HTTPS 证书</h3><p>查看 SSL/TLS 证书详细信息。</p></div>
+        <div class="card"><div class="icon">⏱️</div><h3>时间分析</h3><p>DNS、TCP、TLS、TTFB、下载分段时间。</p></div>
+        <div class="card"><div class="icon">⚡</div><h3>大响应优化</h3><p>虚拟化渲染，支持 &gt;50 KB 响应体。</p></div>
+        <div class="card"><div class="icon">⌨️</div><h3>快捷键</h3><p>Cmd+N、Cmd+Enter、Cmd+S、Cmd+W 等。</p></div>
+        <div class="card"><div class="icon">🧪</div><h3>UI 测试模式</h3><p>内置 HTTP 指令服务器，支持自动化测试。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="quickstart">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">快速开始</span>
+        <h2>快速上手</h2>
+        <p>开发与构建 Hopp 所需的环境和命令。</p>
+      </div>
+
+      <h3>前置要求</h3>
+      <ul style="margin: 12px 0 12px 22px; color: var(--text-dim);">
+        <li><a href="https://flutter.dev/" target="_blank">Flutter</a> 3.27+</li>
+        <li><a href="https://dart.dev/" target="_blank">Dart</a> 3.6+</li>
+        <li><a href="https://fvm.app/" target="_blank">FVM</a>（推荐用于版本管理）</li>
+      </ul>
+
+      <h3>开发环境</h3>
+      <pre class="code"><span class="c"># 克隆仓库</span>
+git clone https://github.com/scottli139/hopp.git
+cd hopp
+
+<span class="c"># 安装 FVM（如尚未安装）</span>
+dart pub global activate fvm
+
+<span class="c"># 使用项目指定的 Flutter 版本并安装依赖</span>
+fvm use
+fvm flutter pub get
+
+<span class="c"># 在 macOS 上运行</span>
+fvm flutter run -d macos</pre>
+
+      <h3>构建</h3>
+      <pre class="code"><span class="c"># 构建 macOS / Windows / Linux 版本</span>
+fvm flutter build macos --release
+fvm flutter build windows --release
+fvm flutter build linux --release</pre>
+
+      <div class="note">🇨🇳 中国大陆开发者可配置 Flutter 国内镜像加速下载，详见 <a href="https://github.com/scottli139/hopp/blob/main/README.zh-CN.md" target="_blank">README</a>。</div>
+    </div>
+  </section>
+
+  <section class="section" id="architecture">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">架构</span>
+        <h2>清晰的分层设计</h2>
+        <p>在表现层、状态层、领域层与数据层之间保持清晰边界。</p>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="icon">🎨</div><h3>表现层</h3><p>Screens 与可复用 Widgets 负责渲染 UI。</p></div>
+        <div class="card"><div class="icon">🧭</div><h3>状态层</h3><p>Riverpod providers 与 notifiers 管理异步状态。</p></div>
+        <div class="card"><div class="icon">🧩</div><h3>领域层</h3><p>Freezed 模型与业务服务。</p></div>
+        <div class="card"><div class="icon">💾</div><h3>数据层</h3><p>Hive、SharedPreferences 与 Dio 负责存储和网络。</p></div>
+      </div>
+
+      <h3>项目结构</h3>
+      <pre class="code">hopp/
+├── lib/
+│   ├── models/          <span class="c"># 数据模型 (Freezed + Hive)</span>
+│   ├── providers/       <span class="c"># Riverpod 状态管理</span>
+│   ├── services/        <span class="c"># HTTP 与存储服务</span>
+│   ├── widgets/         <span class="c"># UI 组件</span>
+│   ├── screens/         <span class="c"># 应用页面</span>
+│   ├── utils/           <span class="c"># 工具类</span>
+│   └── l10n/            <span class="c"># 国际化</span>
+├── macos/               <span class="c"># macOS 平台代码</span>
+├── windows/             <span class="c"># Windows 平台代码</span>
+├── linux/               <span class="c"># Linux 平台代码</span>
+├── test/                <span class="c"># 单元与 Widget 测试</span>
+└── docs/                <span class="c"># 文档</span></pre>
+
+      <h3>技术栈</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>类别</th><th>技术</th></tr></thead>
+          <tbody>
+            <tr><td>框架</td><td>Flutter 3.27.x, Dart 3.6+</td></tr>
+            <tr><td>状态管理</td><td>Riverpod 2.x</td></tr>
+            <tr><td>HTTP 客户端</td><td>Dio 5.x</td></tr>
+            <tr><td>本地存储</td><td>Hive + SharedPreferences</td></tr>
+            <tr><td>UI</td><td>Material Design 3</td></tr>
+            <tr><td>代码生成</td><td>Freezed, json_serializable</td></tr>
+            <tr><td>测试</td><td>Mockito, integration_test, Peekaboo</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="testing">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">测试与质量</span>
+        <h2>544 个测试全部通过</h2>
+        <p>每次 push 都会触发 CI，执行静态分析、格式检查、代码生成校验与完整测试套件。</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>测试套件</th><th>数量</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr><td>Models</td><td>175</td><td><span class="pill">通过</span></td></tr>
+            <tr><td>Services</td><td>147</td><td><span class="pill">通过</span></td></tr>
+            <tr><td>Providers</td><td>99</td><td><span class="pill">通过</span></td></tr>
+            <tr><td>Widgets</td><td>87</td><td><span class="pill">通过</span></td></tr>
+            <tr><td>Utils</td><td>36</td><td><span class="pill">通过</span></td></tr>
+            <tr><td><strong>总计</strong></td><td><strong>544</strong></td><td><span class="pill">通过</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="docs">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">文档</span>
+        <h2>完整项目文档</h2>
+        <p>产品、架构、计划与工程指南，均在 GitHub 上渲染阅读。</p>
+      </div>
+      <div class="doc-grid">
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/PRD.md"><span class="name">PRD.md</span><span class="desc">需求规格说明书与验收标准</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/BACKLOG.md"><span class="name">BACKLOG.md</span><span class="desc">未来迭代候选功能清单</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/ARCHITECTURE.md"><span class="name">ARCHITECTURE.md</span><span class="desc">系统架构、技术选型与设计决策</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/DEVELOPMENT_PLAN.md"><span class="name">DEVELOPMENT_PLAN.md</span><span class="desc">里程碑与任务进度</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/IMPLEMENTATION_NOTES.md"><span class="name">IMPLEMENTATION_NOTES.md</span><span class="desc">详细技术实现说明</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/SHORTCUTS_IMPLEMENTATION_PLAN.md"><span class="name">SHORTCUTS_IMPLEMENTATION_PLAN.md</span><span class="desc">快捷键实现计划</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/UI_UX_GUIDELINES.md"><span class="name">UI_UX_GUIDELINES.md</span><span class="desc">视觉与交互设计规范</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/CODING_STANDARDS.md"><span class="name">CODING_STANDARDS.md</span><span class="desc">Dart/Flutter 编码规范</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/TESTING.md"><span class="name">TESTING.md</span><span class="desc">测试策略、工具与覆盖率</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/DEVELOPMENT_ENVIRONMENT.md"><span class="name">DEVELOPMENT_ENVIRONMENT.md</span><span class="desc">开发环境搭建指南</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/GITHUB_SETTINGS.md"><span class="name">GITHUB_SETTINGS.md</span><span class="desc">仓库配置指南</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/PEEKABOO_CLI_LEARNING.md"><span class="name">PEEKABOO_CLI_LEARNING.md</span><span class="desc">E2E 测试工具笔记</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/CHANGELOG.md"><span class="name">CHANGELOG.md</span><span class="desc">版本历史</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/ARCHIVED_TAURI.md"><span class="name">ARCHIVED_TAURI.md</span><span class="desc">历史 React + Rust 技术栈</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="contributing">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">参与贡献</span>
+        <h2>加入项目</h2>
+        <p>欢迎贡献！请在提交 Issue 或 Pull Request 前阅读相关指南。</p>
+      </div>
+      <div class="grid">
+        <a class="card" href="https://github.com/scottli139/hopp/blob/main/CONTRIBUTING.md"><div class="icon">🤝</div><h3>贡献指南</h3><p>如何配置环境、运行测试并提交变更。</p></a>
+        <a class="card" href="https://github.com/scottli139/hopp/blob/main/CODE_OF_CONDUCT.md"><div class="icon">📖</div><h3>行为准则</h3><p>营造互相尊重的社区环境。</p></a>
+        <a class="card" href="https://github.com/scottli139/hopp/issues/new/choose"><div class="icon">🐛</div><h3>提交 Issue</h3><p>通过模板提交 Bug 报告或功能建议。</p></a>
+        <a class="card" href="https://github.com/scottli139/hopp/blob/main/LICENSE"><div class="icon">⚖️</div><h3>MIT 许可证</h3><p>自由、开源。</p></a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <div class="links">
+        <a href="https://github.com/scottli139/hopp">GitHub</a>
+        <a href="https://github.com/scottli139/hopp/releases">Releases</a>
+        <a href="https://github.com/scottli139/hopp/actions">CI</a>
+        <a href="https://github.com/scottli139/hopp/issues">Issues</a>
+      </div>
+      <p>用 ❤️ 构建 · 由 Hopp 团队 · 🐰 Hop to your APIs!</p>
+    </div>
+  </footer>
+</body>
+</html>

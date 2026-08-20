@@ -158,3 +158,36 @@ ai-developed, open-source
 ### 设置 Release 标签
 - 发布版本时使用语义化版本号：v0.1.0, v0.2.0 等
 - 添加详细的 Release Notes
+
+---
+
+## 🌐 GitHub Pages 站点
+
+Hopp 的文档站由 `.github/workflows/pages.yml` 自动部署到 https://scottli139.github.io/hopp。
+
+### 站点源目录 `site/`
+
+站点源文件独立于 workflow 维护，便于直接编辑与复用：
+
+```
+site/
+├── index.html          # 英文首页（landing + 文档中心）
+├── index.zh-CN.html    # 简体中文首页
+└── styles.css          # 共享样式
+```
+
+### 部署流程
+
+1. 推送到 `main` 分支，且变更涉及 `site/**`、`docs/**`、`README*.md` 或 workflow 自身时触发
+2. workflow 将 `site/` 与 `LICENSE` 复制到 `_site/` 后上传 artifact
+3. `actions/deploy-pages` 发布到 GitHub Pages
+
+### 首页内容
+
+首页集中展示：功能特性、快速开始、架构与项目结构、技术栈、测试统计、完整文档索引、贡献指南与许可证。文档索引链接到 GitHub 上的 Markdown 渲染页，保证阅读体验。
+
+### 修改站点
+
+- 修改页面内容：编辑 `site/index.html` 或 `site/index.zh-CN.html`
+- 修改样式：编辑 `site/styles.css`
+- 本地预览：直接用浏览器打开 `site/index.html`

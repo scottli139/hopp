@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hopp — Lightweight Cross-Platform API Testing Tool</title>
+  <meta name="description" content="Hopp is a lightweight, cross-platform API testing tool built with Flutter — an open-source Postman alternative for macOS, Windows, and Linux.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a class="nav-logo" href="index.html"><span class="mark">🐰</span>Hopp</a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#quickstart">Quick Start</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#testing">Testing</a>
+        <a href="#docs">Docs</a>
+        <a href="#contributing">Contributing</a>
+      </div>
+      <a class="nav-cta" href="index.zh-CN.html">简体中文</a>
+      <a class="nav-cta" href="https://github.com/scottli139/hopp">GitHub</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container hero-inner">
+      <h1>🐰 Hopp</h1>
+      <p class="tagline">Lightweight, cross-platform API testing tool — an open-source Postman alternative</p>
+      <div class="ai-badge">🤖 100% AI Developed · Built with <a href="https://www.moonshot.cn/" target="_blank">Kimi Code CLI</a> · Powered by <a href="https://www.moonshot.cn/" target="_blank">Kimi 2.5</a></div>
+      <div class="badges">
+        <img src="https://github.com/scottli139/hopp/actions/workflows/ci.yml/badge.svg" alt="CI">
+        <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
+        <img src="https://img.shields.io/badge/Flutter-3.27.x-02569B?logo=flutter" alt="Flutter">
+        <img src="https://img.shields.io/badge/Dart-3.6.x-0175C2?logo=dart" alt="Dart">
+        <img src="https://img.shields.io/badge/version-0.7.0-7c5cff" alt="Version">
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/scottli139/hopp/releases">Download</a>
+        <a class="btn" href="https://github.com/scottli139/hopp">View on GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">Features</span>
+        <h2>Everything you need to test APIs</h2>
+        <p>A focused, fast, and private API client for day-to-day development and debugging.</p>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="icon">🔥</div><h3>Lightweight &amp; Fast</h3><p>Native performance with Flutter — no Electron bloat.</p></div>
+        <div class="card"><div class="icon">💻</div><h3>Cross-Platform</h3><p>Runs on macOS, Windows, and Linux.</p></div>
+        <div class="card"><div class="icon">📝</div><h3>Request Editor</h3><p>Params, Headers, and Body with JSON, Form, and Text editors.</p></div>
+        <div class="card"><div class="icon">🗂️</div><h3>Collections</h3><p>Organize requests into nested folders with import/export.</p></div>
+        <div class="card"><div class="icon">📑</div><h3>Multiple Tabs</h3><p>Work with many requests simultaneously.</p></div>
+        <div class="card"><div class="icon">🌓</div><h3>Dark Mode</h3><p>Light, dark, and system themes.</p></div>
+        <div class="card"><div class="icon">🌍</div><h3>Internationalization</h3><p>English and Simplified Chinese built in.</p></div>
+        <div class="card"><div class="icon">📊</div><h3>Response Viewer</h3><p>Body, headers, status, size, and timing in one place.</p></div>
+        <div class="card"><div class="icon">🔒</div><h3>HTTPS Certificate</h3><p>Inspect SSL/TLS certificate details.</p></div>
+        <div class="card"><div class="icon">⏱️</div><h3>Timing Analysis</h3><p>DNS, TCP, TLS, TTFB, and download time breakdown.</p></div>
+        <div class="card"><div class="icon">⚡</div><h3>Optimized Display</h3><p>Virtualized rendering for large responses (&gt;50 KB).</p></div>
+        <div class="card"><div class="icon">⌨️</div><h3>Keyboard Shortcuts</h3><p>Cmd+N, Cmd+Enter, Cmd+S, Cmd+W, and more.</p></div>
+        <div class="card"><div class="icon">🧪</div><h3>UI Test Mode</h3><p>Built-in HTTP command server for automated testing.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="quickstart">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">Quick Start</span>
+        <h2>Get up and running</h2>
+        <p>Requirements and the commands you need to develop and build Hopp.</p>
+      </div>
+
+      <h3>Prerequisites</h3>
+      <ul style="margin: 12px 0 12px 22px; color: var(--text-dim);">
+        <li><a href="https://flutter.dev/" target="_blank">Flutter</a> 3.27+</li>
+        <li><a href="https://dart.dev/" target="_blank">Dart</a> 3.6+</li>
+        <li><a href="https://fvm.app/" target="_blank">FVM</a> (recommended for version management)</li>
+      </ul>
+
+      <h3>Development</h3>
+      <pre class="code"><span class="c"># Clone the repository</span>
+git clone https://github.com/scottli139/hopp.git
+cd hopp
+
+<span class="c"># Install FVM (if not installed)</span>
+dart pub global activate fvm
+
+<span class="c"># Use the project's Flutter version and install dependencies</span>
+fvm use
+fvm flutter pub get
+
+<span class="c"># Run on macOS</span>
+fvm flutter run -d macos</pre>
+
+      <h3>Build</h3>
+      <pre class="code"><span class="c"># Build for macOS / Windows / Linux</span>
+fvm flutter build macos --release
+fvm flutter build windows --release
+fvm flutter build linux --release</pre>
+
+      <div class="note">🇨🇳 Mainland China developers can speed up downloads with the Flutter mirrors — see the full setup in <a href="https://github.com/scottli139/hopp/blob/main/README.md" target="_blank">README</a>.</div>
+    </div>
+  </section>
+
+  <section class="section" id="architecture">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">Architecture</span>
+        <h2>Clean, layered design</h2>
+        <p>Built with a clear separation between presentation, state, domain, and data.</p>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="icon">🎨</div><h3>Presentation</h3><p>Screens and reusable widgets rendering UI.</p></div>
+        <div class="card"><div class="icon">🧭</div><h3>State</h3><p>Riverpod providers and notifiers managing async state.</p></div>
+        <div class="card"><div class="icon">🧩</div><h3>Domain</h3><p>Freezed models and business services.</p></div>
+        <div class="card"><div class="icon">💾</div><h3>Data</h3><p>Hive, SharedPreferences, and Dio for storage and network.</p></div>
+      </div>
+
+      <h3>Project structure</h3>
+      <pre class="code">hopp/
+├── lib/
+│   ├── models/          <span class="c"># Data models (Freezed + Hive)</span>
+│   ├── providers/       <span class="c"># Riverpod state management</span>
+│   ├── services/        <span class="c"># HTTP &amp; storage services</span>
+│   ├── widgets/         <span class="c"># UI components</span>
+│   ├── screens/         <span class="c"># App screens</span>
+│   ├── utils/           <span class="c"># Utilities</span>
+│   └── l10n/            <span class="c"># Localization</span>
+├── macos/               <span class="c"># macOS platform code</span>
+├── windows/             <span class="c"># Windows platform code</span>
+├── linux/               <span class="c"># Linux platform code</span>
+├── test/                <span class="c"># Unit &amp; widget tests</span>
+└── docs/                <span class="c"># Documentation</span></pre>
+
+      <h3>Tech stack</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Concern</th><th>Technology</th></tr></thead>
+          <tbody>
+            <tr><td>Framework</td><td>Flutter 3.27.x, Dart 3.6+</td></tr>
+            <tr><td>State management</td><td>Riverpod 2.x</td></tr>
+            <tr><td>HTTP client</td><td>Dio 5.x</td></tr>
+            <tr><td>Local storage</td><td>Hive + SharedPreferences</td></tr>
+            <tr><td>UI</td><td>Material Design 3</td></tr>
+            <tr><td>Code generation</td><td>Freezed, json_serializable</td></tr>
+            <tr><td>Testing</td><td>Mockito, integration_test, Peekaboo</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="testing">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">Testing &amp; Quality</span>
+        <h2>544 tests, all passing</h2>
+        <p>Continuous integration runs analyze, format checks, generation checks, and the full test suite on every push.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Suite</th><th>Tests</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Models</td><td>175</td><td><span class="pill">passing</span></td></tr>
+            <tr><td>Services</td><td>147</td><td><span class="pill">passing</span></td></tr>
+            <tr><td>Providers</td><td>99</td><td><span class="pill">passing</span></td></tr>
+            <tr><td>Widgets</td><td>87</td><td><span class="pill">passing</span></td></tr>
+            <tr><td>Utils</td><td>36</td><td><span class="pill">passing</span></td></tr>
+            <tr><td><strong>Total</strong></td><td><strong>544</strong></td><td><span class="pill">passing</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="docs">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">Documentation</span>
+        <h2>Complete project docs</h2>
+        <p>Product, architecture, planning, and engineering guides — rendered on GitHub.</p>
+      </div>
+      <div class="doc-grid">
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/PRD.md"><span class="name">PRD.md</span><span class="desc">Product requirements and acceptance criteria</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/BACKLOG.md"><span class="name">BACKLOG.md</span><span class="desc">Candidate features for future iterations</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/ARCHITECTURE.md"><span class="name">ARCHITECTURE.md</span><span class="desc">System design, tech stack, and decisions</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/DEVELOPMENT_PLAN.md"><span class="name">DEVELOPMENT_PLAN.md</span><span class="desc">Milestones and task progress</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/IMPLEMENTATION_NOTES.md"><span class="name">IMPLEMENTATION_NOTES.md</span><span class="desc">Detailed technical implementation notes</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/SHORTCUTS_IMPLEMENTATION_PLAN.md"><span class="name">SHORTCUTS_IMPLEMENTATION_PLAN.md</span><span class="desc">Keyboard shortcut implementation plan</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/UI_UX_GUIDELINES.md"><span class="name">UI_UX_GUIDELINES.md</span><span class="desc">Visual and interaction design guidelines</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/CODING_STANDARDS.md"><span class="name">CODING_STANDARDS.md</span><span class="desc">Dart/Flutter code conventions</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/TESTING.md"><span class="name">TESTING.md</span><span class="desc">Test strategy, tools, and coverage</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/DEVELOPMENT_ENVIRONMENT.md"><span class="name">DEVELOPMENT_ENVIRONMENT.md</span><span class="desc">Environment setup guide</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/GITHUB_SETTINGS.md"><span class="name">GITHUB_SETTINGS.md</span><span class="desc">Repository configuration guide</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/PEEKABOO_CLI_LEARNING.md"><span class="name">PEEKABOO_CLI_LEARNING.md</span><span class="desc">E2E testing tool notes</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/CHANGELOG.md"><span class="name">CHANGELOG.md</span><span class="desc">Version history</span></a>
+        <a class="doc-card" href="https://github.com/scottli139/hopp/blob/main/docs/ARCHIVED_TAURI.md"><span class="name">ARCHIVED_TAURI.md</span><span class="desc">Legacy React + Rust stack</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="contributing">
+    <div class="container">
+      <div class="section-head">
+        <span class="kicker">Contributing</span>
+        <h2>Join the project</h2>
+        <p>Contributions are welcome. Please read the guidelines before opening an issue or pull request.</p>
+      </div>
+      <div class="grid">
+        <a class="card" href="https://github.com/scottli139/hopp/blob/main/CONTRIBUTING.md"><div class="icon">🤝</div><h3>Contributing Guide</h3><p>How to set up, test, and submit changes.</p></a>
+        <a class="card" href="https://github.com/scottli139/hopp/blob/main/CODE_OF_CONDUCT.md"><div class="icon">📖</div><h3>Code of Conduct</h3><p>Community standards for a respectful environment.</p></a>
+        <a class="card" href="https://github.com/scottli139/hopp/issues/new/choose"><div class="icon">🐛</div><h3>Report an Issue</h3><p>Bug reports and feature requests via templates.</p></a>
+        <a class="card" href="https://github.com/scottli139/hopp/blob/main/LICENSE"><div class="icon">⚖️</div><h3>MIT License</h3><p>Free and open source.</p></a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <div class="links">
+        <a href="https://github.com/scottli139/hopp">GitHub</a>
+        <a href="https://github.com/scottli139/hopp/releases">Releases</a>
+        <a href="https://github.com/scottli139/hopp/actions">CI</a>
+        <a href="https://github.com/scottli139/hopp/issues">Issues</a>
+      </div>
+      <p>Built with ❤️ by Hopp Team · 🐰 Hop to your APIs!</p>
+    </div>
+  </footer>
+</body>
+</html>

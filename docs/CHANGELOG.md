@@ -54,3 +54,5 @@
 | 2026-03-19 | v0.6.8-ci-fix | 修复 GitHub CI 配置: pr-check.yml 使用 `--no-fatal-infos` 与 ci.yml 保持一致，添加生成文件存在性检查 |
 | 2026-03-19 | v0.6.9-ci-success | ✅ CI 修复完成: 修复 analysis warnings (unused variable/function/import)，所有任务通过 (analyze-and-test + 3平台构建) |
 | 2026-04-01 | v0.7.0 | 版本发布：版本号从 v0.6.9 提升至 0.7.0 |
+| 2026-08-20 | v0.7.0-docs | 完善 GitHub Pages 站点：信息型首页 + 文档中心 + 中英文 |
+| 2026-08-20 | v0.7.0-ci-fix | 修复 Windows CI：windows-latest 已升级 VS2026，Flutter 3.27 不支持，固定 windows-2022 (VS2022) |

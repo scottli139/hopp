@@ -55,10 +55,35 @@ class PostmanExportService with LogMixin {
         );
       }
 
+      // 扁平化存储：收集该集合子树下的所有子集合与请求
+      final allCollections = await _storage.getCollections();
+      final allRequests = await _storage.getRequests();
+
+      final subtreeIds = <String>{collectionId};
+      void collect(String parentId) {
+        for (final c in allCollections) {
+          if (c.parentId == parentId) {
+            subtreeIds.add(c.id);
+            collect(c.id);
+          }
+        }
+      }
+
+      collect(collectionId);
+
+      final childCollections = allCollections
+          .where((c) => subtreeIds.contains(c.id) && c.id != collectionId)
+          .toList();
+      final subtreeRequests = allRequests
+          .where((r) => r.parentId != null && subtreeIds.contains(r.parentId))
+          .toList();
+
       // 转换为 Postman 格式
       final postmanCollection = PostmanMapper.toPostmanCollection(
         collection,
         version: options.version,
+        allCollections: childCollections,
+        allRequests: subtreeRequests,
       );
 
       // 序列化 JSON

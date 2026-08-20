@@ -22,6 +22,9 @@ void main() {
           storageServiceProvider.overrideWithValue(mockStorageService),
         ],
       );
+      // 扁平化存储下，deleteCollection 会读取所有请求；默认返回空列表，
+      // 需要验证请求删除的测试会单独覆盖此 stub。
+      when(mockStorageService.getRequests()).thenAnswer((_) async => []);
     });
 
     tearDown(() {
@@ -289,25 +292,33 @@ void main() {
           verifyNever(mockStorageService.deleteCollection('collection-b'));
         });
 
-        test('should delete requests in deleted collections', () async {
-          final childRequest = HttpRequest.empty()
-              .copyWith(id: 'req-child', name: 'Child Request');
+        test('should delete requests in deleted collections via parentId',
+            () async {
+          // 扁平化存储：请求通过 parentId 关联到集合，而不是存在 collection.requests
+          final childRequest = HttpRequest.empty().copyWith(
+            id: 'req-child',
+            name: 'Child Request',
+            parentId: 'child',
+          );
           final child = Collection.empty().copyWith(
             id: 'child',
             name: 'Child',
             parentId: 'parent',
-            requests: [childRequest],
           );
-          final parentRequest = HttpRequest.empty()
-              .copyWith(id: 'req-parent', name: 'Parent Request');
+          final parentRequest = HttpRequest.empty().copyWith(
+            id: 'req-parent',
+            name: 'Parent Request',
+            parentId: 'parent',
+          );
           final parent = Collection.empty().copyWith(
             id: 'parent',
             name: 'Parent',
-            requests: [parentRequest],
           );
 
           when(mockStorageService.getCollections())
               .thenAnswer((_) async => [parent, child]);
+          when(mockStorageService.getRequests())
+              .thenAnswer((_) async => [parentRequest, childRequest]);
 
           await container.read(collectionProvider.notifier).loadCollections();
 
@@ -320,7 +331,7 @@ void main() {
               .read(collectionProvider.notifier)
               .deleteCollection('parent');
 
-          // 验证集合中的请求也被删除
+          // 验证集合下的请求（通过 parentId 关联）也被删除
           verify(mockStorageService.deleteRequest('req-parent')).called(1);
           verify(mockStorageService.deleteRequest('req-child')).called(1);
         });

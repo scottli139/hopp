@@ -6,6 +6,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/collection.dart';
+import '../../models/http_request.dart';
 import '../../providers/collection/collection_provider.dart';
 import '../../services/import_export/import_export_exception.dart';
 import '../../services/import_export/postman_export_service.dart';
@@ -74,9 +75,17 @@ class ImportConflict {
   final Collection collection;
   final String existingId;
 
+  /// 冲突时的子集合列表（扁平化存储）
+  final List<Collection>? childCollections;
+
+  /// 冲突时的所有请求列表
+  final List<HttpRequest>? allRequests;
+
   const ImportConflict({
     required this.collection,
     required this.existingId,
+    this.childCollections,
+    this.allRequests,
   });
 }
 
@@ -121,6 +130,8 @@ class ImportExportNotifier extends StateNotifier<ImportExportState>
           ImportConflict(
             collection: result.conflictCollection!,
             existingId: result.existingId!,
+            childCollections: result.childCollections,
+            allRequests: result.allRequests,
           ),
         );
       } else {
@@ -139,7 +150,8 @@ class ImportExportNotifier extends StateNotifier<ImportExportState>
 
   /// 解决冲突
   Future<void> resolveConflict(ConflictResolution resolution) async {
-    if (state.conflict == null) {
+    final conflict = state.conflict;
+    if (conflict == null) {
       logWarning('No conflict to resolve');
       return;
     }
@@ -149,9 +161,11 @@ class ImportExportNotifier extends StateNotifier<ImportExportState>
 
     try {
       final result = await _import.resolveConflict(
-        collection: state.conflict!.collection,
+        collection: conflict.collection,
         resolution: resolution,
-        existingId: state.conflict!.existingId,
+        existingId: conflict.existingId,
+        childCollections: conflict.childCollections,
+        allRequests: conflict.allRequests,
       );
 
       if (result.success) {

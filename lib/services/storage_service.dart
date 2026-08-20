@@ -4,9 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // 使用自定义适配器，隐藏自动生成的适配器避免冲突
 import '../models/adapters/adapters.dart'
-    show HttpRequestAdapter, AppSettingsAdapter;
+    show HttpRequestAdapter, AppSettingsAdapter, CollectionAdapter;
 import '../models/app_settings.dart' hide AppSettingsAdapter;
-import '../models/collection.dart';
+import '../models/collection.dart' hide CollectionAdapter;
 import '../models/http_method.dart';
 import '../models/http_request.dart' hide HttpRequestAdapter;
 import '../models/key_value_pair.dart';

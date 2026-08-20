@@ -4,4 +4,5 @@
 library;
 
 export 'app_settings_adapter.dart';
+export 'collection_adapter.dart';
 export 'http_request_adapter.dart';

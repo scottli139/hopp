@@ -228,15 +228,12 @@ class PostmanImportService with LogMixin {
       final map = jsonDecode(json) as Map<String, dynamic>;
       final environment = PostmanEnvironment.fromJson(map);
 
-      // 注意：目前 Hopp 还没有 Environment 模型，这里仅做解析演示
-      // 后续需要实现 Environment 的存储
+      // 目前 Hopp 还没有 Environment 存储，如实返回「暂不支持」，
+      // 避免上层把未完成的解析误判为导入成功。
       logInfo('Environment parsed: ${environment.name}');
-      logWarning('Environment import not fully implemented yet');
+      logWarning('Environment import not yet supported');
 
-      return ImportResult.success(
-        collectionId: '',
-        importedRequestCount: environment.values?.length ?? 0,
-      );
+      return ImportResult.error('Environment import is not yet supported');
     } catch (e, stack) {
       logError('Failed to import environment', e, stack);
       throw ImportException(
@@ -296,6 +293,16 @@ class PostmanImportService with LogMixin {
     if (existingId != null) {
       final allCollections = await _storage.getCollections();
       _collectAllChildIds(existingId, allCollections, allChildIds);
+
+      // 删除被覆盖集合下的请求（扁平化存储：请求通过 parentId 关联）
+      final collectionIdsToDelete = <String>{existingId, ...allChildIds};
+      final allRequests = await _storage.getRequests();
+      for (final request in allRequests) {
+        if (request.parentId != null &&
+            collectionIdsToDelete.contains(request.parentId)) {
+          await _storage.deleteRequest(request.id);
+        }
+      }
 
       // 删除现有集合及其所有子集合
       await _storage.deleteCollection(existingId);

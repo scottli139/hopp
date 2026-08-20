@@ -99,12 +99,12 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
         // 3. 收集目标集合及其所有子孙
         collectDescendants(id);
 
-        // 4. 收集要删除的请求（来自所有被删除的集合）
-        for (final collection in value) {
-          if (idsToDelete.contains(collection.id)) {
-            for (final request in collection.requests) {
-              requestsToDelete.add(request.id);
-            }
+        // 4. 收集要删除的请求（扁平化存储：请求通过 parentId 关联到集合）
+        final allRequests = await storage.getRequests();
+        for (final request in allRequests) {
+          if (request.parentId != null &&
+              idsToDelete.contains(request.parentId)) {
+            requestsToDelete.add(request.id);
           }
         }
 
@@ -202,20 +202,6 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
 
     AppLogger.info(
         '[CollectionNotifier] Request updated in collection: ${request.id}');
-  }
-
-  /// Find which collection contains a request
-  /// 注意：扁平化存储下，请求通过 parentId 关联
-  String? findRequestCollectionId(String requestId) {
-    // 需要从 storage 获取请求以检查 parentId
-    // 这里简化处理：如果请求已存在，它的 parentId 就是所在集合
-    // 实际查询由调用方通过 requestsProvider 完成
-    return null; // 简化实现，实际 parentId 在请求对象中
-  }
-
-  /// Check if a request exists in any collection
-  bool isRequestInAnyCollection(String requestId) {
-    return findRequestCollectionId(requestId) != null;
   }
 
   /// Save or update a request - automatically adds to default collection if new

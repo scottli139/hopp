@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart';
 
 import '../models/certificate_info.dart';
 import '../utils/app_logger.dart';
@@ -393,40 +392,4 @@ List<CertificateChainEntry> _buildCertificateChain(X509Certificate cert) {
   // 完整证书链需要通过其他方式获取（如 OCSP、AIA 扩展）
 
   return chain;
-}
-
-/// 从响应中提取证书信息（兼容性保留）
-CertificateInfo? extractCertificateFromResponse(Response<Uint8List> response) {
-  // 尝试从 extra 中获取证书信息（如果在请求时设置了的话）
-  final certInfo = response.extra['certificateInfo'];
-  if (certInfo is CertificateInfo) {
-    AppLogger.debug(
-        '[CertificateHelper] Extracted certificate from response extra');
-    return certInfo;
-  }
-  return null;
-}
-
-/// 设置 HTTP 客户端以捕获证书信息（兼容性保留，不再推荐使用）
-///
-/// 注意：Dart 的 HttpClient 只有在证书验证失败时才会调用 badCertificateCallback
-/// 正常成功的 HTTPS 连接不会触发此回调，因此无法直接获取服务器证书信息
-/// 推荐使用 [fetchCertificateFromHost] 方法
-void setupHttpClientForCertificate(
-    HttpClient client, void Function(CertificateInfo) onCertificate) {
-  client.badCertificateCallback =
-      (X509Certificate cert, String host, int port) {
-    try {
-      final info = extractCertificateInfoFromX509(cert);
-      if (info != null) {
-        AppLogger.debug(
-            '[CertificateHelper] Extracted certificate for host: $host');
-        onCertificate(info);
-      }
-    } catch (e, stack) {
-      AppLogger.warning(
-          '[CertificateHelper] Failed to extract certificate', e, stack);
-    }
-    return true;
-  };
 }

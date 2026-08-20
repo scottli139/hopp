@@ -20,6 +20,8 @@ class HttpService {
   final Dio? _dio;
   final Logger _logger;
 
+  Duration _timeout = const Duration(seconds: 30);
+
   HttpService({Dio? dio, Logger? logger})
       : _dio = dio,
         _logger = logger ?? Logger();
@@ -30,13 +32,15 @@ class HttpService {
     required int maxRedirects,
     required bool validateCertificates,
   }) {
+    _timeout = Duration(milliseconds: timeoutMs);
+
     final dio = _dio;
     if (dio == null) return;
 
     dio.options = BaseOptions(
-      connectTimeout: Duration(milliseconds: timeoutMs),
-      receiveTimeout: Duration(milliseconds: timeoutMs),
-      sendTimeout: Duration(milliseconds: timeoutMs),
+      connectTimeout: _timeout,
+      receiveTimeout: _timeout,
+      sendTimeout: _timeout,
       followRedirects: followRedirects,
       maxRedirects: maxRedirects,
       validateStatus: (status) => status != null && status < 600,
@@ -566,9 +570,9 @@ class HttpService {
 
     // 基础配置（使用请求级别设置）
     dio.options = BaseOptions(
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
+      connectTimeout: _timeout,
+      receiveTimeout: _timeout,
+      sendTimeout: _timeout,
       followRedirects: request.followRedirects,
       maxRedirects: request.maxRedirects,
       validateStatus: (status) => status != null && status < 600,

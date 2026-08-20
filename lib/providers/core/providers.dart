@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
+import '../../models/app_settings.dart';
+import '../../providers/settings/settings_provider.dart';
 import '../../services/http_service.dart';
 import '../../services/storage_service.dart';
 
@@ -11,13 +13,23 @@ final storageServiceProvider = Provider<StorageService>((ref) {
 
 final httpServiceProvider = Provider<HttpService>((ref) {
   final service = HttpService();
-  // 默认配置（符合 Request Settings 规划：SSL 验证默认 ON）
-  service.configure(
-    timeoutMs: 30000,
-    followRedirects: true,
-    maxRedirects: 10,
-    validateCertificates: true, // 默认启用证书验证（符合安全最佳实践）
-  );
+
+  void applySettings(AppSettings? settings) {
+    service.configure(
+      timeoutMs: settings?.requestTimeoutMs ?? 30000,
+      followRedirects: settings?.followRedirects ?? true,
+      maxRedirects: settings?.maxRedirects ?? 10,
+      validateCertificates: settings?.validateCertificates ?? true,
+    );
+  }
+
+  // 监听应用设置变化，动态更新请求超时/重定向/证书验证等默认值
+  ref.listen(settingsProvider, (previous, next) {
+    applySettings(next.valueOrNull);
+  });
+
+  // 初始配置（使用已加载的设置，或默认值）
+  applySettings(ref.read(settingsProvider).valueOrNull);
   return service;
 });
 

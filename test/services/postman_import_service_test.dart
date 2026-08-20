@@ -176,7 +176,7 @@ void main() {
     });
 
     group('importEnvironment', () {
-      test('should parse environment successfully', () async {
+      test('should report environment import as unsupported', () async {
         // Arrange
         final json = jsonEncode({
           'id': 'env-id',
@@ -196,8 +196,8 @@ void main() {
         final result = await service.importEnvironment(json);
 
         // Assert
-        expect(result.success, true);
-        expect(result.importedRequestCount, 1);
+        expect(result.success, false);
+        expect(result.errorMessage, isNotNull);
       });
     });
 

@@ -74,9 +74,7 @@ void main() {
       when(mockStorage.saveRequest(any)).thenAnswer((_) async {});
       when(mockStorage.deleteCollection(any)).thenAnswer((_) async {});
 
-      await container
-          .read(importExportProvider.notifier)
-          .importFile(file.path);
+      await container.read(importExportProvider.notifier).importFile(file.path);
 
       // 应检测到冲突
       expect(container.read(importExportProvider).conflict, isNotNull);

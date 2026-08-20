@@ -27,16 +27,14 @@ void main() {
 
     test('should export child collections and requests (flat storage)',
         () async {
-      final root =
-          Collection.empty().copyWith(id: 'root', name: 'Root');
+      final root = Collection.empty().copyWith(id: 'root', name: 'Root');
       final child = Collection.empty()
           .copyWith(id: 'child', name: 'Child', parentId: 'root');
       final request =
           RequestFixtures.simpleGetRequest().copyWith(parentId: 'root');
 
       when(mockStorage.getCollection('root')).thenAnswer((_) async => root);
-      when(mockStorage.getCollections())
-          .thenAnswer((_) async => [root, child]);
+      when(mockStorage.getCollections()).thenAnswer((_) async => [root, child]);
       when(mockStorage.getRequests()).thenAnswer((_) async => [request]);
 
       final savePath = '${tempDir.path}/collection.json';

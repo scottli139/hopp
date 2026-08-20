@@ -7,6 +7,12 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// 用于 test mode 整窗截图的 RepaintBoundary 键（配合 capture_screenshot）
+///
+/// 相比 `screencapture`，RepaintBoundary 截屏只截 app 自身、无需屏幕录制权限、
+/// 不包含桌面背景，结果稳定可重复。
+final GlobalKey appRepaintBoundaryKey = GlobalKey();
+
 /// 测试 Keys 集合
 ///
 /// 使用这些 Keys 可以在测试中精确定位 Widget

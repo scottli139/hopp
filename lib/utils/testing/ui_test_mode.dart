@@ -11,7 +11,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
+import 'dart:ui' as ui;
+
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'test_helpers.dart';
 
 import '../../providers/import_export/import_export_provider.dart';
 import '../../providers/providers.dart';
@@ -1288,28 +1294,37 @@ class UITestModeManager {
     };
   }
 
-  /// 截图
+  /// 截图（整窗自截屏，RepaintBoundary，无需屏幕录制权限）
   Future<Map<String, dynamic>> _captureScreenshot(String name) async {
-    try {
-      // 使用 screencapture 命令截图
-      final result = await io.Process.run('screencapture', [
-        '-x',
-        '${io.Platform.environment['HOME']}/Downloads/hopp_${name}.png',
-      ]);
-
-      if (result.exitCode == 0) {
-        return {
-          'captured': true,
-          'name': name,
-          'path':
-              '${io.Platform.environment['HOME']}/Downloads/hopp_${name}.png',
-        };
-      } else {
-        throw Exception('截图失败: ${result.stderr}');
-      }
-    } catch (e) {
-      throw Exception('截图失败: $e');
+    final boundary = appRepaintBoundaryKey.currentContext?.findRenderObject()
+        as RenderRepaintBoundary?;
+    if (boundary == null) {
+      throw Exception('截图失败: RepaintBoundary 未挂载');
     }
+
+    // 等待当前帧绘制完成，确保截图反映最新状态
+    await WidgetsBinding.instance.endOfFrame;
+
+    final devicePixelRatio = WidgetsBinding
+        .instance.platformDispatcher.views.first.devicePixelRatio;
+    final image = await boundary.toImage(pixelRatio: devicePixelRatio);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData == null) {
+      image.dispose();
+      throw Exception('截图失败: PNG 编码失败');
+    }
+
+    // 写入沙箱临时目录（sandbox 应用不能写 HOME/Downloads），并在返回值里给出绝对路径
+    final path = '${io.Directory.systemTemp.path}/hopp_${name}.png';
+    await io.File(path).writeAsBytes(byteData.buffer.asUint8List());
+    image.dispose();
+
+    return {
+      'captured': true,
+      'name': name,
+      'path': path,
+      'bytes': byteData.lengthInBytes,
+    };
   }
 
   /// 关闭测试服务器

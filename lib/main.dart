@@ -8,6 +8,7 @@ import 'services/menu_channel.dart';
 import 'services/storage_service.dart';
 import 'widgets/common/shortcut_wrapper.dart';
 import 'utils/app_logger.dart';
+import 'utils/testing/test_helpers.dart';
 import 'utils/testing/ui_test_mode.dart';
 
 // 存储启动参数，供测试模式使用
@@ -82,6 +83,10 @@ class _HoppAppState extends ConsumerState<HoppApp> {
         Locale('en'),
         Locale('zh', 'CN'),
       ],
+      builder: (context, child) => RepaintBoundary(
+        key: appRepaintBoundaryKey,
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: const ShortcutWrapper(
         child: MainScreen(),
       ),

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hopp 新功能界面稿</title>
+<style>
+  :root {
+    --primary: #6366F1;
+    --primary-light: #818CF8;
+    --bg: #FFFFFF;
+    --surface: #F9FAFB;
+    --surface2: #F3F4F6;
+    --border: #E5E7EB;
+    --text: #111827;
+    --text2: #6B7280;
+    --text3: #9CA3AF;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --error: #EF4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", Roboto, sans-serif;
+    background: #EEF0F6; color: var(--text); padding: 32px;
+  }
+  .page-head { max-width: 1120px; margin: 0 auto 24px; }
+  .page-head h1 { font-size: 24px; font-weight: 600; }
+  .page-head p { color: var(--text2); font-size: 13px; margin-top: 6px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+  .toc a { font-size: 12px; text-decoration: none; color: var(--primary); background: #fff; border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+  .screen { max-width: 1120px; margin: 0 auto 28px; background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .screen-head { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .screen-head h2 { font-size: 15px; font-weight: 600; }
+  .screen-head .tag { font-size: 11px; color: var(--text2); }
+  .screen-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; padding: 12px 18px; background: #fff; border-bottom: 1px dashed var(--border); }
+  .mock { padding: 22px 18px; background: #fff; }
+
+  /* App window chrome */
+  .app { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #fff; }
+  .titlebar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot.r { background: #FF5F57; } .dot.y { background: #FEBC2E; } .dot.g { background: #28C840; }
+  .titlebar .t { margin-left: 8px; font-size: 12px; color: var(--text2); }
+  .body { display: flex; min-height: 380px; }
+
+  /* Sidebar */
+  .sidebar { width: 208px; border-right: 1px solid var(--border); background: var(--surface); padding: 10px; font-size: 11.5px; }
+  .sidebar .sec { color: var(--text3); font-size: 10px; text-transform: uppercase; letter-spacing: .4px; margin: 10px 4px 6px; }
+  .side-item { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 5px; color: var(--text); }
+  .side-item .m { font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; }
+  .side-item.act { background: var(--surface2); }
+  .method-get { color: #3B82F6; } .method-post { color: #10B981; }
+
+  /* Main area */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .tabs { display: flex; align-items: center; gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .tab { display: flex; align-items: center; gap: 6px; font-size: 11px; padding: 6px 12px; border-radius: 6px 6px 0 0; color: var(--text2); }
+  .tab.act { background: #fff; color: var(--text); border: 1px solid var(--border); border-bottom-color: #fff; position: relative; }
+  .urlbar { display: flex; align-items: center; gap: 0; padding: 10px; }
+  .method { background: var(--surface2); border: 1px solid var(--border); border-right: 0; border-radius: 6px 0 0 6px; padding: 7px 10px; font-size: 11px; font-weight: 600; color: #10B981; }
+  .url { flex: 1; border: 1px solid var(--border); border-radius: 0 6px 6px 0; padding: 7px 10px; font-size: 12px; font-family: Menlo, monospace; color: var(--text); white-space: nowrap; overflow: hidden; }
+  .btn { border: 1px solid var(--border); background: #fff; border-radius: 6px; padding: 7px 14px; font-size: 11.5px; color: var(--text); cursor: default; }
+  .btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .subtabs { display: flex; gap: 2px; padding: 4px 10px; border-bottom: 1px solid var(--border); font-size: 11px; }
+  .subtab { padding: 5px 10px; color: var(--text2); border-bottom: 2px solid transparent; }
+  .subtab.act { color: var(--primary); border-bottom-color: var(--primary); font-weight: 500; }
+  .content { flex: 1; padding: 12px; font-size: 12px; background: #fff; }
+
+  /* KV editor */
+  .kv { display: grid; grid-template-columns: 24px 1fr 1fr 1fr 24px; gap: 6px; align-items: center; font-size: 11.5px; margin-bottom: 6px; }
+  .kv .cell { border: 1px solid var(--border); border-radius: 5px; padding: 6px 8px; min-height: 30px; display: flex; align-items: center; }
+  .kv .cell.mono { font-family: Menlo, monospace; font-size: 11px; }
+  .kv .key { background: var(--surface); }
+  .kv .hl { background: #EEF2FF; border-color: var(--primary-light); color: #3730A3; }
+  .kv .hint { color: var(--text3); font-size: 10px; }
+  .add-row { color: var(--primary); font-size: 11.5px; margin-top: 4px; }
+
+  /* Panel/card */
+  .card { border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+  .card h4 { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+  .field { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 11.5px; }
+  .field label { width: 96px; color: var(--text2); flex-shrink: 0; }
+  .field input, .field select { flex: 1; border: 1px solid var(--border); border-radius: 5px; padding: 6px 8px; font-size: 11.5px; }
+  .field .mono { font-family: Menlo, monospace; }
+  .muted { color: var(--text3); font-size: 11px; }
+  .pill { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 999px; background: #EEF2FF; color: #3730A3; }
+  .badge { font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+  .ok { background: #ECFDF5; color: #065F46; } .fail { background: #FEF2F2; color: #991B1B; }
+
+  .annot { font-size: 11.5px; color: var(--text2); margin: 10px 2px 0; line-height: 1.7; }
+  .annot b { color: var(--primary); font-weight: 600; }
+  .diagram-note { background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; font-size: 11.5px; padding: 8px 10px; border-radius: 6px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>Hopp 新功能界面稿</h1>
+  <p>环境变量 · 变量转换 · 预请求链 · 认证 · AI 助手 · 轻量断言 · OpenAPI 导入 —— 遵循 Hopp 现有设计语言（Indigo 主色、11–12px 紧凑字体、32px URL 栏、卡片式设置）。</p>
+  <div class="toc">
+    <a href="#env">环境变量</a>
+    <a href="#transform">变量转换</a>
+    <a href="#prereq">预请求链</a>
+    <a href="#auth">认证配置</a>
+    <a href="#ai">AI 助手</a>
+    <a href="#assert">轻量断言</a>
+    <a href="#openapi">OpenAPI 导入</a>
+  </div>
+</div>
+
+<!-- 环境变量 -->
+<div class="screen" id="env">
+  <div class="screen-head"><h2>环境变量管理</h2><span class="tag">M6 · 基础能力</span></div>
+  <div class="screen-desc">多环境（开发/测试/生产）+ 全局变量；secret 类型加密存储、界面脱敏。顶部切换器切换当前环境，URL/Header/Body 中的 <code>{{var}}</code> 发送前按「全局 &gt; 环境 &gt; 本地」解析。</div>
+  <div class="mock">
+    <div class="app">
+      <div class="titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">Hopp — Manage Environments</span></div>
+      <div class="body">
+        <div class="sidebar">
+          <div class="sec">Collections</div>
+          <div class="side-item">📁 User API</div>
+          <div class="side-item act">📁 内部系统 <span class="pill">3</span></div>
+          <div class="sec">Environments</div>
+          <div class="side-item">🌐 开发环境 <span class="pill" style="background:#ECFDF5;color:#065F46;">active</span></div>
+          <div class="side-item">🌐 测试环境</div>
+          <div class="side-item">🌐 生产环境</div>
+        </div>
+        <div class="main">
+          <div class="tabs"><div class="tab">请求</div></div>
+          <div class="content">
+            <div class="card">
+              <h4>开发环境（Environment）</h4>
+              <div class="kv" style="grid-template-columns:24px 1fr 1.4fr 1fr 24px;">
+                <span class="hint">✓</span><span class="cell key">Key</span><span class="cell">Value</span><span class="cell">Type</span><span></span>
+                <span class="hint">✓</span><span class="cell key">baseUrl</span><span class="cell mono">https://dev.api.example.com</span><span class="cell">string</span><span class="hint">…</span>
+                <span class="hint">✓</span><span class="cell key">token</span><span class="cell mono">••••••••••••</span><span class="cell">secret 👁</span><span class="hint">…</span>
+                <span class="hint">✓</span><span class="cell key">appSecret</span><span class="cell mono">••••••••••••</span><span class="cell">secret 👁</span><span class="hint">…</span>
+              </div>
+              <div class="add-row">+ 添加变量</div>
+            </div>
+            <div class="field"><label>作用域</label><span class="pill">全局 &gt; 环境 &gt; 本地</span><span class="muted">同名变量按此优先级解析</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="annot"><b>交互</b>：切换环境 → 请求里 <code>{{baseUrl}}</code> 立即预览解析值；secret 默认打码，点 👁 显示，一键复制。</div>
+  </div>
+</div>
+
+<!-- 变量转换 -->
+<div class="screen" id="transform">
+  <div class="screen-head"><h2>变量转换（声明式哈希/加密）</h2><span class="tag">F8.3 · 替代 JS 脚本</span></div>
+  <div class="screen-desc">在 URL/Header/Body 里用管道语法声明转换：<code>{{password | sha1}}</code>、<code>{{text | aes(cbc,key,iv)}}</code>、<code>{{value | hmac(sha256,key)}}</code>。转换是显式的，用户看得见每一步。</div>
+  <div class="mock">
+    <div class="app">
+      <div class="titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">Hopp</span></div>
+      <div class="body">
+        <div class="sidebar"><div class="sec">Collections</div><div class="side-item">📁 内部系统</div></div>
+        <div class="main">
+          <div class="tabs"><div class="tab act">POST /login</div><div class="tab">+</div></div>
+          <div class="urlbar"><span class="method">POST</span><span class="url">{{baseUrl}}/auth/login</span></div>
+          <div class="subtabs"><span class="subtab">Params</span><span class="subtab act">Headers</span><span class="subtab">Body</span><span class="subtab">Auth</span><span class="subtab">Settings</span></div>
+          <div class="content">
+            <div class="kv">
+              <span class="hint">✓</span><span class="cell key">Content-Type</span><span class="cell mono">application/json</span><span class="cell hint">header</span><span class="hint">…</span>
+              <span class="hint">✓</span><span class="cell key">X-Sign</span><span class="cell mono hl">{{timestamp | md5 | base64}}</span><span class="cell hint">转换</span><span class="hint">…</span>
+            </div>
+            <div class="annot"><b>交互</b>：点击高亮值 → 弹出转换选择器（sha1/md5/sha256/aes/hmac/base64），实时预览转换结果；未定义变量红显。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 预请求链 -->
+<div class="screen" id="prereq">
+  <div class="screen-head"><h2>预请求链（登录 → token）</h2><span class="tag">F8.2 · 核心楔子</span></div>
+  <div class="screen-desc">为请求/集合配置前置请求：先 login（密码经变量转换加密）→ 从响应提取 token（JSONPath/正则/Header）→ 写入 <code>{{token}}</code> → 目标请求自动带上 Authorization。支持链式与 401 自动重跑。</div>
+  <div class="mock">
+    <div class="app">
+      <div class="titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">Hopp — Prerequisite Request</span></div>
+      <div class="body">
+        <div class="main" style="border-right:1px solid var(--border);">
+          <div class="tabs"><div class="tab act">GET /users</div></div>
+          <div class="urlbar"><span class="method" style="color:#3B82F6;">GET</span><span class="url">{{baseUrl}}/users</span><span class="btn primary">Send</span></div>
+          <div class="subtabs"><span class="subtab">Params</span><span class="subtab">Headers</span><span class="subtab">Body</span><span class="subtab act">Auth</span><span class="subtab">Settings</span></div>
+          <div class="content">
+            <div class="card"><h4>Auth</h4><div class="field"><label>Type</label><select><option>Bearer Token</option></select></div><div class="field"><label>Token</label><input class="mono" value="{{token}}"></div></div>
+          </div>
+        </div>
+        <div class="main" style="max-width:360px; background:var(--surface);">
+          <div class="tabs"><div class="tab act">前置请求链</div></div>
+          <div class="content">
+            <div class="card" style="border-color:#C7D2FE;">
+              <h4>1 · 登录</h4>
+              <div class="field"><label>请求</label><span class="pill">POST /auth/login</span></div>
+              <div class="field"><label>Body</label><span class="mono">{user, password}</span></div>
+              <div class="field"><label>密码转换</label><span class="pill">sha1</span></div>
+            </div>
+            <div class="card" style="border-color:#C7D2FE;">
+              <h4>2 · 提取 token</h4>
+              <div class="field"><label>来源</label><span class="pill">Body JSONPath</span></div>
+              <div class="field"><label>表达式</label><span class="mono">$.data.token</span></div>
+              <div class="field"><label>写入变量</label><span class="mono">{{token}}</span></div>
+            </div>
+            <div class="field"><label>过期策略</label><span class="pill">401 自动重跑</span></div>
+            <div class="add-row">+ 添加前置步骤</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="annot"><b>交互</b>：点 Send → 先执行前置链（login + 提取）→ 变量注入目标请求 → 再发目标请求；整个过程在 Request 详情里可见替换前后对比。</div>
+  </div>
+</div>
+
+<!-- 认证配置 -->
+<div class="screen" id="auth">
+  <div class="screen-head"><h2>认证（Auth）配置</h2><span class="tag">F8.1</span></div>
+  <div class="screen-desc">No Auth / Bearer / Basic / API Key 四种，声明式选择；Bearer 直接引用变量，Basic 自动 base64(user:pass)，API Key 支持 Header/Query 两种载体。</div>
+  <div class="mock">
+    <div class="app">
+      <div class="titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">Hopp</span></div>
+      <div class="body">
+        <div class="sidebar"><div class="sec">Collections</div><div class="side-item">📁 内部系统</div></div>
+        <div class="main">
+          <div class="tabs"><div class="tab act">GET /users</div></div>
+          <div class="urlbar"><span class="method" style="color:#3B82F6;">GET</span><span class="url">{{baseUrl}}/users</span></div>
+          <div class="subtabs"><span class="subtab">Params</span><span class="subtab">Headers</span><span class="subtab">Body</span><span class="subtab act">Auth</span><span class="subtab">Settings</span></div>
+          <div class="content">
+            <div class="card" style="max-width:560px;">
+              <div class="field"><label>Type</label><select><option>Bearer Token</option><option>Basic Auth</option><option>API Key</option><option>No Auth</option></select></div>
+              <div class="field"><label>Token</label><input class="mono" value="{{token}}"></div>
+              <div class="muted">发送时自动生成 <code>Authorization: Bearer {{token}}</code></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI 助手 -->
+<div class="screen" id="ai">
+  <div class="screen-head"><h2>AI 助手（自然语言建请求）</h2><span class="tag">F9 · Tier 1/2</span></div>
+  <div class="screen-desc">自然语言描述 → 生成请求（引用环境变量而非硬编码）→ 预览可编辑 → 应用到当前请求或存为 collection。默认本地模型（Ollama/LM Studio），失败/超时回退，绝不阻断主流程。</div>
+  <div class="mock">
+    <div class="app">
+      <div class="titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">Hopp</span></div>
+      <div class="body">
+        <div class="main">
+          <div class="tabs"><div class="tab act">请求</div><div class="tab act" style="color:var(--primary);">✦ AI</div></div>
+          <div class="content">
+            <div class="card" style="max-width:640px;">
+              <h4>用自然语言创建请求</h4>
+              <div class="field"><label>描述</label><input value="调用内部系统，用 GET 拉取用户列表，带 token 认证"></div>
+              <div class="field"><label>模型</label><span class="pill">本地 · Ollama (llama3.1)</span></div>
+              <div class="btn primary" style="display:inline-block;">生成</div>
+            </div>
+            <div class="card" style="max-width:640px; border-color:#C7D2FE;">
+              <h4>生成预览（可编辑）</h4>
+              <div class="kv" style="grid-template-columns:1fr 2fr;">
+                <span class="cell key">Method</span><span class="cell">GET</span>
+                <span class="cell key">URL</span><span class="cell mono hl">{{baseUrl}}/users</span>
+                <span class="cell key">Auth</span><span class="cell">Bearer {{token}}</span>
+              </div>
+              <div class="field"><label>说明</label><span class="muted">字段只来自用户输入，未指定参数不脑补</span></div>
+              <div class="btn">取消</div> <div class="btn primary">应用到请求</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="annot"><b>交互</b>：生成结果落到 collection/环境/断言（可保存、可复跑），不是一次性聊天；生成时展示来源与可编辑中间产物。</div>
+  </div>
+</div>
+
+<!-- 轻量断言 -->
+<div class="screen" id="assert">
+  <div class="screen-head"><h2>轻量断言</h2><span class="tag">F4 降级</span></div>
+  <div class="screen-desc">不做完整 JS 沙箱，改声明式断言：状态码 / Header / Body / JSONPath，UI 配置；可由 AI 根据响应样本生成；支持导出 CLI/CI 运行。</div>
+  <div class="mock">
+    <div class="app">
+      <div class="titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">Hopp — Response</span></div>
+      <div class="body">
+        <div class="main">
+          <div class="tabs"><div class="tab act">GET /users</div></div>
+          <div class="urlbar"><span class="method" style="color:#3B82F6;">GET</span><span class="url">{{baseUrl}}/users</span></div>
+          <div class="content">
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+              <span class="badge ok">200 OK</span><span class="muted">245 ms · 1.2 KB</span>
+              <span class="pill" style="margin-left:auto;">✨ 由 AI 生成断言</span>
+            </div>
+            <div class="kv" style="grid-template-columns:28px 1fr 1.6fr 1fr 24px;">
+              <span class="hint">✓</span><span class="cell key">状态码</span><span class="cell">等于 200</span><span class="cell"><span class="badge ok">通过</span></span><span class="hint">…</span>
+              <span class="hint">✓</span><span class="cell key">Body JSONPath</span><span class="cell mono">$.data.length &gt; 0</span><span class="cell"><span class="badge ok">通过</span></span><span class="hint">…</span>
+              <span class="hint">✓</span><span class="cell key">Header</span><span class="cell">content-type 包含 json</span><span class="cell"><span class="badge fail">失败</span></span><span class="hint">…</span>
+            </div>
+            <div class="add-row">+ 添加断言</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="annot"><b>交互</b>：发送后自动跑断言，行级显示通过/失败；右上角一键导出 <code>hopp run collection.json</code> 供 CI 使用。</div>
+  </div>
+</div>
+
+<!-- OpenAPI 导入 -->
+<div class="screen" id="openapi">
+  <div class="screen-head"><h2>OpenAPI / Swagger 导入（Tier 0，无模型）</h2><span class="tag">F9 · 零隐私成本</span></div>
+  <div class="screen-desc">导入 OpenAPI/Swagger 规范，一键生成 collection/请求；纯确定性、无需模型、数据不出机器。这是最强差异化，最先做。</div>
+  <div class="mock">
+    <div class="app">
+      <div class="titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">Hopp — Import OpenAPI</span></div>
+      <div class="body">
+        <div class="main">
+          <div class="content">
+            <div class="card" style="max-width:640px;">
+              <h4>导入 OpenAPI / Swagger</h4>
+              <div class="field"><label>文件</label><span class="pill">openapi.json</span></div>
+              <div class="muted" style="line-height:1.7;">解析到 <b>3</b> 个路径、<b>5</b> 个操作、<b>2</b> 个 schema</div>
+            </div>
+            <div class="card" style="max-width:640px; border-color:#C7D2FE;">
+              <h4>将生成的 Collection</h4>
+              <div class="side-item"><span class="m method-get" style="padding:1px 5px;">GET</span> /users —— 用户列表</div>
+              <div class="side-item"><span class="m method-get" style="padding:1px 5px;">GET</span> /users/{id} —— 用户详情</div>
+              <div class="side-item"><span class="m method-post" style="padding:1px 5px;">POST</span> /users —— 创建用户</div>
+              <div class="field"><label>baseUrl</label><input class="mono" value="{{baseUrl}}"></div>
+              <div class="btn">取消</div> <div class="btn primary">生成 Collection</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="annot"><b>交互</b>：选文件 → 解析预览 → 生成 collection；URL 使用 <code>{{baseUrl}}</code> 变量，天然可复用。</div>
+  </div>
+</div>
+
+</body>
+</html>

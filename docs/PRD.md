@@ -695,9 +695,13 @@
 
 | 层 | 模型 | 能力 | 隐私 |
 |----|------|------|------|
-| Tier 0 | 无模型 | OpenAPI/Swagger 导入生成请求/collection；请求 ↔ cURL/代码 | 零，纯确定性 |
-| Tier 1 | 本地模型（Ollama / LM Studio，localhost OpenAI 兼容） | 解释响应 / 错误；生成断言；自然语言建请求；历史语义搜索 | 零，数据不出机器 |
+| Tier 0 | 无模型 | OpenAPI/Swagger **文件或 URL** 导入生成请求/collection；请求 ↔ cURL/代码 | 零，纯确定性 |
+| Tier 1 | 本地模型（Ollama / LM Studio，localhost OpenAI 兼容） | 解释响应 / 错误；生成断言；自然语言建请求；**读取 API 文档网页生成请求**；历史语义搜索 | 零，数据不出机器 |
 | Tier 2 | BYOK 云端（OpenAI / Anthropic / DeepSeek 等） | 同上但更强，用户自填 key | 显式选择后才外发 |
+
+> **API 文档地址 → 自动创建请求**（两种模式）：
+> - 机器可读地址（`openapi.json` / `swagger.yaml`）→ Tier 0 确定性解析，无需模型、零隐私成本
+> - 人类可读网页（Swagger UI / Redoc / 文档站 / Markdown）→ Tier 1/2 模型抓取并提取接口；私有文档 + Tier 2 时内容会外发，需隐私告知门
 
 #### F9.1 设计原则
 

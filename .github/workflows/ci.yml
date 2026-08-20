@@ -131,6 +131,12 @@ jobs:
       - name: Generate code
         run: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Debug Visual Studio detection
+        shell: pwsh
+        run: |
+          flutter doctor -v
+          & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -format json -products * -utf8 -latest -prerelease -all
+
       - name: Build Windows
         run: flutter build windows --release
 

@@ -93,7 +93,7 @@ flowchart TD
     A[选择 openapi.json] --> B[解析 paths/operations/schemas]
     B --> C[生成请求预览]
     C --> D{用户确认}
-    D -->|生成| E[写入 collection，URL 用 {{baseUrl}}]
+    D -->|生成| E["写入 collection，URL 用 {{baseUrl}}"]
     D -->|取消| F[丢弃]
 ```
 

@@ -224,7 +224,6 @@ class UserProfile extends ConsumerWidget {
 ```
 lib/
 ├── main.dart                    # 应用入口
-├── app.dart                     # 应用配置
 ├── models/                      # 数据模型
 │   ├── user.dart
 │   ├── user.freezed.dart        # 生成的代码
@@ -241,12 +240,12 @@ lib/
 │   ├── layout/                  # 布局组件
 │   └── features/                # 功能组件
 ├── screens/                     # 页面
-│   ├── home_screen.dart
-│   └── settings_screen.dart
+│   ├── main_screen.dart         # 主屏幕
+│   └── about/                   # 关于页面
+│       └── about_screen.dart
 ├── utils/                       # 工具类
-│   ├── extensions/              # 扩展方法
-│   ├── constants.dart           # 常量
-│   └── logger.dart              # 日志
+│   ├── app_logger.dart          # 日志工具
+│   └── constants.dart           # 应用常量
 └── l10n/                        # 国际化
     ├── app_en.arb
     └── app_zh.arb
@@ -578,22 +577,25 @@ Container(
 ### 3. 间距规范
 
 ```dart
-// ✅ Good - 使用一致的间距
-const kSpaceXS = 4.0;
-const kSpaceS = 8.0;
-const kSpaceM = 12.0;
-const kSpaceL = 16.0;
-const kSpaceXL = 24.0;
-const kSpaceXXL = 32.0;
+// ✅ Good - 使用一致的间距 (AppConstants)
+// lib/utils/constants.dart
+class AppConstants {
+  static const double spaceXS = 4.0;
+  static const double spaceS = 8.0;
+  static const double spaceM = 12.0;
+  static const double spaceL = 16.0;
+  static const double spaceXL = 24.0;
+  static const double spaceXXL = 32.0;
+}
 
 // 使用
 Padding(
-  padding: const EdgeInsets.all(kSpaceM),
+  padding: const EdgeInsets.all(AppConstants.spaceM),
   child: Column(
     children: [
-      const SizedBox(height: kSpaceS),
+      const SizedBox(height: AppConstants.spaceS),
       const Text('Title'),
-      const SizedBox(height: kSpaceL),
+      const SizedBox(height: AppConstants.spaceL),
     ],
   ),
 )
@@ -602,21 +604,23 @@ Padding(
 ### 4. Widget 尺寸规范
 
 ```dart
-// 按钮高度
-const kButtonHeightS = 28.0;
-const kButtonHeightM = 36.0;
-const kButtonHeightL = 44.0;
+class AppConstants {
+  // 按钮高度
+  static const double buttonHeightS = 28.0;
+  static const double buttonHeightM = 36.0;
+  static const double buttonHeightL = 44.0;
 
-// 输入框高度
-const kInputHeightS = 28.0;
-const kInputHeightM = 36.0;
-const kInputHeightL = 44.0;
+  // 输入框高度
+  static const double inputHeightS = 28.0;
+  static const double inputHeightM = 36.0;
+  static const double inputHeightL = 44.0;
 
-// 圆角
-const kRadiusS = 4.0;
-const kRadiusM = 6.0;
-const kRadiusL = 8.0;
-const kRadiusXL = 12.0;
+  // 圆角
+  static const double radiusS = 4.0;
+  static const double radiusM = 6.0;
+  static const double radiusL = 8.0;
+  static const double radiusXL = 12.0;
+}
 ```
 
 ---

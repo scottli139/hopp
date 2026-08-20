@@ -8,31 +8,21 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前阶段** | v0.6.x 代码生成与工具集完成，cURL 导入、URL 参数同步已支持 |
+| **当前阶段** | v0.7.0 已发布，cURL 导入、URL 参数同步已支持 |
 | **目标版本** | v1.0.0 |
 | **技术栈** | Flutter 3.27.x + Dart 3.6.x + Riverpod |
-| **测试状态** | ✅ **542 个全部通过** |
+| **测试状态** | ✅ **544 个全部通过** |
 
 ### 测试统计
 
 | 类别 | 数量 | 状态 |
 |------|------|------|
-| Models 测试 | 152 | ✅ 通过 |
-| Services 测试 | 73 | ✅ 通过 |
-| Providers 测试 | 92 | ✅ 通过 |
-| Widget 测试 | 88 | ✅ 通过 |
-| 响应优化组件测试 | 新增 | ✅ 通过 |
-| UI 优化测试 | 新增 7 个 | ✅ 通过 |
-| Timing 分析测试 | 新增 | ✅ 通过 |
-| 请求详情展示测试 | 新增 3 个 | ✅ 通过 |
-| Body 类型选择器测试 | 新增 12 场景 | ✅ 通过 |
-| cURL 解析测试 | 新增 44 个 | ✅ 通过 |
-| URL 参数同步测试 | 新增 36 个 | ✅ 通过 |
-| Postman 导入参数测试 | 新增 3 个 | ✅ 通过 |
-| Collection 级联删除测试 | 新增 6 个 | ✅ 通过 |
-| Collection 扁平化存储测试 | 更新 28 个 | ✅ 通过 |
-| Issue #6 空状态 UI 测试 | 新增 2 个场景 | ✅ 通过 |
-| **总计** | **542** | ✅ **全部通过** |
+| Models 测试 | 175 | ✅ 通过 |
+| Services 测试 | 147 | ✅ 通过 |
+| Providers 测试 | 99 | ✅ 通过 |
+| Widgets 测试 | 87 | ✅ 通过 |
+| Utils 测试 | 36 | ✅ 通过 |
+| **总计** | **544** | ✅ **全部通过** |
 
 > **注意**: 所有测试均已通过，代码质量良好。
 
@@ -146,7 +136,7 @@
 |-----|------|--------|------|
 | TimingInfo 模型 | ✅ | P1 | DNS/TCP/TLS/TTFB/Download 时间 |
 | HttpResponse 扩展 | ✅ | P1 | 添加 timingInfo 字段 |
-| HttpService 时间测量 | ✅ | P1 | 各阶段时间统计 |
+| HttpService 时间测量 | ✅ | P1 | 各阶段时间统计（TCP/TLS 为估算值） |
 | Timing Tab UI | ✅ | P1 | 总时间卡片、阶段详情、时间线 |
 | UI 测试支持 | ✅ | P1 | timing 相关测试指令 |
 
@@ -559,7 +549,7 @@ make logs   # 查看日志
 
 ---
 
-### v0.7.0 - Environment & Testing 📋 PLANNED
+### v0.7.0 - Environment & Testing ✅ COMPLETED (2026-04-01)
 
 **目标**: 实现环境变量管理系统和测试脚本功能。
 
@@ -715,11 +705,14 @@ const errorColor = Color(0xFFEF4444);
 ### 间距系统
 
 ```dart
-const kSpaceXS = 4.0;
-const kSpaceS = 8.0;
-const kSpaceM = 12.0;
-const kSpaceL = 16.0;
-const kSpaceXL = 24.0;
+// lib/utils/constants.dart
+class AppConstants {
+  static const double spaceXS = 4.0;
+  static const double spaceS = 8.0;
+  static const double spaceM = 12.0;
+  static const double spaceL = 16.0;
+  static const double spaceXL = 24.0;
+}
 ```
 
 ### 字体规范
@@ -731,7 +724,7 @@ const kSpaceXL = 24.0;
 | Body | 14px | 正文 |
 | Caption | 12px | 按钮文字 |
 | Tiny | 11px | 标签、徽章 |
-| Code | 12px | 代码显示 |
+| Code | 13px | 代码显示 |
 
 ---
 

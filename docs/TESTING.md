@@ -34,18 +34,19 @@
 
 | 层级 | 目标覆盖率 | 当前状态 | 测试类型 |
 |-----|-----------|---------|---------|
-| Models | 100% | ✅ 152 个通过 | 单元测试 |
-| Services | 90%+ | ✅ 73 个通过 | 单元测试 + Mock |
-| Providers | 80%+ | ✅ 92 个通过 | 单元测试 |
-| Widgets | 70%+ | ✅ 88 个通过 | Widget 测试 |
+| Models | 100% | ✅ 175 个通过 | 单元测试 |
+| Services | 90%+ | ✅ 147 个通过 | 单元测试 + Mock |
+| Providers | 80%+ | ✅ 99 个通过 | 单元测试 |
+| Widgets | 70%+ | ✅ 87 个通过 | Widget 测试 |
+| Utils | 80%+ | ✅ 36 个通过 | 单元测试 |
 | Integration | 60%+ | ✅ Peekaboo + UI 测试模式 | 集成测试 |
 
 ### 总体统计
 
 | 统计项 | 数值 |
 |--------|------|
-| 测试总数 | 432 |
-| 通过 | 432 |
+| 测试总数 | 544 |
+| 通过 | 544 |
 | 失败 | 0 |
 | 跳过 | 0 |
 
@@ -520,7 +521,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `create_request` | 创建新请求 |
 | `set_url` | 设置 URL |
 | `send_request` | 发送请求 |
-| `switch_response_tab` | 切换响应 Tab (body/headers/cookies/certificate/timing/request/settings) |
+| `switch_response_tab` | 切换响应 Tab (request/body/headers/cookies/timing/certificate) |
 | `switch_request_tab` | 切换请求 Tab (params/headers/body/auth/settings) |
 | `get_response_info` | 获取响应信息 |
 | `rename_request` | 重命名请求 |
@@ -556,6 +557,19 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `test_save_and_rename.py` | 保存和重命名测试 |
 | `test_timing_analysis.py` | Timing 分析测试 |
 | `test_ui_optimization.py` | UI 优化测试 |
+| `test_border_issue.py` | 边框问题回归测试 |
+| `test_collection_cascade_delete.py` | Collection 级联删除测试 |
+| `test_curl_import.py` | cURL 导入测试 |
+| `test_database_migration.py` | 数据库迁移测试 |
+| `test_dialog_ui_fix.py` | 对话框 UI 修复测试 |
+| `test_issue_6_empty_state.py` | 空状态入口指引测试 |
+| `test_raw_content_type_fix.py` | Raw Content Type 修复测试 |
+| `test_rename_request_with_screenshot.py` | 请求重命名（含截图）测试 |
+| `test_response_body_compare.py` | 响应体对比测试 |
+| `test_save_button.py` | 保存按钮测试 |
+| `test_save_edge_cases.py` | 保存边界场景测试 |
+| `test_url_input_focus.py` | URL 输入框焦点测试 |
+| `test_url_params_sync.py` | URL 参数同步测试 |
 
 ---
 

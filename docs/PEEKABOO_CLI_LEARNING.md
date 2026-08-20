@@ -807,15 +807,15 @@ peekaboo open ~/myfile.txt --bundle-id com.apple.TextEdit --no-focus
 - [x] `peekaboo tools --json`
 
 #### 测试脚本已准备
-脚本位置: `/Volumes/hagibis1t/huicom/github/postman/scripts/peekaboo_test_hopp.sh`
+脚本位置: `/Volumes/hagibis1t/huicom/github/hopp/scripts/peekaboo_test_hopp.sh`
 
 使用方式:
 ```bash
 # 1. 确保 Hopp 应用已运行
-open /Volumes/hagibis1t/huicom/github/postman/build/macos/Build/Products/Release/hopp.app
+open /Volumes/hagibis1t/huicom/github/hopp/build/macos/Build/Products/Release/hopp.app
 
 # 2. 运行测试脚本
-/Volumes/hagibis1t/huicom/github/postman/scripts/peekaboo_test_hopp.sh
+/Volumes/hagibis1t/huicom/github/hopp/scripts/peekaboo_test_hopp.sh
 
 # 3. 查看测试结果
 ls -la /tmp/hopp_peekaboo_test_*/

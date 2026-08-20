@@ -27,7 +27,7 @@
 | F1.11 | HTTPS 证书查看 | ✅ | 查看 SSL/TLS 证书详细信息 | 证书颁发者、有效期、域名、指纹等 |
 | F1.12 | 请求时间分析 | ✅ | 展示请求各环节耗时 | DNS、TCP、SSL、TTFB、下载时间分段展示 |
 | F1.13 | 请求详情展示 | ✅ | 显示实际发送的请求信息 | 展示变量替换后的最终 URL、Headers、Body |
-| F1.14 | 请求设置 | ⏳ | 请求级别的配置选项 | SSL验证、Follow Redirects、Max Redirects 已实现，其他配置项待完成 |
+| F1.14 | 请求设置 | 🟡 部分实现 | 请求级别的配置选项 | SSL 验证、Follow Redirects、Max Redirects 已实现（3 项），其他配置项待完成 |
 
 ### 二、集合与组织功能 ⏳
 
@@ -66,11 +66,11 @@
 | `-u, --user` | 用户认证 (Basic Auth) | Authorization header |
 | `-k, --insecure` | 跳过 SSL 验证 | validateCertificates = false |
 | `-L, --location` | 跟随重定向 | followRedirects = true |
-| `--max-redirs` | 最大重定向次数 | maxRedirects |
-| `-b, --cookie` | Cookie 数据 | Cookie header |
-| `-A, --user-agent` | User-Agent | User-Agent header |
-| `-e, --referer` | Referer | Referer header |
-| `--compressed` | 接受压缩响应 | Accept-Encoding header |
+| `--max-redirs` | 最大重定向次数（未实现） | — |
+| `-b, --cookie` | Cookie 数据（未实现） | — |
+| `-A, --user-agent` | User-Agent（未实现） | — |
+| `-e, --referer` | Referer（未实现） | — |
+| `--compressed` | 接受压缩响应（未实现） | — |
 
 **复杂场景支持**:
 
@@ -100,7 +100,7 @@
 
 | 方式 | 交互 | 场景 |
 |------|------|------|
-| 剪贴板粘贴 | `Cmd+Shift+V` 或右键菜单 | 从文档/聊天复制后快速导入 |
+| 剪贴板粘贴 | 右键菜单（`Cmd+Shift+V` 未实现） | 从文档/聊天复制后快速导入 |
 | 文件导入 | 选择 `.sh` 或 `.txt` 文件 | 批量导入多个 cURL |
 | 输入框 | 对话框文本框 | 手动输入或调整 |
 
@@ -149,8 +149,8 @@
 ```
 
 **快捷键**:
-- `Cmd+Shift+V` - 从剪贴板导入 cURL
-- `Cmd+Shift+I` - 打开导入对话框（含 Postman/cURL 选项）
+- `Cmd+Shift+V` - 从剪贴板导入 cURL（未实现）
+- `Cmd+Shift+I` - 打开导入对话框（含 Postman/cURL 选项）（未实现）
 
 **错误处理**:
 

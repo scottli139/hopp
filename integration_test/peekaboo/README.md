@@ -18,7 +18,7 @@ peekaboo --version
 
 ```bash
 # 开发版本
-/Volumes/hagibis1t/huicom/github/postman/build/macos/Build/Products/Debug/hopp.app/Contents/MacOS/hopp &
+/Volumes/hagibis1t/huicom/github/hopp/build/macos/Build/Products/Debug/hopp.app/Contents/MacOS/hopp &
 
 # 或生产版本
 open /Applications/hopp.app
@@ -29,7 +29,7 @@ open /Applications/hopp.app
 ### 运行完整测试套件
 
 ```bash
-cd /Volumes/hagibis1t/huicom/github/postman/integration_test/peekaboo
+cd /Volumes/hagibis1t/huicom/github/hopp/integration_test/peekaboo
 
 # 运行完整测试
 ./run_full_test.sh

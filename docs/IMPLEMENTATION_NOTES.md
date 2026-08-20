@@ -60,20 +60,15 @@ maxRedirects: fields[13] == null ? 10 : fields[13] as int,
 
 ### 架构设计
 
-```
-lib/
-├── models/
-│   └── request_settings.dart          # RequestSettings 模型定义
-├── providers/
-│   └── request/
-│       └── request_settings_provider.dart  # 请求设置状态管理
-├── widgets/
-│   └── request/
-│       └── request_settings_tab.dart  # Settings Tab UI
-└── services/
-    └── http/
-        └── request_options_builder.dart   # 根据设置构建 Dio Options
-```
+请求设置并未拆分为独立文件，而是直接内联在现有组件中：
+
+- `lib/widgets/request/request_editor.dart` 的 `_buildSettingsTab()` 负责 Settings Tab UI
+- `lib/models/http_request.dart` 的 `HttpRequest` 模型新增三个字段：
+  - `validateCertificates`（SSL 证书验证开关，`@HiveField(11)`）
+  - `followRedirects`（自动跟随重定向开关，`@HiveField(12)`）
+  - `maxRedirects`（最大重定向次数，`@HiveField(13)`）
+
+> 不存在独立的 `request_settings.dart`、`request_settings_provider.dart`、`request_settings_tab.dart` 或 `request_options_builder.dart`。
 
 ### 已实现的设置项
 
@@ -82,6 +77,33 @@ lib/
 | Enable SSL certificate verification | Toggle | ON | ✅ 已实现 |
 | Automatically follow redirects | Toggle | ON | ✅ 已实现 |
 | Maximum number of redirects | Number Input | 10 | ✅ 已实现 |
+
+### 完整功能清单（规划）
+
+参考 Postman 请求级别配置，完整清单如下：
+
+| 设置项 | 类型 | 默认值 | Dio 支持 |
+|--------|------|--------|----------|
+| HTTP Version | Dropdown | Auto | ✅ via `httpVersion` |
+| Enable SSL certificate verification | Toggle | ON | ✅ via `HttpClient` |
+| Automatically follow redirects | Toggle | ON | ✅ via `followRedirects` |
+| Follow original HTTP Method | Toggle | OFF | ⚠️ 需自定义拦截器 |
+| Follow Authorization header | Toggle | OFF | ⚠️ 需自定义拦截器 |
+| Remove referer header on redirect | Toggle | OFF | ⚠️ 需自定义拦截器 |
+| Enable strict HTTP parser | Toggle | OFF | ❌ 平台特定 |
+| Encode URL automatically | Toggle | ON | ✅ 默认行为 |
+| Disable cookie jar | Toggle | OFF | ✅ via `CookieManager` |
+| Use server cipher suite during handshake | Toggle | OFF | ⚠️ 平台特定 |
+| Maximum number of redirects | Number | 10 | ✅ via `maxRedirects` |
+| TLS/SSL protocols disabled | Multi-select | - | ⚠️ 平台特定 |
+| Cipher suite selection | Text | - | ⚠️ 平台特定 |
+
+### UI 设计
+
+- 设置项采用卡片式布局，每个设置独立卡片
+- 显示「Default: Settings」提示继承关系
+- 修改后显示紫色圆点指示器
+- 支持分组（SSL/TLS、重定向、编码等）
 
 ---
 
@@ -98,16 +120,14 @@ lib/
 │       ├── postman_schema.dart              # Postman JSON Schema 模型
 │       ├── postman_mapper.dart              # 字段映射转换器
 │       └── import_export_exception.dart     # 自定义异常
-├── widgets/
+├── providers/
 │   └── import_export/
-│       ├── import_dialog.dart               # 导入对话框
-│       ├── export_dialog.dart               # 导出对话框
-│       ├── conflict_resolution_dialog.dart  # 冲突处理对话框
-│       └── import_progress_dialog.dart      # 导入进度对话框
-└── providers/
+│       └── import_export_provider.dart      # 导入/导出状态管理
+└── widgets/
     └── import_export/
-        ├── import_provider.dart             # 导入状态管理
-        └── export_provider.dart             # 导出状态管理
+        ├── import_dialog.dart               # 导入对话框
+        ├── export_dialog.dart               # 导出对话框
+        └── conflict_resolution_dialog.dart  # 冲突处理对话框
 ```
 
 ### 数据模型设计
@@ -537,15 +557,9 @@ class ExportException implements Exception {
 ```yaml
 dependencies:
   # 文件选择
-  file_picker: ^6.1.1
-  # 桌面端拖放支持
-  desktop_drop: ^0.4.4
+  file_picker: ^10.3.10
   # UUID 生成
-  uuid: ^4.3.3
-
-dev_dependencies:
-  # 测试数据生成
-  faker: ^2.1.0
+  uuid: ^4.5.3
 ```
 
 ---
@@ -558,11 +572,10 @@ dev_dependencies:
 lib/
 ├── services/
 │   └── curl/
-│       ├── curl_parser.dart            # cURL 命令解析器
+│       ├── curl_parser.dart            # cURL 命令解析器 (ParsedCurlCommand)
 │       ├── curl_tokenizer.dart         # 词法分析器
+│       ├── curl_import_result.dart     # 导入结果模型 (CurlImportResult)
 │       └── curl_import_service.dart    # 导入服务
-├── models/
-│   └── curl_parsed_result.dart         # 解析结果模型
 └── widgets/
     └── import/
         └── curl_import_dialog.dart     # 导入对话框
@@ -585,7 +598,7 @@ class CurlTokenizer {
 
 ```dart
 class CurlParser {
-  CurlParsedResult parse(List<CurlToken> tokens) {
+  ParsedCurlCommand parse(String command) {
     // 识别选项和参数
     // 映射到 HttpRequest 模型
   }
@@ -655,11 +668,7 @@ class CurlImportDialog extends ConsumerStatefulWidget {
 
 ### 快捷键集成
 
-```dart
-// lib/widgets/common/shortcut_wrapper.dart
-SingleActivator(LogicalKeyboardKey.keyV, meta: true, shift: true): 
-    const ImportCurlIntent(),
-```
+> 当前尚未实现 cURL 导入快捷键，`ImportCurlIntent` 并不存在。
 
 ### 测试示例
 

@@ -110,6 +110,7 @@ fvm flutter test integration_test/advanced_ui_test.dart
 |------|------|
 | `integration_test/advanced_ui_test.dart` | 高级 UI 交互测试 |
 | `integration_test/http_request_test.dart` | HTTP 请求 E2E 测试 |
+| `integration_test/http_service_e2e_test.dart` | HTTP 服务 E2E 测试 |
 
 ---
 

@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-**最后更新**: 2026-03-17
+**最后更新**: 2026-08-20
 
 ### 最近已完成 ✅
 
@@ -118,6 +118,18 @@
 |------|--------|------|-------------|
 | 删除 Collection 子目录处理问题 | P1 | 删除带子目录的 Collection 时，子 Collection 未被删除而是被保留并提升到第一级 | v0.6.0 |
 | 行号与内容滚动不同步 | P2 | Request/Response Body 编辑器中行号区域与内容区域未对齐，内容滚动时行号不跟随滚动 | v0.6.0 |
+
+---
+
+## 技术债 / 代码重构
+
+> 不改变用户可见行为，仅改善代码质量。按优先级择机处理。
+
+| ID | 问题 | 现状 | 目标 | 优先级 | 触发时机 |
+|----|------|------|------|--------|----------|
+| TD-1 | 后代集合遍历逻辑重复 | `collection_provider.dart` 的 `collectDescendants` 与 `postman_import_service.dart` 的 `_collectAllChildIds` 是同一段「按 parentId 递归收集子孙」逻辑 | 抽成公共工具函数，两处复用 | P2 | 下次改动集合层级 / 导入导出逻辑时 |
+| TD-2 | URL 查询参数解析重复 | `utils/url_params_sync.dart` 已提供 parse/build/sync，但 `http_service.dart`、`postman_mapper.dart`、`curl_import_service.dart` 各自重写 | 统一走 `url_params_sync.dart` | P2 | 下次改动 URL 处理相关代码时 |
+| TD-3 | Timing 的 TCP/TLS/TTFB 为估算值 | `http_service.dart` 用硬编码 `30/20/45` 及 `totalMs ~/ 3` 填充 | 改为真实测量，测不到就标记为未测量（null），避免误导 | P2 | 实现真实计时或重做 Timing Tab 时 |
 
 ---
 

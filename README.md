@@ -126,7 +126,7 @@ hopp/
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
+Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for details, and be respectful of our [Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ---
 

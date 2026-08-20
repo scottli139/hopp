@@ -158,7 +158,7 @@ hopp/
 
 ## 🤝 贡献
 
-欢迎贡献！请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md) 了解详情。
+欢迎贡献！请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md) 了解详情，并遵守我们的 [行为准则](./CODE_OF_CONDUCT.md)。
 
 ---
 

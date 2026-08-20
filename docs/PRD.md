@@ -2,7 +2,11 @@
 
 ## 产品概述
 
-**Hopp** 是一款轻量级、跨平台的 API 请求测试工具，类似 Postman，基于 Flutter 构建，注重性能和用户体验。
+**Hopp** 是一款**本地优先、数据不出机器的 API 工作台**：轻量、跨平台，基于 Flutter 构建，把 AI 的便利嫁接在本地工具的隐私上。
+
+**定位**:
+- 跟 Postman 比：隐私、轻量、无账号、数据本地
+- 跟纯 AI 聊天比：确定性（collection/环境/断言可保存、可复跑）、零数据外泄
 
 **口号**: *Hop to your APIs*（跃向你的 API）
 
@@ -163,63 +167,36 @@
 
 ---
 
-### 三、环境变量功能 ⏳
+### 三、环境变量功能 📋 计划（决策：做，作为基础）
 
-> **状态说明**: 目前仅实现了 Postman Environment 格式的导入导出支持，核心功能（环境管理、变量替换）待实现。
+> **决策（2026-08-20）**: 做。但定位为「可复用 + AI 变量注入的基础」，不是「追平 Postman 的 checklist 项」。AI 生成的请求引用 `{{baseUrl}}` / `{{token}}`，而非硬编码。
+>
+> **现状**: 仅实现 Postman Environment 格式的导入导出；核心功能（环境管理、变量替换）待实现。
 
 | ID | 功能 | 状态 | 需求描述 | 验收标准 |
 |----|------|------|----------|----------|
 | F3.1 | 环境变量 | ⏳ | 不同环境（开发/测试/生产） | 可创建多个环境配置 |
 | F3.2 | 全局变量 | ⏳ | 跨环境共享变量 | 独立于环境的全局变量 |
 | F3.3 | 变量替换 | ⏳ | URL/Headers/Body 中使用 `{{var}}` | 发送前自动替换变量 |
+| F3.4 | 变量作用域 | ⏳ | 全局 > 环境 > 本地 优先级 | 正确解析同名变量 |
+| F3.5 | 动态变量 | ⏳ | `{{$timestamp}}` / `{{$randomUUID}}` | 发送时实时生成 |
+| F3.6 | 变量转换 | ⏳ | 内置哈希/加密/签名函数 | 见「F8 预请求链与变量转换」 |
 
-### 四、测试与脚本功能 ✅ (v0.7.0 规划)
+### 四、测试与断言功能 📋 计划（决策：降级，不做完整 JS 沙箱）
 
-> 国内接口签名逻辑复杂，脚本灵活度是刚需。将测试功能从 Backlog 提升为核心功能。
+> **决策（2026-08-20）**: 不做 Postman 兼容的完整 JS 沙箱 + pre-request/test script。AI 时代「写断言脚本」正是 LLM 的强项。
+>
+> - 预请求的「动态签名 / 加密 / 拿 token」能力，改由 **F8 预请求链 + 变量转换** 承担（声明式，零门槛）。
+> - 测试能力降级为：轻量断言子集 + AI 生成断言 + 导出给 CLI/CI 跑。
 
 | ID | 功能 | 状态 | 需求描述 | 验收标准 |
 |----|------|------|----------|----------|
-| F4.1 | 响应断言 | ⏳ | 可视化断言编辑器，支持状态码、响应字段、响应时间校验 | 无需编写代码，通过 UI 配置断言规则 |
-| F4.2 | Pre-request Script | ⏳ | 请求前执行 JS 脚本，动态生成签名、token、时间戳 | 支持 `pm` 对象，可访问环境变量、生成动态值 |
-| F4.3 | Test Script | ⏳ | 请求后执行 JS 脚本，校验响应数据 | 支持 `pm.test()`、`pm.expect()` 等断言 API |
-| F4.4 | 批量运行 | ⏳ | 集合级别的批量请求执行，生成测试报告 | 支持顺序/并行执行，导出 CSV/HTML 报告 |
+| F4.1 | 响应断言（轻量） | ⏳ | 状态码 / Header / Body / JSONPath 断言 | 无需写代码，UI 配置断言规则 |
+| F4.2 | 断言生成（AI） | ⏳ | 由 AI 根据响应样本生成断言 | 一键生成、可编辑、可保存 |
+| F4.3 | 批量运行 | ⏳ | 集合级别批量执行 + 断言 | 顺序/并行，导出 CSV/HTML 报告 |
+| F4.4 | CLI / CI 导出 | ⏳ | 将集合 + 断言导出为可运行脚本 | 在 CI 中 `hopp run collection.json` |
 
-#### F4.2 Pre-request Script 详细需求
-
-**国内痛点**: 国内 API 普遍需要动态签名（如阿里系、腾讯系、自研网关），需在请求前计算 sign、timestamp。
-
-**核心 API 设计**:
-```javascript
-// 访问环境变量
-const appKey = pm.environment.get("appKey");
-const appSecret = pm.environment.get("appSecret");
-
-// 生成时间戳
-const timestamp = new Date().getTime();
-pm.environment.set("timestamp", timestamp);
-
-// 计算签名（支持 CryptoJS）
-const sign = CryptoJS.MD5(appKey + timestamp + appSecret).toString();
-pm.environment.set("sign", sign);
-
-// 动态设置请求头
-pm.request.headers.add({key: "X-Sign", value: sign});
-```
-
-**内置库支持**:
-| 库名 | 版本 | 用途 |
-|------|------|------|
-| CryptoJS | 4.2.0 | MD5/SHA1/SHA256/HMAC 等签名算法 |
-| lodash | 4.17.21 | 数据处理、对象操作 |
-| moment | 2.29.4 | 日期时间格式化 |
-| uuid | 9.0.0 | UUID 生成 |
-
-**脚本执行环境**:
-- 沙箱隔离，限制访问 DOM/文件系统
-- 超时限制：5 秒
-- 内存限制：128MB
-
----
+> 原 F4.2 Pre-request Script / F4.3 Test Script（JS 沙箱）已 **取消**，能力并入 F8。
 
 ### 五、UI/UX 功能
 
@@ -651,6 +628,100 @@ pm.request.headers.add({key: "X-Sign", value: sign});
 
 ---
 
+### 八、预请求链与变量转换 📋 计划（核心楔子）
+
+> **国内痛点**: 测试某些系统需先登录拿 token；登录密码常需 sha1/aes 等加密后发送。Postman 靠 pre-request 脚本解决，门槛高。
+>
+> **Hopp 方案**: 用声明式积木替代脚本 —— 认证配置 + 预请求链 + 变量转换。
+
+#### F8.1 认证（Auth）配置
+
+| 类型 | 说明 | 状态 |
+|------|------|------|
+| No Auth | 无认证 | ✅ |
+| Bearer Token | `Authorization: Bearer {{token}}` | ⏳ |
+| Basic Auth | `Authorization: Basic base64(user:pass)` | ⏳ |
+| API Key | Header / Query 中的自定义 key | ⏳ |
+
+#### F8.2 预请求链（登录 → token）
+
+为某个请求（或集合）配置前置请求：
+
+```text
+1. 发送 login 请求（用户名 + 密码，密码经变量转换加密）
+2. 从响应中提取 token：JSONPath（如 $.data.token）/ 正则 / Header
+3. 写入变量：{{token}}
+4. 目标请求的 Header 自动带上 Authorization: Bearer {{token}}
+```
+
+- 支持链式：login → 拿 token → 再调一个接口拿 refresh_token → 目标请求
+- token 过期策略：手动重跑 / 按响应码 401 自动重跑前置链（可选）
+- 变量作用域：前置链产出的变量默认写入「本地」，不污染环境
+
+#### F8.3 变量转换（哈希 / 加密 / 签名）
+
+在 URL/Header/Body 中引用变量时，支持声明式转换管道（替换 JS 脚本）：
+
+```text
+{{password | sha1}}           # SHA-1，登录密码加密
+{{password | md5}}            # MD5
+{{password | sha256}}         # SHA-256
+{{text | aes(cbc, key, iv)}}  # AES 加密
+{{text | base64}}             # Base64 编码
+{{timestamp | md5}}           # 动态签名
+{{value | hmac(sha256, key)}} # HMAC 签名
+```
+
+内置动态变量：`{{$timestamp}}`、`{{$randomUUID}}`、`{{$randomInt}}`、`{{$guid}}`。
+
+**设计原则**:
+- 不引入 JS 沙箱；算法内置（纯 Dart 实现 SHA/AES/HMAC）
+- 转换是显式声明的，用户看得见每一步做了什么（避免脚本黑盒）
+- 复杂签名若超出内置函数，再考虑 Tier 1 本地 AI 生成 + 轻量表达式
+
+#### F8.4 验收标准
+
+- [ ] 配置 login 前置请求后，目标请求自动携带 token
+- [ ] 密码可经 sha1 / aes 加密后发送
+- [ ] 从 JSON / Header 响应中提取变量
+- [ ] 转换管道清晰可见、可编辑、可保存
+- [ ] 敏感变量（password/secret）加密存储、界面脱敏显示
+
+---
+
+### 九、AI 助手（三层）📋 计划（核心楔子）
+
+> 定位：本地 + 私有 AI。数据默认不出机器；AI 是可选、显式开启的能力。
+
+| 层 | 模型 | 能力 | 隐私 |
+|----|------|------|------|
+| Tier 0 | 无模型 | OpenAPI/Swagger 导入生成请求/collection；请求 ↔ cURL/代码 | 零，纯确定性 |
+| Tier 1 | 本地模型（Ollama / LM Studio，localhost OpenAI 兼容） | 解释响应 / 错误；生成断言；自然语言建请求；历史语义搜索 | 零，数据不出机器 |
+| Tier 2 | BYOK 云端（OpenAI / Anthropic / DeepSeek 等） | 同上但更强，用户自填 key | 显式选择后才外发 |
+
+#### F9.1 设计原则
+
+- **默认本地，永不自动外发**：无账号、无遥测、无云端；Tier 2 必须用户显式配置 key 并开启
+- **首次外发隐私门**：Tier 2 第一次实际调用前弹一次隐私说明，确认后才外发
+- **优雅降级，永不阻断核心流程**：AI 调用失败 / 超时 / 未配置时自动回退，「发请求」核心功能不受影响
+- **可保存、可复跑**：AI 产出落到 collection / 环境 / 断言，不是一次性聊天
+- **可解释**：AI 生成的请求/断言展示来源与可编辑的中间产物
+
+#### F9.2 优先级
+
+1. Tier 0：OpenAPI 导入生成请求（无需模型，最强差异化，最先做）
+2. Tier 1：解释响应 / 生成断言 / 自然语言建请求
+3. Tier 2：可选增强
+
+#### F9.3 实现要点
+
+- **单一 OpenAI 兼容客户端**：`baseURL + model + key` 可配，Tier 1 指向 `http://localhost:11434/v1`（Ollama），Tier 2 指向云端；一套代码覆盖两层
+- **密钥走 OS 安全存储**：macOS Keychain / Windows Credential Manager / Linux libsecret，不落 Hive/UserDefaults 明文
+- **元数据-only 日志**：只记端点/模型/耗时/字数，不落请求体、key、响应文本本体
+- **防脑补硬约束**：生成请求/断言时，字段、参数、取值只允许来自 spec 或用户输入，缺失即缺失，禁止脑补
+
+---
+
 ## 非功能需求
 
 | 类别 | 需求 | 说明 |
@@ -685,5 +756,8 @@ pm.request.headers.add({key: "X-Sign", value: sign});
 | Collection | 请求集合，用于组织 API 请求 |
 | Environment | 环境配置，包含一组变量 |
 | Variable | 变量，使用 `{{name}}` 语法引用 |
+| 预请求链 | 发送目标请求前，先执行一个或多个前置请求（如 login）并传递变量 |
+| 变量转换 | 对变量值做声明式哈希/加密/签名（如 sha1/aes） |
+| Tier 0/1/2 | AI 三层：无模型 / 本地模型 / BYOK 云端 |
 | Tab | 标签页，可同时打开多个请求 |
 | Workspace | 工作区（Future：团队协作时使用） |

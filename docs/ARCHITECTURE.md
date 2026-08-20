@@ -15,6 +15,13 @@
 - [网络层](#网络层)
 - [UI 层](#ui-层)
 - [设计决策](#设计决策)
+- [性能考虑](#性能考虑)
+- [安全考虑](#安全考虑)
+- [UI 测试模式](#ui-测试模式)
+- [扩展性设计](#扩展性设计)
+- [AI 助手架构（三层）](#ai-助手架构三层)
+- [预请求链与变量转换](#预请求链与变量转换)
+- [参考资源](#参考资源)
 
 ---
 
@@ -576,6 +583,7 @@ class MainScreen extends StatelessWidget {
 
 1. **数据安全**
    - 敏感数据加密存储
+   - 环境变量 / 密码 / token 等 secret 类型加密存储、界面脱敏显示
    - HTTPS 强制使用
 
 2. **网络安全**
@@ -657,6 +665,55 @@ abstract class ThemeExtension {
 ```
 
 ---
+
+## AI 助手架构（三层）📋
+
+> 定位：本地 + 私有 AI，数据默认不出机器。
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│              AI 能力层（可选、显式开启）                  │
+│  Tier 2  BYOK 云端（OpenAI/Anthropic/DeepSeek，默认关闭） │
+│  Tier 1  本地模型（Ollama/LM Studio，localhost OpenAI 兼容）│
+│  Tier 0  无模型（OpenAPI 导入、代码生成，纯确定性）       │
+└───────────────────────┬─────────────────────────────────┘
+                        │ 产出可保存、可复跑
+                        ▼
+        Collection / Environment / 断言（本地持久化）
+```
+
+**设计原则**:
+- 默认本地，永不自动外发；Tier 2 需用户显式配置 key 并开启
+- AI 产出落到 collection / 环境 / 断言，而非一次性聊天
+- Tier 1 通过 localhost OpenAI 兼容端点接入（Ollama / LM Studio），无需新协议
+
+**统一客户端与安全（借鉴 Voxmit）**:
+- 单一 OpenAI 兼容客户端：`baseURL + model + key` 可配，`/chat/completions` 协议；Tier 1 指向 `http://localhost:11434/v1`（Ollama），Tier 2 指向云端
+- 密钥走 OS 安全存储（macOS Keychain / Windows Credential Manager / Linux libsecret），日志只落元数据，不落请求体与 key
+- 优雅降级：AI 有界超时 + 一次重试 + 失败回退；核心「发请求」永不依赖 AI；首次外发前隐私告知门
+- 防脑补：生成请求/断言时，字段只允许来自 spec 或用户输入，禁止新增与补全指代
+
+## 预请求链与变量转换 📋
+
+> 替代 Postman 的 pre-request JS 沙箱，用声明式积木降低门槛。
+
+```text
+目标请求
+  ▲
+  │ 注入 {{token}} / {{sign}} 等变量
+  │
+预请求链（可有多个前置请求）
+  │  1. login（密码经变量转换 sha1/aes 加密）
+  │  2. 从响应提取 token（JSONPath/正则/Header）
+  └── 写入本地作用域变量
+```
+
+**变量转换引擎**（纯 Dart，无 JS 沙箱）:
+- 解析 `{{value | transform(args)}}` 管道语法
+- 内置：sha1 / md5 / sha256 / base64 / aes / hmac
+- 动态变量：`{{$timestamp}}`、`{{$randomUUID}}`、`{{$randomInt}}`、`{{$guid}}`
+
+**替换顺序**: 变量解析 → 变量转换 → 变量替换（全局 > 环境 > 本地）
 
 ## 参考资源
 

@@ -299,17 +299,26 @@ fvm dart run build_runner watch --delete-conflicting-outputs
 
 ### 4. macOS 构建失败
 
-**问题**：`CocoaPods not installed`
+**问题**：`CocoaPods not installed`（常见于 Homebrew Ruby 升级到 4.0 后，`pod` 因缺默认 gem 无法启动）
 
-**解决**：
+**解决**（无 sudo、装到用户目录，2026-08-20 实测可用）：
 
 ```bash
-# 安装 CocoaPods
-sudo gem install cocoapods
+# 1. 安装 CocoaPods 到用户 gem 目录
+gem install --user-install cocoapods --no-document
 
-# 或者使用 Homebrew
-brew install cocoapods
+# 2. Ruby 4.0 移除了若干默认 gem，CocoaPods 依赖它们，需一并补装
+gem install --user-install base64 drb bigdecimal logger mutex_m ostruct csv benchmark securerandom rexml nkf --no-document
+
+# 3. 构建时把用户 gem 目录接到 PATH/GEM_*
+UGD=$(gem env user_gemhome)
+export PATH="$UGD/bin:$PATH"
+export GEM_HOME="$UGD"
+export GEM_PATH="$UGD"
+fvm flutter build macos --release
 ```
+
+> 备选：`sudo gem install cocoapods` 或 `brew install cocoapods`（会写系统目录，需 sudo/网络；若仍报缺 gem，同样按第 2 步补装默认 gem）。
 
 ### 5. Windows 构建失败
 

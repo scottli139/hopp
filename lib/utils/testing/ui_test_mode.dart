@@ -1305,8 +1305,8 @@ class UITestModeManager {
     // 等待当前帧绘制完成，确保截图反映最新状态
     await WidgetsBinding.instance.endOfFrame;
 
-    final devicePixelRatio = WidgetsBinding
-        .instance.platformDispatcher.views.first.devicePixelRatio;
+    final devicePixelRatio =
+        WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
     final image = await boundary.toImage(pixelRatio: devicePixelRatio);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     if (byteData == null) {

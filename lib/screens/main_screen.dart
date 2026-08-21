@@ -43,10 +43,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   /// 监听 UI 测试命令
   void _listenToUITestCommands() {
-    // 监听分隔线位置变化
+    // 监听分隔线位置变化；只在值变化时重新应用，
+    // 避免每次 build 都替换 areas 导致子树 State 被销毁（编辑器 Tab 被重置）
     final dividerRatio = ref.watch(uiTestDividerPositionProvider);
-    // 只在非默认值时更新
-    if (dividerRatio != 0.5) {
+    if (dividerRatio != _lastAppliedDividerRatio) {
+      _lastAppliedDividerRatio = dividerRatio;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _verticalSplitController.areas = [
@@ -57,6 +58,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       });
     }
   }
+
+  double _lastAppliedDividerRatio = 0.5;
 
   @override
   Widget build(BuildContext context) {

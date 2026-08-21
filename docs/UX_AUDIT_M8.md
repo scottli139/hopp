@@ -27,26 +27,26 @@
 
 ## 产品瑕疵清单
 
-### UI-01（P2）Settings Tab 内容不可滚动，空间不足时直接裁切
+### UI-01（P2）Settings Tab 缺滚动条指示，空间不足时内容被裁切 ✅ 已修复（2026-08-21）
 
-- **现象**：divider 默认 0.5 时 Redirects 区只剩标题；divider 0.55 有响应时 "Maximum redirects" 副标题被分栏线裁掉半行。内容无滚动能力。
-- **复现**：打开任一请求 → Settings Tab → 窗口 800x600 默认布局。
+- **现象**：divider 默认 0.5 时 Redirects 区只剩标题；divider 0.55 有响应时 "Maximum redirects" 副标题被分栏线裁掉半行。
+- **根因复核**：修复时确认页面本已包 `SingleChildScrollView`（可滚动），真实缺陷是**无 Scrollbar 视觉指示**，用户无从得知下方还有内容。
 - **证据**：hopp_m8_03_settings.png、hopp_m8_07_resp_body.png
-- **建议**：Settings 页内容包 `SingleChildScrollView`，或至少对溢出做收缩保护。
+- **修复**：`request_editor.dart` 为 Settings 页加 `Scrollbar(thumbVisibility: true)` 并挂接专用滚动控制器。复验截图 verify_ui03/verify_ui02 右侧滚动条可见。
 
-### UI-02（P2）响应区空状态/工具条溢出（debug 横幅）
+### UI-02（P2）响应区空状态/工具条溢出（debug 横幅）✅ 已修复（2026-08-21）
 
 - **现象**：divider 0.8 时响应空状态报 `BOTTOM OVERFLOWED BY 46 PIXELS`；divider 0.5 且有响应时 body 工具条区报 `BOTTOM OVERFLOWED BY 6.4 PIXELS`。空态 Column 无收缩保护。
 - **复现**：拖动分栏改变响应区高度即可复现。
 - **证据**：hopp_m8_04_settings_full.png（46px）、hopp_m8_07_resp_body.png（6.4px）
-- **建议**：空状态 Column 加 `mainAxisSize: min` / `Flexible` 收缩保护；响应区整体允许垂直滚动兜底。
+- **修复**：`response_viewer.dart` 三处空态（`_buildBodyTab`、`_buildHeadersTab`、`_buildEmptyState`）的居中 Column 外包 `SingleChildScrollView`，空间不足时改为可滚动而非溢出。复验：divider 0.8 压扁响应区后无 overflow 横幅（verify_ui02_no_overflow）。
 
-### UI-03（P2）布局重建会把请求编辑器 Tab 重置回 Params
+### UI-03（P2）布局重建会把请求编辑器 Tab 重置回 Params ✅ 已修复（2026-08-21）
 
 - **现象**：切到 Settings 后拖动分栏（`set_divider_position`），编辑器 Tab 被重置回 Params；测试指令内部 `updateRequest` 同样触发重置。
-- **根因**：编辑器 Tab 索引保存在 widget state 中，任何触发编辑器重建的操作（分栏拖动、请求对象更新）都会丢失当前 Tab。响应区 Tab 不受影响。
-- **证据**：hopp_m8_04_settings_full.png（截图指令前置动作是切 Settings + 移 divider，成像却是 Params）
-- **建议**：Tab 索引上移到 provider（按 request tab id 持有），或编辑器 Tab 视图使用 `AutomaticKeepAliveClientMixin` / 持久 `TabController`。
+- **根因**（修复时精确定位）：`main_screen._listenToUITestCommands` 在分栏 provider 值 ≠ 默认 0.5 时，**每次 build 都 post-frame 整体替换 `_verticalSplitController.areas`**，子树 State 被销毁，编辑器 TabController 以 initialIndex 0 重建。真实用户拖拽只在原 Area 上改 flex、不替换对象，故该问题主要出现在「测试指令设了非默认分栏 + 任意 provider 触发重建」的组合场景。
+- **证据**：hopp_m8_04_settings_full.png（截图前置动作是切 Settings + 移 divider，成像却是 Params）
+- **修复**：① `main_screen.dart` 记录 `_lastAppliedDividerRatio`，仅在分栏值变化时才应用 areas；② 新增 `requestEditorTabIndexProvider`（request_tab_provider.dart）持久化编辑器 Tab 索引，`RequestEditor` State 重建后以保存的索引恢复。复验：切 Settings 后连续两次移动分栏（0.7、0.8）仍停留在 Settings（verify_ui03/verify_ui02）。
 
 ### UI-04（P3）Request 视图 auto header 判定为硬编码 key 集合
 

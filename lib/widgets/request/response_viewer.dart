@@ -492,22 +492,24 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   Widget _buildBodyTab(BuildContext context, HttpResponse? response) {
     if (response?.body == null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.code_off,
-              size: 48,
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Send a request to see the response',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.code_off,
+                size: 48,
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Send a request to see the response',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -530,22 +532,24 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   Widget _buildHeadersTab(BuildContext context, HttpResponse? response) {
     if (response?.headers.isEmpty ?? true) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.list_alt_outlined,
-              size: 48,
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No headers',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.list_alt_outlined,
+                size: 48,
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No headers',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -2003,51 +2007,53 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     required String subtitle,
   }) {
     return Center(
-      child: Container(
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: Theme.of(context)
-              .colorScheme
-              .surfaceContainerHighest
-              .withOpacity(0.5),
-          borderRadius: BorderRadius.circular(AppConstants.radiusXL),
-          border: Border.all(
-            color: Theme.of(context).dividerColor.withOpacity(0.5),
+      child: SingleChildScrollView(
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.5),
+            borderRadius: BorderRadius.circular(AppConstants.radiusXL),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withOpacity(0.5),
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppConstants.radiusL),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusL),
+                ),
+                child: Icon(
+                  icon,
+                  size: 32,
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
+                ),
               ),
-              child: Icon(
-                icon,
-                size: 32,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
+              const SizedBox(height: 20),
+              Text(
+                title,
+                style: AppTextStyles.title.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              title,
-              style: AppTextStyles.title.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                style: AppTextStyles.body.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: AppTextStyles.body.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

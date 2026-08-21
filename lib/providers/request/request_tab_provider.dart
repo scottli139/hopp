@@ -81,6 +81,12 @@ final requestTabProvider =
 
 final activeTabIdProvider = StateProvider<String?>((ref) => null);
 
+/// 请求编辑器当前选中的子 Tab 索引（Params/Headers/Body/Auth/Settings）
+///
+/// 编辑器 State 可能因布局重建（如调整分栏）被销毁重建，
+/// 将索引保存在 provider 中以便重建后恢复，避免被重置回 Params。
+final requestEditorTabIndexProvider = StateProvider<int>((ref) => 0);
+
 final activeTabProvider = Provider<RequestTab?>((ref) {
   final tabs = ref.watch(requestTabProvider);
   final activeId = ref.watch(activeTabIdProvider);

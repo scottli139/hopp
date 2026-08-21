@@ -28,6 +28,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   final _urlFocusNode = FocusNode();
   final _methodMenuController = MenuController();
   final _rawContentTypeMenuController = MenuController();
+  final _settingsScrollController = ScrollController();
   String? _lastTabId;
 
   // 防止 URL 和 Params 循环更新的标志位
@@ -68,15 +69,30 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    // 恢复上次选中的编辑器 Tab，避免布局重建后被重置回 Params
+    final savedIndex = ref.read(requestEditorTabIndexProvider).clamp(0, 4);
+    _tabController =
+        TabController(length: 5, vsync: this, initialIndex: savedIndex);
+    _tabController.addListener(_persistTabIndex);
+  }
+
+  /// 将当前编辑器 Tab 索引持久化到 provider（动画结束后才写入）
+  void _persistTabIndex() {
+    if (_tabController.indexIsChanging) return;
+    final index = _tabController.index;
+    if (ref.read(requestEditorTabIndexProvider) != index) {
+      ref.read(requestEditorTabIndexProvider.notifier).state = index;
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_persistTabIndex);
     _tabController.dispose();
     _urlController.dispose();
     _nameController.dispose();
     _urlFocusNode.dispose();
+    _settingsScrollController.dispose();
     // _methodMenuController doesn't need dispose
     _removeAutocompleteOverlay();
     for (final node in _keyFocusNodes.values) {
@@ -1620,110 +1636,115 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   ) {
     final theme = Theme.of(context);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.spaceL),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // SSL 证书验证设置
-          _buildSettingsSection(
-            context: context,
-            title: 'SSL/TLS',
-            children: [
-              _buildSwitchTile(
-                context: context,
-                title: 'Enable SSL certificate verification',
-                subtitle: 'Verify the server\'s SSL certificate chain',
-                value: request.validateCertificates,
-                onChanged: (value) {
-                  final updatedRequest = request.copyWith(
-                    validateCertificates: value,
-                  );
-                  _updateRequest(ref, updatedRequest);
-                },
-              ),
-              const SizedBox(height: AppConstants.spaceM),
-              // 提示信息
-              Container(
-                padding: const EdgeInsets.all(AppConstants.spaceM),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest
-                      .withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(AppConstants.radiusM),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: theme.colorScheme.outline,
-                    ),
-                    const SizedBox(width: AppConstants.spaceS),
-                    Expanded(
-                      child: Text(
-                        'Disable this option to allow self-signed certificates or bypass certificate errors for testing purposes.',
-                        style: AppTextStyles.tiny.copyWith(
-                          color: theme.colorScheme.outline,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppConstants.spaceXL),
-          // 重定向设置
-          _buildSettingsSection(
-            context: context,
-            title: 'Redirects',
-            children: [
-              _buildSwitchTile(
-                context: context,
-                title: 'Follow redirects',
-                subtitle: 'Automatically follow HTTP 3xx redirects',
-                value: request.followRedirects,
-                onChanged: (value) {
-                  final updatedRequest = request.copyWith(
-                    followRedirects: value,
-                  );
-                  _updateRequest(ref, updatedRequest);
-                },
-              ),
-              const SizedBox(height: AppConstants.spaceM),
-              // Max redirects (only show when followRedirects is enabled)
-              if (request.followRedirects)
-                _buildNumberInputTile(
+    return Scrollbar(
+      controller: _settingsScrollController,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        controller: _settingsScrollController,
+        padding: const EdgeInsets.all(AppConstants.spaceL),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // SSL 证书验证设置
+            _buildSettingsSection(
+              context: context,
+              title: 'SSL/TLS',
+              children: [
+                _buildSwitchTile(
                   context: context,
-                  title: 'Maximum redirects',
-                  subtitle:
-                      'Limit the number of redirects to follow (0 = unlimited)',
-                  value: request.maxRedirects,
-                  min: 0,
-                  max: 50,
+                  title: 'Enable SSL certificate verification',
+                  subtitle: 'Verify the server\'s SSL certificate chain',
+                  value: request.validateCertificates,
                   onChanged: (value) {
                     final updatedRequest = request.copyWith(
-                      maxRedirects: value,
+                      validateCertificates: value,
                     );
                     _updateRequest(ref, updatedRequest);
                   },
                 ),
-            ],
-          ),
-          const SizedBox(height: AppConstants.spaceXL),
-          // 更多设置将在未来版本中实现
-          _buildSettingsSection(
-            context: context,
-            title: 'Coming Soon',
-            children: [
-              _buildDisabledTile(
-                context: context,
-                title: 'Request timeout',
-                subtitle: 'Set the request timeout duration',
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(height: AppConstants.spaceM),
+                // 提示信息
+                Container(
+                  padding: const EdgeInsets.all(AppConstants.spaceM),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(AppConstants.radiusM),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: theme.colorScheme.outline,
+                      ),
+                      const SizedBox(width: AppConstants.spaceS),
+                      Expanded(
+                        child: Text(
+                          'Disable this option to allow self-signed certificates or bypass certificate errors for testing purposes.',
+                          style: AppTextStyles.tiny.copyWith(
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppConstants.spaceXL),
+            // 重定向设置
+            _buildSettingsSection(
+              context: context,
+              title: 'Redirects',
+              children: [
+                _buildSwitchTile(
+                  context: context,
+                  title: 'Follow redirects',
+                  subtitle: 'Automatically follow HTTP 3xx redirects',
+                  value: request.followRedirects,
+                  onChanged: (value) {
+                    final updatedRequest = request.copyWith(
+                      followRedirects: value,
+                    );
+                    _updateRequest(ref, updatedRequest);
+                  },
+                ),
+                const SizedBox(height: AppConstants.spaceM),
+                // Max redirects (only show when followRedirects is enabled)
+                if (request.followRedirects)
+                  _buildNumberInputTile(
+                    context: context,
+                    title: 'Maximum redirects',
+                    subtitle:
+                        'Limit the number of redirects to follow (0 = unlimited)',
+                    value: request.maxRedirects,
+                    min: 0,
+                    max: 50,
+                    onChanged: (value) {
+                      final updatedRequest = request.copyWith(
+                        maxRedirects: value,
+                      );
+                      _updateRequest(ref, updatedRequest);
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppConstants.spaceXL),
+            // 更多设置将在未来版本中实现
+            _buildSettingsSection(
+              context: context,
+              title: 'Coming Soon',
+              children: [
+                _buildDisabledTile(
+                  context: context,
+                  title: 'Request timeout',
+                  subtitle: 'Set the request timeout duration',
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

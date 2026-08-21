@@ -150,9 +150,9 @@
 | 问题 | 优先级 | 状态 |
 |------|--------|------|
 | 行号与内容滚动不同步 | P2 | 待修（CodeEditor 组件；test-mode 滚动指令修复前需人工验证，见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md) TI-03） |
-| Settings Tab 内容不可滚动，空间不足直接裁切（UI-01） | P2 | 待修（2026-08-21 M8.0 审计） |
-| 响应区空状态/工具条溢出 BOTTOM OVERFLOWED（UI-02） | P2 | 待修（2026-08-21 M8.0 审计） |
-| 布局重建把请求编辑器 Tab 重置回 Params（UI-03） | P2 | 待修（2026-08-21 M8.0 审计） |
+| ~~Settings Tab 缺滚动条指示，空间不足内容被裁切（UI-01）~~ | ~~P2~~ | ✅ 已修复（2026-08-21）：Settings 页加 `Scrollbar(thumbVisibility: true)` |
+| ~~响应区空状态/工具条溢出 BOTTOM OVERFLOWED（UI-02）~~ | ~~P2~~ | ✅ 已修复（2026-08-21）：三处空态外包 `SingleChildScrollView` 收缩保护 |
+| ~~布局重建把请求编辑器 Tab 重置回 Params（UI-03）~~ | ~~P2~~ | ✅ 已修复（2026-08-21）：分栏应用改为幂等 + `requestEditorTabIndexProvider` 持久化索引 |
 | auto header 判定硬编码 key 集合，手填同名 header 会被误标（UI-04） | P3 | 待修（2026-08-21 M8.0 审计） |
 | ~~导出对话框主按钮疑似缺失/文字重叠~~ | ~~P1~~ | ✅ 已复核排除（2026-08-20，RepaintBoundary 截图 + 像素级复核）：Export 按钮存在，未选 Collection 时为禁用态（低对比度导致 OCR 漏识别）；"Select Collection" 显示完整，"lect Collection" 系 OCR 误读 |
 | ~~测试日志噪音~~ | ~~P2~~ | ✅ 已修复（2026-08-20）：`_AllLogFilter` 在 `flutter test` 环境（进程环境变量 `FLUTTER_TEST=true`）下只输出 warning 及以上级别，trace/debug/info 不再刷屏；单个测试文件输出 120 行 → 10 行。注意编译期 `bool.fromEnvironment('FLUTTER_TEST')` 在 Flutter 3.27.4 下为 false，必须用 `Platform.environment` 检测 |

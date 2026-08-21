@@ -7,7 +7,47 @@ class AppDelegate: FlutterAppDelegate {
   override func applicationDidFinishLaunching(_ notification: Notification) {
     // 设置应用程序菜单
     setupApplicationMenu()
+    // 注册窗口控制通道（UI 测试模式用于调整窗口大小）
+    setupWindowChannel()
     super.applicationDidFinishLaunching(notification)
+  }
+
+  /// 注册窗口控制通道
+  private func setupWindowChannel() {
+    guard let controller = mainFlutterWindow?.contentViewController as? FlutterViewController else { return }
+
+    let channel = FlutterMethodChannel(
+      name: "com.example.hopp/window",
+      binaryMessenger: controller.engine.binaryMessenger
+    )
+
+    channel.setMethodCallHandler { (call, result) in
+      switch call.method {
+      case "setWindowSize":
+        guard let args = call.arguments as? [String: Any],
+              let width = (args["width"] as? NSNumber)?.doubleValue,
+              let height = (args["height"] as? NSNumber)?.doubleValue else {
+          result(FlutterError(code: "bad_args", message: "width/height required", details: nil))
+          return
+        }
+        guard let window = NSApp.windows.first else {
+          result(FlutterError(code: "no_window", message: "No window found", details: nil))
+          return
+        }
+        // 保持窗口顶边位置不变（macOS frame.origin 为左下角）
+        var frame = window.frame
+        let topY = frame.origin.y + frame.size.height
+        frame.size = NSSize(width: width, height: height)
+        frame.origin.y = topY - height
+        window.setFrame(frame, display: true, animate: false)
+        result([
+          "width": Double(window.frame.size.width),
+          "height": Double(window.frame.size.height),
+        ])
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
   }
   
   /// 设置应用程序菜单

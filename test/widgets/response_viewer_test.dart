@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hopp/models/http_request.dart';
+import 'package:hopp/models/http_request_info.dart';
 import 'package:hopp/models/http_response.dart';
 import 'package:hopp/models/key_value_pair.dart';
 import 'package:hopp/models/request_tab.dart';
@@ -593,6 +594,100 @@ void main() {
         expect(find.text('Server'), findsOneWidget);
         expect(find.text('nginx/1.18.0'), findsOneWidget);
         expect(find.text('ETag'), findsOneWidget);
+      });
+    });
+
+    group('Request tab headers section (UI-04)', () {
+      HttpResponse buildResponseWithRequestInfo() {
+        return HttpResponse(
+          statusCode: 200,
+          statusText: 'OK',
+          body: '{}',
+          durationMs: 100,
+          timestamp: DateTime.now(),
+          requestInfo: HttpRequestInfo(
+            method: 'GET',
+            baseUrl: 'http://api.example.com/users',
+            fullUrl: 'http://api.example.com/users',
+            scheme: 'http',
+            host: 'api.example.com',
+            path: '/users',
+            headers: [
+              // 用户手填的 headers（含与自动 header 同名的 Host）
+              KeyValuePair(id: 'h1', key: 'Host', value: 'custom.internal'),
+              KeyValuePair(id: 'h2', key: 'X-Api-Key', value: 'abc'),
+              // HTTP 客户端自动添加的 headers
+              KeyValuePair(id: 'h3', key: 'content-length', value: '12'),
+              KeyValuePair(id: 'h4', key: 'user-agent', value: 'Dio/5.x'),
+            ],
+            autoHeaderKeys: const ['content-length', 'user-agent'],
+            timestamp: DateTime.now(),
+          ),
+        );
+      }
+
+      testWidgets('manually added Host is not mislabeled as auto',
+          (tester) async {
+        final container = createContainer(
+          response: buildResponseWithRequestInfo(),
+          activeTabId: 'tab1',
+        );
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        // 切换到 Request Tab
+        await tester.tap(find.text('Request'));
+        await tester.pumpAndSettle();
+
+        // Auto-added Headers 分区存在，且恰好只有 2 个 auto 徽章
+        // （旧硬编码逻辑会把 Host 误标，变成 3 个）
+        expect(find.text('Auto-added Headers'), findsOneWidget);
+        expect(find.text('auto'), findsNWidgets(2));
+
+        // 用户区计数为 2（Host + X-Api-Key）
+        expect(find.text('2 custom'), findsOneWidget);
+
+        // Host 显示在用户区（无徽章），user-agent/content-length 在 auto 区
+        expect(find.text('Host'), findsOneWidget);
+        expect(find.text('X-Api-Key'), findsOneWidget);
+        expect(find.text('user-agent'), findsOneWidget);
+        expect(find.text('content-length'), findsOneWidget);
+      });
+
+      testWidgets('no auto section when autoHeaderKeys is empty',
+          (tester) async {
+        final response = HttpResponse(
+          statusCode: 200,
+          statusText: 'OK',
+          timestamp: DateTime.now(),
+          requestInfo: HttpRequestInfo(
+            method: 'GET',
+            baseUrl: 'http://api.example.com',
+            fullUrl: 'http://api.example.com',
+            scheme: 'http',
+            host: 'api.example.com',
+            path: '/',
+            headers: [
+              KeyValuePair(id: 'h1', key: 'Host', value: 'custom.internal'),
+            ],
+            autoHeaderKeys: const [],
+            timestamp: DateTime.now(),
+          ),
+        );
+
+        final container =
+            createContainer(response: response, activeTabId: 'tab1');
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Request'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Auto-added Headers'), findsNothing);
+        expect(find.text('auto'), findsNothing);
+        expect(find.text('1 custom'), findsOneWidget);
       });
     });
   });

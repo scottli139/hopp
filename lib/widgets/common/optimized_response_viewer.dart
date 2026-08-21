@@ -65,6 +65,7 @@ class OptimizedResponseViewer extends StatefulWidget {
     this.maxInitialLines = 500,
     this.showLineNumbers = true,
     this.showBeautifyButton = true,
+    this.scrollController,
   });
 
   /// 响应内容
@@ -91,6 +92,12 @@ class OptimizedResponseViewer extends StatefulWidget {
   /// 是否显示 Beautify 按钮
   final bool showBeautifyButton;
 
+  /// 外部滚动控制器（可选）
+  ///
+  /// 传入后替代内部控制器驱动主内容滚动（各显示模式通用），
+  /// 用于 UI 测试模式下的程序化滚动。
+  final ScrollController? scrollController;
+
   @override
   State<OptimizedResponseViewer> createState() =>
       _OptimizedResponseViewerState();
@@ -111,6 +118,10 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   // 滚动控制器
   final ScrollController _scrollController = ScrollController();
   final ScrollController _lineNumberScrollController = ScrollController();
+
+  /// 主内容滚动控制器：外部传入优先，否则用内部控制器
+  ScrollController get _effectiveScrollController =>
+      widget.scrollController ?? _scrollController;
 
   @override
   void initState() {
@@ -497,9 +508,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               // 代码区域
               Expanded(
                 child: Scrollbar(
-                  controller: _scrollController,
+                  controller: _effectiveScrollController,
                   child: ListView.builder(
-                    controller: _scrollController,
+                    controller: _effectiveScrollController,
                     itemCount: displayLines.length,
                     itemBuilder: (context, index) {
                       return _buildLineItem(
@@ -692,6 +703,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               // 代码区域
               Expanded(
                 child: SingleChildScrollView(
+                  controller: _effectiveScrollController,
                   child: Theme(
                     data: theme.copyWith(
                       inputDecorationTheme: const InputDecorationTheme(
@@ -719,6 +731,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             ],
           )
         : SingleChildScrollView(
+            controller: _effectiveScrollController,
             padding: const EdgeInsets.all(12),
             child: Theme(
               data: theme.copyWith(
@@ -820,6 +833,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               // 代码区域
               Expanded(
                 child: SingleChildScrollView(
+                  controller: _effectiveScrollController,
                   padding: const EdgeInsets.all(12),
                   child: SelectableText(
                     widget.content,
@@ -835,6 +849,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             ],
           )
         : SingleChildScrollView(
+            controller: _effectiveScrollController,
             padding: const EdgeInsets.all(12),
             child: SelectableText(
               widget.content,

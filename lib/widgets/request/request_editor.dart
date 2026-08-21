@@ -141,15 +141,16 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       }
     });
 
-    // 监听测试模式的 Request Tab 切换指令
+    // 监听测试模式的 Request Tab 切换指令（payload 带时间戳，同值重设也触发）
     ref.listen(uiTestRequestTabProvider, (previous, current) {
       if (current != null && current != previous) {
-        final index =
-            ['params', 'headers', 'body', 'auth', 'settings'].indexOf(current);
+        final tab = current['tab'] as String?;
+        final index = ['params', 'headers', 'body', 'auth', 'settings']
+            .indexOf(tab ?? '');
         if (index != -1 && _tabController.index != index) {
           _tabController.animateTo(index);
           AppLogger.info(
-              '[RequestEditor] Tab switched to: $current (index: $index)');
+              '[RequestEditor] Tab switched to: $tab (index: $index)');
         }
       }
     });
@@ -368,6 +369,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             ),
           ),
           const SizedBox(width: AppConstants.spaceM),
+          // 未定义变量警告（存在 {{var}} 无法解析时显示）
+          ..._buildUnresolvedWarning(context, ref),
           // Save button - always clickable
           SizedBox(
             height: 36,
@@ -383,6 +386,29 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         ],
       ),
     );
+  }
+
+  /// 构建未定义变量警告图标
+  ///
+  /// 当请求的 URL/Params/Headers/Body 中存在无法解析的 {{variable}} 时，
+  /// 在 Send 按钮前显示警告标记，提示用户检查环境变量配置。
+  List<Widget> _buildUnresolvedWarning(BuildContext context, WidgetRef ref) {
+    final unresolved = ref.watch(unresolvedVariablesProvider);
+    if (unresolved.isEmpty) return const [];
+
+    final theme = Theme.of(context);
+    return [
+      Tooltip(
+        message: 'Unresolved variables: ${unresolved.join(', ')}',
+        child: Icon(
+          key: const Key('url_bar_unresolved_warning'),
+          Icons.warning_amber_rounded,
+          size: 18,
+          color: theme.colorScheme.error,
+        ),
+      ),
+      const SizedBox(width: AppConstants.spaceS),
+    ];
   }
 
   /// 构建 Method 下拉菜单项

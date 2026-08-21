@@ -15,6 +15,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,6 +28,7 @@ import '../../utils/app_logger.dart';
 import '../../utils/url_params_sync.dart';
 import '../../models/certificate_info.dart';
 import '../../models/collection.dart';
+import '../../models/environment.dart';
 import '../../models/http_request.dart';
 import '../../models/http_method.dart';
 import '../../models/http_request_info.dart';
@@ -39,6 +41,10 @@ class UITestModeManager {
   static final UITestModeManager _instance = UITestModeManager._internal();
   factory UITestModeManager() => _instance;
   UITestModeManager._internal();
+
+  /// macOS 窗口控制通道（setWindowSize）
+  static const MethodChannel _windowChannel =
+      MethodChannel('com.example.hopp/window');
 
   bool _isTestMode = false;
   io.HttpServer? _server;
@@ -236,7 +242,8 @@ class UITestModeManager {
       case 'scroll_response':
         final direction = params['direction'] as String? ?? 'down';
         final amount = params['amount'] as int? ?? 100;
-        return await _scrollResponse(direction, amount);
+        final target = params['target'] as String? ?? 'body';
+        return await _scrollResponse(direction, amount, target);
 
       case 'tap_at':
         final x = (params['x'] as num).toDouble();
@@ -374,6 +381,9 @@ class UITestModeManager {
       case 'trigger_curl_import_dialog':
         return await _triggerCurlImportDialog();
 
+      case 'dismiss_dialog':
+        return await _dismissDialog();
+
       case 'verify_url_params_sync':
         return await _verifyUrlParamsSync();
 
@@ -394,6 +404,47 @@ class UITestModeManager {
 
       case 'trigger_create_collection_from_empty':
         return await _triggerCreateCollectionFromEmpty();
+
+      case 'create_environment':
+        final name = params['name'] as String;
+        final variables = (params['variables'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            <Map<String, dynamic>>[];
+        return await _createEnvironment(name, variables);
+
+      case 'delete_environment':
+        final environmentId = params['id'] as String;
+        return await _deleteEnvironment(environmentId);
+
+      case 'get_environments':
+        return await _getEnvironments();
+
+      case 'set_active_environment':
+        final id = params['id'] as String?;
+        final name = params['name'] as String?;
+        return await _setActiveEnvironment(id: id, name: name);
+
+      case 'get_active_environment':
+        return await _getActiveEnvironment();
+
+      case 'set_global_variables':
+        final variables = (params['variables'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            <Map<String, dynamic>>[];
+        return await _setGlobalVariables(variables);
+
+      case 'get_global_variables':
+        return await _getGlobalVariables();
+
+      case 'resolve_text':
+        final text = params['text'] as String;
+        return await _resolveText(text);
+
+      case 'get_resolved_request':
+        return await _getResolvedRequest();
+
+      case 'trigger_environment_dialog':
+        return await _triggerEnvironmentDialog();
 
       default:
         throw Exception('未知指令: $action');
@@ -422,6 +473,200 @@ class UITestModeManager {
   /// 触发从空状态创建 Collection（设置状态通知 UI）
   Future<Map<String, dynamic>> _triggerCreateCollectionFromEmpty() async {
     _ref!.read(uiTestCreateCollectionFromEmptyProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {
+      'triggered': true,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+
+  /// 解析变量定义参数为 EnvironmentVariable 列表
+  List<EnvironmentVariable> _parseVariableParams(
+      List<Map<String, dynamic>> variables) {
+    return variables
+        .map(
+          (v) => EnvironmentVariable.empty().copyWith(
+            key: v['key'] as String? ?? '',
+            value: v['value'] as String? ?? '',
+            type: v['type'] == 'secret'
+                ? VariableType.secret
+                : VariableType.string,
+            enabled: v['enabled'] as bool? ?? true,
+          ),
+        )
+        .toList();
+  }
+
+  /// 创建环境
+  Future<Map<String, dynamic>> _createEnvironment(
+      String name, List<Map<String, dynamic>> variables) async {
+    final environment = Environment.empty().copyWith(
+      name: name,
+      variables: _parseVariableParams(variables),
+    );
+
+    await _ref!.read(environmentProvider.notifier).saveEnvironment(environment);
+
+    return {
+      'created': true,
+      'id': environment.id,
+      'name': environment.name,
+      'variable_count': environment.variables.length,
+    };
+  }
+
+  /// 删除环境
+  Future<Map<String, dynamic>> _deleteEnvironment(String id) async {
+    await _ref!.read(environmentProvider.notifier).deleteEnvironment(id);
+    return {'deleted': true, 'id': id};
+  }
+
+  /// 获取环境列表
+  Future<Map<String, dynamic>> _getEnvironments() async {
+    final environmentsAsync = _ref!.read(environmentProvider);
+    final activeId = _ref!.read(activeEnvironmentIdProvider);
+
+    final environments = environmentsAsync.valueOrNull ?? [];
+    return {
+      'count': environments.length,
+      'active_id': activeId,
+      'environments': environments
+          .map(
+            (e) => {
+              'id': e.id,
+              'name': e.name,
+              'variable_count': e.variables.length,
+              'variables': e.variables
+                  .map(
+                    (v) => {
+                      'key': v.key,
+                      'value': v.value,
+                      'type': v.type.name,
+                      'enabled': v.enabled,
+                    },
+                  )
+                  .toList(),
+            },
+          )
+          .toList(),
+    };
+  }
+
+  /// 设置激活环境（按 ID 或名称；两者都为 null 时取消激活）
+  Future<Map<String, dynamic>> _setActiveEnvironment(
+      {String? id, String? name}) async {
+    String? targetId = id;
+
+    if (targetId == null && name != null) {
+      final environments = _ref!.read(environmentProvider).valueOrNull ?? [];
+      for (final env in environments) {
+        if (env.name == name) {
+          targetId = env.id;
+          break;
+        }
+      }
+      if (targetId == null) {
+        throw Exception('未找到环境: $name');
+      }
+    }
+
+    await _ref!.read(activeEnvironmentIdProvider.notifier).setActive(targetId);
+
+    return {'active_id': targetId};
+  }
+
+  /// 获取当前激活环境
+  Future<Map<String, dynamic>> _getActiveEnvironment() async {
+    final activeEnv = _ref!.read(activeEnvironmentProvider);
+    if (activeEnv == null) {
+      return {'active': false};
+    }
+
+    return {
+      'active': true,
+      'id': activeEnv.id,
+      'name': activeEnv.name,
+      'variables': activeEnv.variables
+          .map(
+            (v) => {
+              'key': v.key,
+              'value': v.value,
+              'type': v.type.name,
+              'enabled': v.enabled,
+            },
+          )
+          .toList(),
+    };
+  }
+
+  /// 设置全局变量
+  Future<Map<String, dynamic>> _setGlobalVariables(
+      List<Map<String, dynamic>> variables) async {
+    final parsed = _parseVariableParams(variables);
+    await _ref!.read(globalVariablesProvider.notifier).setVariables(parsed);
+
+    return {'saved': true, 'variable_count': parsed.length};
+  }
+
+  /// 获取全局变量
+  Future<Map<String, dynamic>> _getGlobalVariables() async {
+    final globals = _ref!.read(globalVariablesProvider);
+    return {
+      'count': globals.length,
+      'variables': globals
+          .map(
+            (v) => {
+              'key': v.key,
+              'value': v.value,
+              'type': v.type.name,
+              'enabled': v.enabled,
+            },
+          )
+          .toList(),
+    };
+  }
+
+  /// 解析文本中的 {{variable}}（验证变量替换引擎）
+  Future<Map<String, dynamic>> _resolveText(String text) async {
+    final variables = _ref!.read(resolvedVariablesProvider);
+    final resolver = _ref!.read(variableResolverProvider);
+
+    return {
+      'input': text,
+      'resolved': resolver.resolve(text, variables),
+      'unresolved': resolver.findUnresolved(text, variables),
+    };
+  }
+
+  /// 获取活动请求应用变量替换后的结果（不实际发送）
+  Future<Map<String, dynamic>> _getResolvedRequest() async {
+    final activeTab = _ref!.read(activeTabProvider);
+    if (activeTab == null) {
+      throw Exception('没有活动的请求 Tab');
+    }
+
+    final variables = _ref!.read(resolvedVariablesProvider);
+    final resolver = _ref!.read(variableResolverProvider);
+    final resolved = resolver.resolveRequest(activeTab.request, variables);
+
+    return {
+      'url': resolved.url,
+      'params': resolved.params
+          .map((p) => {'key': p.key, 'value': p.value, 'enabled': p.enabled})
+          .toList(),
+      'headers': resolved.headers
+          .map((h) => {'key': h.key, 'value': h.value, 'enabled': h.enabled})
+          .toList(),
+      'body': resolved.body,
+      'unresolved':
+          resolver.findUnresolvedInRequest(activeTab.request, variables),
+    };
+  }
+
+  /// 触发环境管理对话框（设置状态通知 UI）
+  Future<Map<String, dynamic>> _triggerEnvironmentDialog() async {
+    _ref!.read(uiTestEnvironmentDialogProvider.notifier).state =
         DateTime.now().millisecondsSinceEpoch;
 
     return {
@@ -599,12 +844,14 @@ class UITestModeManager {
     ];
 
     // 只添加不存在重复 key 的自动 headers
+    final autoKeys = <String>[];
     for (final autoHeader in autoHeaders) {
       final exists = headers.any(
         (h) => h.key.toLowerCase() == autoHeader.key.toLowerCase(),
       );
       if (!exists) {
         headers.add(autoHeader);
+        autoKeys.add(autoHeader.key.toLowerCase());
       }
     }
 
@@ -626,6 +873,7 @@ class UITestModeManager {
               ))
           .toList(),
       headers: headers,
+      autoHeaderKeys: autoKeys,
       body: request.body.isNotEmpty && request.bodyType != 'none'
           ? request.body
           : null,
@@ -1373,7 +1621,9 @@ class UITestModeManager {
 
     // 先切换到 Body Tab
     await _switchRequestTab('body');
-    await Future.delayed(const Duration(milliseconds: 100));
+    // 等待 Tab 切换动画与编辑器重建完成（UI-03 修复后 Tab 索引持久化，
+    // 重建不会回退，但需要等 animateTo 与 postFrame 落地）
+    await Future.delayed(const Duration(milliseconds: 350));
 
     // 设置 Body 类型为 raw
     final activeTab = _ref!.read(activeTabProvider);
@@ -1397,7 +1647,7 @@ class UITestModeManager {
     };
   }
 
-  /// 切换 Request Editor Tab
+  /// 切换 Request Editor Tab（带时间戳，同值重设也能触发）
   Future<Map<String, dynamic>> _switchRequestTab(String tab) async {
     AppLogger.info('[UI_TEST] _switchRequestTab called: $tab');
     final validTabs = ['params', 'headers', 'body', 'auth', 'settings'];
@@ -1408,8 +1658,11 @@ class UITestModeManager {
       throw Exception('无效的 Tab: $tab, 可选: $validTabs');
     }
 
-    // 设置目标 Tab
-    _ref!.read(uiTestRequestTabProvider.notifier).state = tabLower;
+    // 设置目标 Tab（带时间戳保证幂等触发）
+    _ref!.read(uiTestRequestTabProvider.notifier).state = {
+      'tab': tabLower,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
     AppLogger.info(
         '[UI_TEST] uiTestRequestTabProvider.state set to: $tabLower');
 
@@ -1417,8 +1670,11 @@ class UITestModeManager {
   }
 
   /// 滚动响应区域
+  ///
+  /// [target] 指定滚动目标：'body'（响应体，默认）或 'certificate'。
+  /// 等待动画完成后回读实际滚动结果（before/after offset）。
   Future<Map<String, dynamic>> _scrollResponse(
-      String direction, int amount) async {
+      String direction, int amount, String target) async {
     final validDirections = ['up', 'down', 'left', 'right'];
     final dirLower = direction.toLowerCase();
 
@@ -1426,16 +1682,43 @@ class UITestModeManager {
       throw Exception('无效的滚动方向: $direction, 可选: $validDirections');
     }
 
+    final validTargets = ['body', 'certificate'];
+    final targetLower = target.toLowerCase();
+    if (!validTargets.contains(targetLower)) {
+      throw Exception('无效的滚动目标: $target, 可选: $validTargets');
+    }
+
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
     // 设置滚动状态通知 UI
     _ref!.read(uiTestScrollResponseProvider.notifier).state = {
       'direction': dirLower,
       'amount': amount,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      'target': targetLower,
+      'timestamp': timestamp,
     };
+
+    // 等待滚动动画完成，回读 UI 写入的实际结果
+    await Future.delayed(const Duration(milliseconds: 600));
+    final result = _ref!.read(uiTestScrollResponseResultProvider);
+
+    if (result != null && result['timestamp'] == timestamp) {
+      return {
+        'direction': dirLower,
+        'amount': amount,
+        'target': result['target'],
+        'before': result['before'],
+        'after': result['after'],
+        'scrolled': (result['after'] as double) != (result['before'] as double),
+      };
+    }
 
     return {
       'direction': dirLower,
       'amount': amount,
+      'target': targetLower,
+      'scrolled': false,
+      'reason': 'no scroll listener reported (目标区域可能未显示)',
     };
   }
 
@@ -1480,19 +1763,29 @@ class UITestModeManager {
     return {'scrolled': true, 'x': x, 'y': y, 'dx': dx, 'dy': dy};
   }
 
-  /// 设置窗口大小
+  /// 设置窗口大小（通过 macOS 原生通道实际调整窗口）
   Future<Map<String, dynamic>> _setWindowSize(int? width, int? height) async {
-    // 设置窗口大小状态通知 UI
-    _ref!.read(uiTestWindowSizeProvider.notifier).state = {
-      'width': width ?? 1400,
-      'height': height ?? 900,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    };
+    final w = width ?? 1400;
+    final h = height ?? 900;
 
-    return {
-      'width': width ?? 1400,
-      'height': height ?? 900,
-    };
+    try {
+      final result = await _windowChannel.invokeMethod<Map<dynamic, dynamic>>(
+        'setWindowSize',
+        {'width': w, 'height': h},
+      );
+      return {
+        'width': result?['width'] ?? w,
+        'height': result?['height'] ?? h,
+        'applied': true,
+      };
+    } on MissingPluginException {
+      return {
+        'width': w,
+        'height': h,
+        'applied': false,
+        'reason': 'window channel not available on this platform',
+      };
+    }
   }
 
   /// 设置分隔线位置（请求/响应区域的比例）
@@ -2409,6 +2702,20 @@ class UITestModeManager {
     };
   }
 
+  /// 关闭顶层对话框/弹窗（Navigator.maybePop）
+  ///
+  /// 用于关闭各类对话框，比按坐标点 Cancel 更可靠。
+  Future<Map<String, dynamic>> _dismissDialog() async {
+    final context = appRepaintBoundaryKey.currentContext;
+    if (context == null) {
+      throw Exception('App context 不可用');
+    }
+
+    final popped = await Navigator.of(context, rootNavigator: true).maybePop();
+
+    return {'dismissed': popped};
+  }
+
   /// 触发 cURL 导入对话框
   Future<Map<String, dynamic>> _triggerCurlImportDialog() async {
     AppLogger.info('[UI_TEST] _triggerCurlImportDialog called');
@@ -2608,17 +2915,19 @@ final uiTestExpandMethodDropdownProvider = StateProvider<int?>((ref) => null);
 final uiTestExpandRawContentTypeDropdownProvider =
     StateProvider<int?>((ref) => null);
 
-/// UI 测试 - Request Editor Tab 切换
-final uiTestRequestTabProvider = StateProvider<String?>((ref) => null);
+/// UI 测试 - Request Editor Tab 切换（带时间戳，同值重设也能触发）
+/// 格式: {'tab': 'body', 'timestamp': 123456}
+final uiTestRequestTabProvider =
+    StateProvider<Map<String, dynamic>?>((ref) => null);
 
 /// UI 测试 - 响应区域滚动控制
-/// 格式: {'direction': 'up'/'down', 'amount': 100, 'timestamp': 123456}
+/// 格式: {'direction': 'up'/'down', 'amount': 100, 'target': 'body'/'certificate', 'timestamp': 123456}
 final uiTestScrollResponseProvider =
     StateProvider<Map<String, dynamic>?>((ref) => null);
 
-/// UI 测试 - 窗口大小控制
-/// 格式: {'width': 1400, 'height': 900, 'timestamp': 123456}
-final uiTestWindowSizeProvider =
+/// UI 测试 - 响应区域滚动执行结果（由 UI 监听方回写，供指令回读验证）
+/// 格式: {'target': 'body', 'before': 0.0, 'after': 350.0, 'timestamp': 123456}
+final uiTestScrollResponseResultProvider =
     StateProvider<Map<String, dynamic>?>((ref) => null);
 
 /// UI 测试 - 分隔线位置控制（0.0 - 1.0，表示请求/响应区域的比例）
@@ -2664,3 +2973,6 @@ final uiTestCurlParseResultProvider =
 /// UI 测试 - 从空状态创建 Collection 触发器
 final uiTestCreateCollectionFromEmptyProvider =
     StateProvider<int?>((ref) => null);
+
+/// UI 测试 - 环境管理对话框触发器
+final uiTestEnvironmentDialogProvider = StateProvider<int?>((ref) => null);

@@ -18,6 +18,7 @@ import '../common/optimized_response_viewer.dart';
 
 // 全局 ScrollController 用于 UI 测试控制滚动
 final _certificateScrollController = ScrollController();
+final _responseBodyScrollController = ScrollController();
 
 class ResponseViewer extends ConsumerStatefulWidget {
   const ResponseViewer({super.key});
@@ -92,29 +93,45 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     if (scrollCommand != null) {
       final direction = scrollCommand['direction'] as String;
       final amount = scrollCommand['amount'] as int;
+      final target = scrollCommand['target'] as String? ?? 'body';
+      final timestamp = scrollCommand['timestamp'] as int?;
+
+      final controller = target == 'certificate'
+          ? _certificateScrollController
+          : _responseBodyScrollController;
+
       // 使用 timestamp 确保每次都能触发
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _certificateScrollController.hasClients) {
-          final currentOffset = _certificateScrollController.offset;
-          double newOffset;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted || !controller.hasClients) return;
 
-          switch (direction) {
-            case 'down':
-              newOffset = currentOffset + amount;
-              break;
-            case 'up':
-              newOffset = currentOffset - amount;
-              break;
-            default:
-              return;
-          }
+        final before = controller.offset;
+        double newOffset;
 
-          _certificateScrollController.animateTo(
-            newOffset.clamp(
-                0.0, _certificateScrollController.position.maxScrollExtent),
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
+        switch (direction) {
+          case 'down':
+            newOffset = before + amount;
+            break;
+          case 'up':
+            newOffset = before - amount;
+            break;
+          default:
+            return;
+        }
+
+        await controller.animateTo(
+          newOffset.clamp(0.0, controller.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+
+        // 回写实际滚动结果，供指令回读验证
+        if (mounted && controller.hasClients) {
+          ref.read(uiTestScrollResponseResultProvider.notifier).state = {
+            'target': target,
+            'before': before,
+            'after': controller.offset,
+            'timestamp': timestamp,
+          };
         }
       });
     }
@@ -526,6 +543,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     return OptimizedResponseViewer(
       content: response.body!,
       contentType: contentType.isNotEmpty ? contentType : null,
+      scrollController: _responseBodyScrollController,
     );
   }
 
@@ -792,7 +810,11 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             const SizedBox(height: 16),
             // Headers 区域
             if (requestInfo.headers.isNotEmpty) ...[
-              _buildRequestInfoHeadersSection(context, requestInfo.headers),
+              _buildRequestInfoHeadersSection(
+                context,
+                requestInfo.headers,
+                requestInfo.autoHeaderKeys,
+              ),
               const SizedBox(height: 16),
             ],
             // Body 区域
@@ -1025,15 +1047,17 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   Widget _buildRequestInfoHeadersSection(
     BuildContext context,
     List<KeyValuePair> headers,
+    List<String> autoHeaderKeys,
   ) {
     final theme = Theme.of(context);
 
-    // 将 headers 分为用户添加的和自动添加的
+    // 将 headers 分为用户添加的和自动添加的（按构建时记录的来源，而非 key 名猜测）
+    final autoKeySet = autoHeaderKeys.map((k) => k.toLowerCase()).toSet();
     final userHeaders = <KeyValuePair>[];
     final autoHeaders = <KeyValuePair>[];
 
     for (final header in headers) {
-      if (_isAutoHeader(header.key)) {
+      if (autoKeySet.contains(header.key.toLowerCase())) {
         autoHeaders.add(header);
       } else {
         userHeaders.add(header);
@@ -1110,17 +1134,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     );
   }
 
-  /// 判断是否为自动添加的 header
-  bool _isAutoHeader(String key) {
-    final autoHeaders = {
-      'user-agent',
-      'accept-encoding',
-      'connection',
-      'host',
-    };
-    return autoHeaders.contains(key.toLowerCase());
-  }
-
   /// 构建单个 header 行
   Widget _buildRequestInfoHeaderRow(
     BuildContext context,
@@ -1138,14 +1151,17 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             width: 140,
             child: Row(
               children: [
-                Text(
-                  header.key,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: isAuto
-                        ? theme.colorScheme.outline
-                        : theme.colorScheme.primary,
+                Flexible(
+                  child: Text(
+                    header.key,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: isAuto
+                          ? theme.colorScheme.outline
+                          : theme.colorScheme.primary,
+                    ),
                   ),
                 ),
                 if (isAuto) ...[

@@ -21,6 +21,11 @@ void main() {
       // Stub storage methods
       when(mockStorageService.getCollections()).thenAnswer((_) async => []);
       when(mockStorageService.getRequests()).thenAnswer((_) async => []);
+      // URL 栏未定义变量警告会读取环境变量相关 provider
+      when(mockStorageService.getEnvironments()).thenAnswer((_) async => []);
+      when(mockStorageService.getActiveEnvironmentId())
+          .thenAnswer((_) async => null);
+      when(mockStorageService.getGlobalVariables()).thenAnswer((_) async => []);
     });
 
     Widget buildTestWidget({

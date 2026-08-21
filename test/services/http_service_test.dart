@@ -838,5 +838,105 @@ void main() {
         expect(options.method, equals('DELETE'));
       });
     });
+
+    group('requestInfo auto header classification (UI-04)', () {
+      HttpRequest buildRequestWithHeaders() {
+        return HttpRequest.empty().copyWith(
+          method: HttpMethod.get,
+          url: 'http://api.example.com/users',
+          headers: [
+            KeyValuePair(id: 'h1', key: 'Accept', value: 'application/json'),
+            KeyValuePair(id: 'h2', key: 'Host', value: 'custom.internal'),
+            KeyValuePair(id: 'h3', key: 'X-Api-Key', value: 'abc'),
+          ],
+        );
+      }
+
+      void stubDioSuccess(Map<String, String> dioAutoHeaders) {
+        when(mockDio.request<Uint8List>(
+          any,
+          data: anyNamed('data'),
+          options: anyNamed('options'),
+          cancelToken: anyNamed('cancelToken'),
+          onSendProgress: anyNamed('onSendProgress'),
+          onReceiveProgress: anyNamed('onReceiveProgress'),
+        )).thenAnswer((_) async => Response<Uint8List>(
+              data: Uint8List.fromList(utf8.encode('{"ok": true}')),
+              statusCode: 200,
+              requestOptions: RequestOptions(
+                path: 'http://api.example.com/users',
+                headers: dioAutoHeaders,
+              ),
+              headers: Headers.fromMap({
+                'content-type': ['application/json'],
+              }),
+            ));
+      }
+
+      test('manually added headers with auto-like names are not marked auto',
+          () async {
+        // 用户手填了 Accept / Host（与常见自动 header 同名）
+        final request = buildRequestWithHeaders();
+        stubDioSuccess({'content-length': '12'});
+
+        final response = await httpService.sendRequest(request);
+
+        final requestInfo = response.requestInfo!;
+        // 手填的 accept/host/x-api-key 都不在 auto 集合中
+        expect(requestInfo.autoHeaderKeys, isNot(contains('accept')));
+        expect(requestInfo.autoHeaderKeys, isNot(contains('host')));
+        expect(requestInfo.autoHeaderKeys, isNot(contains('x-api-key')));
+        // Dio 注入的 content-length 与默认 user-agent 标记为 auto
+        expect(requestInfo.autoHeaderKeys, contains('content-length'));
+        expect(requestInfo.autoHeaderKeys, contains('user-agent'));
+      });
+
+      test('user-set Accept prevents default accept injection', () async {
+        final request = buildRequestWithHeaders();
+        stubDioSuccess({});
+
+        final response = await httpService.sendRequest(request);
+
+        final acceptHeaders = response.requestInfo!.headers
+            .where((h) => h.key.toLowerCase() == 'accept')
+            .toList();
+        // 只保留用户设置的 Accept，不再追加默认 */*
+        expect(acceptHeaders.length, 1);
+        expect(acceptHeaders.single.value, 'application/json');
+        expect(response.requestInfo!.autoHeaderKeys, isNot(contains('accept')));
+      });
+
+      test('headers list keeps user headers before auto headers', () async {
+        final request = buildRequestWithHeaders();
+        stubDioSuccess({'content-length': '12'});
+
+        final response = await httpService.sendRequest(request);
+
+        final keys = response.requestInfo!.headers
+            .map((h) => h.key.toLowerCase())
+            .toList();
+        final lastUserIndex = keys.lastIndexOf('x-api-key');
+        final firstAutoIndex =
+            keys.indexWhere((k) => k == 'content-length' || k == 'user-agent');
+        expect(firstAutoIndex, greaterThan(lastUserIndex));
+      });
+
+      test('auto keys are empty when no headers are auto-added', () async {
+        // 用户覆盖了所有默认 header，Dio 也未注入新 header
+        final request = HttpRequest.empty().copyWith(
+          method: HttpMethod.get,
+          url: 'http://api.example.com/users',
+          headers: [
+            KeyValuePair(id: 'h1', key: 'user-agent', value: 'Hopp-Test/1.0'),
+            KeyValuePair(id: 'h2', key: 'accept', value: 'text/plain'),
+          ],
+        );
+        stubDioSuccess({});
+
+        final response = await httpService.sendRequest(request);
+
+        expect(response.requestInfo!.autoHeaderKeys, isEmpty);
+      });
+    });
   });
 }

@@ -516,6 +516,82 @@ class HoppTestClient:
         print(f"✅ 截图已保存: {result.get('path')}")
         return result
 
+    def create_environment(self, name, variables=None):
+        """创建环境
+
+        Args:
+            name: 环境名称
+            variables: 变量列表，如 [{"key": "host", "value": "x", "type": "string", "enabled": True}]
+        """
+        print(f"🌍 创建环境: {name}")
+        result = self.send_command("create_environment", {
+            "name": name,
+            "variables": variables or [],
+        })
+        print(f"✅ 环境已创建: {result.get('id')} ({result.get('variable_count')} 个变量)")
+        return result
+
+    def delete_environment(self, environment_id):
+        """删除环境"""
+        print(f"🗑️  删除环境: {environment_id}")
+        return self.send_command("delete_environment", {"id": environment_id})
+
+    def get_environments(self):
+        """获取环境列表"""
+        result = self.send_command("get_environments")
+        print(f"🌍 环境列表: {result.get('count')} 个 (active: {result.get('active_id')})")
+        return result
+
+    def set_active_environment(self, environment_id=None, name=None):
+        """设置激活环境（按 ID 或名称；都不传则取消激活）"""
+        print(f"🌍 设置激活环境: id={environment_id}, name={name}")
+        return self.send_command("set_active_environment", {
+            "id": environment_id,
+            "name": name,
+        })
+
+    def get_active_environment(self):
+        """获取当前激活环境"""
+        result = self.send_command("get_active_environment")
+        if result.get('active'):
+            print(f"🌍 当前激活环境: {result.get('name')}")
+        else:
+            print("🌍 无激活环境")
+        return result
+
+    def set_global_variables(self, variables):
+        """设置全局变量"""
+        print(f"🌐 设置全局变量: {len(variables)} 个")
+        return self.send_command("set_global_variables", {"variables": variables})
+
+    def get_global_variables(self):
+        """获取全局变量"""
+        result = self.send_command("get_global_variables")
+        print(f"🌐 全局变量: {result.get('count')} 个")
+        return result
+
+    def resolve_text(self, text):
+        """解析文本中的 {{variable}}（验证变量替换引擎）"""
+        result = self.send_command("resolve_text", {"text": text})
+        print(f"🔤 解析: {result.get('input')} → {result.get('resolved')}")
+        return result
+
+    def get_resolved_request(self):
+        """获取活动请求应用变量替换后的结果（不实际发送）"""
+        result = self.send_command("get_resolved_request")
+        print(f"🔤 替换后 URL: {result.get('url')}")
+        return result
+
+    def trigger_environment_dialog(self):
+        """打开环境管理对话框"""
+        print("🌍 打开环境管理对话框...")
+        return self.send_command("trigger_environment_dialog")
+
+    def dismiss_dialog(self):
+        """关闭顶层对话框（Navigator.maybePop）"""
+        print("✖️  关闭顶层对话框...")
+        return self.send_command("dismiss_dialog")
+
     def get_collections(self):
         """获取所有集合"""
         print("📁 获取集合列表...")

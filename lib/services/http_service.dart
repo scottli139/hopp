@@ -165,6 +165,7 @@ class HttpService {
       }
 
       // 构建实际发送的请求信息
+      final requestInfoHeaders = _buildRequestInfoHeaders(headers, response);
       final requestInfo = HttpRequestInfo(
         method: request.method.value.toUpperCase(),
         baseUrl: request.url,
@@ -182,7 +183,8 @@ class HttpService {
                   enabled: true,
                 ))
             .toList(),
-        headers: _buildRequestInfoHeaders(headers, response),
+        headers: requestInfoHeaders.headers,
+        autoHeaderKeys: requestInfoHeaders.autoHeaderKeys.toList(),
         body: request.body.isNotEmpty ? request.body : null,
         bodyType: request.bodyType != 'none' ? request.bodyType : null,
         bodySize: body != null ? request.body.length : null,
@@ -321,19 +323,26 @@ class HttpService {
 
   /// 构建请求信息中的 headers 列表
   /// 合并用户设置的 headers 和 Dio 自动添加的 headers
-  List<KeyValuePair> _buildRequestInfoHeaders(
+  ///
+  /// 按来源区分用户/自动 header（而非按 key 名猜测）：
+  /// 返回的 [autoHeaderKeys] 记录自动添加的 header keys（小写），
+  /// 用户手填的同名 header 不会被误标。
+  ({List<KeyValuePair> headers, Set<String> autoHeaderKeys})
+      _buildRequestInfoHeaders(
     Map<String, dynamic>? userHeaders,
     Response<Uint8List> response,
   ) {
-    final result = <KeyValuePair>[];
+    final userResult = <KeyValuePair>[];
+    final autoResult = <KeyValuePair>[];
+    final autoKeys = <String>{};
     final seenKeys = <String>{};
 
-    // 首先添加用户设置的 headers
+    // 首先添加用户设置的 headers（来源：用户）
     if (userHeaders != null) {
       for (final entry in userHeaders.entries) {
         final key = entry.key;
         final value = entry.value?.toString() ?? '';
-        result.add(KeyValuePair(
+        userResult.add(KeyValuePair(
           id: key.toLowerCase(),
           key: key,
           value: value,
@@ -343,7 +352,7 @@ class HttpService {
       }
     }
 
-    // 从响应的 requestOptions 中获取实际发送的 headers
+    // 从响应的 requestOptions 中获取实际发送的 headers（来源：HTTP 客户端）
     // Dio 会自动添加一些 headers，如 content-length 等
     final requestOptions = response.requestOptions;
     final allHeaders = requestOptions.headers;
@@ -356,17 +365,18 @@ class HttpService {
       // 如果已经添加过用户设置的值，则跳过
       if (seenKeys.contains(keyLower)) continue;
 
-      result.add(KeyValuePair(
+      autoResult.add(KeyValuePair(
         id: keyLower,
         key: key,
         value: value,
         enabled: true,
       ));
       seenKeys.add(keyLower);
+      autoKeys.add(keyLower);
     }
 
     // Dio 底层会自动添加一些 headers，但它们可能不在 requestOptions.headers 中
-    // 这里手动添加一些常见的默认 headers
+    // 这里手动添加一些常见的默认 headers（来源：HTTP 客户端）
     final defaultHeaders = {
       'user-agent': 'Dio/5.x',
       'accept': '*/*',
@@ -375,40 +385,27 @@ class HttpService {
     for (final entry in defaultHeaders.entries) {
       final keyLower = entry.key.toLowerCase();
       if (!seenKeys.contains(keyLower)) {
-        result.add(KeyValuePair(
+        autoResult.add(KeyValuePair(
           id: keyLower,
           key: entry.key,
           value: entry.value,
           enabled: true,
         ));
         seenKeys.add(keyLower);
+        autoKeys.add(keyLower);
       }
     }
 
-    // 排序：先按是否为自动添加排序（用户添加的在前），再按名称排序
-    result.sort((a, b) {
-      final aIsAuto = _isAutoHeader(a.key);
-      final bIsAuto = _isAutoHeader(b.key);
-      if (aIsAuto != bIsAuto) {
-        return aIsAuto ? 1 : -1; // 用户添加的在前
-      }
-      return a.key.toLowerCase().compareTo(b.key.toLowerCase());
-    });
+    // 排序：用户添加的在前，各自按名称排序
+    int byKey(KeyValuePair a, KeyValuePair b) =>
+        a.key.toLowerCase().compareTo(b.key.toLowerCase());
+    userResult.sort(byKey);
+    autoResult.sort(byKey);
 
-    return result;
-  }
-
-  /// 判断是否为 Dio/HTTP 客户端自动添加的 header
-  bool _isAutoHeader(String key) {
-    final autoHeaders = {
-      'user-agent',
-      'accept-encoding',
-      'connection',
-      'host',
-      'accept',
-      'content-length',
-    };
-    return autoHeaders.contains(key.toLowerCase());
+    return (
+      headers: [...userResult, ...autoResult],
+      autoHeaderKeys: autoKeys,
+    );
   }
 
   dynamic _prepareBody(String body, String bodyType) {

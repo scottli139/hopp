@@ -39,6 +39,12 @@ class HttpRequestInfo with _$HttpRequestInfo {
     /// 实际发送的请求头（包括自动添加的）
     @Default([]) List<KeyValuePair> headers,
 
+    /// 由 HTTP 客户端自动添加的 header keys（小写）
+    ///
+    /// 在构建请求信息时按来源记录：用户手动填写的 header 不在此列，
+    /// 即使 key 与常见自动 header 同名（如自定义 Host）也不会被误标。
+    @Default([]) List<String> autoHeaderKeys,
+
     /// 请求体内容
     String? body,
 

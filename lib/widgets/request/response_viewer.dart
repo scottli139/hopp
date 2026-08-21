@@ -18,6 +18,7 @@ import '../../utils/testing/ui_test_mode.dart';
 
 import '../common/app_badge.dart';
 import '../common/app_divider.dart';
+import '../common/app_tabs.dart';
 import '../common/optimized_response_viewer.dart';
 
 // 全局 ScrollController 用于 UI 测试控制滚动
@@ -193,34 +194,18 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           // Response info bar
           _buildInfoBar(context, response),
           // Tabs
-          Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              border: Border(
-                bottom: BorderSide(color: theme.dividerColor),
-              ),
+          if (_tabController != null)
+            AnimatedBuilder(
+              animation: _tabController!,
+              builder: (context, child) {
+                return AppTabs(
+                  tabs: _buildTabItems(response),
+                  selectedIndex: _tabController!.index
+                      .clamp(0, _tabController!.length - 1),
+                  onChanged: (index) => _tabController!.animateTo(index),
+                );
+              },
             ),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              dividerColor: Colors.transparent,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicatorWeight: 2,
-              indicatorColor: AppColors.brand,
-              labelStyle: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-              labelColor: AppColors.brand,
-              unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-              tabs: _buildTabs(context, response),
-            ),
-          ),
           // Tab content
           Expanded(
             child: TabBarView(
@@ -1537,138 +1522,29 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   /// 构建 Tab 列表
-  List<Widget> _buildTabs(BuildContext context, HttpResponse? response) {
-    const tabFontSize = 10.0;
-    const tabHeight = 28.0;
-    final theme = Theme.of(context);
-
-    final tabs = <Widget>[
-      // Request Tab - always first
-      Tab(
-        height: tabHeight,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.upload_outlined,
-              size: 10,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-            ),
-            const SizedBox(width: 3),
-            const Text(
-              'Request',
-              style: TextStyle(fontSize: tabFontSize),
-            ),
-          ],
-        ),
-      ),
-      Tab(
-        height: tabHeight,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.code,
-              size: 10,
-              color: AppColors.brand.withValues(alpha: 0.8),
-            ),
-            const SizedBox(width: 3),
-            const Text(
-              'Body',
-              style: TextStyle(fontSize: tabFontSize),
-            ),
-          ],
-        ),
-      ),
-      Tab(
-        height: tabHeight,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.list,
-              size: 10,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-            ),
-            const SizedBox(width: 3),
-            const Text(
-              'Headers',
-              style: TextStyle(fontSize: tabFontSize),
-            ),
-          ],
-        ),
-      ),
-      Tab(
-        height: tabHeight,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.cookie_outlined,
-              size: 10,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-            ),
-            const SizedBox(width: 3),
-            const Text(
-              'Cookies',
-              style: TextStyle(fontSize: tabFontSize),
-            ),
-          ],
-        ),
-      ),
+  List<AppTabItem> _buildTabItems(HttpResponse? response) {
+    final items = <AppTabItem>[
+      const AppTabItem(icon: Icons.upload_outlined, label: 'Request'),
+      const AppTabItem(icon: Icons.code, label: 'Body'),
+      const AppTabItem(icon: Icons.list, label: 'Headers'),
+      const AppTabItem(icon: Icons.cookie_outlined, label: 'Cookies'),
     ];
 
     // Timing Tab
     if (response?.timingInfo != null) {
       final timing = response!.timingInfo!;
-      tabs.add(
-        Tab(
-          height: tabHeight,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.timer,
-                size: 10,
-                color: AppColors.info,
-              ),
-              const SizedBox(width: 3),
-              Text(
-                'Time: ${timing.totalMs}ms',
-                style: const TextStyle(fontSize: tabFontSize),
-              ),
-            ],
-          ),
-        ),
+      items.add(
+        AppTabItem(icon: Icons.timer, label: 'Time: ${timing.totalMs}ms'),
       );
     }
 
     // Certificate Tab
     if (response?.certificateInfo != null) {
-      tabs.add(
-        Tab(
-          height: tabHeight,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.verified_user,
-                size: 10,
-                color: response!.certificateInfo!.isValid
-                    ? AppColors.success
-                    : AppColors.warning,
-              ),
-              const SizedBox(width: 3),
-              const Text(
-                'Certificate',
-                style: TextStyle(fontSize: tabFontSize),
-              ),
-            ],
-          ),
-        ),
+      items.add(
+        const AppTabItem(icon: Icons.verified_user, label: 'Certificate'),
       );
     }
-    return tabs;
+    return items;
   }
 
   /// 构建 Tab 内容列表

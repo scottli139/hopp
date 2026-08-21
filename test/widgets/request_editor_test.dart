@@ -7,6 +7,7 @@ import 'package:hopp/models/http_request.dart';
 import 'package:hopp/models/key_value_pair.dart';
 import 'package:hopp/models/request_tab.dart';
 import 'package:hopp/providers/providers.dart';
+import 'package:hopp/widgets/common/app_controls.dart';
 import 'package:hopp/widgets/request/request_editor.dart';
 import 'package:mockito/mockito.dart';
 
@@ -270,7 +271,7 @@ void main() {
 
         // Find checkboxes
         final checkboxes =
-            tester.widgetList<Checkbox>(find.byType(Checkbox)).toList();
+            tester.widgetList<AppCheckbox>(find.byType(AppCheckbox)).toList();
         expect(checkboxes.length, greaterThanOrEqualTo(2));
         expect(checkboxes[0].value, true);
         expect(checkboxes[1].value, false);

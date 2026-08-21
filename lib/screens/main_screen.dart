@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 
 import '../utils/testing/ui_test_mode.dart';
-import '../utils/constants.dart';
 
 import '../providers/providers.dart';
+import '../widgets/common/app_button.dart';
 import '../widgets/layout/sidebar.dart';
 import '../widgets/layout/request_tabs.dart';
 import '../widgets/request/request_editor.dart';
@@ -147,22 +147,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ),
           const SizedBox(height: 24),
           // Create Request button
-          FilledButton.icon(
+          AppButton.primary(
             onPressed: () => _createNewRequest(),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Create Request'),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.spaceXL,
-                vertical: AppConstants.spaceM,
-              ),
-              minimumSize: const Size(0, AppConstants.buttonHeightL),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.radiusM),
-              ),
-            ),
+            icon: Icons.add,
+            label: 'Create Request',
           ),
           const SizedBox(height: 12),
           // Keyboard shortcut hint

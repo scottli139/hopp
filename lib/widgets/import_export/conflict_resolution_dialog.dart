@@ -6,7 +6,11 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../services/import_export/import_export_exception.dart';
-import '../../../utils/constants.dart';
+import '../../../theme/app_metrics.dart';
+import '../../../theme/app_text_styles.dart';
+import '../../../theme/app_theme_data.dart';
+import '../common/app_button.dart';
+import '../common/app_dialog.dart';
 
 /// Show conflict resolution dialog
 Future<ConflictResolution?> showConflictResolutionDialog(
@@ -41,157 +45,119 @@ class _ConflictResolutionDialogState extends State<ConflictResolutionDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final t = context.appTheme;
 
-    return AlertDialog(
-      title: Row(
+    return AppDialog(
+      title: 'Duplicate Collection Name',
+      width: 440,
+      actions: [
+        AppButton.ghost(
+          label: 'Skip',
+          onPressed: () => Navigator.of(context).pop(ConflictResolution.skip),
+        ),
+        AppButton.primary(
+          label: 'Confirm',
+          onPressed: () => Navigator.of(context).pop(_selectedResolution),
+        ),
+      ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.warning_amber, color: theme.colorScheme.warning, size: 20),
-          const SizedBox(width: 8),
           Text(
-            'Duplicate Collection Name',
-            style: AppTextStyles.title.copyWith(
-              color: theme.colorScheme.onSurface,
+            '"${widget.collectionName}" already exists. Please choose how to handle this:',
+            style: AppTextStyles.body13.copyWith(color: t.textPrimary),
+          ),
+          const SizedBox(height: AppMetrics.space16),
+          RadioListTile<ConflictResolution>(
+            title: Text(
+              'Rename Import',
+              style: AppTextStyles.body13.copyWith(color: t.textPrimary),
             ),
+            subtitle: Text(
+              'Rename imported collection to "${widget.collectionName} (1)"',
+              style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
+            ),
+            value: ConflictResolution.rename,
+            groupValue: _selectedResolution,
+            onChanged: (value) {
+              setState(() {
+                _selectedResolution = value!;
+              });
+            },
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          ),
+          RadioListTile<ConflictResolution>(
+            title: Text(
+              'Overwrite Existing',
+              style: AppTextStyles.body13.copyWith(color: t.textPrimary),
+            ),
+            subtitle: Text(
+              'Replace existing collection with imported content',
+              style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
+            ),
+            value: ConflictResolution.overwrite,
+            groupValue: _selectedResolution,
+            onChanged: (value) {
+              setState(() {
+                _selectedResolution = value!;
+              });
+            },
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          ),
+          RadioListTile<ConflictResolution>(
+            title: Text(
+              'Merge Collections',
+              style: AppTextStyles.body13.copyWith(color: t.textPrimary),
+            ),
+            subtitle: Text(
+              'Keep existing requests and add new ones',
+              style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
+            ),
+            value: ConflictResolution.merge,
+            groupValue: _selectedResolution,
+            onChanged: (value) {
+              setState(() {
+                _selectedResolution = value!;
+              });
+            },
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          ),
+          RadioListTile<ConflictResolution>(
+            title: Text(
+              'Skip This Collection',
+              style: AppTextStyles.body13.copyWith(color: t.textPrimary),
+            ),
+            value: ConflictResolution.skip,
+            groupValue: _selectedResolution,
+            onChanged: (value) {
+              setState(() {
+                _selectedResolution = value!;
+              });
+            },
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          ),
+          const SizedBox(height: AppMetrics.space8),
+          CheckboxListTile(
+            title: Text(
+              'Apply to all conflicts',
+              style: AppTextStyles.body13.copyWith(color: t.textPrimary),
+            ),
+            value: _applyToAll,
+            onChanged: (value) {
+              setState(() {
+                _applyToAll = value ?? false;
+              });
+            },
+            contentPadding: EdgeInsets.zero,
+            dense: true,
           ),
         ],
       ),
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '"${widget.collectionName}" already exists. Please choose how to handle this:',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 16),
-            RadioListTile<ConflictResolution>(
-              title: Text(
-                'Rename Import',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              subtitle: Text(
-                'Rename imported collection to "${widget.collectionName} (1)"',
-                style: AppTextStyles.tiny.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              value: ConflictResolution.rename,
-              groupValue: _selectedResolution,
-              onChanged: (value) {
-                setState(() {
-                  _selectedResolution = value!;
-                });
-              },
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-            ),
-            RadioListTile<ConflictResolution>(
-              title: Text(
-                'Overwrite Existing',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              subtitle: Text(
-                'Replace existing collection with imported content',
-                style: AppTextStyles.tiny.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              value: ConflictResolution.overwrite,
-              groupValue: _selectedResolution,
-              onChanged: (value) {
-                setState(() {
-                  _selectedResolution = value!;
-                });
-              },
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-            ),
-            RadioListTile<ConflictResolution>(
-              title: Text(
-                'Merge Collections',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              subtitle: Text(
-                'Keep existing requests and add new ones',
-                style: AppTextStyles.tiny.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              value: ConflictResolution.merge,
-              groupValue: _selectedResolution,
-              onChanged: (value) {
-                setState(() {
-                  _selectedResolution = value!;
-                });
-              },
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-            ),
-            RadioListTile<ConflictResolution>(
-              title: Text(
-                'Skip This Collection',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              value: ConflictResolution.skip,
-              groupValue: _selectedResolution,
-              onChanged: (value) {
-                setState(() {
-                  _selectedResolution = value!;
-                });
-              },
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-            ),
-            const SizedBox(height: 8),
-            CheckboxListTile(
-              title: Text(
-                'Apply to all conflicts',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              value: _applyToAll,
-              onChanged: (value) {
-                setState(() {
-                  _applyToAll = value ?? false;
-                });
-              },
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(ConflictResolution.skip),
-          style: AppComponentStyles.ghostButton(context),
-          child: const Text('Skip'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(_selectedResolution),
-          style: AppComponentStyles.primaryButton(context),
-          child: const Text('Confirm'),
-        ),
-      ],
     );
   }
-}
-
-/// Theme color extension
-extension ConflictThemeExtension on ColorScheme {
-  Color get warning => const Color(0xFFF59E0B);
 }

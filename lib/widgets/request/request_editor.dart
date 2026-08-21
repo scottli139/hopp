@@ -9,10 +9,14 @@ import '../../models/key_value_pair.dart';
 import '../../providers/providers.dart';
 import '../../utils/app_logger.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_theme_data.dart';
 import '../../utils/constants.dart' hide AppColors;
 import '../../utils/testing/ui_test_mode.dart';
 import '../../utils/url_params_sync.dart';
+import '../common/app_button.dart';
+import '../common/app_controls.dart';
 import '../common/app_popup_menu.dart';
+import '../common/app_tabs.dart';
 import '../common/code_editor.dart';
 
 class RequestEditor extends ConsumerStatefulWidget {
@@ -375,17 +379,10 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           // 未定义变量警告（存在 {{var}} 无法解析时显示）
           ..._buildUnresolvedWarning(context, ref),
           // Save button - always clickable
-          SizedBox(
-            height: 36,
-            width: 36,
-            child: _buildSaveButton(context, ref, request),
-          ),
+          _buildSaveButton(context, ref, request),
           const SizedBox(width: AppConstants.spaceS),
           // Send button
-          SizedBox(
-            height: 36,
-            child: _buildSendButton(context, ref, request),
-          ),
+          _buildSendButton(context, ref, request),
         ],
       ),
     );
@@ -442,39 +439,10 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     WidgetRef ref,
     HttpRequest request,
   ) {
-    return Material(
-      color: AppColors.brand,
-      borderRadius: BorderRadius.circular(AppConstants.radiusM),
-      elevation: 2,
-      shadowColor: AppColors.brand.withValues(alpha: 0.4),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppConstants.radiusM),
-        onTap: () => _sendRequest(ref, request),
-        child: Container(
-          height: 36,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.send,
-                size: 16,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Send',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return AppButton.primary(
+      label: 'Send',
+      icon: Icons.send,
+      onPressed: () => _sendRequest(ref, request),
     );
   }
 
@@ -484,45 +452,22 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     WidgetRef ref,
     HttpRequest request,
   ) {
-    final theme = Theme.of(context);
     final isDirty = ref.watch(activeTabProvider)?.isDirty ?? false;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
+    return AppIconButton(
+      icon: Icons.save,
+      tooltip: 'Save',
+      bordered: true,
+      color: isDirty ? context.appTheme.brand : null,
+      onPressed: () {
         AppLogger.info('[RequestEditor] Save button tapped, isDirty: $isDirty');
         _handleSaveButtonPress(ref, request);
       },
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: isDirty
-              ? AppColors.brand.withValues(alpha: 0.1)
-              : theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppConstants.radiusM),
-          border: Border.all(
-            color: isDirty
-                ? AppColors.brand.withValues(alpha: 0.3)
-                : theme.colorScheme.outlineVariant,
-          ),
-        ),
-        child: Center(
-          child: Icon(
-            Icons.save,
-            size: 18,
-            color: isDirty ? AppColors.brand : theme.colorScheme.outline,
-          ),
-        ),
-      ),
     );
   }
 
-  /// 构建自定义 Tab 栏（参考 Postman 样式）
+  /// 构建自定义 Tab 栏（AppTabs 统一组件）
   Widget _buildCustomTabs(BuildContext context, HttpRequest request) {
-    final theme = Theme.of(context);
-    const tabHeight = 32.0;
-
     // 计算 enabled 且非空的 params 和 headers 数量
     final paramsCount =
         request.params.where((p) => p.enabled && p.key.isNotEmpty).length;
@@ -531,155 +476,33 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     final hasBodyContent =
         request.body.isNotEmpty && request.bodyType != 'none';
 
-    return Container(
-      height: tabHeight,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(color: theme.dividerColor),
-        ),
-      ),
-      child: AnimatedBuilder(
-        animation: _tabController,
-        builder: (context, child) {
-          return Row(
-            children: [
-              // Params Tab
-              _buildTabItem(
-                context: context,
-                icon: Icons.tune,
-                label: 'Params',
-                badge: paramsCount > 0 ? paramsCount.toString() : null,
-                isActive: _tabController.index == 0,
-                onTap: () => _tabController.animateTo(0),
-              ),
-              // Headers Tab
-              _buildTabItem(
-                context: context,
-                icon: Icons.http,
-                label: 'Headers',
-                badge: headersCount > 0 ? headersCount.toString() : null,
-                isActive: _tabController.index == 1,
-                onTap: () => _tabController.animateTo(1),
-              ),
-              // Body Tab (with dot indicator)
-              _buildTabItem(
-                context: context,
-                icon: Icons.code,
-                label: 'Body',
-                hasDot: hasBodyContent,
-                isActive: _tabController.index == 2,
-                onTap: () => _tabController.animateTo(2),
-              ),
-              // Auth Tab
-              _buildTabItem(
-                context: context,
-                icon: Icons.lock_outline,
-                label: 'Auth',
-                isActive: _tabController.index == 3,
-                onTap: () => _tabController.animateTo(3),
-              ),
-              // Settings Tab
-              _buildTabItem(
-                context: context,
-                icon: Icons.settings_outlined,
-                label: 'Settings',
-                isActive: _tabController.index == 4,
-                onTap: () => _tabController.animateTo(4),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  /// 构建单个 Tab 项
-  Widget _buildTabItem({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    String? badge,
-    bool hasDot = false,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: isActive ? AppColors.brand : Colors.transparent,
-                width: 2,
-              ),
+    return AnimatedBuilder(
+      animation: _tabController,
+      builder: (context, child) {
+        return AppTabs(
+          tabs: [
+            AppTabItem(
+              icon: Icons.tune,
+              label: 'Params',
+              count: paramsCount > 0 ? paramsCount : null,
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 12,
-                color: isActive
-                    ? AppColors.brand
-                    : theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                  color: isActive
-                      ? AppColors.brand
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              // Badge (count)
-              if (badge != null)
-                Container(
-                  margin: const EdgeInsets.only(left: 4),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? AppColors.brand.withValues(alpha: 0.15)
-                        : theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: Text(
-                    badge,
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                      color: isActive
-                          ? AppColors.brand
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              // Dot indicator (for Body tab)
-              if (hasDot)
-                Container(
-                  margin: const EdgeInsets.only(left: 4),
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: AppColors.success,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
+            AppTabItem(
+              icon: Icons.http,
+              label: 'Headers',
+              count: headersCount > 0 ? headersCount : null,
+            ),
+            AppTabItem(
+              icon: Icons.code,
+              label: 'Body',
+              dot: hasBodyContent,
+            ),
+            const AppTabItem(icon: Icons.lock_outline, label: 'Auth'),
+            const AppTabItem(icon: Icons.settings_outlined, label: 'Settings'),
+          ],
+          selectedIndex: _tabController.index,
+          onChanged: (index) => _tabController.animateTo(index),
+        );
+      },
     );
   }
 
@@ -927,15 +750,15 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           // Checkbox - 更紧凑
           SizedBox(
             width: 32,
-            child: Checkbox(
-              value: item.enabled,
-              onChanged: (value) {
-                final newItems = [...items];
-                newItems[index] = item.copyWith(enabled: value ?? true);
-                _updateRequest(ref, updateFn(newItems));
-              },
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
+            child: Center(
+              child: AppCheckbox(
+                value: item.enabled,
+                onChanged: (value) {
+                  final newItems = [...items];
+                  newItems[index] = item.copyWith(enabled: value);
+                  _updateRequest(ref, updateFn(newItems));
+                },
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -1069,20 +892,17 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           // Delete button
           SizedBox(
             width: 32,
-            child: IconButton(
-              icon: Icon(
-                Icons.delete_outline,
-                size: 16,
-                color: theme.colorScheme.outline,
+            child: Center(
+              child: AppIconButton(
+                icon: Icons.delete_outline,
+                tooltip: 'Delete',
+                onPressed: () {
+                  final newItems = [...items]..removeAt(index);
+                  _updateRequest(ref, updateFn(newItems));
+                  // 清理被删除行的 controller
+                  _cleanupControllers(newItems.length);
+                },
               ),
-              onPressed: () {
-                final newItems = [...items]..removeAt(index);
-                _updateRequest(ref, updateFn(newItems));
-                // 清理被删除行的 controller
-                _cleanupControllers(newItems.length);
-              },
-              tooltip: 'Delete',
-              splashRadius: 16,
             ),
           ),
         ],
@@ -1401,11 +1221,12 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             ),
           ),
           const SizedBox(height: 8),
-          ElevatedButton(
+          AppButton.secondary(
+            label: 'Choose File',
+            icon: Icons.upload_file,
             onPressed: () {
               // TODO: 打开文件选择器
             },
-            child: const Text('Choose File'),
           ),
         ],
       ),
@@ -1851,19 +1672,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Switch with custom size and colors (Small: 28x16px)
-            Transform.scale(
-              scale: 0.6, // Material Switch 默认约 40x24，缩小到 60% = 24x14
-              child: Switch(
-                value: value,
-                onChanged: onChanged,
-                activeColor: Colors.white,
-                activeTrackColor: AppColors.brand,
-                inactiveThumbColor: Colors.white,
-                inactiveTrackColor: theme.colorScheme.outlineVariant,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
+            AppSwitch(value: value, onChanged: onChanged),
             const SizedBox(width: 8),
             // Status text
             Text(

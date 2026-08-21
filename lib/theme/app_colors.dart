@@ -18,6 +18,15 @@ class AppColors {
   /// 品牌色 hover / pressed
   static const Color brandDark = Color(0xFF4F46E5);
 
+  /// 品牌色上的前景（文字 / 图标）
+  static const Color onBrand = Color(0xFFFFFFFF);
+
+  /// 纯透明（替代 Colors.transparent）
+  static const Color transparent = Color(0x00000000);
+
+  /// 纯黑（用于 pressed 叠加等半透明遮罩）
+  static const Color black = Color(0xFF000000);
+
   // ========== 语义色（亮暗通用；soft 背景色在 AppThemeData） ==========
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);

@@ -10,8 +10,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/import_export/import_export_provider.dart';
 import '../../../services/import_export/import_export_exception.dart';
 import '../../../services/import_export/postman_import_service.dart';
+import '../../../theme/app_metrics.dart';
+import '../../../theme/app_text_styles.dart';
+import '../../../theme/app_theme_data.dart';
 import '../../../utils/app_logger.dart';
-import '../../../utils/constants.dart';
+import '../common/app_button.dart';
+import '../common/app_dialog.dart';
 
 /// Show import dialog
 Future<void> showImportDialog(BuildContext context) async {
@@ -45,27 +49,15 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(importExportProvider);
-    final theme = Theme.of(context);
 
-    return AlertDialog(
-      title: Row(
-        children: [
-          Icon(Icons.download, color: theme.colorScheme.primary, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            'Import Postman Data',
-            style: AppTextStyles.title.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-        ],
-      ),
-      content: SizedBox(
-        width: 480,
+    return AppDialog(
+      title: 'Import Postman Data',
+      width: 520,
+      actions: _buildActions(state),
+      child: SizedBox(
         height: 320,
         child: _buildContent(state),
       ),
-      actions: _buildActions(state),
     );
   }
 
@@ -90,17 +82,16 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
   }
 
   Widget _buildLoading() {
+    final t = context.appTheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const CircularProgressIndicator(),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppMetrics.space16),
           Text(
             'Importing...',
-            style: AppTextStyles.body.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            style: AppTextStyles.body13.copyWith(color: t.textSecondary),
           ),
         ],
       ),
@@ -108,25 +99,24 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
   }
 
   Widget _buildError(String error) {
-    final theme = Theme.of(context);
+    final t = context.appTheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
-          const SizedBox(height: 16),
+          Icon(Icons.error_outline, size: 48, color: t.error),
+          const SizedBox(height: AppMetrics.space16),
           Text(
             'Import Failed',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: theme.colorScheme.onSurface,
+            style: AppTextStyles.body13.copyWith(
+              fontWeight: FontWeight.w500,
+              color: t.textPrimary,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppMetrics.space8),
           Text(
             error,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: theme.colorScheme.error,
-            ),
+            style: AppTextStyles.body13.copyWith(color: t.error),
             textAlign: TextAlign.center,
           ),
         ],
@@ -135,43 +125,38 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
   }
 
   Widget _buildSuccess(ImportResult result) {
-    final theme = Theme.of(context);
+    final t = context.appTheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.check_circle, size: 48, color: theme.colorScheme.primary),
-          const SizedBox(height: 16),
+          Icon(Icons.check_circle, size: 48, color: t.brand),
+          const SizedBox(height: AppMetrics.space16),
           Text(
             'Import Successful',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: theme.colorScheme.onSurface,
+            style: AppTextStyles.body13.copyWith(
+              fontWeight: FontWeight.w500,
+              color: t.textPrimary,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppMetrics.space8),
           if (result.renamed)
             Text(
               'Collection renamed to: ${result.newName}',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: AppTextStyles.body13.copyWith(color: t.textSecondary),
               textAlign: TextAlign.center,
             )
           else if (result.merged)
             Text(
               'Collection merged with existing collection',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: AppTextStyles.body13.copyWith(color: t.textSecondary),
               textAlign: TextAlign.center,
             )
           else
             Text(
               result.successMessage ??
                   'Successfully imported ${result.importedRequestCount} requests',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: AppTextStyles.body13.copyWith(color: t.textSecondary),
             ),
         ],
       ),
@@ -188,23 +173,18 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
   }
 
   Widget _buildDropZone() {
-    final theme = Theme.of(context);
+    final t = context.appTheme;
 
     return GestureDetector(
       onTap: _pickFile,
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color: _isDragging
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
+            color: _isDragging ? t.brand : t.border,
             width: _isDragging ? 2 : 1,
           ),
-          borderRadius: BorderRadius.circular(AppConstants.radiusL),
-          color: _isDragging
-              ? theme.colorScheme.primary.withValues(alpha: 0.05)
-              : theme.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.5),
+          borderRadius: AppMetrics.br8,
+          color: _isDragging ? t.brandSoft : t.surfaceVariant,
         ),
         child: Center(
           child: Column(
@@ -213,29 +193,25 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
               Icon(
                 Icons.cloud_upload,
                 size: 48,
-                color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                color: t.brand,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppMetrics.space16),
               Text(
                 'Click to select file or drag and drop here',
-                style: AppTextStyles.body.copyWith(
-                  color: theme.colorScheme.onSurface,
-                ),
+                style: AppTextStyles.body13.copyWith(color: t.textPrimary),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppMetrics.space8),
               Text(
                 'Supports Postman Collection v2.0/v2.1 and Environment',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                style: AppTextStyles.caption12.copyWith(color: t.textSecondary),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
+              const SizedBox(height: AppMetrics.space16),
+              AppButton.secondary(
+                label: 'Select File',
+                icon: Icons.folder_open,
+                size: AppButtonSize.small,
                 onPressed: _pickFile,
-                icon: const Icon(Icons.folder_open, size: 16),
-                label: const Text('Select File'),
-                style: AppComponentStyles.primaryButton(context),
               ),
             ],
           ),
@@ -248,10 +224,9 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
     // Success state - show Done button
     if (state.importResult != null && state.importResult!.success) {
       return [
-        FilledButton(
+        AppButton.primary(
+          label: 'Done',
           onPressed: () => Navigator.of(context).pop(),
-          style: AppComponentStyles.primaryButton(context),
-          child: const Text('Done'),
         ),
       ];
     }
@@ -259,17 +234,15 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
     // Error state - show Retry and Cancel
     if (state.error != null) {
       return [
-        TextButton(
+        AppButton.ghost(
+          label: 'Cancel',
           onPressed: () => Navigator.of(context).pop(),
-          style: AppComponentStyles.ghostButton(context),
-          child: const Text('Cancel'),
         ),
-        FilledButton(
+        AppButton.primary(
+          label: 'Retry',
           onPressed: () {
             ref.read(importExportProvider.notifier).reset();
           },
-          style: AppComponentStyles.primaryButton(context),
-          child: const Text('Retry'),
         ),
       ];
     }
@@ -277,10 +250,9 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
     // Conflict state - conflict dialog handles its own buttons
     if (state.conflict != null) {
       return [
-        TextButton(
+        AppButton.ghost(
+          label: 'Cancel',
           onPressed: () => Navigator.of(context).pop(),
-          style: AppComponentStyles.ghostButton(context),
-          child: const Text('Cancel'),
         ),
       ];
     }
@@ -288,20 +260,18 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
     // Loading state - only show Cancel
     if (state.isLoading) {
       return [
-        TextButton(
+        AppButton.ghost(
+          label: 'Cancel',
           onPressed: () => Navigator.of(context).pop(),
-          style: AppComponentStyles.ghostButton(context),
-          child: const Text('Cancel'),
         ),
       ];
     }
 
     // Default state
     return [
-      TextButton(
+      AppButton.ghost(
+        label: 'Cancel',
         onPressed: () => Navigator.of(context).pop(),
-        style: AppComponentStyles.ghostButton(context),
-        child: const Text('Cancel'),
       ),
     ];
   }
@@ -348,46 +318,40 @@ class _ConflictResolutionContentState extends State<ConflictResolutionContent> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final t = context.appTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(Icons.warning_amber,
-                color: theme.colorScheme.warning, size: 20),
-            const SizedBox(width: 8),
+            Icon(Icons.warning_amber, color: t.warning, size: 20),
+            const SizedBox(width: AppMetrics.space8),
             Expanded(
               child: Text(
                 '"${widget.collectionName}" Already Exists',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: theme.colorScheme.onSurface,
+                style: AppTextStyles.body13.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: t.textPrimary,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppMetrics.space8),
         Text(
           'Please choose how to handle this:',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          style: AppTextStyles.caption12.copyWith(color: t.textSecondary),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppMetrics.space16),
         RadioListTile<ConflictResolution>(
           title: Text(
             'Rename Import',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
+            style: AppTextStyles.body13.copyWith(color: t.textPrimary),
           ),
           subtitle: Text(
             'Rename imported collection to "Collection Name (1)"',
-            style: AppTextStyles.tiny.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
           ),
           value: ConflictResolution.rename,
           groupValue: _selectedResolution,
@@ -402,15 +366,11 @@ class _ConflictResolutionContentState extends State<ConflictResolutionContent> {
         RadioListTile<ConflictResolution>(
           title: Text(
             'Overwrite Existing',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
+            style: AppTextStyles.body13.copyWith(color: t.textPrimary),
           ),
           subtitle: Text(
             'Replace existing collection with imported content',
-            style: AppTextStyles.tiny.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
           ),
           value: ConflictResolution.overwrite,
           groupValue: _selectedResolution,
@@ -425,15 +385,11 @@ class _ConflictResolutionContentState extends State<ConflictResolutionContent> {
         RadioListTile<ConflictResolution>(
           title: Text(
             'Merge Collections',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
+            style: AppTextStyles.body13.copyWith(color: t.textPrimary),
           ),
           subtitle: Text(
             'Keep existing requests and add new ones',
-            style: AppTextStyles.tiny.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
           ),
           value: ConflictResolution.merge,
           groupValue: _selectedResolution,
@@ -448,15 +404,11 @@ class _ConflictResolutionContentState extends State<ConflictResolutionContent> {
         RadioListTile<ConflictResolution>(
           title: Text(
             'Skip',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
+            style: AppTextStyles.body13.copyWith(color: t.textPrimary),
           ),
           subtitle: Text(
             'Cancel import for this collection',
-            style: AppTextStyles.tiny.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
           ),
           value: ConflictResolution.skip,
           groupValue: _selectedResolution,
@@ -472,25 +424,18 @@ class _ConflictResolutionContentState extends State<ConflictResolutionContent> {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            TextButton(
+            AppButton.ghost(
+              label: 'Skip',
               onPressed: () => widget.onResolve(ConflictResolution.skip),
-              style: AppComponentStyles.ghostButton(context),
-              child: const Text('Skip'),
             ),
-            const SizedBox(width: 8),
-            FilledButton(
+            const SizedBox(width: AppMetrics.space8),
+            AppButton.primary(
+              label: 'Confirm',
               onPressed: () => widget.onResolve(_selectedResolution),
-              style: AppComponentStyles.primaryButton(context),
-              child: const Text('Confirm'),
             ),
           ],
         ),
       ],
     );
   }
-}
-
-/// Theme color extension
-extension ThemeColorExtension on ColorScheme {
-  Color get warning => const Color(0xFFF59E0B);
 }

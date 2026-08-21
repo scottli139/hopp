@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/providers.dart';
 import '../../utils/constants.dart';
+import '../common/app_button.dart';
 import '../common/app_popup_menu.dart';
 import 'environment_manager_dialog.dart';
 
@@ -109,17 +110,11 @@ class EnvironmentSwitcher extends ConsumerWidget {
               ),
             ),
           // 管理环境按钮
-          SizedBox(
-            width: 28,
-            height: 28,
-            child: IconButton(
-              key: const Key('manage_environments_button'),
-              icon: const Icon(Icons.tune, size: 16),
-              padding: EdgeInsets.zero,
-              tooltip: 'Manage Environments',
-              color: theme.colorScheme.outline,
-              onPressed: () => showEnvironmentManagerDialog(context),
-            ),
+          AppIconButton(
+            key: const Key('manage_environments_button'),
+            icon: Icons.tune,
+            tooltip: 'Manage Environments',
+            onPressed: () => showEnvironmentManagerDialog(context),
           ),
         ],
       ),

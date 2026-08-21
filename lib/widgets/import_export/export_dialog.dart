@@ -11,9 +11,12 @@ import '../../../models/collection.dart';
 import '../../../providers/collection/collection_provider.dart';
 import '../../../providers/import_export/import_export_provider.dart';
 import '../../../services/import_export/postman_schema.dart';
-import '../../../theme/app_text_styles.dart' as theme_text;
+import '../../../theme/app_metrics.dart';
+import '../../../theme/app_text_styles.dart';
+import '../../../theme/app_theme_data.dart';
 import '../../../utils/app_logger.dart';
-import '../../../utils/constants.dart';
+import '../common/app_button.dart';
+import '../common/app_dialog.dart';
 import '../common/app_popup_menu.dart';
 
 /// Show export dialog
@@ -62,33 +65,20 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
     return collectionsAsync.when(
       data: (collections) => _buildDialog(context, state, collections),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.error_outline,
-                color: Theme.of(context).colorScheme.error, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Export',
-              style: AppTextStyles.title.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'Unable to load collection list',
-          style: AppTextStyles.body.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
+      error: (_, __) => AppDialog(
+        title: 'Export',
         actions: [
-          TextButton(
+          AppButton.primary(
+            label: 'OK',
             onPressed: () => Navigator.of(context).pop(),
-            style: AppComponentStyles.ghostButton(context),
-            child: const Text('OK'),
           ),
         ],
+        child: Text(
+          'Unable to load collection list',
+          style: AppTextStyles.body13.copyWith(
+            color: context.appTheme.textSecondary,
+          ),
+        ),
       ),
     );
   }
@@ -98,246 +88,183 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
     ImportExportState state,
     List<Collection> collections,
   ) {
-    final theme = Theme.of(context);
+    final t = context.appTheme;
 
     if (state.isLoading) {
-      return AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.upload, color: theme.colorScheme.primary, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Exporting...',
-              style: AppTextStyles.title.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-        content: SizedBox(
+      return AppDialog(
+        title: 'Exporting...',
+        actions: [
+          AppButton.ghost(
+            label: 'Cancel',
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+        child: SizedBox(
           height: 100,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const CircularProgressIndicator(),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppMetrics.space16),
                 Text(
                   'Exporting collection...',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  style: AppTextStyles.body13.copyWith(color: t.textSecondary),
                 ),
               ],
             ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: AppComponentStyles.ghostButton(context),
-            child: const Text('Cancel'),
-          ),
-        ],
       );
     }
 
     if (state.exportPath != null) {
-      return AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.check_circle,
-                color: theme.colorScheme.primary, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Export Successful',
-              style: AppTextStyles.title.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
+      return AppDialog(
+        title: 'Export Successful',
+        width: 480,
+        actions: [
+          AppButton.primary(
+            label: 'Done',
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'File saved to:',
-              style: AppTextStyles.body.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
+              style: AppTextStyles.body13.copyWith(color: t.textPrimary),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppMetrics.space8),
             Container(
-              padding: const EdgeInsets.all(12),
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppMetrics.space12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppConstants.radiusM),
+                color: t.surfaceVariant,
+                borderRadius: AppMetrics.br6,
               ),
               child: SelectableText(
                 state.exportPath!,
-                style: theme_text.AppTextStyles.code12
-                    .copyWith(fontSize: 13, height: 1.38),
+                style: AppTextStyles.code12.copyWith(color: t.textPrimary),
               ),
             ),
           ],
         ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: AppComponentStyles.primaryButton(context),
-            child: const Text('Done'),
-          ),
-        ],
       );
     }
 
     if (state.error != null) {
-      return AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.error_outline, color: theme.colorScheme.error, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Export Failed',
-              style: AppTextStyles.title.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          state.error!,
-          style: AppTextStyles.body.copyWith(
-            color: theme.colorScheme.error,
-          ),
-        ),
+      return AppDialog(
+        title: 'Export Failed',
         actions: [
-          TextButton(
+          AppButton.primary(
+            label: 'OK',
             onPressed: () => Navigator.of(context).pop(),
-            style: AppComponentStyles.ghostButton(context),
-            child: const Text('OK'),
           ),
         ],
+        child: Text(
+          state.error!,
+          style: AppTextStyles.body13.copyWith(color: t.error),
+        ),
       );
     }
 
-    return AlertDialog(
-      title: Row(
+    return AppDialog(
+      title: 'Export Postman Collection',
+      width: 440,
+      actions: [
+        AppButton.ghost(
+          label: 'Cancel',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: 'Export',
+          onPressed: _selectedCollectionId == null ? null : _export,
+        ),
+      ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.upload, color: theme.colorScheme.primary, size: 20),
-          const SizedBox(width: 8),
+          // Collection selection
           Text(
-            'Export Postman Collection',
-            style: AppTextStyles.title.copyWith(
-              color: theme.colorScheme.onSurface,
+            'Select Collection',
+            style: AppTextStyles.tiny11.copyWith(
+              fontWeight: FontWeight.w600,
+              color: t.textSecondary,
             ),
+          ),
+          const SizedBox(height: AppMetrics.space4),
+          AppPopupSelect<String>(
+            value: _selectedCollectionId,
+            hint: 'Select Collection',
+            boxed: true,
+            fontSize: 13,
+            items: [
+              for (final collection in collections)
+                AppPopupSelectEntry(
+                  value: collection.id,
+                  label: collection.name,
+                ),
+            ],
+            onSelected: (value) {
+              setState(() {
+                _selectedCollectionId = value;
+              });
+            },
+          ),
+          const SizedBox(height: AppMetrics.space16),
+
+          // Format version
+          Text(
+            'Format Version',
+            style: AppTextStyles.tiny11.copyWith(
+              fontWeight: FontWeight.w600,
+              color: t.textSecondary,
+            ),
+          ),
+          const SizedBox(height: AppMetrics.space4),
+          AppPopupSelect<PostmanVersion>(
+            value: _version,
+            boxed: true,
+            fontSize: 13,
+            items: [
+              for (final version in PostmanVersion.values)
+                AppPopupSelectEntry(
+                  value: version,
+                  label: version.value,
+                ),
+            ],
+            onSelected: (value) {
+              setState(() {
+                _version = value;
+              });
+            },
+          ),
+          const SizedBox(height: AppMetrics.space16),
+
+          // Prettify output
+          CheckboxListTile(
+            title: Text(
+              'Prettify JSON Output',
+              style: AppTextStyles.body13.copyWith(color: t.textPrimary),
+            ),
+            subtitle: Text(
+              'Format with indentation for readability',
+              style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
+            ),
+            value: _prettyPrint,
+            onChanged: (value) {
+              setState(() {
+                _prettyPrint = value ?? true;
+              });
+            },
+            contentPadding: EdgeInsets.zero,
+            dense: true,
           ),
         ],
       ),
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Collection selection
-            Text(
-              'Select Collection',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 4),
-            AppPopupSelect<String>(
-              value: _selectedCollectionId,
-              hint: 'Select Collection',
-              boxed: true,
-              fontSize: 13,
-              items: [
-                for (final collection in collections)
-                  AppPopupSelectEntry(
-                    value: collection.id,
-                    label: collection.name,
-                  ),
-              ],
-              onSelected: (value) {
-                setState(() {
-                  _selectedCollectionId = value;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Format version
-            Text(
-              'Format Version',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 4),
-            AppPopupSelect<PostmanVersion>(
-              value: _version,
-              boxed: true,
-              fontSize: 13,
-              items: [
-                for (final version in PostmanVersion.values)
-                  AppPopupSelectEntry(
-                    value: version,
-                    label: version.value,
-                  ),
-              ],
-              onSelected: (value) {
-                setState(() {
-                  _version = value;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Prettify output
-            CheckboxListTile(
-              title: Text(
-                'Prettify JSON Output',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              subtitle: Text(
-                'Format with indentation for readability',
-                style: AppTextStyles.tiny.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              value: _prettyPrint,
-              onChanged: (value) {
-                setState(() {
-                  _prettyPrint = value ?? true;
-                });
-              },
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          style: AppComponentStyles.ghostButton(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _selectedCollectionId == null ? null : _export,
-          style: AppComponentStyles.primaryButton(context),
-          child: const Text('Export'),
-        ),
-      ],
     );
   }
 

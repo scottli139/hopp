@@ -7,16 +7,21 @@ import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../providers/providers.dart';
 import '../../screens/about/about_screen.dart';
-import '../../utils/app_logger.dart';
 import '../../theme/app_colors.dart';
-import '../../utils/constants.dart' hide AppColors;
+import '../../theme/app_text_styles.dart';
+import '../../theme/app_theme_data.dart';
+import '../../utils/app_logger.dart';
+import '../../utils/constants.dart' hide AppColors, AppTextStyles;
 import '../../utils/testing/ui_test_mode.dart';
 import '../../widgets/import/curl_import_dialog.dart';
 import '../../widgets/import_export/export_dialog.dart';
 import '../../widgets/import_export/import_dialog.dart';
 import '../common/app_badge.dart';
+import '../common/app_button.dart';
+import '../common/app_dialog.dart';
 import '../common/app_divider.dart';
 import '../common/app_popup_menu.dart';
+import '../common/app_text_field.dart';
 import '../environment/environment_manager_dialog.dart';
 import '../environment/environment_switcher.dart';
 
@@ -138,7 +143,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
                   error: (err, _) => Center(
                     child: Text(
                       'Error: $err',
-                      style: AppTextStyles.bodySmall.copyWith(
+                      style: AppTextStyles.body13.copyWith(
                         color: AppColors.error,
                       ),
                     ),
@@ -151,7 +156,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
               error: (err, _) => Center(
                 child: Text(
                   'Error: $err',
-                  style: AppTextStyles.bodySmall.copyWith(
+                  style: AppTextStyles.body13.copyWith(
                     color: AppColors.error,
                   ),
                 ),
@@ -184,36 +189,20 @@ class _SidebarState extends ConsumerState<Sidebar> {
 
   /// Build quick add button for creating new collection
   Widget _buildQuickAddButton(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(AppConstants.radiusS),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppConstants.radiusS),
-        onTap: () => _showNewCollectionDialog(context),
-        child: Container(
-          width: 28,
-          height: 28,
-          alignment: Alignment.center,
-          child: Icon(
-            Icons.add,
-            size: 18,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ),
+    return AppIconButton(
+      icon: Icons.add,
+      tooltip: 'New Collection',
+      iconSize: 18,
+      onPressed: () => _showNewCollectionDialog(context),
     );
   }
 
   Widget _buildSearch(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppConstants.spaceM),
-      child: TextField(
-        decoration: AppComponentStyles.outlineInputDecoration(
-          hintText: 'Filter...',
-        ),
-        style: AppTextStyles.bodySmall,
+    return const Padding(
+      padding: EdgeInsets.all(AppConstants.spaceM),
+      child: AppTextField(
+        compact: true,
+        hintText: 'Filter...',
       ),
     );
   }
@@ -346,28 +335,17 @@ class _SidebarState extends ConsumerState<Sidebar> {
           const SizedBox(height: AppConstants.spaceM),
           Text(
             'No collections yet',
-            style: AppTextStyles.body.copyWith(
+            style: AppTextStyles.body13.copyWith(
               color: theme.colorScheme.outline,
             ),
           ),
           const SizedBox(height: AppConstants.spaceL),
           // Create Collection button
-          FilledButton.icon(
+          AppButton.primary(
+            label: 'Create Collection',
+            icon: Icons.add,
+            size: AppButtonSize.small,
             onPressed: () => _showNewCollectionDialog(context),
-            icon: const Icon(Icons.add, size: 16),
-            label: const Text('Create Collection'),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.brand,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.spaceL,
-                vertical: AppConstants.spaceS,
-              ),
-              minimumSize: const Size(0, AppConstants.buttonHeightM),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.radiusM),
-              ),
-            ),
           ),
         ],
       ),
@@ -429,7 +407,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
                   Expanded(
                     child: Text(
                       collection.name,
-                      style: AppTextStyles.caption.copyWith(
+                      style: AppTextStyles.caption12.copyWith(
                         color: theme.colorScheme.onSurface,
                         fontWeight:
                             isExpanded ? FontWeight.w600 : FontWeight.w500,
@@ -624,22 +602,22 @@ class _SidebarState extends ConsumerState<Sidebar> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        InkWell(
-          onTap: () => _saveRequestName(context, request, setState),
-          child: Icon(
-            Icons.check,
-            size: 14,
-            color: AppColors.success,
-          ),
+        AppIconButton(
+          icon: Icons.check,
+          tooltip: 'Save',
+          color: AppColors.success,
+          size: 20,
+          iconSize: 14,
+          onPressed: () => _saveRequestName(context, request, setState),
         ),
         const SizedBox(width: 4),
-        InkWell(
-          onTap: () => _cancelEdit(setState),
-          child: Icon(
-            Icons.close,
-            size: 14,
-            color: AppColors.error,
-          ),
+        AppIconButton(
+          icon: Icons.close,
+          tooltip: 'Cancel',
+          color: AppColors.error,
+          size: 20,
+          iconSize: 14,
+          onPressed: () => _cancelEdit(setState),
         ),
       ],
     );
@@ -809,31 +787,29 @@ class _SidebarState extends ConsumerState<Sidebar> {
     BuildContext context,
     HttpRequest request,
   ) {
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Request'),
-        content: Text(
-          'Are you sure you want to delete "${request.name}"? This action cannot be undone.',
+      title: 'Delete Request',
+      child: Text(
+        'Are you sure you want to delete "${request.name}"? This action cannot be undone.',
+        style: AppTextStyles.body13.copyWith(
+          color: context.appTheme.textSecondary,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
-            ),
-            onPressed: () {
-              // 删除请求
-              _deleteRequest(request);
-              Navigator.pop(context);
-            },
-            child: const Text('Delete'),
-          ),
-        ],
       ),
+      actions: [
+        AppButton.ghost(
+          label: 'Cancel',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppButton.danger(
+          label: 'Delete',
+          onPressed: () {
+            // 删除请求
+            _deleteRequest(request);
+            Navigator.pop(context);
+          },
+        ),
+      ],
     );
   }
 
@@ -980,8 +956,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
 
   /// 规范样式的命名输入对话框（New Collection / New Folder 共用）
   ///
-  /// 遵循 UI_UX_GUIDELINES：标题 AppTextStyles.title、输入框 36px 高、
-  /// Cancel 用 ghostButton、主按钮用 primaryButton、按钮文字 caption。
+  /// 统一组件：AppDialog + AppTextField；Cancel 用 AppButton.ghost，
+  /// Create 用 AppButton.primary。
   void _showNameInputDialog(
     BuildContext context, {
     required String title,
@@ -989,7 +965,6 @@ class _SidebarState extends ConsumerState<Sidebar> {
     required void Function(String name) onCreate,
   }) {
     final controller = TextEditingController();
-    final theme = Theme.of(context);
 
     void submit() {
       if (controller.text.isNotEmpty) {
@@ -998,45 +973,25 @@ class _SidebarState extends ConsumerState<Sidebar> {
       }
     }
 
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          title,
-          style: AppTextStyles.title.copyWith(
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: SizedBox(
-            height: AppConstants.buttonHeightM,
-            child: TextField(
-              controller: controller,
-              autofocus: true,
-              style: AppTextStyles.body.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-              decoration: AppComponentStyles.outlineInputDecoration(
-                hintText: hintText,
-              ),
-              onSubmitted: (_) => submit(),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: AppComponentStyles.ghostButton(context),
-            child: const Text('Cancel', style: AppTextStyles.caption),
-          ),
-          FilledButton(
-            style: AppComponentStyles.primaryButton(context),
-            onPressed: submit,
-            child: const Text('Create', style: AppTextStyles.caption),
-          ),
-        ],
+      title: title,
+      child: AppTextField(
+        controller: controller,
+        autofocus: true,
+        hintText: hintText,
+        onSubmitted: (_) => submit(),
       ),
+      actions: [
+        AppButton.ghost(
+          label: 'Cancel',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppButton.primary(
+          label: 'Create',
+          onPressed: submit,
+        ),
+      ],
     );
   }
 
@@ -1044,57 +999,30 @@ class _SidebarState extends ConsumerState<Sidebar> {
     BuildContext context,
     Collection collection,
   ) {
-    final theme = Theme.of(context);
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.delete_outline, color: AppColors.error, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Delete Collection',
-              style: AppTextStyles.title.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ],
+      title: 'Delete Collection',
+      child: Text(
+        'Are you sure you want to delete "${collection.name}"? This action cannot be undone.',
+        style: AppTextStyles.body13.copyWith(
+          color: context.appTheme.textSecondary,
         ),
-        content: Text(
-          'Are you sure you want to delete "${collection.name}"? This action cannot be undone.',
-          style: AppTextStyles.body.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: AppComponentStyles.ghostButton(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.radiusM),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.spaceL,
-                vertical: 10,
-              ),
-              minimumSize: const Size(0, AppConstants.buttonHeightM),
-            ),
-            onPressed: () {
-              ref.read(collectionProvider.notifier).deleteCollection(
-                    collection.id,
-                  );
-              Navigator.pop(context);
-            },
-            child: const Text('Delete'),
-          ),
-        ],
       ),
+      actions: [
+        AppButton.ghost(
+          label: 'Cancel',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppButton.danger(
+          label: 'Delete',
+          onPressed: () {
+            ref.read(collectionProvider.notifier).deleteCollection(
+                  collection.id,
+                );
+            Navigator.pop(context);
+          },
+        ),
+      ],
     );
   }
 
@@ -1205,132 +1133,127 @@ class _SidebarState extends ConsumerState<Sidebar> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        contentPadding: const EdgeInsets.all(24),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Logo
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      colorScheme.primary,
-                      const Color(0xFF8B5CF6),
-                      const Color(0xFFEC4899),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(
-                    'assets/images/logo.svg.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // App name
-              Text(
-                'Hopp',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  foreground: Paint()
-                    ..shader = LinearGradient(
-                      colors: [
-                        colorScheme.primary,
-                        const Color(0xFFEC4899),
-                      ],
-                    ).createShader(
-                      const Rect.fromLTWH(0, 0, 100, 30),
-                    ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              // Tagline
-              Text(
-                'Hop to your APIs',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const AppDivider(height: 16),
-              const SizedBox(height: 16),
-              // Version
-              _buildInfoRow(context, 'Version', '0.6.0'),
-              const SizedBox(height: 8),
-              _buildInfoRow(context, 'Platform', 'macOS'),
-              const SizedBox(height: 8),
-              _buildInfoRow(context, 'Flutter', '3.27.x'),
-              const SizedBox(height: 16),
-              const AppDivider(height: 16),
-              const SizedBox(height: 8),
-              // Footer
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.auto_awesome,
-                    size: 14,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Powered by AI · Built with Flutter',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+      title: 'About',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Logo
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  colorScheme.primary,
+                  const Color(0xFF8B5CF6),
+                  const Color(0xFFEC4899),
                 ],
               ),
-              const SizedBox(height: 4),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.primary.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                'assets/images/logo.svg.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // App name
+          Text(
+            'Hopp',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              foreground: Paint()
+                ..shader = LinearGradient(
+                  colors: [
+                    colorScheme.primary,
+                    const Color(0xFFEC4899),
+                  ],
+                ).createShader(
+                  const Rect.fromLTWH(0, 0, 100, 30),
+                ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Tagline
+          Text(
+            'Hop to your APIs',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const AppDivider(height: 16),
+          const SizedBox(height: 16),
+          // Version
+          _buildInfoRow(context, 'Version', '0.6.0'),
+          const SizedBox(height: 8),
+          _buildInfoRow(context, 'Platform', 'macOS'),
+          const SizedBox(height: 8),
+          _buildInfoRow(context, 'Flutter', '3.27.x'),
+          const SizedBox(height: 16),
+          const AppDivider(height: 16),
+          const SizedBox(height: 8),
+          // Footer
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                size: 14,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 6),
               Text(
-                '© 2026 Hopp. All rights reserved.',
+                'Powered by AI · Built with Flutter',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.4),
-                  fontSize: 11,
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const AboutScreen(),
-                ),
-              );
-            },
-            child: const Text('More Info'),
+          const SizedBox(height: 4),
+          Text(
+            '© 2026 Hopp. All rights reserved.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.4),
+              fontSize: 11,
+            ),
           ),
         ],
       ),
+      actions: [
+        AppButton.ghost(
+          label: 'Close',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppButton.primary(
+          label: 'More Info',
+          onPressed: () {
+            Navigator.pop(context);
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const AboutScreen(),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 

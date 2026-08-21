@@ -3,9 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/environment.dart';
 import '../../providers/providers.dart';
-import '../../utils/constants.dart';
+import '../../theme/app_metrics.dart';
+import '../../theme/app_text_styles.dart';
+import '../../theme/app_theme_data.dart';
+import '../common/app_button.dart';
+import '../common/app_controls.dart';
+import '../common/app_dialog.dart';
 import '../common/app_divider.dart';
 import '../common/app_popup_menu.dart';
+import '../common/app_text_field.dart';
 
 /// 打开环境管理对话框
 Future<void> showEnvironmentManagerDialog(BuildContext context) {
@@ -232,7 +238,7 @@ class _EnvironmentManagerDialogState
     final environmentsAsync = ref.watch(environmentProvider);
     _tryInitialize(environmentsAsync);
 
-    final theme = Theme.of(context);
+    final t = context.appTheme;
 
     if (!_initialized) {
       return const Dialog(
@@ -244,80 +250,37 @@ class _EnvironmentManagerDialogState
       );
     }
 
-    return Dialog(
+    return AppDialog(
       key: const Key('environment_manager_dialog'),
-      child: SizedBox(
-        width: 760,
-        height: 520,
-        child: Column(
-          children: [
-            // 标题栏
-            Container(
-              height: 48,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppConstants.spaceL),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: theme.dividerColor)),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    'Manage Environments',
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    tooltip: 'Close',
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-            // 主体
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildSidePanel(theme),
-                  AppDivider.vertical(),
-                  Expanded(child: _buildEditor(theme)),
-                ],
-              ),
-            ),
-            // 底部按钮
-            Container(
-              height: 52,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppConstants.spaceL),
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: theme.dividerColor)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    key: const Key('environment_dialog_cancel_button'),
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
-                  ),
-                  const SizedBox(width: AppConstants.spaceS),
-                  FilledButton(
-                    key: const Key('environment_dialog_save_button'),
-                    onPressed: _save,
-                    child: const Text('Save'),
-                  ),
-                ],
-              ),
-            ),
-          ],
+      title: 'Manage Environments',
+      width: 760,
+      height: 520,
+      contentPadding: EdgeInsets.zero,
+      actions: [
+        AppButton.ghost(
+          key: const Key('environment_dialog_cancel_button'),
+          label: 'Cancel',
+          onPressed: () => Navigator.of(context).pop(),
         ),
+        AppButton.primary(
+          key: const Key('environment_dialog_save_button'),
+          label: 'Save',
+          onPressed: _save,
+        ),
+      ],
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSidePanel(t),
+          const AppDivider.vertical(),
+          Expanded(child: _buildEditor(t)),
+        ],
       ),
     );
   }
 
   /// 左侧环境列表
-  Widget _buildSidePanel(ThemeData theme) {
+  Widget _buildSidePanel(AppThemeData t) {
     return SizedBox(
       width: 200,
       child: Column(
@@ -325,14 +288,14 @@ class _EnvironmentManagerDialogState
           Expanded(
             child: ListView(
               children: [
-                for (final env in _environments) _buildEnvTile(theme, env),
+                for (final env in _environments) _buildEnvTile(t, env),
                 const AppDivider(),
                 ListTile(
                   key: const Key('globals_entry'),
                   dense: true,
                   selected: _selectedId == _globalsId,
                   leading: const Icon(Icons.public, size: 16),
-                  title: const Text('Globals', style: TextStyle(fontSize: 13)),
+                  title: const Text('Globals', style: AppTextStyles.body13),
                   onTap: () {
                     setState(() {
                       _selectedId = _globalsId;
@@ -345,14 +308,15 @@ class _EnvironmentManagerDialogState
           ),
           const AppDivider(),
           Padding(
-            padding: const EdgeInsets.all(AppConstants.spaceS),
+            padding: const EdgeInsets.all(AppMetrics.space8),
             child: SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
+              child: AppButton.secondary(
                 key: const Key('new_environment_button'),
+                label: 'New',
+                icon: Icons.add,
+                size: AppButtonSize.small,
                 onPressed: _addEnvironment,
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('New', style: TextStyle(fontSize: 12)),
               ),
             ),
           ),
@@ -361,16 +325,15 @@ class _EnvironmentManagerDialogState
     );
   }
 
-  Widget _buildEnvTile(ThemeData theme, Environment env) {
+  Widget _buildEnvTile(AppThemeData t, Environment env) {
     return ListTile(
       key: Key('environment_entry_${env.id}'),
       dense: true,
       selected: _selectedId == env.id,
-      leading: Icon(Icons.layers_outlined,
-          size: 16, color: theme.colorScheme.outline),
+      leading: Icon(Icons.layers_outlined, size: 16, color: t.textTertiary),
       title: Text(
         env.name,
-        style: const TextStyle(fontSize: 13),
+        style: AppTextStyles.body13,
         overflow: TextOverflow.ellipsis,
       ),
       onTap: () {
@@ -383,7 +346,7 @@ class _EnvironmentManagerDialogState
   }
 
   /// 右侧编辑器
-  Widget _buildEditor(ThemeData theme) {
+  Widget _buildEditor(AppThemeData t) {
     final env = _selectedEnvironment;
     final variables = _selectedVariables;
 
@@ -392,15 +355,17 @@ class _EnvironmentManagerDialogState
       children: [
         // 名称行
         Padding(
-          padding: const EdgeInsets.all(AppConstants.spaceL),
+          padding: const EdgeInsets.all(AppMetrics.space16),
           child: Row(
             children: [
               Expanded(
+                // 测试按 key 定位 TextField，key 须挂在裸 TextField 上，
+                // 且需要 enabled 支持，故不换成 AppTextField
                 child: TextField(
                   key: const Key('environment_name_field'),
                   controller: _nameController,
                   enabled: env != null,
-                  style: const TextStyle(fontSize: 13),
+                  style: AppTextStyles.body13.copyWith(color: t.textPrimary),
                   decoration: const InputDecoration(
                     labelText: 'Name',
                     isDense: true,
@@ -417,12 +382,12 @@ class _EnvironmentManagerDialogState
                 ),
               ),
               if (env != null) ...[
-                const SizedBox(width: AppConstants.spaceS),
-                IconButton(
+                const SizedBox(width: AppMetrics.space8),
+                AppIconButton(
                   key: const Key('delete_environment_button'),
-                  icon: const Icon(Icons.delete_outline, size: 18),
+                  icon: Icons.delete_outline,
                   tooltip: 'Delete environment',
-                  color: theme.colorScheme.error,
+                  color: t.error,
                   onPressed: _deleteSelectedEnvironment,
                 ),
               ],
@@ -431,100 +396,96 @@ class _EnvironmentManagerDialogState
         ),
         // 变量表头
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppConstants.spaceL),
+          padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space16),
           child: Row(
             children: [
               const SizedBox(width: 32),
-              _buildHeaderCell(theme, 'Key', flex: 3),
-              _buildHeaderCell(theme, 'Value', flex: 4),
-              _buildHeaderCell(theme, 'Type', flex: 2),
+              _buildHeaderCell(t, 'Key', flex: 3),
+              _buildHeaderCell(t, 'Value', flex: 4),
+              _buildHeaderCell(t, 'Type', flex: 2),
               const SizedBox(width: 64),
             ],
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppMetrics.space4),
         // 变量列表
         Expanded(
           child: variables.isEmpty
               ? Center(
                   child: Text(
                     'No variables yet',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
+                    style:
+                        AppTextStyles.caption12.copyWith(color: t.textTertiary),
                   ),
                 )
               : ListView.builder(
                   itemCount: variables.length,
                   itemBuilder: (context, index) =>
-                      _buildVariableRow(theme, variables[index]),
+                      _buildVariableRow(t, variables[index]),
                 ),
         ),
         // 添加变量按钮
         Padding(
-          padding: const EdgeInsets.all(AppConstants.spaceL),
-          child: OutlinedButton.icon(
+          padding: const EdgeInsets.all(AppMetrics.space16),
+          child: AppButton.secondary(
             key: const Key('add_variable_button'),
+            label: 'Add Variable',
+            icon: Icons.add,
+            size: AppButtonSize.small,
             onPressed: _addVariable,
-            icon: const Icon(Icons.add, size: 16),
-            label: const Text('Add Variable', style: TextStyle(fontSize: 12)),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildHeaderCell(ThemeData theme, String text, {int flex = 1}) {
+  Widget _buildHeaderCell(AppThemeData t, String text, {int flex = 1}) {
     return Expanded(
       flex: flex,
       child: Text(
         text,
-        style: theme.textTheme.bodySmall?.copyWith(
-          fontSize: 11,
+        style: AppTextStyles.tiny11.copyWith(
           fontWeight: FontWeight.w600,
-          color: theme.colorScheme.outline,
+          color: t.textTertiary,
         ),
       ),
     );
   }
 
-  Widget _buildVariableRow(ThemeData theme, EnvironmentVariable variable) {
+  Widget _buildVariableRow(AppThemeData t, EnvironmentVariable variable) {
     final isSecret = variable.isSecret;
     final revealed = _revealedSecretIds.contains(variable.id);
 
     return Padding(
       key: Key('variable_row_${variable.id}'),
       padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.spaceL,
+        horizontal: AppMetrics.space16,
         vertical: 2,
       ),
       child: Row(
         children: [
-          // 启用开关
+          // 启用勾选
           SizedBox(
             width: 32,
             height: 32,
-            child: Checkbox(
-              value: variable.enabled,
-              onChanged: (value) =>
-                  _updateVariable(variable.copyWith(enabled: value ?? true)),
+            child: Center(
+              child: AppCheckbox(
+                value: variable.enabled,
+                onChanged: (value) =>
+                    _updateVariable(variable.copyWith(enabled: value)),
+              ),
             ),
           ),
           // Key
           Expanded(
             flex: 3,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: TextField(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppMetrics.space4),
+              child: AppTextField(
+                compact: true,
                 controller: _keyController(variable),
-                style: const TextStyle(fontSize: 12),
-                decoration: const InputDecoration(
-                  isDense: true,
-                  hintText: 'Key',
-                  border: OutlineInputBorder(),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                ),
+                hintText: 'Key',
                 onChanged: (value) =>
                     _updateVariable(variable.copyWith(key: value)),
               ),
@@ -534,45 +495,17 @@ class _EnvironmentManagerDialogState
           Expanded(
             flex: 4,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: TextField(
-                controller: _valueController(variable),
-                obscureText: isSecret && !revealed,
-                style: const TextStyle(fontSize: 12),
-                decoration: InputDecoration(
-                  isDense: true,
-                  hintText: 'Value',
-                  border: const OutlineInputBorder(),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  suffixIcon: isSecret
-                      ? IconButton(
-                          icon: Icon(
-                            revealed ? Icons.visibility_off : Icons.visibility,
-                            size: 14,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              if (revealed) {
-                                _revealedSecretIds.remove(variable.id);
-                              } else {
-                                _revealedSecretIds.add(variable.id);
-                              }
-                            });
-                          },
-                        )
-                      : null,
-                ),
-                onChanged: (value) =>
-                    _updateVariable(variable.copyWith(value: value)),
-              ),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppMetrics.space4),
+              child: _buildValueField(t, variable, isSecret, revealed),
             ),
           ),
           // Type（统一样式的弹出选择器）
           Expanded(
             flex: 2,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppMetrics.space4),
               child: AppPopupSelect<VariableType>(
                 value: variable.type,
                 items: const [
@@ -593,13 +526,63 @@ class _EnvironmentManagerDialogState
           // 删除按钮
           SizedBox(
             width: 64,
-            child: IconButton(
-              icon: const Icon(Icons.close, size: 16),
-              tooltip: 'Remove variable',
-              onPressed: () => _removeVariable(variable.id),
+            child: Center(
+              child: AppIconButton(
+                icon: Icons.close,
+                tooltip: 'Remove variable',
+                onPressed: () => _removeVariable(variable.id),
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Value 输入框：secret 类型需要内嵌显隐切换按钮，
+  /// AppTextField 不支持 suffixIcon，退回裸 TextField + 统一装饰
+  Widget _buildValueField(
+    AppThemeData t,
+    EnvironmentVariable variable,
+    bool isSecret,
+    bool revealed,
+  ) {
+    if (!isSecret) {
+      return AppTextField(
+        compact: true,
+        controller: _valueController(variable),
+        hintText: 'Value',
+        onChanged: (value) => _updateVariable(variable.copyWith(value: value)),
+      );
+    }
+    return SizedBox(
+      height: AppMetrics.height28,
+      child: TextField(
+        controller: _valueController(variable),
+        obscureText: !revealed,
+        style: AppTextStyles.caption12.copyWith(color: t.textPrimary),
+        decoration:
+            AppTextField.decoration(context, hintText: 'Value', compact: true)
+                .copyWith(
+          suffixIconConstraints:
+              const BoxConstraints(minWidth: 24, minHeight: 24),
+          suffixIcon: AppIconButton(
+            icon: revealed ? Icons.visibility_off : Icons.visibility,
+            tooltip: revealed ? 'Hide value' : 'Show value',
+            size: AppMetrics.height24,
+            iconSize: 14,
+            onPressed: () {
+              setState(() {
+                if (revealed) {
+                  _revealedSecretIds.remove(variable.id);
+                } else {
+                  _revealedSecretIds.add(variable.id);
+                }
+              });
+            },
+          ),
+        ),
+        onChanged: (value) => _updateVariable(variable.copyWith(value: value)),
       ),
     );
   }

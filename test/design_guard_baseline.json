@@ -8,13 +8,12 @@
       "G5": 10
     },
     "lib/screens/main_screen.dart": {
-      "G1": 2,
+      "G1": 1,
       "G2": 2,
       "G3": 4,
       "G5": 3
     },
     "lib/utils/constants.dart": {
-      "G1": 2,
       "G2": 20,
       "G3": 6
     },
@@ -31,26 +30,14 @@
       "G3": 6,
       "G5": 7
     },
-    "lib/widgets/environment/environment_manager_dialog.dart": {
-      "G3": 8
-    },
     "lib/widgets/environment/environment_switcher.dart": {
       "G3": 1
     },
     "lib/widgets/import/curl_import_dialog.dart": {
-      "G1": 6,
-      "G2": 6,
-      "G3": 23,
-      "G5": 2
-    },
-    "lib/widgets/import_export/conflict_resolution_dialog.dart": {
-      "G2": 1
+      "G3": 1
     },
     "lib/widgets/import_export/export_dialog.dart": {
-      "G3": 5
-    },
-    "lib/widgets/import_export/import_dialog.dart": {
-      "G2": 1
+      "G3": 2
     },
     "lib/widgets/layout/request_tabs.dart": {
       "G1": 2,
@@ -58,19 +45,19 @@
       "G5": 1
     },
     "lib/widgets/layout/sidebar.dart": {
-      "G1": 8,
+      "G1": 5,
       "G2": 3,
       "G3": 3,
       "G5": 5
     },
     "lib/widgets/request/request_editor.dart": {
-      "G1": 9,
-      "G3": 11,
-      "G5": 6
+      "G1": 3,
+      "G3": 9,
+      "G5": 5
     },
     "lib/widgets/request/response_viewer.dart": {
-      "G1": 4,
-      "G3": 47,
+      "G1": 3,
+      "G3": 39,
       "G5": 4
     }
   }

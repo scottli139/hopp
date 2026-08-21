@@ -2,7 +2,7 @@
 
 > 目标：把 Hopp 的视觉品质提升到商业产品水准，并建立「规范能被强制遵守」的长期机制。
 > 配套原型：`docs/design/design_system_preview.html`（浏览器打开，含 token、组件、主界面双主题 mockup）。
-> 状态：**P1/P2 已完成**（P1 2026-08-21，P2 2026-08-22）：lib/theme/ + 守卫基线上线（457→236）；方法色/状态码色唯一入口、等宽体 Menlo 统一、MethodBadge/StatusChip/AppDivider 落地、withOpacity/FontWeight.bold 清零；**P3 待启动**
+> 状态：**P1/P2/P3 已完成**（P1 2026-08-21，P2/P3 2026-08-22）：lib/theme/ + 守卫基线上线（457→163）；方法色/状态码色唯一入口、Menlo 统一、MethodBadge/StatusChip/AppDivider 落地、withOpacity/FontWeight.bold 清零；**8 个统一组件落地**（AppButton/AppIconButton/AppTextField/AppDialog/AppTabs/AppSwitch/AppCheckbox/AppCard），Send/Save/全部 10 个对话框/请求与响应 Tab/KV 控件完成迁移，AppComponentStyles 已删除；组件 golden 16 张双主题基线图（test/widgets/common/）；**P4 待启动**
 
 ---
 

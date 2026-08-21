@@ -8,6 +8,7 @@ import 'package:highlight/languages/json.dart';
 import '../../theme/app_syntax_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/app_logger.dart';
+import 'app_button.dart';
 import 'app_divider.dart';
 
 /// 响应显示模式
@@ -626,22 +627,14 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             ),
           ),
           const SizedBox(width: 16),
-          FilledButton(
+          AppButton.primary(
             onPressed: _showMoreLines,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(100, 32),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-            ),
-            child: Text('Load $remaining more'),
+            label: 'Load $remaining more',
           ),
           const SizedBox(width: 8),
-          OutlinedButton(
+          AppButton.secondary(
             onPressed: _showAllLinesNow,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(80, 32),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-            child: const Text('Load all'),
+            label: 'Load all',
           ),
         ],
       ),
@@ -880,14 +873,14 @@ class LargeResponseWarning extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                OutlinedButton(
+                AppButton.secondary(
                   onPressed: onCancel,
-                  child: const Text('View Full'),
+                  label: 'View Full',
                 ),
                 const SizedBox(width: 12),
-                FilledButton(
+                AppButton.primary(
                   onPressed: onContinue,
-                  child: const Text('Performance Mode'),
+                  label: 'Performance Mode',
                 ),
               ],
             ),

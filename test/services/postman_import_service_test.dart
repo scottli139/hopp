@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopp/models/collection.dart';
+import 'package:hopp/models/environment.dart';
 import 'package:hopp/services/import_export/import_export_exception.dart';
 import 'package:hopp/services/import_export/postman_import_service.dart';
 import 'package:hopp/services/import_export/postman_mapper.dart';
@@ -176,7 +177,7 @@ void main() {
     });
 
     group('importEnvironment', () {
-      test('should report environment import as unsupported', () async {
+      test('should import environment and save to storage', () async {
         // Arrange
         final json = jsonEncode({
           'id': 'env-id',
@@ -189,15 +190,62 @@ void main() {
               'enabled': true,
               'type': 'default',
             },
+            {
+              'key': 'token',
+              'value': 'secret-token',
+              'enabled': true,
+              'type': 'secret',
+            },
+            {
+              'key': 'disabledVar',
+              'value': 'x',
+              'enabled': false,
+              'type': 'default',
+            },
           ],
         });
+
+        when(mockStorage.saveEnvironment(any)).thenAnswer((_) async {});
 
         // Act
         final result = await service.importEnvironment(json);
 
         // Assert
-        expect(result.success, false);
-        expect(result.errorMessage, isNotNull);
+        expect(result.success, true);
+        expect(result.collectionId, 'env-id');
+        expect(result.successMessage, contains('Test Environment'));
+
+        final captured = verify(mockStorage.saveEnvironment(captureAny))
+            .captured
+            .single as Environment;
+        expect(captured.id, 'env-id');
+        expect(captured.name, 'Test Environment');
+        expect(captured.variables.length, 3);
+        expect(captured.variables[0].key, 'baseUrl');
+        expect(captured.variables[0].value, 'https://api.example.com');
+        expect(captured.variables[0].type, VariableType.string);
+        expect(captured.variables[1].type, VariableType.secret);
+        expect(captured.variables[2].enabled, false);
+      });
+
+      test('should generate id when postman id is missing', () async {
+        // Arrange
+        final json = jsonEncode({
+          'name': 'No Id Env',
+          'values': <Map<String, dynamic>>[],
+        });
+
+        when(mockStorage.saveEnvironment(any)).thenAnswer((_) async {});
+
+        // Act
+        final result = await service.importEnvironment(json);
+
+        // Assert
+        expect(result.success, true);
+        final captured = verify(mockStorage.saveEnvironment(captureAny))
+            .captured
+            .single as Environment;
+        expect(captured.id, isNotEmpty);
       });
     });
 

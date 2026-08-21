@@ -20,6 +20,11 @@ void main() {
       when(mockStorageService.getCollections()).thenAnswer((_) async => []);
       // Stub getRequests to return empty list by default
       when(mockStorageService.getRequests()).thenAnswer((_) async => []);
+      // Environment switcher reads these on build
+      when(mockStorageService.getEnvironments()).thenAnswer((_) async => []);
+      when(mockStorageService.getActiveEnvironmentId())
+          .thenAnswer((_) async => null);
+      when(mockStorageService.getGlobalVariables()).thenAnswer((_) async => []);
     });
 
     Widget buildTestWidget({

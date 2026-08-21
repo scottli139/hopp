@@ -7,6 +7,7 @@ import '../models/adapters/adapters.dart'
     show HttpRequestAdapter, AppSettingsAdapter, CollectionAdapter;
 import '../models/app_settings.dart' hide AppSettingsAdapter;
 import '../models/collection.dart' hide CollectionAdapter;
+import '../models/environment.dart';
 import '../models/http_method.dart';
 import '../models/http_request.dart' hide HttpRequestAdapter;
 import '../models/key_value_pair.dart';
@@ -23,10 +24,16 @@ class StorageService {
   static const String _settingsBoxName = 'settings';
   static const String _collectionsBoxName = 'collections';
   static const String _requestsBoxName = 'requests';
+  static const String _environmentsBoxName = 'environments';
   static const String _settingsKey = 'app_settings';
+  static const String _activeEnvironmentIdKey = 'active_environment_id';
+
+  /// 全局变量在 environments box 中的保留 ID
+  static const String globalsEnvironmentId = 'globals';
 
   Box<Collection>? _collectionsBox;
   Box<HttpRequest>? _requestsBox;
+  Box<Environment>? _environmentsBox;
   Box<dynamic>? _settingsBox;
   SharedPreferences? _prefs;
 
@@ -93,6 +100,11 @@ class StorageService {
     Hive.registerAdapter(HttpRequestAdapter());
     Hive.registerAdapter(AppSettingsAdapter());
 
+    // 环境变量模型适配器（新模型，无历史数据，使用生成适配器）
+    Hive.registerAdapter(VariableTypeAdapter());
+    Hive.registerAdapter(EnvironmentVariableAdapter());
+    Hive.registerAdapter(EnvironmentAdapter());
+
     AppLogger.debug('[StorageService] Hive adapters registered');
   }
 
@@ -101,6 +113,7 @@ class StorageService {
     try {
       _collectionsBox = await Hive.openBox<Collection>(_collectionsBoxName);
       _requestsBox = await Hive.openBox<HttpRequest>(_requestsBoxName);
+      _environmentsBox = await Hive.openBox<Environment>(_environmentsBoxName);
       _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
     } catch (e, stack) {
       AppLogger.error('[StorageService] Failed to open boxes', e, stack);
@@ -117,10 +130,12 @@ class StorageService {
     try {
       await Hive.deleteBoxFromDisk(_collectionsBoxName);
       await Hive.deleteBoxFromDisk(_requestsBoxName);
+      await Hive.deleteBoxFromDisk(_environmentsBoxName);
       await Hive.deleteBoxFromDisk(_settingsBoxName);
 
       _collectionsBox = await Hive.openBox<Collection>(_collectionsBoxName);
       _requestsBox = await Hive.openBox<HttpRequest>(_requestsBoxName);
+      _environmentsBox = await Hive.openBox<Environment>(_environmentsBoxName);
       _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
 
       AppLogger.info('[StorageService] Boxes recovered successfully');
@@ -203,6 +218,65 @@ class StorageService {
     await _requestsBox?.delete(id);
   }
 
+  // ==================== Environments ====================
+
+  /// 获取所有 Environments（不含保留的全局变量记录）
+  Future<List<Environment>> getEnvironments() async {
+    final environments = _environmentsBox?.values.toList() ?? [];
+    return environments.where((e) => e.id != globalsEnvironmentId).toList();
+  }
+
+  /// 获取指定 Environment
+  Future<Environment?> getEnvironment(String id) async {
+    return _environmentsBox?.get(id);
+  }
+
+  /// 保存 Environment
+  Future<void> saveEnvironment(Environment environment) async {
+    AppLogger.debug(
+      '[StorageService] Saving environment: ${environment.id} (${environment.name})',
+    );
+    await _environmentsBox?.put(environment.id, environment);
+  }
+
+  /// 删除 Environment
+  Future<void> deleteEnvironment(String id) async {
+    AppLogger.debug('[StorageService] Deleting environment: $id');
+    await _environmentsBox?.delete(id);
+  }
+
+  /// 获取当前激活的 Environment ID（null 表示未选择）
+  Future<String?> getActiveEnvironmentId() async {
+    return _prefs?.getString(_activeEnvironmentIdKey);
+  }
+
+  /// 设置当前激活的 Environment ID（null 表示取消选择）
+  Future<void> setActiveEnvironmentId(String? id) async {
+    if (id == null) {
+      await _prefs?.remove(_activeEnvironmentIdKey);
+    } else {
+      await _prefs?.setString(_activeEnvironmentIdKey, id);
+    }
+  }
+
+  /// 获取全局变量（跨环境共享）
+  Future<List<EnvironmentVariable>> getGlobalVariables() async {
+    final globals = _environmentsBox?.get(globalsEnvironmentId);
+    return globals?.variables ?? [];
+  }
+
+  /// 保存全局变量（跨环境共享）
+  Future<void> saveGlobalVariables(List<EnvironmentVariable> variables) async {
+    final current = _environmentsBox?.get(globalsEnvironmentId);
+    final globals = (current ??
+            const Environment(
+              id: globalsEnvironmentId,
+              name: 'Globals',
+            ))
+        .copyWith(variables: variables);
+    await _environmentsBox?.put(globalsEnvironmentId, globals);
+  }
+
   // ==================== SharedPreferences ====================
 
   /// 获取字符串值
@@ -219,6 +293,7 @@ class StorageService {
   Future<void> clear() async {
     await _collectionsBox?.clear();
     await _requestsBox?.clear();
+    await _environmentsBox?.clear();
     await _settingsBox?.clear();
     await _prefs?.clear();
   }
@@ -227,6 +302,7 @@ class StorageService {
   Future<void> close() async {
     await _collectionsBox?.close();
     await _requestsBox?.close();
+    await _environmentsBox?.close();
     await _settingsBox?.close();
   }
 

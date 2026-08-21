@@ -46,6 +46,9 @@ class ImportResult {
   /// 错误信息
   final String? errorMessage;
 
+  /// 自定义成功提示（如环境导入），为空时使用默认请求数提示
+  final String? successMessage;
+
   /// 冲突时的子集合列表（扁平化存储）
   final List<Collection>? childCollections;
 
@@ -63,6 +66,7 @@ class ImportResult {
     this.conflictCollection,
     this.existingId,
     this.errorMessage,
+    this.successMessage,
     this.childCollections,
     this.allRequests,
   });
@@ -73,6 +77,7 @@ class ImportResult {
     bool renamed = false,
     String? newName,
     bool merged = false,
+    String? successMessage,
   }) =>
       ImportResult(
         success: true,
@@ -81,6 +86,7 @@ class ImportResult {
         renamed: renamed,
         newName: newName,
         merged: merged,
+        successMessage: successMessage,
       );
 
   factory ImportResult.conflict({
@@ -226,14 +232,23 @@ class PostmanImportService with LogMixin {
 
     try {
       final map = jsonDecode(json) as Map<String, dynamic>;
-      final environment = PostmanEnvironment.fromJson(map);
+      final postmanEnvironment = PostmanEnvironment.fromJson(map);
+      final environment = PostmanMapper.toHoppEnvironment(postmanEnvironment);
 
-      // 目前 Hopp 还没有 Environment 存储，如实返回「暂不支持」，
-      // 避免上层把未完成的解析误判为导入成功。
-      logInfo('Environment parsed: ${environment.name}');
-      logWarning('Environment import not yet supported');
+      await _storage.saveEnvironment(environment);
 
-      return ImportResult.error('Environment import is not yet supported');
+      logInfo(
+        'Environment imported: ${environment.name} '
+        '(${environment.variables.length} variables)',
+      );
+
+      return ImportResult.success(
+        collectionId: environment.id,
+        importedRequestCount: 0,
+        successMessage:
+            'Successfully imported environment "${environment.name}" '
+            '(${environment.variables.length} variables)',
+      );
     } catch (e, stack) {
       logError('Failed to import environment', e, stack);
       throw ImportException(

@@ -167,7 +167,8 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
             )
           else
             Text(
-              'Successfully imported ${result.importedRequestCount} requests',
+              result.successMessage ??
+                  'Successfully imported ${result.importedRequestCount} requests',
               style: AppTextStyles.bodySmall.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),

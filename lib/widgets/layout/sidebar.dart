@@ -13,6 +13,8 @@ import '../../utils/testing/ui_test_mode.dart';
 import '../../widgets/import/curl_import_dialog.dart';
 import '../../widgets/import_export/export_dialog.dart';
 import '../../widgets/import_export/import_dialog.dart';
+import '../environment/environment_manager_dialog.dart';
+import '../environment/environment_switcher.dart';
 
 class Sidebar extends ConsumerStatefulWidget {
   const Sidebar({super.key});
@@ -86,6 +88,20 @@ class _SidebarState extends ConsumerState<Sidebar> {
       }
     });
 
+    // Listen to environment manager dialog trigger
+    ref.listen<int?>(uiTestEnvironmentDialogProvider, (previous, current) {
+      if (current != null && current != previous) {
+        showEnvironmentManagerDialog(context);
+      }
+    });
+
+    // Listen to cURL import dialog trigger
+    ref.listen<int?>(uiTestCurlImportDialogProvider, (previous, current) {
+      if (current != null && current != previous) {
+        _showCurlImportDialog(context);
+      }
+    });
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -101,6 +117,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
           // Header
           _buildHeader(context),
           const Divider(height: 1),
+          // Environment switcher
+          const EnvironmentSwitcher(),
           // Search
           _buildSearch(context),
           // Collection tree

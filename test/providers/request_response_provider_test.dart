@@ -14,11 +14,21 @@ import '../mocks/service_mocks.mocks.dart';
 void main() {
   group('RequestResponseNotifier', () {
     late MockHttpService mockHttpService;
+    late ProviderContainer container;
     late RequestResponseNotifier notifier;
 
     setUp(() {
       mockHttpService = MockHttpService();
-      notifier = RequestResponseNotifier(mockHttpService);
+      container = ProviderContainer(
+        overrides: [
+          httpServiceProvider.overrideWithValue(mockHttpService),
+        ],
+      );
+      notifier = container.read(requestResponseProvider.notifier);
+    });
+
+    tearDown(() {
+      container.dispose();
     });
 
     group('sendRequest', () {

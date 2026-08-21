@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:uuid/uuid.dart';
 
 import '../../models/collection.dart';
+import '../../models/environment.dart';
 import '../../models/http_method.dart';
 import '../../models/http_request.dart';
 import '../../models/key_value_pair.dart';
@@ -539,6 +540,32 @@ class PostmanMapper {
       default:
         return 'text';
     }
+  }
+
+  /// Postman Environment -> Hopp Environment
+  ///
+  /// Postman 的 `type: 'secret'` 映射为 [VariableType.secret]，其余为 string。
+  static Environment toHoppEnvironment(PostmanEnvironment postmanEnvironment) {
+    return Environment(
+      id: (postmanEnvironment.id != null && postmanEnvironment.id!.isNotEmpty)
+          ? postmanEnvironment.id!
+          : _generateId(),
+      name: postmanEnvironment.name,
+      variables: (postmanEnvironment.values ?? [])
+          .where((v) => v.key.isNotEmpty)
+          .map(
+            (v) => EnvironmentVariable(
+              id: _generateId(),
+              key: v.key,
+              value: v.value ?? '',
+              type: v.type == 'secret'
+                  ? VariableType.secret
+                  : VariableType.string,
+              enabled: v.enabled,
+            ),
+          )
+          .toList(),
+    );
   }
 
   /// 解析 URL 编码数据

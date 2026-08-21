@@ -17,6 +17,38 @@ library;
 
 import '../models/key_value_pair.dart';
 
+/// 匹配环境变量占位符 {{variable}}
+final RegExp _variablePattern = RegExp(r'\{\{[^{}]*\}\}');
+
+/// 将 {{variable}} 占位符替换为 URL 安全的临时令牌
+///
+/// `Uri.parse` 会把 `{}` 百分号编码（%7B%7B），导致占位符被破坏。
+/// 解析前先用安全令牌替换，解析后再还原（见 [_restoreVariables]）。
+(String, List<String>) _protectVariables(String input) {
+  final variables = <String>[];
+  final protected = input.replaceAllMapped(_variablePattern, (match) {
+    variables.add(match.group(0)!);
+    return '__hoppvar${variables.length - 1}__';
+  });
+  return (protected, variables);
+}
+
+/// 还原 [_protectVariables] 替换的占位符
+String _restoreVariables(String input, List<String> variables) {
+  var result = input;
+  for (var i = 0; i < variables.length; i++) {
+    result = result.replaceAll('__hoppvar${i}__', variables[i]);
+  }
+  return result;
+}
+
+/// URL 编码时保留 {{variable}} 占位符不编码
+String _encodePreservingVariables(String input) {
+  final (protected, variables) = _protectVariables(input);
+  final encoded = Uri.encodeQueryComponent(protected);
+  return _restoreVariables(encoded, variables);
+}
+
 /// 从 URL 解析查询参数
 ///
 /// 解析 URL 中的查询字符串，返回 KeyValuePair 列表。
@@ -39,7 +71,9 @@ List<KeyValuePair> parseQueryParamsFromUrl(String url) {
   }
 
   try {
-    final uri = Uri.parse(url);
+    // 保护 {{variable}} 占位符，避免被 Uri 编码破坏
+    final (protected, variables) = _protectVariables(url);
+    final uri = Uri.parse(protected);
     final queryParams = uri.queryParametersAll;
 
     final params = <KeyValuePair>[];
@@ -52,8 +86,9 @@ List<KeyValuePair> parseQueryParamsFromUrl(String url) {
           KeyValuePair(
             id: DateTime.now().millisecondsSinceEpoch.toString() +
                 '_${params.length}',
-            key: Uri.decodeQueryComponent(key),
-            value: Uri.decodeQueryComponent(value),
+            key: _restoreVariables(Uri.decodeQueryComponent(key), variables),
+            value:
+                _restoreVariables(Uri.decodeQueryComponent(value), variables),
             enabled: true,
           ),
         );
@@ -89,7 +124,9 @@ String extractBaseUrl(String url) {
   }
 
   try {
-    final uri = Uri.parse(url);
+    // 保护 {{variable}} 占位符，避免被 Uri 编码破坏
+    final (protected, variables) = _protectVariables(url);
+    final uri = Uri.parse(protected);
 
     // 构建基础 URL
     final buffer = StringBuffer();
@@ -115,7 +152,7 @@ String extractBaseUrl(String url) {
     // 路径
     buffer.write(uri.path);
 
-    return buffer.toString();
+    return _restoreVariables(buffer.toString(), variables);
   } catch (e) {
     // URL 解析失败，返回原 URL
     return url;
@@ -161,8 +198,9 @@ String buildQueryString(List<KeyValuePair> params) {
   }
 
   final pairs = enabledParams.map((p) {
-    final encodedKey = Uri.encodeQueryComponent(p.key);
-    final encodedValue = Uri.encodeQueryComponent(p.value);
+    // 保留 {{variable}} 占位符不编码，其余内容正常编码
+    final encodedKey = _encodePreservingVariables(p.key);
+    final encodedValue = _encodePreservingVariables(p.value);
     return '$encodedKey=$encodedValue';
   }).toList();
 

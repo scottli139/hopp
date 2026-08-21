@@ -1,6 +1,7 @@
 export 'app_settings.dart';
 export 'certificate_info.dart';
 export 'collection.dart';
+export 'environment.dart';
 export 'http_method.dart';
 export 'http_request.dart';
 export 'http_response.dart';

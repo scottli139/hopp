@@ -308,5 +308,57 @@ void main() {
         expect(merged[0].value, '1');
       });
     });
+
+    group('environment variable placeholder preservation', () {
+      test('extractBaseUrl should preserve {{variable}} in host position', () {
+        final baseUrl = extractBaseUrl('{{baseUrl}}/users/list?q=test');
+
+        expect(baseUrl, '{{baseUrl}}/users/list');
+      });
+
+      test('extractBaseUrl should preserve {{variable}} with scheme', () {
+        final baseUrl = extractBaseUrl('https://{{host}}/api/{{version}}?a=1');
+
+        expect(baseUrl, 'https://{{host}}/api/{{version}}');
+      });
+
+      test('parseQueryParamsFromUrl should preserve {{variable}} in values',
+          () {
+        final params = parseQueryParamsFromUrl(
+          '{{baseUrl}}/users?token={{token}}&page=1',
+        );
+
+        expect(params.length, 2);
+        expect(params[0].key, 'token');
+        expect(params[0].value, '{{token}}');
+        expect(params[1].key, 'page');
+        expect(params[1].value, '1');
+      });
+
+      test('buildQueryString should not encode {{variable}}', () {
+        final queryString = buildQueryString([
+          KeyValuePair(
+              id: '1', key: 'token', value: '{{token}}', enabled: true),
+          KeyValuePair(id: '2', key: 'q', value: 'hello world', enabled: true),
+        ]);
+
+        expect(queryString, 'token={{token}}&q=hello+world');
+      });
+
+      test('syncParamsToUrl should round-trip {{variable}} placeholders', () {
+        final url = syncParamsToUrl('{{baseUrl}}/users', [
+          KeyValuePair(
+              id: '1', key: 'token', value: '{{token}}', enabled: true),
+        ]);
+
+        expect(url, '{{baseUrl}}/users?token={{token}}');
+
+        // 再解析应还原同样的参数
+        final params = parseQueryParamsFromUrl(url);
+        expect(params.single.key, 'token');
+        expect(params.single.value, '{{token}}');
+        expect(extractBaseUrl(url), '{{baseUrl}}/users');
+      });
+    });
   });
 }

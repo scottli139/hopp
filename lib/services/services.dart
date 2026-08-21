@@ -6,6 +6,7 @@ export 'http_service.dart';
 export 'menu_channel.dart';
 export 'shortcut_service.dart';
 export 'storage_service.dart';
+export 'variable_resolver.dart';
 
 // Import/Export services
 export 'import_export/import_export_exception.dart';

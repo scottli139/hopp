@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../providers/collection/collection_provider.dart';
+import '../../providers/environment/environment_provider.dart';
 import '../../services/import_export/import_export_exception.dart';
 import '../../services/import_export/postman_export_service.dart';
 import '../../services/import_export/postman_import_service.dart';
@@ -120,8 +121,9 @@ class ImportExportNotifier extends StateNotifier<ImportExportState>
 
       if (result.success) {
         logInfo('Import successful: ${result.collectionId}');
-        // 刷新集合列表
+        // 刷新集合列表与环境列表（环境导入时生效）
         await _ref.read(collectionProvider.notifier).loadCollections();
+        await _ref.read(environmentProvider.notifier).loadEnvironments();
         state = ImportExportState.success(result);
       } else if (result.conflictCollection != null &&
           result.existingId != null) {

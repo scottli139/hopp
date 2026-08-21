@@ -61,3 +61,4 @@
 | 2026-08-21 | v0.8.0-m8.1-env-vars | M8.1 环境变量系统：多环境管理 + 全局变量 + `{{var}}` 替换引擎（含动态变量）+ secret 掩码 + 未定义变量警告 + Postman Environment 导入落地；修复 `{{var}}` 被 URL 编码破坏问题；test-mode 新增 10 个环境指令，UI 自动化验收 9/9 通过 |
 | 2026-08-21 | v0.8.1-ui04-auto-header | 修复 UI-04：auto header 改为按来源标记（`HttpRequestInfo.autoHeaderKeys`），手填同名 header 不再误标；附带修复 Request 视图长 header key + auto 徽章溢出 |
 | 2026-08-21 | v0.8.2-td4-test-mode-fix | 修复 TD-4 测试基建：`set_window_size` 走 macOS 原生通道真实调整窗口；`trigger_curl_import_dialog` 补齐监听；`scroll_response` 支持 body/certificate 目标并回读滚动结果；`switch_request_tab` 时间戳幂等；新增 `dismiss_dialog` 指令 |
+| 2026-08-21 | v0.8.3-env-ui-acceptance-fix | 环境变量 UI 全面验收修复：管理对话框 Type 列文字显式着色（修复亮色模式白字不可读）；环境切换器重构为 PopupMenuButton（修复 "No Environment" 按钮折行溢出与菜单折行，菜单宽度自适应内容）；test-mode 修复 `dismiss_dialog` 500（改走根 navigatorKey）、新增 `set_theme_mode` 指令（light/dark/system）；亮/暗双主题截图回归，单元测试 617 通过 |

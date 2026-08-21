@@ -446,6 +446,10 @@ class UITestModeManager {
       case 'trigger_environment_dialog':
         return await _triggerEnvironmentDialog();
 
+      case 'set_theme_mode':
+        final mode = params['mode'] as String;
+        return await _setThemeMode(mode);
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -673,6 +677,20 @@ class UITestModeManager {
       'triggered': true,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
+  }
+
+  /// 切换主题模式（light/dark/system）
+  ///
+  /// 通过设置持久化生效，用于暗色模式下的 UI 自动化验收。
+  Future<Map<String, dynamic>> _setThemeMode(String mode) async {
+    const validModes = {'light', 'dark', 'system'};
+    if (!validModes.contains(mode)) {
+      throw Exception('无效主题模式: $mode（可选: ${validModes.join('/')}）');
+    }
+
+    await _ref!.read(settingsProvider.notifier).updateThemeMode(mode);
+
+    return {'theme_mode': mode};
   }
 
   /// 创建新请求
@@ -2706,12 +2724,12 @@ class UITestModeManager {
   ///
   /// 用于关闭各类对话框，比按坐标点 Cancel 更可靠。
   Future<Map<String, dynamic>> _dismissDialog() async {
-    final context = appRepaintBoundaryKey.currentContext;
-    if (context == null) {
-      throw Exception('App context 不可用');
+    final navigator = appNavigatorKey.currentState;
+    if (navigator == null) {
+      throw Exception('App navigator 不可用');
     }
 
-    final popped = await Navigator.of(context, rootNavigator: true).maybePop();
+    final popped = await navigator.maybePop();
 
     return {'dismissed': popped};
   }

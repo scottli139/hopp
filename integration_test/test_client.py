@@ -592,6 +592,11 @@ class HoppTestClient:
         print("✖️  关闭顶层对话框...")
         return self.send_command("dismiss_dialog")
 
+    def set_theme_mode(self, mode):
+        """切换主题模式（light/dark/system）"""
+        print(f"🎨 切换主题模式: {mode}")
+        return self.send_command("set_theme_mode", {"mode": mode})
+
     def get_collections(self):
         """获取所有集合"""
         print("📁 获取集合列表...")

@@ -7,7 +7,7 @@ import 'environment_manager_dialog.dart';
 
 /// 环境切换器
 ///
-/// 显示当前激活的环境，支持下拉切换、打开环境管理对话框。
+/// 显示当前激活的环境，支持弹出菜单切换、打开环境管理对话框。
 /// 当活动请求中存在未定义变量时，显示警告标记。
 class EnvironmentSwitcher extends ConsumerWidget {
   const EnvironmentSwitcher({super.key});
@@ -39,52 +39,57 @@ class EnvironmentSwitcher extends ConsumerWidget {
                 : theme.colorScheme.outline,
           ),
           const SizedBox(width: 6),
-          // 环境下拉选择
+          // 环境选择弹出菜单
+          //
+          // 菜单宽度自适应内容（min 160 / max 280），不随按钮宽度压缩，
+          // 避免窄侧边栏中 "No Environment" 等文字折行。
           Expanded(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String?>(
-                key: const Key('environment_switcher_dropdown'),
-                value: activeEnv?.id,
-                isExpanded: true,
-                isDense: true,
-                icon: Icon(
-                  Icons.arrow_drop_down,
-                  size: 18,
-                  color: theme.colorScheme.outline,
-                ),
-                style: theme.textTheme.bodySmall?.copyWith(fontSize: 12),
-                hint: Text(
+            child: PopupMenuButton<String?>(
+              key: const Key('environment_switcher_dropdown'),
+              tooltip: 'Select environment',
+              offset: const Offset(0, 28),
+              constraints: const BoxConstraints(minWidth: 160, maxWidth: 280),
+              onSelected: (id) {
+                ref.read(activeEnvironmentIdProvider.notifier).setActive(id);
+              },
+              itemBuilder: (context) => [
+                _buildMenuItem(
+                  theme,
+                  null,
                   'No Environment',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 12,
+                  selected: activeEnv == null,
+                  isPlaceholder: true,
+                ),
+                for (final env in environments)
+                  _buildMenuItem(
+                    theme,
+                    env.id,
+                    env.name,
+                    selected: activeEnv?.id == env.id,
+                  ),
+              ],
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      activeEnv?.name ?? 'No Environment',
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 12,
+                        color: activeEnv != null
+                            ? theme.colorScheme.onSurface
+                            : theme.colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    size: 18,
                     color: theme.colorScheme.outline,
                   ),
-                ),
-                items: [
-                  DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text(
-                      'No Environment',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                  ...environments.map(
-                    (env) => DropdownMenuItem<String?>(
-                      value: env.id,
-                      child: Text(
-                        env.name,
-                        style: const TextStyle(fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
                 ],
-                onChanged: (id) {
-                  ref.read(activeEnvironmentIdProvider.notifier).setActive(id);
-                },
               ),
             ),
           ),
@@ -113,6 +118,33 @@ class EnvironmentSwitcher extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  PopupMenuItem<String?> _buildMenuItem(
+    ThemeData theme,
+    String? value,
+    String label, {
+    required bool selected,
+    bool isPlaceholder = false,
+  }) {
+    return PopupMenuItem<String?>(
+      value: value,
+      height: 36,
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 12,
+          color: isPlaceholder
+              ? theme.colorScheme.outline
+              : selected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurface,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+        ),
       ),
     );
   }

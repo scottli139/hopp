@@ -13,6 +13,12 @@ import 'package:flutter/services.dart';
 /// 不包含桌面背景，结果稳定可重复。
 final GlobalKey appRepaintBoundaryKey = GlobalKey();
 
+/// 根 Navigator 键（挂在 MaterialApp 上）
+///
+/// test-mode 指令（如 dismiss_dialog）通过它可靠地关闭顶层路由/对话框；
+/// appRepaintBoundaryKey 位于 Navigator 之上，不能用于 Navigator 操作。
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+
 /// 测试 Keys 集合
 ///
 /// 使用这些 Keys 可以在测试中精确定位 Widget

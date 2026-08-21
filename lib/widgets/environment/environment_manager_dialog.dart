@@ -576,15 +576,32 @@ class _EnvironmentManagerDialogState
                   value: variable.type,
                   isExpanded: true,
                   isDense: true,
-                  style: const TextStyle(fontSize: 12),
-                  items: const [
+                  // 显式指定文字颜色：未指定时在部分主题下解析为浅色，
+                  // 导致亮色模式下几乎不可读
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  items: [
                     DropdownMenuItem(
                       value: VariableType.string,
-                      child: Text('string', style: TextStyle(fontSize: 12)),
+                      child: Text(
+                        'string',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
                     ),
                     DropdownMenuItem(
                       value: VariableType.secret,
-                      child: Text('secret', style: TextStyle(fontSize: 12)),
+                      child: Text(
+                        'secret',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
                     ),
                   ],
                   onChanged: (type) {

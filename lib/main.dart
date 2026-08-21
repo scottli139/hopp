@@ -70,6 +70,7 @@ class _HoppAppState extends ConsumerState<HoppApp> {
 
     return MaterialApp(
       title: 'Hopp',
+      navigatorKey: appNavigatorKey,
       debugShowCheckedModeBanner: false,
       themeMode: themeMode,
       theme: _buildLightTheme(),

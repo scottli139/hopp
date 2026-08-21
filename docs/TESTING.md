@@ -534,6 +534,18 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `simulate_5xx_response` | 模拟 5XX 错误响应 |
 | `simulate_large_response` | 模拟大响应 |
 | `beautify_code` | 格式化代码 |
+| `dismiss_dialog` | 关闭顶层对话框（Navigator.maybePop） |
+| `set_theme_mode` | 切换主题模式 (light/dark/system) |
+| `create_environment` | 创建环境（含变量定义，支持 secret/enabled） |
+| `delete_environment` | 删除环境 |
+| `get_environments` | 获取环境列表 |
+| `set_active_environment` | 设置/取消激活环境（按 id 或 name） |
+| `get_active_environment` | 获取当前激活环境 |
+| `set_global_variables` | 设置全局变量 |
+| `get_global_variables` | 获取全局变量 |
+| `resolve_text` | 解析文本中的 {{variable}}（验证替换引擎与动态变量） |
+| `get_resolved_request` | 获取活动请求应用变量替换后的结果 |
+| `trigger_environment_dialog` | 打开环境管理对话框 |
 | `full_test` | 完整测试流程 |
 
 ### UI 测试脚本列表
@@ -570,6 +582,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `test_save_edge_cases.py` | 保存边界场景测试 |
 | `test_url_input_focus.py` | URL 输入框焦点测试 |
 | `test_url_params_sync.py` | URL 参数同步测试 |
+| `test_environment_variables.py` | 环境变量系统（M8.1）验收测试 |
 
 ---
 

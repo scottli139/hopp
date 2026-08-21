@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:highlight/languages/json.dart';
 
+import '../../theme/app_syntax_colors.dart';
 import '../../utils/app_logger.dart';
 
 /// 响应显示模式
@@ -20,35 +21,6 @@ enum ResponseDisplayMode {
 
   /// 原始文本模式（纯文本，无格式）
   raw,
-}
-
-/// 语法高亮配色
-class JsonSyntaxColors {
-  // Key - 深蓝色 (Blue 800)
-  static const key = Color(0xFF1E40AF);
-
-  // String - 深绿色 (Green 700)
-  static const string = Color(0xFF15803D);
-
-  // Number - 蓝色 (Blue 600)
-  static const number = Color(0xFF2563EB);
-
-  // Boolean/Null - 紫色 (Violet 600)
-  static const keyword = Color(0xFF7C3AED);
-
-  // Punctuation - 灰色 (Gray 500)
-  static const punctuation = Color(0xFF6B7280);
-
-  // 深色模式适配
-  static Color getKey(bool isDark) => isDark ? const Color(0xFF93C5FD) : key;
-  static Color getString(bool isDark) =>
-      isDark ? const Color(0xFF86EFAC) : string;
-  static Color getNumber(bool isDark) =>
-      isDark ? const Color(0xFF60A5FA) : number;
-  static Color getKeyword(bool isDark) =>
-      isDark ? const Color(0xFFC4B5FD) : keyword;
-  static Color getPunctuation(bool isDark) =>
-      isDark ? const Color(0xFF9CA3AF) : punctuation;
 }
 
 /// 大响应虚拟化显示组件
@@ -608,9 +580,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     if (trimmed.startsWith('"')) {
       // 可能是 key 或 string value
       if (trimmed.contains('":')) {
-        return JsonSyntaxColors.getKey(isDark); // key
+        return AppSyntaxColors.getKey(isDark); // key
       }
-      return JsonSyntaxColors.getString(isDark); // string
+      return AppSyntaxColors.getString(isDark); // string
     }
     if (trimmed == '{' ||
         trimmed == '}' ||
@@ -618,17 +590,17 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         trimmed == ']' ||
         trimmed == ',' ||
         trimmed == ':') {
-      return JsonSyntaxColors.getPunctuation(isDark);
+      return AppSyntaxColors.getPunctuation(isDark);
     }
     if (trimmed == 'true' || trimmed == 'false') {
-      return JsonSyntaxColors.getKeyword(isDark);
+      return AppSyntaxColors.getKeyword(isDark);
     }
     if (trimmed == 'null') {
-      return JsonSyntaxColors.getKeyword(isDark);
+      return AppSyntaxColors.getKeyword(isDark);
     }
     // 尝试解析为数字
     if (num.tryParse(trimmed) != null) {
-      return JsonSyntaxColors.getNumber(isDark);
+      return AppSyntaxColors.getNumber(isDark);
     }
     return null;
   }
@@ -768,19 +740,19 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         backgroundColor: theme.colorScheme.surface,
       ),
       'key': TextStyle(
-        color: JsonSyntaxColors.key,
+        color: AppSyntaxColors.key,
         fontWeight: FontWeight.w600,
       ),
-      'string': TextStyle(color: JsonSyntaxColors.string),
-      'number': TextStyle(color: JsonSyntaxColors.number),
-      'literal': TextStyle(color: JsonSyntaxColors.number),
-      'boolean': TextStyle(color: JsonSyntaxColors.keyword),
-      'null': TextStyle(color: JsonSyntaxColors.keyword),
+      'string': TextStyle(color: AppSyntaxColors.string),
+      'number': TextStyle(color: AppSyntaxColors.number),
+      'literal': TextStyle(color: AppSyntaxColors.number),
+      'boolean': TextStyle(color: AppSyntaxColors.keyword),
+      'null': TextStyle(color: AppSyntaxColors.keyword),
       'property': TextStyle(
-        color: JsonSyntaxColors.key,
+        color: AppSyntaxColors.key,
         fontWeight: FontWeight.w600,
       ),
-      'punctuation': TextStyle(color: JsonSyntaxColors.punctuation),
+      'punctuation': TextStyle(color: AppSyntaxColors.punctuation),
       'comment': TextStyle(
         color: Colors.grey.shade500,
         fontStyle: FontStyle.italic,
@@ -794,19 +766,19 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         backgroundColor: theme.colorScheme.surface,
       ),
       'key': TextStyle(
-        color: JsonSyntaxColors.getKey(true),
+        color: AppSyntaxColors.getKey(true),
         fontWeight: FontWeight.w600,
       ),
-      'string': TextStyle(color: JsonSyntaxColors.getString(true)),
-      'number': TextStyle(color: JsonSyntaxColors.getNumber(true)),
-      'literal': TextStyle(color: JsonSyntaxColors.getNumber(true)),
-      'boolean': TextStyle(color: JsonSyntaxColors.getKeyword(true)),
-      'null': TextStyle(color: JsonSyntaxColors.getKeyword(true)),
+      'string': TextStyle(color: AppSyntaxColors.getString(true)),
+      'number': TextStyle(color: AppSyntaxColors.getNumber(true)),
+      'literal': TextStyle(color: AppSyntaxColors.getNumber(true)),
+      'boolean': TextStyle(color: AppSyntaxColors.getKeyword(true)),
+      'null': TextStyle(color: AppSyntaxColors.getKeyword(true)),
       'property': TextStyle(
-        color: JsonSyntaxColors.getKey(true),
+        color: AppSyntaxColors.getKey(true),
         fontWeight: FontWeight.w600,
       ),
-      'punctuation': TextStyle(color: JsonSyntaxColors.getPunctuation(true)),
+      'punctuation': TextStyle(color: AppSyntaxColors.getPunctuation(true)),
       'comment': TextStyle(
         color: Colors.grey.shade500,
         fontStyle: FontStyle.italic,

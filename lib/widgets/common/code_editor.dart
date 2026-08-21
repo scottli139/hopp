@@ -7,26 +7,8 @@ import 'package:highlight/languages/xml.dart';
 import 'package:highlight/languages/htmlbars.dart';
 import 'package:highlight/languages/javascript.dart';
 
+import '../../theme/app_syntax_colors.dart';
 import '../../utils/app_logger.dart';
-
-/// 语法高亮配色 (与 OptimizedResponseViewer 保持一致)
-class _JsonSyntaxColors {
-  static const key = Color(0xFF1E40AF);
-  static const string = Color(0xFF15803D);
-  static const number = Color(0xFF2563EB);
-  static const keyword = Color(0xFF7C3AED);
-  static const punctuation = Color(0xFF6B7280);
-
-  static Color getKey(bool isDark) => isDark ? const Color(0xFF93C5FD) : key;
-  static Color getString(bool isDark) =>
-      isDark ? const Color(0xFF86EFAC) : string;
-  static Color getNumber(bool isDark) =>
-      isDark ? const Color(0xFF60A5FA) : number;
-  static Color getKeyword(bool isDark) =>
-      isDark ? const Color(0xFFC4B5FD) : keyword;
-  static Color getPunctuation(bool isDark) =>
-      isDark ? const Color(0xFF9CA3AF) : punctuation;
-}
 
 /// Supported language modes for syntax highlighting
 enum CodeLanguage {
@@ -208,19 +190,19 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
         backgroundColor: theme.colorScheme.surface,
       ),
       'key': TextStyle(
-        color: _JsonSyntaxColors.key,
+        color: AppSyntaxColors.key,
         fontWeight: FontWeight.w600,
       ),
-      'string': TextStyle(color: _JsonSyntaxColors.string),
-      'number': TextStyle(color: _JsonSyntaxColors.number),
-      'literal': TextStyle(color: _JsonSyntaxColors.number),
-      'boolean': TextStyle(color: _JsonSyntaxColors.keyword),
-      'null': TextStyle(color: _JsonSyntaxColors.keyword),
+      'string': TextStyle(color: AppSyntaxColors.string),
+      'number': TextStyle(color: AppSyntaxColors.number),
+      'literal': TextStyle(color: AppSyntaxColors.number),
+      'boolean': TextStyle(color: AppSyntaxColors.keyword),
+      'null': TextStyle(color: AppSyntaxColors.keyword),
       'property': TextStyle(
-        color: _JsonSyntaxColors.key,
+        color: AppSyntaxColors.key,
         fontWeight: FontWeight.w600,
       ),
-      'punctuation': TextStyle(color: _JsonSyntaxColors.punctuation),
+      'punctuation': TextStyle(color: AppSyntaxColors.punctuation),
       'comment': TextStyle(
         color: Colors.grey.shade500,
         fontStyle: FontStyle.italic,
@@ -234,19 +216,19 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
         backgroundColor: theme.colorScheme.surface,
       ),
       'key': TextStyle(
-        color: _JsonSyntaxColors.getKey(true),
+        color: AppSyntaxColors.getKey(true),
         fontWeight: FontWeight.w600,
       ),
-      'string': TextStyle(color: _JsonSyntaxColors.getString(true)),
-      'number': TextStyle(color: _JsonSyntaxColors.getNumber(true)),
-      'literal': TextStyle(color: _JsonSyntaxColors.getNumber(true)),
-      'boolean': TextStyle(color: _JsonSyntaxColors.getKeyword(true)),
-      'null': TextStyle(color: _JsonSyntaxColors.getKeyword(true)),
+      'string': TextStyle(color: AppSyntaxColors.getString(true)),
+      'number': TextStyle(color: AppSyntaxColors.getNumber(true)),
+      'literal': TextStyle(color: AppSyntaxColors.getNumber(true)),
+      'boolean': TextStyle(color: AppSyntaxColors.getKeyword(true)),
+      'null': TextStyle(color: AppSyntaxColors.getKeyword(true)),
       'property': TextStyle(
-        color: _JsonSyntaxColors.getKey(true),
+        color: AppSyntaxColors.getKey(true),
         fontWeight: FontWeight.w600,
       ),
-      'punctuation': TextStyle(color: _JsonSyntaxColors.getPunctuation(true)),
+      'punctuation': TextStyle(color: AppSyntaxColors.getPunctuation(true)),
       'comment': TextStyle(
         color: Colors.grey.shade500,
         fontStyle: FontStyle.italic,

@@ -2,7 +2,7 @@
 
 > 目标：把 Hopp 的视觉品质提升到商业产品水准，并建立「规范能被强制遵守」的长期机制。
 > 配套原型：`docs/design/design_system_preview.html`（浏览器打开，含 token、组件、主界面双主题 mockup）。
-> 状态：方案已评审 · 待按阶段实施（2026-08-21）
+> 状态：**P1 已完成**（2026-08-21）：`lib/theme/` 六文件 + main.dart 接入（显式 ColorScheme，双主题截图像素级零差异）+ 语法高亮合并 + 守卫测试基线（457 处）上线；**P2 待启动**
 
 ---
 
@@ -47,10 +47,10 @@
 
 ```
 lib/theme/                    ← 唯一允许出现色值/字号/尺寸字面量的地方
-  app_colors.dart               品牌色 + 语义色 + 方法色 + 语法高亮色（原始调色板）
+  app_colors.dart               品牌色 + 语义色 + 方法色/状态码色唯一入口（原始调色板）
   app_theme_data.dart           AppThemeData extends ThemeExtension：语义颜色亮暗双套
                                 （surface/surfaceVariant/border/borderStrong/
-                                  textPrimary/Secondary/Tertiary、语义色+*Soft、方法色）
+                                  textPrimary/Secondary/Tertiary、语义色+*Soft）
   app_text_styles.dart          7 档命名样式（display20/title16/body13/caption12/tiny11/micro10/code12）
   app_metrics.dart              间距(4·8·12·16·20·24·32)、圆角(4·6·8·10)、高度(24/28/32/36)、动画
   app_syntax_colors.dart        语法高亮亮暗双套（合并现有两份重复定义）

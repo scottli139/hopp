@@ -6,10 +6,11 @@ import 'providers/providers.dart';
 import 'screens/main_screen.dart';
 import 'services/menu_channel.dart';
 import 'services/storage_service.dart';
-import 'widgets/common/shortcut_wrapper.dart';
+import 'theme/app_theme.dart';
 import 'utils/app_logger.dart';
 import 'utils/testing/test_helpers.dart';
 import 'utils/testing/ui_test_mode.dart';
+import 'widgets/common/shortcut_wrapper.dart';
 
 // 存储启动参数，供测试模式使用
 List<String> appArgs = [];
@@ -73,8 +74,8 @@ class _HoppAppState extends ConsumerState<HoppApp> {
       navigatorKey: appNavigatorKey,
       debugShowCheckedModeBanner: false,
       themeMode: themeMode,
-      theme: _buildLightTheme(),
-      darkTheme: _buildDarkTheme(),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -90,90 +91,6 @@ class _HoppAppState extends ConsumerState<HoppApp> {
       ),
       home: const ShortcutWrapper(
         child: MainScreen(),
-      ),
-    );
-  }
-
-  ThemeData _buildLightTheme() {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF6366F1),
-        brightness: Brightness.light,
-      ),
-      appBarTheme: const AppBarTheme(
-        centerTitle: false,
-        elevation: 0,
-      ),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      ),
-      tabBarTheme: const TabBarThemeData(
-        labelColor: Color(0xFF6366F1),
-        unselectedLabelColor: Colors.grey,
-        indicatorColor: Color(0xFF6366F1),
-      ),
-    );
-  }
-
-  ThemeData _buildDarkTheme() {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF6366F1),
-        brightness: Brightness.dark,
-      ),
-      appBarTheme: const AppBarTheme(
-        centerTitle: false,
-        elevation: 0,
-      ),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: Colors.grey.shade700),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: Colors.grey.shade700),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: const BorderSide(color: Color(0xFF818CF8), width: 2),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      ),
-      tabBarTheme: const TabBarThemeData(
-        labelColor: Color(0xFF818CF8),
-        unselectedLabelColor: Colors.grey,
-        indicatorColor: Color(0xFF818CF8),
       ),
     );
   }

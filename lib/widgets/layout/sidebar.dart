@@ -8,11 +8,14 @@ import '../../models/http_request.dart';
 import '../../providers/providers.dart';
 import '../../screens/about/about_screen.dart';
 import '../../utils/app_logger.dart';
-import '../../utils/constants.dart';
+import '../../theme/app_colors.dart';
+import '../../utils/constants.dart' hide AppColors;
 import '../../utils/testing/ui_test_mode.dart';
 import '../../widgets/import/curl_import_dialog.dart';
 import '../../widgets/import_export/export_dialog.dart';
 import '../../widgets/import_export/import_dialog.dart';
+import '../common/app_badge.dart';
+import '../common/app_divider.dart';
 import '../common/app_popup_menu.dart';
 import '../environment/environment_manager_dialog.dart';
 import '../environment/environment_switcher.dart';
@@ -108,7 +111,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
         color: theme.colorScheme.surface,
         border: Border(
           right: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.15),
+            color: theme.colorScheme.outline.withValues(alpha: 0.15),
             width: 1,
           ),
         ),
@@ -117,7 +120,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
         children: [
           // Header
           _buildHeader(context),
-          const Divider(height: 1),
+          const AppDivider(),
           // Environment switcher
           const EnvironmentSwitcher(),
           // Search
@@ -338,7 +341,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
           Icon(
             Icons.folder_open_outlined,
             size: 48,
-            color: theme.colorScheme.outline.withOpacity(0.5),
+            color: theme.colorScheme.outline.withValues(alpha: 0.5),
           ),
           const SizedBox(height: AppConstants.spaceM),
           Text(
@@ -354,7 +357,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
             icon: const Icon(Icons.add, size: 16),
             label: const Text('Create Collection'),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: AppColors.brand,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppConstants.spaceL,
@@ -392,8 +395,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
                   .read(collectionProvider.notifier)
                   .toggleExpanded(collection.id);
             },
-            hoverColor:
-                theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            hoverColor: theme.colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.5),
             child: Container(
               height: AppConstants.sidebarItemHeight,
               padding: EdgeInsets.only(
@@ -419,8 +422,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
                     isExpanded ? Icons.folder_open : Icons.folder,
                     size: 16,
                     color: isExpanded
-                        ? AppColors.primary
-                        : AppColors.primary.withOpacity(0.7),
+                        ? AppColors.brand
+                        : AppColors.brand.withValues(alpha: 0.7),
                   ),
                   const SizedBox(width: AppConstants.spaceXS),
                   Expanded(
@@ -488,7 +491,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
 
         return Material(
           color: isActive
-              ? AppColors.primary.withOpacity(0.08)
+              ? AppColors.brand.withValues(alpha: 0.08)
               : Colors.transparent,
           child: InkWell(
             onTap: _isEditingName && _editingRequestId == request.id
@@ -499,8 +502,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
                   },
             onSecondaryTapDown: (details) => _showRequestContextMenu(
                 context, request, details.globalPosition, setState),
-            hoverColor: AppColors.primary.withOpacity(0.04),
-            splashColor: AppColors.primary.withOpacity(0.08),
+            hoverColor: AppColors.brand.withValues(alpha: 0.04),
+            splashColor: AppColors.brand.withValues(alpha: 0.08),
             child: Container(
               height: 28,
               padding: EdgeInsets.only(
@@ -511,7 +514,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
                   ? BoxDecoration(
                       border: Border(
                         left: BorderSide(
-                          color: AppColors.primary,
+                          color: AppColors.brand,
                           width: 3,
                         ),
                       ),
@@ -520,26 +523,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
               child: Row(
                 children: [
                   // Method badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.getHttpMethodColor(request.method.value)
-                          .withOpacity(isActive ? 0.15 : 0.1),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Text(
-                      request.method.value.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 8,
-                        color:
-                            AppColors.getHttpMethodColor(request.method.value),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+                  MethodBadge(request.method.value),
                   const SizedBox(width: 6),
                   // 名称显示或编辑
                   Expanded(
@@ -571,7 +555,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
       request.name,
       style: TextStyle(
         fontSize: 11,
-        color: isActive ? AppColors.primaryDark : theme.colorScheme.onSurface,
+        color: isActive ? AppColors.brandDark : theme.colorScheme.onSurface,
         fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
       ),
       overflow: TextOverflow.ellipsis,
@@ -613,15 +597,17 @@ class _SidebarState extends ConsumerState<Sidebar> {
               const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),
-            borderSide: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+            borderSide:
+                BorderSide(color: AppColors.brand.withValues(alpha: 0.5)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),
-            borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+            borderSide:
+                BorderSide(color: AppColors.brand.withValues(alpha: 0.3)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),
-            borderSide: const BorderSide(color: AppColors.primary),
+            borderSide: const BorderSide(color: AppColors.brand),
           ),
         ),
         onSubmitted: (_) => _saveRequestName(context, request, setState),
@@ -895,7 +881,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
               value: 'add_request',
               icon: Icons.add,
               label: 'Add Request',
-              iconColor: AppColors.primary,
+              iconColor: AppColors.brand,
             ),
             AppPopupMenu.iconItem(
               theme: theme,
@@ -1158,7 +1144,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
           value: 'new',
           icon: Icons.add,
           label: 'New Collection',
-          iconColor: AppColors.primary,
+          iconColor: AppColors.brand,
         ),
         AppPopupMenu.iconItem(
           theme: theme,
@@ -1245,7 +1231,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: colorScheme.primary.withOpacity(0.3),
+                      color: colorScheme.primary.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -1264,7 +1250,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
               Text(
                 'Hopp',
                 style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   foreground: Paint()
                     ..shader = LinearGradient(
                       colors: [
@@ -1281,12 +1267,12 @@ class _SidebarState extends ConsumerState<Sidebar> {
               Text(
                 'Hop to your APIs',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.6),
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
                   fontStyle: FontStyle.italic,
                 ),
               ),
               const SizedBox(height: 16),
-              const Divider(),
+              const AppDivider(height: 16),
               const SizedBox(height: 16),
               // Version
               _buildInfoRow(context, 'Version', '0.6.0'),
@@ -1295,7 +1281,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
               const SizedBox(height: 8),
               _buildInfoRow(context, 'Flutter', '3.27.x'),
               const SizedBox(height: 16),
-              const Divider(),
+              const AppDivider(height: 16),
               const SizedBox(height: 8),
               // Footer
               Row(
@@ -1320,7 +1306,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
               Text(
                 '© 2026 Hopp. All rights reserved.',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.4),
+                  color: colorScheme.onSurface.withValues(alpha: 0.4),
                   fontSize: 11,
                 ),
               ),
@@ -1358,7 +1344,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
         Text(
           '$label: ',
           style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurface.withOpacity(0.6),
+            color: colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
         Text(

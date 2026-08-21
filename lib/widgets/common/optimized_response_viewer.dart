@@ -6,7 +6,9 @@ import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:highlight/languages/json.dart';
 
 import '../../theme/app_syntax_colors.dart';
+import '../../theme/app_text_styles.dart';
 import '../../utils/app_logger.dart';
+import 'app_divider.dart';
 
 /// 响应显示模式
 enum ResponseDisplayMode {
@@ -390,7 +392,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: isActive ? theme.colorScheme.primary.withOpacity(0.1) : null,
+            color: isActive
+                ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                : null,
             borderRadius: BorderRadius.circular(3),
           ),
           child: Text(
@@ -429,7 +433,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
-                color: theme.dividerColor.withOpacity(0.5),
+                color: theme.dividerColor.withValues(alpha: 0.5),
               ),
             ),
             child: Icon(
@@ -472,11 +476,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                 _buildLineNumberArea(theme, displayLines.length),
               // 分割线
               if (widget.showLineNumbers)
-                VerticalDivider(
-                  width: 1,
-                  thickness: 1,
-                  color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-                ),
+                const AppDivider.vertical(subtle: true),
               // 代码区域
               Expanded(
                 child: Scrollbar(
@@ -508,7 +508,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   Widget _buildLineNumberArea(ThemeData theme, int lineCount) {
     return Container(
       width: _lineNumberWidth,
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       padding: const EdgeInsets.only(
         right: _lineNumberPadding,
         top: 12,
@@ -526,11 +526,11 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               return Text(
                 '${index + 1}',
                 textAlign: TextAlign.right,
-                style: TextStyle(
-                  fontFamily: 'Menlo',
+                style: AppTextStyles.code12.copyWith(
                   fontSize: 11,
                   height: 1.5,
-                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                  color:
+                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                 ),
               );
             }),
@@ -550,12 +550,10 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       decoration: BoxDecoration(
         color: index % 2 == 0
             ? theme.colorScheme.surface
-            : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       ),
       child: SelectableText(line.isEmpty ? ' ' : line, // 保持空行高度
-          style: TextStyle(
-            fontFamily: 'Menlo',
-            fontSize: 12,
+          style: AppTextStyles.code12.copyWith(
             height: 1.5,
             color: isJsonLine ? _getJsonLineColor(line, theme) : null,
           )),
@@ -667,11 +665,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               // 行号区域
               _buildLineNumberArea(theme, lines.length),
               // 分割线
-              VerticalDivider(
-                width: 1,
-                thickness: 1,
-                color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-              ),
+              const AppDivider.vertical(subtle: true),
               // 代码区域
               Expanded(
                 child: SingleChildScrollView(
@@ -690,11 +684,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                         controller: controller,
                         readOnly: true,
                         gutterStyle: GutterStyle.none,
-                        textStyle: const TextStyle(
-                          fontFamily: 'Menlo',
-                          fontSize: 12,
-                          height: 1.5,
-                        ),
+                        textStyle: AppTextStyles.code12.copyWith(height: 1.5),
                       ),
                     ),
                   ),
@@ -718,8 +708,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                 child: CodeField(
                   controller: controller,
                   readOnly: true,
-                  textStyle: const TextStyle(
-                    fontFamily: 'Menlo',
+                  textStyle: AppTextStyles.code12.copyWith(
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -797,11 +786,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               // 行号区域
               _buildLineNumberArea(theme, _lines.length),
               // 分割线
-              VerticalDivider(
-                width: 1,
-                thickness: 1,
-                color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-              ),
+              const AppDivider.vertical(subtle: true),
               // 代码区域
               Expanded(
                 child: SingleChildScrollView(
@@ -809,9 +794,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                   padding: const EdgeInsets.all(12),
                   child: SelectableText(
                     widget.content,
-                    style: TextStyle(
-                      fontFamily: 'Menlo',
-                      fontSize: 12,
+                    style: AppTextStyles.code12.copyWith(
                       height: 1.5,
                       color: theme.colorScheme.onSurface,
                     ),
@@ -825,8 +808,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             padding: const EdgeInsets.all(12),
             child: SelectableText(
               widget.content,
-              style: TextStyle(
-                fontFamily: 'Menlo',
+              style: AppTextStyles.code12.copyWith(
                 fontSize: 13,
                 height: 1.4,
                 color: theme.colorScheme.onSurface,

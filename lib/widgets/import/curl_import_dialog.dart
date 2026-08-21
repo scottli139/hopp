@@ -12,8 +12,10 @@ import '../../../models/http_request.dart';
 import '../../../providers/collection/collection_provider.dart';
 import '../../../providers/curl/curl_import_provider.dart';
 import '../../../providers/request/request_tab_provider.dart';
+import '../../../theme/app_text_styles.dart';
 import '../../../utils/app_logger.dart';
-import '../../../utils/constants.dart';
+import '../../../utils/constants.dart' hide AppTextStyles;
+import '../common/app_divider.dart';
 import '../common/app_popup_menu.dart';
 
 /// 显示 cURL 导入对话框
@@ -138,8 +140,7 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
             maxLines: null,
             expands: true,
             textAlignVertical: TextAlignVertical.top,
-            style: const TextStyle(
-              fontFamily: 'Menlo',
+            style: AppTextStyles.code12.copyWith(
               fontSize: 11,
               height: 1.4,
             ),
@@ -149,10 +150,9 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
                   'curl -X POST https://api.example.com/users \\\n'
                   '  -H "Content-Type: application/json" \\\n'
                   '  -d \'{"name":"John"}\'',
-              hintStyle: TextStyle(
-                fontFamily: 'Menlo',
+              hintStyle: AppTextStyles.code12.copyWith(
                 fontSize: 11,
-                color: theme.colorScheme.outline.withOpacity(0.7),
+                color: theme.colorScheme.outline.withValues(alpha: 0.7),
                 height: 1.4,
               ),
               border: OutlineInputBorder(
@@ -242,10 +242,10 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
   Widget _buildEmptyPreview(ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppConstants.radiusM),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: Center(
@@ -255,7 +255,7 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
             Icon(
               Icons.code,
               size: 32,
-              color: theme.colorScheme.outline.withOpacity(0.5),
+              color: theme.colorScheme.outline.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 8),
             Text(
@@ -275,10 +275,10 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
   Widget _buildLoadingPreview(ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppConstants.radiusM),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: const Center(
@@ -305,10 +305,10 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
   Widget _buildErrorPreview(CurlImportState state, ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.errorContainer.withOpacity(0.3),
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppConstants.radiusM),
         border: Border.all(
-          color: theme.colorScheme.error.withOpacity(0.3),
+          color: theme.colorScheme.error.withValues(alpha: 0.3),
         ),
       ),
       padding: const EdgeInsets.all(16),
@@ -363,10 +363,10 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppConstants.radiusM),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: Column(
@@ -376,7 +376,7 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.1),
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(AppConstants.radiusM),
                 topRight: Radius.circular(AppConstants.radiusM),
@@ -404,7 +404,7 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.2),
+                      color: Colors.orange.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -432,7 +432,7 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
                   // 目标 Collection 选择
                   _buildCollectionSelector(theme),
                   const SizedBox(height: 12),
-                  const Divider(height: 1),
+                  const AppDivider(),
                   const SizedBox(height: 12),
                   _buildPreviewRow(
                       'Method', request.method.value.toUpperCase(), theme,
@@ -473,7 +473,7 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
+                        color: Colors.orange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Column(
@@ -587,7 +587,7 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
             hintText: 'Enter request name...',
             hintStyle: TextStyle(
               fontSize: 13,
-              color: theme.colorScheme.outline.withOpacity(0.7),
+              color: theme.colorScheme.outline.withValues(alpha: 0.7),
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppConstants.radiusM),
@@ -629,7 +629,7 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
           return Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: theme.colorScheme.errorContainer.withOpacity(0.3),
+              color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(AppConstants.radiusM),
             ),
             child: Row(
@@ -702,7 +702,7 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
       error: (_, __) => Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: theme.colorScheme.errorContainer.withOpacity(0.3),
+          color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(AppConstants.radiusM),
         ),
         child: Row(

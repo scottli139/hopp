@@ -50,6 +50,11 @@ class AppConstants {
 }
 
 /// 应用颜色系统
+///
+/// 注意：HTTP 方法色 / 状态码色已迁至 lib/theme/app_colors.dart
+/// （`AppColors.method()` / `AppColors.statusCode()` 唯一入口）；
+/// 随主题变化的中性色见 lib/theme/app_theme_data.dart（AppThemeData）。
+/// 本类的存量成员将在 P3–P5 逐步收敛删除。
 class AppColors {
   AppColors._();
 
@@ -69,46 +74,6 @@ class AppColors {
   static const Color info = Color(0xFF3B82F6);
   static const Color infoLight = Color(0xFFDBEAFE);
 
-  // ========== HTTP 方法颜色 ==========
-  static Color httpGet = const Color(0xFF3B82F6);
-  static Color httpPost = const Color(0xFF10B981);
-  static Color httpPut = const Color(0xFFF59E0B);
-  static Color httpDelete = const Color(0xFFEF4444);
-  static Color httpPatch = const Color(0xFF8B5CF6);
-  static Color httpHead = const Color(0xFF6B7280);
-  static Color httpOptions = const Color(0xFF6B7280);
-
-  static Color getHttpMethodColor(String method) {
-    switch (method.toUpperCase()) {
-      case 'GET':
-        return httpGet;
-      case 'POST':
-        return httpPost;
-      case 'PUT':
-        return httpPut;
-      case 'DELETE':
-        return httpDelete;
-      case 'PATCH':
-        return httpPatch;
-      case 'HEAD':
-        return httpHead;
-      case 'OPTIONS':
-        return httpOptions;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  // ========== 状态码颜色 ==========
-  static Color getStatusCodeColor(int? statusCode) {
-    if (statusCode == null) return Colors.grey;
-    if (statusCode >= 200 && statusCode < 300) return success;
-    if (statusCode >= 300 && statusCode < 400) return warning;
-    if (statusCode >= 400 && statusCode < 500) return error;
-    if (statusCode >= 500) return const Color(0xFFB91C1C);
-    return Colors.grey;
-  }
-
   // ========== 浅色模式中性色 ==========
   static const Color lightBackground = Color(0xFFFFFFFF);
   static const Color lightSurface = Color(0xFFF9FAFB);
@@ -118,38 +83,13 @@ class AppColors {
   static const Color lightTextPrimary = Color(0xFF111827);
   static const Color lightTextSecondary = Color(0xFF6B7280);
   static const Color lightTextTertiary = Color(0xFF9CA3AF);
-
-  // ========== 深色模式中性色 ==========
-  static const Color darkBackground = Color(0xFF0F172A);
-  static const Color darkSurface = Color(0xFF1E293B);
-  static const Color darkSurfaceVariant = Color(0xFF334155);
-  static const Color darkBorder = Color(0xFF334155);
-  static const Color darkDivider = Color(0xFF334155);
-  static const Color darkTextPrimary = Color(0xFFF9FAFB);
-  static const Color darkTextSecondary = Color(0xFF9CA3AF);
-  static const Color darkTextTertiary = Color(0xFF6B7280);
 }
 
 /// 应用字体规范
 class AppTextStyles {
   AppTextStyles._();
 
-  static const String fontFamily = 'Inter';
-  static const String monoFontFamily = 'JetBrains Mono';
-
   // ========== 显示样式 ==========
-  static const TextStyle display = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.w600,
-    height: 1.33,
-  );
-
-  static const TextStyle headline = TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
-    height: 1.55,
-  );
-
   static const TextStyle title = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w600,
@@ -186,20 +126,6 @@ class AppTextStyles {
     fontSize: 11,
     fontWeight: FontWeight.w500,
     height: 1.27,
-  );
-
-  static const TextStyle methodBadge = TextStyle(
-    fontSize: 9,
-    fontWeight: FontWeight.w600,
-    height: 1.2,
-  );
-
-  // ========== 代码样式 ==========
-  static const TextStyle code = TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w400,
-    height: 1.38,
-    fontFamily: monoFontFamily,
   );
 }
 
@@ -295,69 +221,11 @@ class AppComponentStyles {
       borderRadius: BorderRadius.circular(AppConstants.radiusL),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           blurRadius: 8,
           offset: const Offset(0, 2),
         ),
       ],
     );
   }
-
-  // ========== HTTP 方法徽章 ==========
-  static Widget httpMethodBadge(String method) {
-    final color = AppColors.getHttpMethodColor(method);
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 4,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppConstants.radiusS),
-      ),
-      child: Text(
-        method.toUpperCase(),
-        style: AppTextStyles.methodBadge.copyWith(color: color),
-      ),
-    );
-  }
-
-  // ========== 状态码徽章 ==========
-  static Widget statusCodeBadge(int? statusCode) {
-    final color = AppColors.getStatusCodeColor(statusCode);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppConstants.radiusS),
-      ),
-      child: Text(
-        '$statusCode',
-        style: AppTextStyles.caption.copyWith(color: color),
-      ),
-    );
-  }
-}
-
-/// 阴影样式
-class AppShadows {
-  AppShadows._();
-
-  static BoxShadow get small => BoxShadow(
-        color: Colors.black.withOpacity(0.05),
-        blurRadius: 4,
-        offset: const Offset(0, 1),
-      );
-
-  static BoxShadow get medium => BoxShadow(
-        color: Colors.black.withOpacity(0.05),
-        blurRadius: 8,
-        offset: const Offset(0, 2),
-      );
-
-  static BoxShadow get large => BoxShadow(
-        color: Colors.black.withOpacity(0.1),
-        blurRadius: 16,
-        offset: const Offset(0, 4),
-      );
 }

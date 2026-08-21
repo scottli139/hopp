@@ -31,7 +31,7 @@ class AppPopupMenu {
   static RoundedRectangleBorder menuShape(ThemeData theme) {
     return RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppConstants.radiusM),
-      side: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
+      side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5)),
     );
   }
 

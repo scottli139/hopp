@@ -5,7 +5,8 @@ import '../../models/http_request.dart';
 import '../../models/request_tab.dart';
 import '../../providers/providers.dart';
 import '../../utils/app_logger.dart';
-import '../../utils/constants.dart';
+import '../../theme/app_colors.dart';
+import '../../utils/constants.dart' hide AppColors;
 
 /// 请求标签栏组件
 ///
@@ -56,18 +57,19 @@ class RequestTabs extends ConsumerWidget with LogMixin {
         onTap: () {
           ref.read(activeTabIdProvider.notifier).state = tab.id;
         },
-        hoverColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        hoverColor:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         child: Container(
           constraints: const BoxConstraints(minWidth: 120, maxWidth: 200),
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: isActive ? AppColors.primary : Colors.transparent,
+                color: isActive ? AppColors.brand : Colors.transparent,
                 width: 2,
               ),
               right: BorderSide(
-                color: theme.dividerColor.withOpacity(0.5),
+                color: theme.dividerColor.withValues(alpha: 0.5),
               ),
             ),
           ),
@@ -78,7 +80,7 @@ class RequestTabs extends ConsumerWidget with LogMixin {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
-                  color: methodColor.withOpacity(isActive ? 0.15 : 0.1),
+                  color: methodColor.withValues(alpha: isActive ? 0.15 : 0.1),
                   borderRadius: BorderRadius.circular(3),
                 ),
                 child: Text(
@@ -110,7 +112,7 @@ class RequestTabs extends ConsumerWidget with LogMixin {
                   height: 5,
                   margin: const EdgeInsets.only(left: 4),
                   decoration: const BoxDecoration(
-                    color: AppColors.primary,
+                    color: AppColors.brand,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -128,7 +130,7 @@ class RequestTabs extends ConsumerWidget with LogMixin {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(AppConstants.radiusS),
                       color: theme.colorScheme.surfaceContainerHighest
-                          .withOpacity(0.5),
+                          .withValues(alpha: 0.5),
                     ),
                     child: Icon(
                       Icons.close,
@@ -160,7 +162,7 @@ class RequestTabs extends ConsumerWidget with LogMixin {
           decoration: BoxDecoration(
             border: Border(
               right: BorderSide(
-                color: theme.dividerColor.withOpacity(0.5),
+                color: theme.dividerColor.withValues(alpha: 0.5),
               ),
             ),
           ),
@@ -201,19 +203,6 @@ class RequestTabs extends ConsumerWidget with LogMixin {
   }
 
   Color _getMethodColor(String method) {
-    switch (method.toUpperCase()) {
-      case 'GET':
-        return Colors.blue;
-      case 'POST':
-        return Colors.green;
-      case 'PUT':
-        return Colors.orange;
-      case 'DELETE':
-        return Colors.red;
-      case 'PATCH':
-        return Colors.purple;
-      default:
-        return Colors.grey;
-    }
+    return AppColors.method(method);
   }
 }

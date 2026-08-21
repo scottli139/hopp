@@ -11,6 +11,7 @@ import '../../../models/collection.dart';
 import '../../../providers/collection/collection_provider.dart';
 import '../../../providers/import_export/import_export_provider.dart';
 import '../../../services/import_export/postman_schema.dart';
+import '../../../theme/app_text_styles.dart' as theme_text;
 import '../../../utils/app_logger.dart';
 import '../../../utils/constants.dart';
 import '../common/app_popup_menu.dart';
@@ -175,9 +176,8 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
               ),
               child: SelectableText(
                 state.exportPath!,
-                style: AppTextStyles.bodySmall.copyWith(
-                  fontFamily: AppTextStyles.monoFontFamily,
-                ),
+                style: theme_text.AppTextStyles.code12
+                    .copyWith(fontSize: 13, height: 1.38),
               ),
             ),
           ],

@@ -5,41 +5,31 @@
       "G1": 1,
       "G2": 4,
       "G3": 2,
-      "G5": 10,
-      "G6": 17,
-      "G7": 1
+      "G5": 10
     },
     "lib/screens/main_screen.dart": {
       "G1": 2,
       "G2": 2,
       "G3": 4,
-      "G5": 3,
-      "G6": 10
+      "G5": 3
     },
     "lib/utils/constants.dart": {
-      "G1": 8,
-      "G2": 36,
-      "G3": 10,
-      "G4": 1,
-      "G6": 6
+      "G1": 2,
+      "G2": 20,
+      "G3": 6
     },
     "lib/widgets/common/app_popup_menu.dart": {
-      "G3": 1,
-      "G6": 1
+      "G3": 1
     },
     "lib/widgets/common/code_editor.dart": {
       "G1": 2,
-      "G3": 3,
-      "G4": 3,
-      "G5": 1,
-      "G6": 6
+      "G3": 1,
+      "G5": 1
     },
     "lib/widgets/common/optimized_response_viewer.dart": {
       "G1": 5,
-      "G3": 9,
-      "G4": 6,
-      "G5": 7,
-      "G6": 8
+      "G3": 6,
+      "G5": 7
     },
     "lib/widgets/environment/environment_manager_dialog.dart": {
       "G3": 8
@@ -51,47 +41,37 @@
       "G1": 6,
       "G2": 6,
       "G3": 23,
-      "G4": 2,
-      "G5": 2,
-      "G6": 16
+      "G5": 2
     },
     "lib/widgets/import_export/conflict_resolution_dialog.dart": {
       "G2": 1
     },
     "lib/widgets/import_export/export_dialog.dart": {
-      "G3": 4,
-      "G4": 1
+      "G3": 5
     },
     "lib/widgets/import_export/import_dialog.dart": {
-      "G2": 1,
-      "G6": 3
+      "G2": 1
     },
     "lib/widgets/layout/request_tabs.dart": {
-      "G1": 8,
+      "G1": 2,
       "G3": 1,
-      "G5": 1,
-      "G6": 5
+      "G5": 1
     },
     "lib/widgets/layout/sidebar.dart": {
       "G1": 8,
       "G2": 3,
-      "G3": 4,
-      "G5": 6,
-      "G6": 14,
-      "G7": 1
+      "G3": 3,
+      "G5": 5
     },
     "lib/widgets/request/request_editor.dart": {
       "G1": 9,
       "G3": 11,
-      "G5": 6,
-      "G6": 20
+      "G5": 6
     },
     "lib/widgets/request/response_viewer.dart": {
-      "G1": 13,
-      "G3": 50,
-      "G4": 7,
-      "G5": 4,
-      "G6": 43
+      "G1": 4,
+      "G3": 47,
+      "G5": 4
     }
   }
 }

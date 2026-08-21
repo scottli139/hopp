@@ -8,7 +8,8 @@ import '../../models/http_request.dart';
 import '../../models/key_value_pair.dart';
 import '../../providers/providers.dart';
 import '../../utils/app_logger.dart';
-import '../../utils/constants.dart';
+import '../../theme/app_colors.dart';
+import '../../utils/constants.dart' hide AppColors;
 import '../../utils/testing/ui_test_mode.dart';
 import '../../utils/url_params_sync.dart';
 import '../common/app_popup_menu.dart';
@@ -250,7 +251,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     padding:
                         const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
+                      color: color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -336,7 +337,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       right: Radius.circular(AppConstants.radiusM),
                     ),
                     borderSide: BorderSide(
-                      color: AppColors.primary,
+                      color: AppColors.brand,
                       width: 1.5,
                     ),
                   ),
@@ -421,7 +422,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         vertical: 2,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -442,10 +443,10 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     HttpRequest request,
   ) {
     return Material(
-      color: AppColors.primary,
+      color: AppColors.brand,
       borderRadius: BorderRadius.circular(AppConstants.radiusM),
       elevation: 2,
-      shadowColor: AppColors.primary.withOpacity(0.4),
+      shadowColor: AppColors.brand.withValues(alpha: 0.4),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppConstants.radiusM),
         onTap: () => _sendRequest(ref, request),
@@ -497,12 +498,12 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         height: 36,
         decoration: BoxDecoration(
           color: isDirty
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.brand.withValues(alpha: 0.1)
               : theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppConstants.radiusM),
           border: Border.all(
             color: isDirty
-                ? AppColors.primary.withOpacity(0.3)
+                ? AppColors.brand.withValues(alpha: 0.3)
                 : theme.colorScheme.outlineVariant,
           ),
         ),
@@ -510,7 +511,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           child: Icon(
             Icons.save,
             size: 18,
-            color: isDirty ? AppColors.primary : theme.colorScheme.outline,
+            color: isDirty ? AppColors.brand : theme.colorScheme.outline,
           ),
         ),
       ),
@@ -615,7 +616,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: isActive ? AppColors.primary : Colors.transparent,
+                color: isActive ? AppColors.brand : Colors.transparent,
                 width: 2,
               ),
             ),
@@ -627,7 +628,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 icon,
                 size: 12,
                 color: isActive
-                    ? AppColors.primary
+                    ? AppColors.brand
                     : theme.colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 6),
@@ -637,7 +638,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   fontSize: 11,
                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                   color: isActive
-                      ? AppColors.primary
+                      ? AppColors.brand
                       : theme.colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -649,7 +650,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? AppColors.primary.withOpacity(0.15)
+                        ? AppColors.brand.withValues(alpha: 0.15)
                         : theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(3),
                   ),
@@ -659,7 +660,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       fontSize: 9,
                       fontWeight: FontWeight.w600,
                       color: isActive
-                          ? AppColors.primary
+                          ? AppColors.brand
                           : theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -748,7 +749,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           height: 32,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            color: theme.colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.5),
             border: Border(
               bottom: BorderSide(color: theme.dividerColor),
             ),
@@ -953,7 +955,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   border: InputBorder.none,
                   hintStyle: TextStyle(
                     fontSize: 12,
-                    color: theme.colorScheme.outline.withOpacity(0.7),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.7),
                   ),
                 ),
                 style: TextStyle(
@@ -1017,7 +1019,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 border: InputBorder.none,
                 hintStyle: TextStyle(
                   fontSize: 12,
-                  color: theme.colorScheme.outline.withOpacity(0.5),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.5),
                 ),
               ),
               style: TextStyle(
@@ -1058,7 +1060,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.tiny.copyWith(
-                        color: theme.colorScheme.outline.withOpacity(0.7),
+                        color: theme.colorScheme.outline.withValues(alpha: 0.7),
                       ),
                     ),
                   )
@@ -1300,7 +1302,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             child: Icon(
               Icons.block,
               size: 32,
-              color: theme.colorScheme.outline.withOpacity(0.5),
+              color: theme.colorScheme.outline.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 16),
@@ -1314,7 +1316,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           Text(
             'Select a body type to add content',
             style: AppTextStyles.bodySmall.copyWith(
-              color: theme.colorScheme.outline.withOpacity(0.7),
+              color: theme.colorScheme.outline.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -1389,7 +1391,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           Icon(
             Icons.upload_file,
             size: 48,
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -1499,7 +1501,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: isSelected
-                        ? AppColors.primary
+                        ? AppColors.brand
                         : theme.colorScheme.outline,
                     width: 1.5,
                   ),
@@ -1511,7 +1513,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                           height: 8,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.primary,
+                            color: AppColors.brand,
                           ),
                         ),
                       )
@@ -1638,7 +1640,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           Icon(
             Icons.lock_outline,
             size: 48,
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -1697,7 +1699,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   padding: const EdgeInsets.all(AppConstants.spaceM),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHighest
-                        .withOpacity(0.5),
+                        .withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(AppConstants.radiusM),
                   ),
                   child: Row(
@@ -1801,7 +1803,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           padding: const EdgeInsets.all(AppConstants.spaceL),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            border: Border.all(color: theme.dividerColor.withOpacity(0.5)),
+            border:
+                Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
             borderRadius: BorderRadius.circular(AppConstants.radiusM),
           ),
           child: Column(
@@ -1855,7 +1858,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 value: value,
                 onChanged: onChanged,
                 activeColor: Colors.white,
-                activeTrackColor: AppColors.primary,
+                activeTrackColor: AppColors.brand,
                 inactiveThumbColor: Colors.white,
                 inactiveTrackColor: theme.colorScheme.outlineVariant,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1866,7 +1869,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             Text(
               value ? 'ON' : 'OFF',
               style: AppTextStyles.caption.copyWith(
-                color: value ? AppColors.primary : theme.colorScheme.outline,
+                color: value ? AppColors.brand : theme.colorScheme.outline,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1901,7 +1904,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               Text(
                 subtitle,
                 style: AppTextStyles.tiny.copyWith(
-                  color: theme.colorScheme.outline.withOpacity(0.6),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -1910,7 +1913,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         Icon(
           Icons.lock_outline,
           size: 16,
-          color: theme.colorScheme.outline.withOpacity(0.5),
+          color: theme.colorScheme.outline.withValues(alpha: 0.5),
         ),
       ],
     );
@@ -1972,7 +1975,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     size: 16,
                     color: value > min
                         ? theme.colorScheme.onSurface
-                        : theme.colorScheme.outline.withOpacity(0.3),
+                        : theme.colorScheme.outline.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -2006,7 +2009,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     size: 16,
                     color: value < max
                         ? theme.colorScheme.onSurface
-                        : theme.colorScheme.outline.withOpacity(0.3),
+                        : theme.colorScheme.outline.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -2098,7 +2101,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   }
 
   Color _getMethodColor(String method) {
-    return AppColors.getHttpMethodColor(method);
+    return AppColors.method(method);
   }
 }
 

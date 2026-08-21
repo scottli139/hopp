@@ -80,8 +80,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               data: MultiSplitViewThemeData(
                 dividerThickness: 1,
                 dividerPainter: DividerPainters.background(
-                  color: theme.dividerColor.withOpacity(0.3),
-                  highlightedColor: theme.colorScheme.primary.withOpacity(0.3),
+                  color: theme.dividerColor.withValues(alpha: 0.3),
+                  highlightedColor:
+                      theme.colorScheme.primary.withValues(alpha: 0.3),
                 ),
               ),
               child: MultiSplitView(
@@ -141,7 +142,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           Text(
             'Get started by creating your first request',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.outline.withOpacity(0.7),
+              color: colorScheme.outline.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 24),
@@ -169,7 +170,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             'or press Cmd+N',
             style: theme.textTheme.bodySmall?.copyWith(
               fontSize: 12,
-              color: colorScheme.outline.withOpacity(0.6),
+              color: colorScheme.outline.withValues(alpha: 0.6),
             ),
           ),
         ],
@@ -197,8 +198,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       data: MultiSplitViewThemeData(
         dividerThickness: 12,
         dividerPainter: DividerPainters.grooved2(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-          highlightedColor: theme.colorScheme.primary.withOpacity(0.6),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          highlightedColor: theme.colorScheme.primary.withValues(alpha: 0.6),
           thickness: 2,
           count: 3,
           highlightedCount: 5,
@@ -242,8 +243,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  colorScheme.primary.withOpacity(0.8),
-                  const Color(0xFF8B5CF6).withOpacity(0.8),
+                  colorScheme.primary.withValues(alpha: 0.8),
+                  const Color(0xFF8B5CF6).withValues(alpha: 0.8),
                 ],
               ),
               borderRadius: BorderRadius.circular(4),
@@ -276,7 +277,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             'v0.6.0',
             style: theme.textTheme.bodySmall?.copyWith(
               fontSize: 11,
-              color: colorScheme.onSurface.withOpacity(0.6),
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const Spacer(),
@@ -294,7 +295,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             'Ready',
             style: theme.textTheme.bodySmall?.copyWith(
               fontSize: 11,
-              color: colorScheme.onSurface.withOpacity(0.8),
+              color: colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
         ],

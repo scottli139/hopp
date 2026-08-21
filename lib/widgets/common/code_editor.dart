@@ -8,7 +8,9 @@ import 'package:highlight/languages/htmlbars.dart';
 import 'package:highlight/languages/javascript.dart';
 
 import '../../theme/app_syntax_colors.dart';
+import '../../theme/app_text_styles.dart';
 import '../../utils/app_logger.dart';
+import 'app_divider.dart';
 
 /// Supported language modes for syntax highlighting
 enum CodeLanguage {
@@ -106,11 +108,7 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLineNumberArea(theme),
-              VerticalDivider(
-                width: 1,
-                thickness: 1,
-                color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-              ),
+              const AppDivider.vertical(subtle: true),
               Expanded(child: _buildCodeField(theme)),
             ],
           )
@@ -122,7 +120,7 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
 
     return Container(
       width: _lineNumberWidth,
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       padding: const EdgeInsets.only(
         right: _lineNumberPadding,
         top: 12,
@@ -135,11 +133,11 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
             return Text(
               '${index + 1}',
               textAlign: TextAlign.right,
-              style: TextStyle(
-                fontFamily: 'Menlo',
+              style: AppTextStyles.code12.copyWith(
                 fontSize: 11,
                 height: 1.5,
-                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                color:
+                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
               ),
             );
           }),
@@ -170,11 +168,7 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
           minLines: widget.minLines,
           maxLines: widget.maxLines,
           gutterStyle: GutterStyle.none,
-          textStyle: const TextStyle(
-            fontFamily: 'Menlo',
-            fontSize: 12,
-            height: 1.5,
-          ),
+          textStyle: AppTextStyles.code12.copyWith(height: 1.5),
         ),
       ),
     );
@@ -265,13 +259,13 @@ class SimpleCodeEditor extends StatelessWidget {
         color: theme.colorScheme.surface,
         border: Border(
           top: BorderSide(
-            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
           right: BorderSide(
-            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
           bottom: BorderSide(
-            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
           // 左侧不显示边框
           left: BorderSide.none,
@@ -288,11 +282,7 @@ class SimpleCodeEditor extends StatelessWidget {
           contentPadding: const EdgeInsets.all(12),
           border: InputBorder.none,
         ),
-        style: const TextStyle(
-          fontFamily: 'Menlo',
-          fontSize: 12,
-          height: 1.5,
-        ),
+        style: AppTextStyles.code12.copyWith(height: 1.5),
         onChanged: onChanged,
       ),
     );

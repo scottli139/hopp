@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../utils/app_logger.dart';
+import '../../widgets/common/app_divider.dart';
 
 /// About Screen - Displays app information and branding
 class AboutScreen extends StatelessWidget {
@@ -45,7 +46,7 @@ class AboutScreen extends StatelessWidget {
                 Text(
                   'Hopp',
                   style: theme.textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                     foreground: Paint()
                       ..shader = LinearGradient(
                         colors: [
@@ -63,7 +64,7 @@ class AboutScreen extends StatelessWidget {
                 Text(
                   'Hop to your APIs',
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.6),
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -127,7 +128,7 @@ class AboutScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withOpacity(0.3),
+            color: colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -160,7 +161,7 @@ class AboutScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: colorScheme.outline.withOpacity(0.2),
+          color: colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Padding(
@@ -189,7 +190,7 @@ class AboutScreen extends StatelessWidget {
             Text(
               content,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.8),
+                color: colorScheme.onSurface.withValues(alpha: 0.8),
                 height: 1.5,
               ),
             ),
@@ -218,7 +219,7 @@ class AboutScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: colorScheme.outline.withOpacity(0.2),
+          color: colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Padding(
@@ -261,7 +262,7 @@ class AboutScreen extends StatelessWidget {
                         child: Text(
                           feature,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.8),
+                            color: colorScheme.onSurface.withValues(alpha: 0.8),
                           ),
                         ),
                       ),
@@ -290,7 +291,7 @@ class AboutScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: colorScheme.outline.withOpacity(0.2),
+          color: colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Padding(
@@ -324,7 +325,7 @@ class AboutScreen extends StatelessWidget {
                         avatar: Text(tech['icon']!),
                         label: Text('${tech['name']} ${tech['version']}'),
                         backgroundColor:
-                            colorScheme.primaryContainer.withOpacity(0.5),
+                            colorScheme.primaryContainer.withValues(alpha: 0.5),
                         side: BorderSide.none,
                       ))
                   .toList(),
@@ -344,7 +345,7 @@ class AboutScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: colorScheme.outline.withOpacity(0.2),
+          color: colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Padding(
@@ -377,7 +378,7 @@ class AboutScreen extends StatelessWidget {
               subtitle: 'github.com/scottli139/hopp',
               url: 'https://github.com/scottli139/hopp',
             ),
-            const Divider(height: 24),
+            const AppDivider(height: 24),
             _buildLinkItem(
               context,
               icon: Icons.bug_report_outlined,
@@ -385,7 +386,7 @@ class AboutScreen extends StatelessWidget {
               subtitle: 'Submit bug reports and feature requests',
               url: 'https://github.com/scottli139/hopp/issues',
             ),
-            const Divider(height: 24),
+            const AppDivider(height: 24),
             _buildLinkItem(
               context,
               icon: Icons.favorite_outline,
@@ -421,7 +422,7 @@ class AboutScreen extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withOpacity(0.5),
+                color: colorScheme.primaryContainer.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -445,7 +446,7 @@ class AboutScreen extends StatelessWidget {
                   Text(
                     subtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.6),
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -454,7 +455,7 @@ class AboutScreen extends StatelessWidget {
             Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: colorScheme.onSurface.withOpacity(0.4),
+              color: colorScheme.onSurface.withValues(alpha: 0.4),
             ),
           ],
         ),
@@ -465,7 +466,7 @@ class AboutScreen extends StatelessWidget {
   Widget _buildBrandFooter(ThemeData theme, ColorScheme colorScheme) {
     return Column(
       children: [
-        const Divider(),
+        const AppDivider(height: 16),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -473,13 +474,13 @@ class AboutScreen extends StatelessWidget {
             Icon(
               Icons.favorite,
               size: 16,
-              color: Colors.red.withOpacity(0.8),
+              color: Colors.red.withValues(alpha: 0.8),
             ),
             const SizedBox(width: 8),
             Text(
               'Built with passion by the Hopp team',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -488,7 +489,7 @@ class AboutScreen extends StatelessWidget {
         Text(
           '© 2026 Hopp. All rights reserved.',
           style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurface.withOpacity(0.4),
+            color: colorScheme.onSurface.withValues(alpha: 0.4),
             fontSize: 11,
           ),
         ),
@@ -498,8 +499,8 @@ class AboutScreen extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                colorScheme.primary.withOpacity(0.1),
-                const Color(0xFFEC4899).withOpacity(0.1),
+                colorScheme.primary.withValues(alpha: 0.1),
+                const Color(0xFFEC4899).withValues(alpha: 0.1),
               ],
             ),
             borderRadius: BorderRadius.circular(16),

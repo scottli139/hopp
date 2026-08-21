@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/environment.dart';
 import '../../providers/providers.dart';
 import '../../utils/constants.dart';
+import '../common/app_divider.dart';
 import '../common/app_popup_menu.dart';
 
 /// 打开环境管理对话框
@@ -279,7 +280,7 @@ class _EnvironmentManagerDialogState
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildSidePanel(theme),
-                  VerticalDivider(width: 1, color: theme.dividerColor),
+                  AppDivider.vertical(),
                   Expanded(child: _buildEditor(theme)),
                 ],
               ),
@@ -325,7 +326,7 @@ class _EnvironmentManagerDialogState
             child: ListView(
               children: [
                 for (final env in _environments) _buildEnvTile(theme, env),
-                const Divider(height: 1),
+                const AppDivider(),
                 ListTile(
                   key: const Key('globals_entry'),
                   dense: true,
@@ -342,7 +343,7 @@ class _EnvironmentManagerDialogState
               ],
             ),
           ),
-          const Divider(height: 1),
+          const AppDivider(),
           Padding(
             padding: const EdgeInsets.all(AppConstants.spaceS),
             child: SizedBox(

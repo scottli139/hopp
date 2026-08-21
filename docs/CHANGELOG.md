@@ -56,3 +56,8 @@
 | 2026-04-01 | v0.7.0 | 版本发布：版本号从 v0.6.9 提升至 0.7.0 |
 | 2026-08-20 | v0.7.0-docs | 完善 GitHub Pages 站点：信息型首页 + 文档中心 + 中英文 |
 | 2026-08-20 | v0.7.0-ci-fix | 修复 Windows CI：windows-latest 已升级 VS2026，Flutter 3.27 不支持，固定 windows-2022 (VS2022) |
+| 2026-08-21 | v0.8.0-m8.0-ui-fix | 修复 M8.0 审计三项布局缺陷：UI-01 Settings 页滚动条指示、UI-02 响应区空态 BOTTOM OVERFLOWED、UI-03 布局重建重置请求编辑器 Tab（幂等分栏 + 索引持久化） |
+| 2026-08-21 | v0.8.0-dialog-links-fix | 修复 Issue #8/#14/#16：New Collection/Add Folder 对话框统一规范样式（共用命名对话框组件，支持 Enter 提交）；About 页链接经 url_launcher 跳转外部浏览器；test-mode 新增 tap_at/scroll_at 指针注入与三个触发指令 |
+| 2026-08-21 | v0.8.0-m8.1-env-vars | M8.1 环境变量系统：多环境管理 + 全局变量 + `{{var}}` 替换引擎（含动态变量）+ secret 掩码 + 未定义变量警告 + Postman Environment 导入落地；修复 `{{var}}` 被 URL 编码破坏问题；test-mode 新增 10 个环境指令，UI 自动化验收 9/9 通过 |
+| 2026-08-21 | v0.8.1-ui04-auto-header | 修复 UI-04：auto header 改为按来源标记（`HttpRequestInfo.autoHeaderKeys`），手填同名 header 不再误标；附带修复 Request 视图长 header key + auto 徽章溢出 |
+| 2026-08-21 | v0.8.2-td4-test-mode-fix | 修复 TD-4 测试基建：`set_window_size` 走 macOS 原生通道真实调整窗口；`trigger_curl_import_dialog` 补齐监听；`scroll_response` 支持 body/certificate 目标并回读滚动结果；`switch_request_tab` 时间戳幂等；新增 `dismiss_dialog` 指令 |

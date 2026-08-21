@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-**最后更新**: 2026-08-20
+**最后更新**: 2026-08-21
 
 ### 战略决策 ✅（2026-08-20）
 
@@ -27,6 +27,7 @@
 | F1.1-1 | 4XX/5XX 响应修复 | 2026-03-17 | 正确显示服务端返回的错误内容 |
 | F1.11-1 | 真实证书获取 | 2026-03-17 | Certificate Tab 显示真实 SSL/TLS 证书 |
 | M8.0 | 状态纠偏 + UX 审计 | 2026-08-21 | test-mode 逐屏截图 + 读图复核，瑕疵清单见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md) |
+| M8.1 | 环境变量系统（F3.1-F3.3） | 2026-08-21 | 多环境 + 全局变量 + `{{var}}` 替换引擎 + 动态变量 + secret 掩码 + 未定义变量警告 + Postman Environment 导入；test-mode 新增 10 个环境指令，UI 验收 9/9 通过 |
 
 ### 进行中 🔄
 
@@ -58,14 +59,15 @@
 | F2.2 | 收藏请求 | ⭐⭐ | 3天 | 手动收藏常用请求 |
 | F2.3-1 | 拖拽排序 | ⭐⭐ | 5天 | Collection 拖拽排序 |
 
-### 三、环境变量功能（决策：做，作为基础）
+### 三、环境变量功能（✅ 核心已完成 2026-08-21，见 M8.1）
 
 | ID | 功能 | 优先级 | 预估工作量 | 说明 |
 |----|------|--------|------------|------|
-| F3.1 | 环境变量模型与管理 | ⭐⭐⭐ | 1周 | 多环境、变量列表、secret 加密存储 |
-| F3.2 | 变量替换引擎 | ⭐⭐⭐ | 1周 | `{{var}}` 解析、作用域（全局>环境>本地） |
-| F3.3 | 动态变量 | ⭐⭐ | 3天 | `{{$timestamp}}`、`{{$randomUUID}}` |
-| F3.4 | 环境变量导入/导出 | ⭐⭐ | 3天 | 独立的 Environment 文件支持 |
+| ~~F3.1~~ | ~~环境变量模型与管理~~ | ✅ | - | 多环境、变量列表、secret 掩码存储 |
+| ~~F3.2~~ | ~~变量替换引擎~~ | ✅ | - | `{{var}}` 解析、作用域（环境 > 全局） |
+| ~~F3.3~~ | ~~动态变量~~ | ✅ | - | `{{$timestamp}}`、`{{$randomUUID}}` 等 5 个 |
+| F3.4 | 环境变量导出 | ⭐⭐ | 2天 | 导出为 Postman Environment 格式（导入已支持） |
+| F3.6 | 变量悬停预览/快速编辑 | ⭐ | 3天 | 悬停显示变量值、双击快速编辑 |
 | F3.5 | 变量转换 | ⭐⭐⭐ | 1周 | sha1/aes 等声明式哈希加密，见 F8 |
 
 ### 四、测试与断言功能（决策：降级）
@@ -128,8 +130,9 @@
 |----|------|--------|------------|------|
 | F5.4 | 响应体搜索 | ⭐⭐⭐ | 1周 | 在响应内容中搜索，支持正则，高亮匹配 |
 | F5.6 | 字体缩放 | ⭐⭐ | 3天 | 编辑器字体大小调整，Ctrl+滚轮或设置调整 |
-| UX-1 | 行号滚动同步 | ⭐⭐ | 3天 | Request/Response Body 编辑器行号与内容滚动同步 |
-| UX-2 | 删除 Collection 子目录 | ⭐⭐⭐ | 2天 | 修复删除带子目录的 Collection 时子目录未删除问题 |
+| UX-1 | 行号滚动同步 | ⭐⭐ | 3天 | Request/Response Body 编辑器行号与内容滚动同步（Issue #4） |
+| UX-3 | Request Body Beautify | ⭐⭐ | 2天 | Issue #15：Raw 编辑器缺一键格式化（响应侧已有，见 `optimized_response_viewer.dart`） |
+| UX-4 | 状态栏网络状态显示 | ⭐ | 3天 | Issue #12：替代静态 Ready，显示网络类型/在线状态/本机 IP |
 
 ---
 
@@ -149,11 +152,11 @@
 
 | 问题 | 优先级 | 状态 |
 |------|--------|------|
-| 行号与内容滚动不同步 | P2 | 待修（CodeEditor 组件；test-mode 滚动指令修复前需人工验证，见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md) TI-03） |
+| 行号与内容滚动不同步 | P2 | 待修（CodeEditor 组件；TI-03 已修复，`scroll_response target=body` 可自动化验证，见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md)） |
 | ~~Settings Tab 缺滚动条指示，空间不足内容被裁切（UI-01）~~ | ~~P2~~ | ✅ 已修复（2026-08-21）：Settings 页加 `Scrollbar(thumbVisibility: true)` |
 | ~~响应区空状态/工具条溢出 BOTTOM OVERFLOWED（UI-02）~~ | ~~P2~~ | ✅ 已修复（2026-08-21）：三处空态外包 `SingleChildScrollView` 收缩保护 |
 | ~~布局重建把请求编辑器 Tab 重置回 Params（UI-03）~~ | ~~P2~~ | ✅ 已修复（2026-08-21）：分栏应用改为幂等 + `requestEditorTabIndexProvider` 持久化索引 |
-| auto header 判定硬编码 key 集合，手填同名 header 会被误标（UI-04） | P3 | 待修（2026-08-21 M8.0 审计） |
+| ~~auto header 判定硬编码 key 集合，手填同名 header 会被误标（UI-04）~~ | ~~P3~~ | ✅ 已修复（2026-08-21）：`HttpRequestInfo` 新增 `autoHeaderKeys`，构建 request info 时按来源标记（HttpService/ui_test_mode 两条路径），response_viewer 按集合判定；附带修复长 key + auto 徽章溢出问题 |
 | ~~导出对话框主按钮疑似缺失/文字重叠~~ | ~~P1~~ | ✅ 已复核排除（2026-08-20，RepaintBoundary 截图 + 像素级复核）：Export 按钮存在，未选 Collection 时为禁用态（低对比度导致 OCR 漏识别）；"Select Collection" 显示完整，"lect Collection" 系 OCR 误读 |
 | ~~测试日志噪音~~ | ~~P2~~ | ✅ 已修复（2026-08-20）：`_AllLogFilter` 在 `flutter test` 环境（进程环境变量 `FLUTTER_TEST=true`）下只输出 warning 及以上级别，trace/debug/info 不再刷屏；单个测试文件输出 120 行 → 10 行。注意编译期 `bool.fromEnvironment('FLUTTER_TEST')` 在 Flutter 3.27.4 下为 false，必须用 `Platform.environment` 检测 |
 
@@ -170,7 +173,8 @@
 | TD-1 | 后代集合遍历逻辑重复 | `collection_provider.dart` 的 `collectDescendants` 与 `postman_import_service.dart` 的 `_collectAllChildIds` 是同一段「按 parentId 递归收集子孙」逻辑 | 抽成公共工具函数，两处复用 | P2 | 下次改动集合层级 / 导入导出逻辑时 |
 | TD-2 | URL 查询参数解析重复 | `utils/url_params_sync.dart` 已提供 parse/build/sync，但 `http_service.dart`、`postman_mapper.dart`、`curl_import_service.dart` 各自重写 | 统一走 `url_params_sync.dart` | P2 | 下次改动 URL 处理相关代码时 |
 | TD-3 | Timing 的 TCP/TLS/TTFB 为估算值 | `http_service.dart` 用硬编码 `30/20/45` 及 `totalMs ~/ 3` 填充 | 改为真实测量，测不到就标记为未测量（null），避免误导 | P2 | 实现真实计时或重做 Timing Tab 时 |
-| TD-4 | UI 测试指令存在死指令/不可靠指令 | `set_window_size`、`trigger_curl_import_dialog` 无监听者；`scroll_response` 只驱动 Certificate 控制器；`switch_request_tab` / `expand_raw_content_type_dropdown` one-shot 不可靠（详见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md) TI-01～04） | 补齐监听、修正滚动目标、指令改幂等 | P2 | 下次扩展 UI 自动化测试时 |
+| ~~TD-4~~ | ~~UI 测试指令存在死指令/不可靠指令~~ | ~~`set_window_size`、`trigger_curl_import_dialog` 无监听者；`scroll_response` 只驱动 Certificate 控制器；`switch_request_tab` / `expand_raw_content_type_dropdown` one-shot 不可靠（详见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md) TI-01～04）~~ | ~~补齐监听、修正滚动目标、指令改幂等~~ | ~~P2~~ | ✅ 已修复（2026-08-21）：窗口走 `com.example.hopp/window` 原生通道；curl 对话框补监听；`scroll_response` 支持 body/certificate 目标并回读 before/after；Tab 切换带时间戳幂等；新增 `dismiss_dialog` 指令 |
+| TD-5 | 版本号多处硬编码 | `pubspec.yaml`、About 页、site/ 等各自维护版本号，发布需手动多处同步（Issue #13） | 统一从 pubspec 读取（如 `package_info_plus`），单一事实源 | P2 | 下次发布前 |
 
 ---
 
@@ -179,7 +183,7 @@
 ### v0.8.0 - 战略转型：本地 + 私有 AI
 
 - [x] 状态纠偏 + UX 审计（2026-08-21，见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md)）
-- [ ] 环境变量系统（作为基础）
+- [x] 环境变量系统（2026-08-21，M8.1）
 - [ ] 预请求链 + 变量转换（登录→token、密码加密）
 - [ ] Tier 0：OpenAPI 导入生成请求
 - [ ] 轻量断言 + AI 生成 + CLI/CI 导出

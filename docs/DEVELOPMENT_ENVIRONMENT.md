@@ -23,8 +23,8 @@
 | 操作系统 | macOS 10.15+ / Windows 10+ / Ubuntu 20.04+ |
 | 内存 | 8 GB RAM |
 | 磁盘空间 | 10 GB 可用空间 |
-| Flutter | 3.27.0+ |
-| Dart | 3.6.0+ |
+| Flutter | 3.27.4（项目用 `.fvmrc` 锁定，见下文 FVM） |
+| Dart | 3.6.2（随 Flutter SDK；`pubspec.yaml` 要求 `^3.6.2`） |
 
 ### 推荐配置
 
@@ -124,8 +124,8 @@ fvm flutter --version
 {
   "editor.formatOnSave": true,
   "editor.formatOnType": true,
-  "editor.rulers": [80, 120],
-  "dart.lineLength": 100,
+  "editor.rulers": [80],
+  "dart.lineLength": 80,
   "dart.previewFlutterUiGuides": true,
   "[dart]": {
     "editor.defaultFormatter": "Dart-Code.dart-code",
@@ -139,10 +139,15 @@ fvm flutter --version
     "**/.packages": true,
     "**/build": true,
     "**/*.freezed.dart": true,
-    "**/*.g.dart": true
+    "**/*.g.dart": true,
+    "**/*.mocks.dart": true
   }
 }
 ```
+
+> 行宽说明：项目未在 `analysis_options.yaml` 自定义 `formatter.page_width`，
+> `dart format` 使用默认 80 列（CI 的 Format check 与 pre-push hook 均按此执行），
+> 因此 `dart.lineLength` 必须保持 80，否则本地保存会产生与 CI 冲突的格式差异。
 
 创建 `.vscode/launch.json`：
 
@@ -424,9 +429,17 @@ fvm dart analyze
 
 ### 提交代码前检查
 
+仓库没有独立的检查脚本，提交前按顺序执行以下三项（与 CI 一致）：
+
 ```bash
-# 运行完整检查脚本
-./scripts/pre_commit.sh
+# 1. 格式检查（配置 pre-push hook 后，git push 时会自动执行该项，见上文）
+fvm dart format --output=none --set-exit-if-changed lib/ test/
+
+# 2. 静态分析
+fvm dart analyze
+
+# 3. 全部测试
+fvm flutter test
 ```
 
 ---

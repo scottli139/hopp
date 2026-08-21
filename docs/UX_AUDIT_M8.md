@@ -17,10 +17,10 @@
 | 大响应（50KB+，1008/2008 行）Performance 模式渐进加载 | ✅ 正常（500/1008 行 + Load more，m8_11、m8_21） |
 | 方法下拉（7 方法彩色徽章） | ✅ 正常（m8_12） |
 | 多 Tab 页签 | ✅ 正常（m8_13） |
-| Raw 子类型下拉展开 | ❌ 未能拍到展开态（指令缺陷，见 TI-04） |
+| Raw 子类型下拉展开 | ✅ 已复验（TI-04 修复后拍到展开态，ti04_raw_dropdown） |
 | 导入对话框（Postman） | ✅ 正常（m8_18） |
 | 删除 Collection 确认对话框 | ✅ 正常（m8_20；仅打开截图，未确认删除） |
-| cURL 导入对话框 | ❌ 无法弹出（死指令，见 TI-02） |
+| cURL 导入对话框 | ✅ 已复验（TI-02 修复后可弹出，ti02_curl_dialog） |
 | 导出对话框 | ✅ 正常（2026-08-20 复核，export_dialog_audit） |
 
 ---
@@ -48,22 +48,24 @@
 - **证据**：hopp_m8_04_settings_full.png（截图前置动作是切 Settings + 移 divider，成像却是 Params）
 - **修复**：① `main_screen.dart` 记录 `_lastAppliedDividerRatio`，仅在分栏值变化时才应用 areas；② 新增 `requestEditorTabIndexProvider`（request_tab_provider.dart）持久化编辑器 Tab 索引，`RequestEditor` State 重建后以保存的索引恢复。复验：切 Settings 后连续两次移动分栏（0.7、0.8）仍停留在 Settings（verify_ui03/verify_ui02）。
 
-### UI-04（P3）Request 视图 auto header 判定为硬编码 key 集合
+### UI-04（P3）Request 视图 auto header 判定为硬编码 key 集合 ✅ 已修复（2026-08-21）
 
 - **现象**：`_isAutoHeader()`（response_viewer.dart:1110）只认 `user-agent / accept-encoding / connection / host` 四个 key。用户若**手动**添加同名 header（如自定义 `Host`），会被误标 `auto` 徽章并归入 "Auto-added Headers"。
 - **说明**：审计中看到的 `Accept: */* 无 auto 徽章且 "2 custom" 计数含水`（hopp_m8_08_request.png）系**模拟响应手工构造的 mock 数据**所致，真实发送路径不会自动注入 Accept，不计为缺陷；本条仅保留硬编码集合这一边缘问题。
-- **建议**：auto 标记应在构建 request info 时按来源打上（而非按 key 名猜），或至少把判定集合与客户端真实自动注入的 header 对齐。
+- **修复**：按建议改为按来源标记——`HttpRequestInfo` 新增 `autoHeaderKeys` 字段，`HttpService._buildRequestInfoHeaders` 与 test-mode mock 路径在构建 request info 时记录自动 header keys（小写），response_viewer 按该集合判定并删除两处 `_isAutoHeader`；附带修复 `content-length` 等长 key + auto 徽章在 140px 固定列溢出的问题。4 个服务级测试 + 2 个 widget 测试覆盖。
 
 ---
 
-## 测试基建问题（不计入产品瑕疵，修 test-mode 时处理）
+## 测试基建问题（✅ 已全部修复，2026-08-21）
 
-| ID | 问题 | 根因 |
-|----|------|------|
-| TI-01 | `set_window_size` 是死指令 | 只写 `uiTestWindowSizeProvider`，全 lib/ 无监听者，窗口尺寸不会变 |
-| TI-02 | `trigger_curl_import_dialog` 是死指令 | `uiTestCurlImportDialogProvider` 定义并赋值，但无任何 UI 监听（sidebar 只监听 import/export/delete） |
-| TI-03 | `scroll_response` 无法滚动响应体 | 监听方（response_viewer.dart:91）只驱动 `_certificateScrollController`（Certificate Tab 的控制器），Body 编辑器不受影响；行号滚动同步因此无法自动化验证 |
-| TI-04 | `switch_request_tab` / `expand_raw_content_type_dropdown` 不可靠 | one-shot StateProvider 同值重设不触发（需先切其他 Tab 中转）；且 expand 指令内部 `updateRequest` 触发编辑器重建，经 UI-03 把刚切到的 Body tab 重置回 Params，展开信号落到已销毁的 widget 上 |
+| ID | 问题 | 根因 | 修复 |
+|----|------|------|------|
+| TI-01 | ~~`set_window_size` 是死指令~~ | 只写 `uiTestWindowSizeProvider`，全 lib/ 无监听者，窗口尺寸不会变 | 新增 `com.example.hopp/window` MethodChannel（AppDelegate 注册 handler），指令改为直接调原生 `setWindowSize` 并返回实际尺寸；删除死 provider |
+| TI-02 | ~~`trigger_curl_import_dialog` 是死指令~~ | `uiTestCurlImportDialogProvider` 定义并赋值，但无任何 UI 监听（sidebar 只监听 import/export/delete） | sidebar 补 `ref.listen` 打开 cURL 导入对话框（复验截图 ti02_curl_dialog） |
+| TI-03 | ~~`scroll_response` 无法滚动响应体~~ | 监听方（response_viewer.dart:91）只驱动 `_certificateScrollController`（Certificate Tab 的控制器），Body 编辑器不受影响；行号滚动同步因此无法自动化验证 | 指令新增 `target`（body 默认 / certificate）；`OptimizedResponseViewer` 支持外部滚动控制器并接入 Body 滚动；监听方动画后回写 before/after 到 `uiTestScrollResponseResultProvider`，指令回读返回（复验：0→500→300） |
+| TI-04 | ~~`switch_request_tab` / `expand_raw_content_type_dropdown` 不可靠~~ | one-shot StateProvider 同值重设不触发（需先切其他 Tab 中转）；且 expand 指令内部 `updateRequest` 触发编辑器重建，经 UI-03 把刚切到的 Body tab 重置回 Params，展开信号落到已销毁的 widget 上 | `uiTestRequestTabProvider` 改带时间戳 payload，同值重发可触发；expand 指令等重建/动画窗口延长到 350ms（配合 UI-03 修复）。复验：同值连发保持 Body tab；下拉展开态截图成功（ti04_raw_dropdown） |
+
+> 附带新增 `dismiss_dialog` 指令（`Navigator.maybePop` 关闭顶层对话框），替代不可靠的坐标点击 Cancel。
 
 ---
 
@@ -78,5 +80,5 @@
 
 - 侧边栏 Filter 搜索输入（test-mode 无键盘输入能力）
 - 真实点击/拖拽交互、右键菜单、快捷键
-- CodeEditor 行号与内容滚动同步（BACKLOG 已知 P2；TI-03 修复前无法自动化验证，需人工滚动确认）
+- CodeEditor 行号与内容滚动同步（BACKLOG 已知 P2；TI-03 已修复，`scroll_response target=body` 可驱动 Body 滚动，可转为自动化验证）
 - Windows / Linux 平台外观

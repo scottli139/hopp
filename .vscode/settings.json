@@ -1,37 +1,23 @@
 {
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
+  "editor.formatOnType": true,
+  "editor.rulers": [80],
+  "dart.lineLength": 80,
+  "dart.previewFlutterUiGuides": true,
+  "[dart]": {
+    "editor.defaultFormatter": "Dart-Code.dart-code",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
   },
-  "editor.rulers": [
-    100
-  ],
-  "typescript.preferences.importModuleSpecifier": "non-relative",
-  "eslint.validate": [
-    "javascript",
-    "javascriptreact",
-    "typescript",
-    "typescriptreact"
-  ],
-  "rust-analyzer.checkOnSave.command": "clippy",
-  "rust-analyzer.checkOnSave.extraArgs": [
-    "--",
-    "-D",
-    "warnings"
-  ],
-  "[rust]": {
-    "editor.defaultFormatter": "rust-lang.rust-analyzer",
-    "editor.formatOnSave": true,
-    "editor.tabSize": 4
+  "files.exclude": {
+    "**/.dart_tool": true,
+    "**/.packages": true,
+    "**/build": true,
+    "**/*.freezed.dart": true,
+    "**/*.g.dart": true,
+    "**/*.mocks.dart": true
   },
-  "cSpell.words": [
-    "hopp",
-    "tauri",
-    "zustand",
-    "reqwest",
-    "rusqlite",
-    "tokio"
-  ],
-  "dart.flutterSdkPath": ".fvm/versions/3.27.4"
+  "cSpell.words": ["hopp"]
 }

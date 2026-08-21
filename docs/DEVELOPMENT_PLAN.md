@@ -8,21 +8,21 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前阶段** | 战略转向：本地 + 私有 AI（v0.7.0 已发布，cURL 导入、URL 参数同步已支持） |
+| **当前阶段** | 战略转向：本地 + 私有 AI（v0.7.0 已发布；M8.0 UX 审计、M8.1 环境变量系统已完成 2026-08-21） |
 | **目标版本** | v1.0.0 |
 | **技术栈** | Flutter 3.27.x + Dart 3.6.x + Riverpod |
-| **测试状态** | ✅ **544 通过 / 2 跳过**（实测，文档曾误标 544/0） |
+| **测试状态** | ✅ **617 通过 / 2 跳过**（2026-08-21 实测） |
 
 ### 测试统计
 
 | 类别 | 数量 | 状态 |
 |------|------|------|
-| Models 测试 | 175 | ✅ 通过 |
-| Services 测试 | 147 | ✅ 通过 |
-| Providers 测试 | 99 | ✅ 通过 |
-| Widgets 测试 | 87 | ✅ 通过 |
-| Utils 测试 | 36 | ✅ 通过 |
-| **总计** | **544** | ✅ **全部通过** |
+| Models 测试 | 185 | ✅ 通过 |
+| Services 测试 | 178 | ✅ 通过 |
+| Providers 测试 | 114 | ✅ 通过 |
+| Widgets 测试 | 99 (+2 跳过) | ✅ 通过 |
+| Utils 测试 | 41 | ✅ 通过 |
+| **总计** | **617** | ✅ **全部通过** |
 
 > **注意**: 所有测试均已通过，代码质量良好。
 
@@ -188,7 +188,7 @@
 | Body 类型选择器重构 | ✅ | P1 | 4h | Radio button 组样式 (none/form-data/x-www-form-urlencoded/raw/binary/GraphQL) |
 | Raw 子类型下拉菜单 | ✅ | P1 | 3h | 右侧下拉选择 Text/JavaScript/JSON/HTML/XML |
 | Dropdown 样式统一 | ✅ | P1 | 2h | Method/Raw Content Type 下拉菜单样式统一优化 |
-| Beautify 格式化按钮 | ✅ | P1 | 2h | 右上角 Beautify 按钮，支持 JSON/XML 格式化 |
+| Beautify 格式化按钮 | ⚠️ | P1 | 2h | 现仅响应侧保留（`optimized_response_viewer.dart`）；请求侧 Raw 编辑器无 Beautify，见 Issue #15 |
 | 编辑器行号显示 | ✅ | P1 | 3h | 代码编辑器左侧显示行号 |
 | JSON 语法高亮优化 | ✅ | P2 | 4h | 键/字符串/数字不同颜色高亮 |
 | Body 编辑器边框优化 | ✅ | P1 | 2h | 隐藏左侧边框线，Request Body 左右靠边 |
@@ -323,26 +323,30 @@ dependencies:
 
 ---
 
-### M6: 环境变量功能 ⏳ PLANNED（决策：做，作为基础）
+### M6: 环境变量功能 ✅ COMPLETED (2026-08-21)
 
 **目标**: 实现完整的环境变量管理系统，支持多环境切换和变量替换（PRD F3.1-F3.3）。
 
 > **决策（2026-08-20）**: 定位为「可复用 + AI 变量注入的基础」，不是 parity。AI 生成的请求引用 `{{baseUrl}}` / `{{token}}`。
 
-> **注意**: 目前仅实现了 Postman Environment 的导入导出格式支持，核心功能待实现。
-
 | 任务 | 状态 | 优先级 | 预计工时 | 说明 |
 |-----|------|--------|---------|------|
-| Environment 模型 | ⏳ | P0 | 4h | 环境变量数据模型 (name/variables) |
-| 环境管理界面 | ⏳ | P0 | 8h | 创建/编辑/删除环境，变量列表编辑 |
-| 环境切换器 | ⏳ | P0 | 4h | 下拉选择当前激活的环境 |
-| 变量替换引擎 | ⏳ | P0 | 6h | `{{variable}}` 语法解析与替换 |
-| 全局变量 | ⏳ | P1 | 4h | 跨环境共享的变量 (F3.2) |
-| 变量作用域 | ⏳ | P1 | 4h | 全局 > 环境 > 本地 优先级 |
-| 动态变量 | ⏳ | P2 | 6h | `{{$timestamp}}`, `{{$randomUUID}}` 等 |
-| 变量预览 | ⏳ | P1 | 3h | 悬停显示变量值，快速复制 |
-| 快速编辑 | ⏳ | P2 | 4h | URL/Body 中双击变量快速编辑 |
-| 环境导入/导出 | ✅ | P1 | - | 已支持 Postman Environment 格式 |
+| Environment 模型 | ✅ | P0 | 4h | Freezed + Hive (typeId 11/12/13) |
+| 环境管理界面 | ✅ | P0 | 8h | 管理对话框：列表 + 变量表格 + secret 掩码 |
+| 环境切换器 | ✅ | P0 | 4h | Sidebar 顶部下拉，持久化激活状态 |
+| 变量替换引擎 | ✅ | P0 | 6h | `{{variable}}` 解析，URL/Params/Headers/Body |
+| 全局变量 | ✅ | P1 | 4h | Globals 作用域，跨环境共享 |
+| 变量作用域 | ✅ | P1 | 4h | 环境覆盖全局（就近原则） |
+| 动态变量 | ✅ | P2 | 6h | `$timestamp`/`$timestampMs`/`$isoTimestamp`/`$randomUUID`/`$randomInt` |
+| 未定义变量标记 | ✅ | P1 | 3h | 切换器 + URL 栏警告图标（替代悬停预览/快速编辑） |
+| 变量预览/快速编辑 | ⏳ | P2 | 7h | 悬停显示变量值，双击快速编辑（后续迭代） |
+| 环境导入/导出 | ✅ | P1 | - | Postman Environment 导入已落地（导出待 F3.4） |
+
+**实现要点**:
+- 发送前在 `RequestResponseNotifier.sendRequest` 统一应用变量替换
+- `url_params_sync.dart` 增加占位符保护，修复 `{{var}}` 被 `Uri.parse` 百分号编码破坏的问题
+- test-mode 新增 10 个环境指令（`create_environment` / `set_active_environment` / `resolve_text` / `get_resolved_request` 等）
+- 验收：`integration_test/test_environment_variables.py` 9/9 通过
 
 #### M6.1 功能详细设计
 
@@ -376,7 +380,7 @@ enum VariableType { string, secret }
 1. 用户发送请求前
 2. 提取当前激活的 Environment
 3. 扫描 URL/Headers/Body 中的 {{variable}} 占位符
-4. 按优先级查找变量值 (全局 > 环境 > 本地)
+4. 按优先级查找变量值 (环境 > 全局，就近原则)
 5. 替换占位符为实际值
 6. 发送请求 (使用替换后的值)
 7. 在 Request Tab 中显示替换前后的对比
@@ -389,12 +393,12 @@ enum VariableType { string, secret }
 - 颜色区分：已解析变量 (蓝色) / 未定义变量 (红色)
 
 **验收标准** (PRD F3.1-F3.3):
-- [ ] 可创建多个环境配置 (开发/测试/生产)
-- [ ] 可创建跨环境共享的全局变量
-- [ ] URL/Headers/Body 中支持 `{{var}}` 语法
-- [ ] 发送前自动替换变量为实际值
-- [ ] 未定义变量在 UI 中明显标记
-- [ ] 变量值支持字符串和密文类型
+- [x] 可创建多个环境配置 (开发/测试/生产)
+- [x] 可创建跨环境共享的全局变量
+- [x] URL/Headers/Body 中支持 `{{var}}` 语法
+- [x] 发送前自动替换变量为实际值
+- [x] 未定义变量在 UI 中明显标记
+- [x] 变量值支持字符串和密文类型
 
 ---
 
@@ -402,10 +406,11 @@ enum VariableType { string, secret }
 
 | 任务 | 状态 | 优先级 | 数量 |
 |-----|------|--------|------|
-| 单元测试 (Models) | ✅ | P0 | 152 个 |
-| 单元测试 (Services) | ✅ | P0 | 73 个 |
-| 单元测试 (Providers) | ✅ | P0 | 92 个 |
-| Widget 测试 | ✅ | P1 | 88 个 |
+| 单元测试 (Models) | ✅ | P0 | 185 个 |
+| 单元测试 (Services) | ✅ | P0 | 178 个 |
+| 单元测试 (Providers) | ✅ | P0 | 114 个 |
+| 单元测试 (Utils) | ✅ | P1 | 41 个 |
+| Widget 测试 | ✅ | P1 | 99 个 (+2 跳过) |
 | Peekaboo E2E 测试 | ✅ | P2 | 完整套件 |
 | CI/CD 配置 | ✅ | P0 | GitHub Actions |
 
@@ -555,11 +560,13 @@ make logs   # 查看日志
 
 > **纠偏（2026-08-20）**: 本里程碑原先标记为 ✅ COMPLETED，但环境变量系统（M6）和测试脚本（F4）实际上**未实现**（`lib/` 中无 Environment 模型/服务）。仅完成 Postman Environment 导入导出格式支持。
 >
+> **现状（2026-08-21）**: 环境变量系统已由 v0.8.0 M8.1 完整落地（见上文 M6，✅ 2026-08-21）；测试脚本（F4）决策**降级**——不做 JS 沙箱，改轻量断言 + AI 生成 + CLI/CI 导出，排入 v0.8.0 M8.4。下表保留原始规划作为对照，子项状态不再逐项维护。
+>
 > 相关决策已更新，见 [PRD](./PRD.md) 与下文 v0.8.0。
 
 | 任务 | 状态 | 优先级 | 预计工时 | 说明 |
 |-----|------|--------|---------|------|
-| **环境变量功能 (M6)** | ⏳ | **P0** | **35h** | **F3.1-F3.3 完整实现** |
+| **环境变量功能 (M6)** | ✅ | **P0** | **35h** | **F3.1-F3.3 已由 M8.1 完成（2026-08-21），详见上文 M6** |
 | ├─ Environment 模型 | ⏳ | P0 | 4h | 环境变量数据模型 |
 | ├─ 环境管理界面 | ⏳ | P0 | 8h | 创建/编辑/删除环境 |
 | ├─ 环境切换器 | ⏳ | P0 | 4h | 下拉选择激活环境 |
@@ -568,7 +575,7 @@ make logs   # 查看日志
 | ├─ 变量作用域 | ⏳ | P1 | 4h | 优先级管理 |
 | ├─ 动态变量 | ⏳ | P2 | 6h | `$timestamp`, `$randomUUID` 等 |
 | ├─ 变量预览 | ⏳ | P1 | 3h | 悬停显示变量值 |
-| **测试脚本功能** | ⏳ | **P1** | **52h** | **F4.1-F4.4 测试自动化** |
+| **测试脚本功能** | ⏸️ | **P1** | **52h** | **决策降级：不做 JS 沙箱，子项为原方案存档；新方案（轻量断言 + AI 生成 + CLI/CI 导出）见 v0.8.0 M8.4** |
 | ├─ 脚本引擎架构 | ⏳ | P0 | 8h | JavaScript 沙箱环境 |
 | ├─ Pre-request Script | ⏳ | P0 | 10h | F4.2 请求前脚本 |
 | ├─ Test Script | ⏳ | P0 | 10h | F4.3 请求后断言脚本 |
@@ -598,8 +605,8 @@ make logs   # 查看日志
 
 | 阶段 | 内容 | 优先级 | 状态 |
 |------|------|--------|------|
-| M8.0 | 状态纠偏 + UX 审计：跑 app 逐屏过，产出可验证瑕疵清单 | P0 | ⏳ |
-| M8.1 | 环境变量系统（M6）：定位「可复用 + AI 变量注入基础」 | P0 | ⏳ |
+| M8.0 | 状态纠偏 + UX 审计：跑 app 逐屏过，产出可验证瑕疵清单 | P0 | ✅ (2026-08-21) |
+| M8.1 | 环境变量系统（M6）：定位「可复用 + AI 变量注入基础」 | P0 | ✅ (2026-08-21) |
 | M8.2 | 预请求链 + 变量转换（F8）：登录→token、密码 sha1/aes 加密 | P0 | ⏳ |
 | M8.3 | Tier 0（F9）：OpenAPI/Swagger 导入 → 一键生成请求/collection | P0 | ⏳ |
 | M8.4 | 轻量断言（F4 降级）：状态/Header/Body/JSONPath + AI 生成 + CLI/CI 导出 | P1 | ⏳ |
@@ -649,6 +656,9 @@ make logs   # 查看日志
 | #9 | Request Settings UI 样式问题 | ✅ 已修复 | 2026-03-17 |
 | #10 | Postman 导入 Raw Content Type 识别错误 | ✅ 已修复 | 2026-03-17 |
 | #11 | URL 查询参数与 Params Tab 双向联动 | ✅ 已实现 | 2026-03-18 |
+| #8 | About 页链接点击无效，无法跳转浏览器 | ✅ 已修复 | 2026-08-21 |
+| #14 | Add Folder 对话框样式不符合规范 | ✅ 已修复 | 2026-08-21 |
+| #16 | New Collection 对话框不符合 UI/UX 规范 | ✅ 已修复 | 2026-08-21 |
 
 ---
 
@@ -664,19 +674,20 @@ make logs   # 查看日志
 | shared_preferences | ^2.5.2 | 配置存储 |
 | freezed_annotation | ^2.4.4 | 不可变类生成 |
 | multi_split_view | ^3.6.0 | 可拖拽分割面板 |
-| flutter_code_editor | ^0.5.0 | 代码高亮 |
-| file_picker | ^6.1.1 | 文件选择 |
-| uuid | ^4.3.3 | UUID 生成 |
+| flutter_code_editor | ^0.3.2 | 代码高亮 |
+| file_picker | ^10.3.10 | 文件选择 |
+| uuid | ^4.5.3 | UUID 生成 |
 | crypto | ^3.0.3 | 证书指纹计算 |
+| url_launcher | ^6.3.1 | 外部链接跳转（About 页，Issue #8） |
 
 ### 开发依赖
 
 | 包名 | 版本 | 用途 |
 |-----|------|------|
-| build_runner | ^2.4.15 | 代码生成 |
-| freezed | ^2.5.7 | 不可变类生成 |
-| riverpod_generator | ^2.6.3 | Provider 生成 |
-| mockito | ^5.4.5 | 测试 Mock |
+| build_runner | ^2.4.6 | 代码生成 |
+| freezed | ^2.4.5 | 不可变类生成 |
+| riverpod_generator | ^2.3.0 | Provider 生成 |
+| mockito | ^5.4.0 | 测试 Mock |
 
 ---
 
@@ -713,7 +724,7 @@ class AppConstants {
 | Body | 14px | 正文 |
 | Caption | 12px | 按钮文字 |
 | Tiny | 11px | 标签、徽章 |
-| Code | 13px | 代码显示 |
+| Code | 12px | 代码显示（行号 11px） |
 
 ---
 

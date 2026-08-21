@@ -2,21 +2,25 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "node",
+      "name": "hopp (macOS)",
       "request": "launch",
-      "name": "Debug Vitest Tests",
-      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
-      "args": ["run", "${relativeFile}"],
-      "console": "integratedTerminal"
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "macos"]
     },
     {
-      "type": "lldb",
+      "name": "hopp (Windows)",
       "request": "launch",
-      "name": "Debug Tauri (Development)",
-      "cargo": {
-        "args": ["build", "--manifest-path=src-tauri/Cargo.toml", "--no-default-features"]
-      },
-      "cwd": "${workspaceFolder}"
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "windows"]
+    },
+    {
+      "name": "hopp (Linux)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "linux"]
     }
   ]
 }

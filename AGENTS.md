@@ -105,17 +105,17 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 
 ### 下次重点 🎯
 
-1. **状态纠偏 + UX 审计**：跑 app 逐屏过，产出可验证的瑕疵清单（先做）
-2. **环境变量系统**：定位「可复用 + AI 变量注入基础」，非 parity（决策：做）
-3. **预请求链 + 变量转换**：登录→token、密码 sha1/aes 加密，声明式低门槛（见 [PRD](./docs/PRD.md)）
-4. **测试脚本降级**：不做完整 JS 沙箱，改轻量断言 + AI 生成 + CLI/CI 导出（决策：降级）
+1. ~~状态纠偏 + UX 审计~~（已完成，2026-08-21）
+2. ~~环境变量系统~~（已完成，2026-08-21，M8.1：多环境 + 全局变量 + `{{var}}` 替换 + 动态变量）
+3. **预请求链 + 变量转换**：登录→token、密码 sha1/aes 加密，声明式低门槛（下一个，见 [PRD](./docs/PRD.md)）
+4. Tier 0：OpenAPI/Swagger 导入 → 一键生成请求/collection
+5. 轻量断言 + AI 生成 + CLI/CI 导出（决策：降级，不做 JS 沙箱）
 
 ### 已知问题 🐛
 
 | 问题 | 优先级 | 状态 |
 |------|--------|------|
-| 行号与内容滚动不同步 | P2 | 需优化 CodeEditor 组件 |
-| 文档状态与代码脱节 | P0 | 正在纠偏（v0.7.0 曾标完成但环境变量/测试脚本未实现） |
+| 行号与内容滚动不同步 | P2 | 需优化 CodeEditor 组件（Issue #4；test-mode `scroll_response target=body` 可自动化验证） |
 
 ---
 

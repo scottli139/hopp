@@ -521,6 +521,85 @@ class DropdownStyles {
 }
 ```
 
+### 弹出菜单 (Popup Menu)
+
+> 命令菜单与选择器弹出菜单的统一规范，由共享组件
+> `lib/widgets/common/app_popup_menu.dart`（`AppPopupMenu`）实现。
+> 适用于 `PopupMenuButton`、`showMenu`、`MenuAnchor` 三类入口。
+
+#### 菜单容器
+
+| 属性 | 值 |
+|-----|-----|
+| 圆角 | 6px (radiusM) |
+| 边框 | 1px dividerColor 50% |
+| Elevation | 4 |
+| 底色 | colorScheme.surface |
+
+`MenuAnchor` 通过 `AppPopupMenu.menuStyle(theme)` 应用同一容器样式。
+
+#### 菜单项
+
+| 属性 | 值 |
+|-----|-----|
+| 高度 | 32px |
+| 水平内边距 | 12px |
+| 图标 | 14px，默认 onSurfaceVariant |
+| 图标与文字间距 | 8px |
+| 文字 | caption（12px / w500），默认 onSurface |
+| 危险操作 | 图标与文字均用 AppColors.error |
+| 选中态（选择器） | primary + w600 |
+
+```dart
+// 图标 + 文字命令项
+AppPopupMenu.iconItem(
+  theme: theme, value: 'delete',
+  icon: Icons.delete_outline, label: 'Delete',
+  iconColor: AppColors.error, labelColor: AppColors.error,
+)
+
+// 纯文字选择器项（如环境切换）
+AppPopupMenu.textItem(
+  theme: theme, value: id, label: name, selected: isActive,
+)
+
+// PopupMenuButton / showMenu 容器
+shape: AppPopupMenu.menuShape(theme),
+elevation: AppPopupMenu.menuElevation,
+color: AppPopupMenu.menuColor(theme),
+
+// MenuAnchor 容器
+MenuAnchor(style: AppPopupMenu.menuStyle(theme), ...)
+```
+
+#### 值选择器 (AppPopupSelect)
+
+值选择场景（原 `DropdownButton` / `DropdownButtonFormField`）统一使用
+`AppPopupSelect`，触发器为「文字 + 下拉箭头」，弹出菜单复用上述容器与
+菜单项样式，当前值以选中态（primary + w600）高亮。
+
+| 变体 | 触发器 | 场景 |
+|-----|-------|------|
+| `boxed: false`（默认） | 无边框紧凑（文字 + 箭头） | 表格单元格（如变量类型） |
+| `boxed: true` | 圆角边框（outlineVariant），菜单宽度=触发器宽度 | 对话框表单（导出/导入） |
+
+```dart
+AppPopupSelect<VariableType>(
+  value: variable.type,
+  hint: 'Select',           // value 为 null 时的占位
+  boxed: true,              // 表单场景
+  fontSize: 13,
+  items: const [
+    AppPopupSelectEntry(value: VariableType.string, label: 'string'),
+    AppPopupSelectEntry(value: VariableType.secret, label: 'secret'),
+  ],
+  onSelected: (type) => ...,
+)
+```
+
+> 不再直接使用 `DropdownButton` / `DropdownButtonFormField`：
+> 其菜单容器（圆角/边框/项尺寸）无法与本规范对齐。
+
 ---
 
 ## 布局规范

@@ -13,6 +13,7 @@ import '../../utils/testing/ui_test_mode.dart';
 import '../../widgets/import/curl_import_dialog.dart';
 import '../../widgets/import_export/export_dialog.dart';
 import '../../widgets/import_export/import_dialog.dart';
+import '../common/app_popup_menu.dart';
 import '../environment/environment_manager_dialog.dart';
 import '../environment/environment_switcher.dart';
 
@@ -496,7 +497,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
                     ref.read(requestTabProvider.notifier).openTab(request);
                     ref.read(activeTabIdProvider.notifier).state = request.id;
                   },
-            onSecondaryTap: () => _showRequestContextMenu(context, request),
+            onSecondaryTapDown: (details) => _showRequestContextMenu(
+                context, request, details.globalPosition, setState),
             hoverColor: AppColors.primary.withOpacity(0.04),
             splashColor: AppColors.primary.withOpacity(0.08),
             child: Container(
@@ -678,55 +680,23 @@ class _SidebarState extends ConsumerState<Sidebar> {
           ),
           offset: const Offset(0, 24),
           constraints: const BoxConstraints(minWidth: 140),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.radiusM),
-            side: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
-          ),
-          elevation: 4,
-          color: theme.colorScheme.surface,
+          shape: AppPopupMenu.menuShape(theme),
+          elevation: AppPopupMenu.menuElevation,
+          color: AppPopupMenu.menuColor(theme),
           itemBuilder: (context) => [
-            PopupMenuItem(
+            AppPopupMenu.iconItem(
+              theme: theme,
               value: 'rename',
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.edit_outlined,
-                    size: 14,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Rename',
-                    style: AppTextStyles.caption.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+              icon: Icons.edit_outlined,
+              label: 'Rename',
             ),
-            PopupMenuItem(
+            AppPopupMenu.iconItem(
+              theme: theme,
               value: 'delete',
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.delete_outline,
-                    size: 14,
-                    color: AppColors.error,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Delete',
-                    style: AppTextStyles.caption.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.error,
-                    ),
-                  ),
-                ],
-              ),
+              icon: Icons.delete_outline,
+              label: 'Delete',
+              iconColor: AppColors.error,
+              labelColor: AppColors.error,
             ),
           ],
           onSelected: (value) {
@@ -804,49 +774,44 @@ class _SidebarState extends ConsumerState<Sidebar> {
     });
   }
 
-  /// 显示请求右键菜单
+  /// 显示请求右键菜单（在指针位置弹出，样式与 ⋮ 菜单统一）
   void _showRequestContextMenu(
     BuildContext context,
     HttpRequest request,
+    Offset position,
+    StateSetter setState,
   ) {
     final theme = Theme.of(context);
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
 
     showMenu(
       context: context,
-      position: const RelativeRect.fromLTRB(100, 100, 0, 0),
+      position: RelativeRect.fromRect(
+        position & const Size(1, 1),
+        Offset.zero & overlay.size,
+      ),
+      shape: AppPopupMenu.menuShape(theme),
+      elevation: AppPopupMenu.menuElevation,
+      color: AppPopupMenu.menuColor(theme),
       items: [
-        PopupMenuItem(
+        AppPopupMenu.iconItem(
+          theme: theme,
           value: 'rename',
-          child: Row(
-            children: [
-              Icon(
-                Icons.edit,
-                size: 16,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 8),
-              const Text('Rename'),
-            ],
-          ),
+          icon: Icons.edit_outlined,
+          label: 'Rename',
         ),
-        PopupMenuItem(
+        AppPopupMenu.iconItem(
+          theme: theme,
           value: 'delete',
-          child: Row(
-            children: [
-              Icon(
-                Icons.delete,
-                size: 16,
-                color: AppColors.error,
-              ),
-              const SizedBox(width: 8),
-              const Text('Delete'),
-            ],
-          ),
+          icon: Icons.delete_outline,
+          label: 'Delete',
+          iconColor: AppColors.error,
+          labelColor: AppColors.error,
         ),
       ],
     ).then((value) {
       if (value == 'rename') {
-        // 触发编辑状态
+        _startEditingName(request.id, request.name, setState);
       } else if (value == 'delete') {
         _showDeleteRequestConfirmation(context, request);
       }
@@ -921,119 +886,44 @@ class _SidebarState extends ConsumerState<Sidebar> {
           ),
           offset: const Offset(0, 28),
           constraints: const BoxConstraints(minWidth: 160),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.radiusM),
-            side: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
-          ),
-          elevation: 4,
-          color: theme.colorScheme.surface,
+          shape: AppPopupMenu.menuShape(theme),
+          elevation: AppPopupMenu.menuElevation,
+          color: AppPopupMenu.menuColor(theme),
           itemBuilder: (context) => [
-            PopupMenuItem(
+            AppPopupMenu.iconItem(
+              theme: theme,
               value: 'add_request',
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.add,
-                    size: 14,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Add Request',
-                    style: AppTextStyles.caption.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+              icon: Icons.add,
+              label: 'Add Request',
+              iconColor: AppColors.primary,
             ),
-            PopupMenuItem(
+            AppPopupMenu.iconItem(
+              theme: theme,
               value: 'add_folder',
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.create_new_folder_outlined,
-                    size: 14,
-                    color: AppColors.info,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Add Folder',
-                    style: AppTextStyles.caption.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+              icon: Icons.create_new_folder_outlined,
+              label: 'Add Folder',
+              iconColor: AppColors.info,
             ),
             const PopupMenuDivider(height: 1),
-            PopupMenuItem(
+            AppPopupMenu.iconItem(
+              theme: theme,
               value: 'export',
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.upload,
-                    size: 14,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Export',
-                    style: AppTextStyles.caption.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+              icon: Icons.upload,
+              label: 'Export',
             ),
-            PopupMenuItem(
+            AppPopupMenu.iconItem(
+              theme: theme,
               value: 'rename',
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.edit_outlined,
-                    size: 14,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Rename',
-                    style: AppTextStyles.caption.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+              icon: Icons.edit_outlined,
+              label: 'Rename',
             ),
-            PopupMenuItem(
+            AppPopupMenu.iconItem(
+              theme: theme,
               value: 'delete',
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.delete_outline,
-                    size: 14,
-                    color: AppColors.error,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Delete',
-                    style: AppTextStyles.caption.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.error,
-                    ),
-                  ),
-                ],
-              ),
+              icon: Icons.delete_outline,
+              label: 'Delete',
+              iconColor: AppColors.error,
+              labelColor: AppColors.error,
             ),
           ],
           onSelected: (value) {
@@ -1240,12 +1130,9 @@ class _SidebarState extends ConsumerState<Sidebar> {
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
       offset: const Offset(0, 28),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.radiusM),
-        side: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
-      ),
-      elevation: 4,
-      color: theme.colorScheme.surface,
+      shape: AppPopupMenu.menuShape(theme),
+      elevation: AppPopupMenu.menuElevation,
+      color: AppPopupMenu.menuColor(theme),
       onSelected: (value) {
         switch (value) {
           case 'about':
@@ -1266,95 +1153,37 @@ class _SidebarState extends ConsumerState<Sidebar> {
         }
       },
       itemBuilder: (context) => [
-        PopupMenuItem(
+        AppPopupMenu.iconItem(
+          theme: theme,
           value: 'new',
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              Icon(Icons.add, size: 14, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Text(
-                'New Collection',
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
+          icon: Icons.add,
+          label: 'New Collection',
+          iconColor: AppColors.primary,
         ),
-        PopupMenuItem(
+        AppPopupMenu.iconItem(
+          theme: theme,
           value: 'import',
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              Icon(Icons.download,
-                  size: 14, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(width: 8),
-              Text(
-                'Import Postman',
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
+          icon: Icons.download,
+          label: 'Import Postman',
         ),
-        PopupMenuItem(
+        AppPopupMenu.iconItem(
+          theme: theme,
           value: 'import_curl',
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              Icon(Icons.terminal,
-                  size: 14, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(width: 8),
-              Text(
-                'Import from cURL',
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
+          icon: Icons.terminal,
+          label: 'Import from cURL',
         ),
-        PopupMenuItem(
+        AppPopupMenu.iconItem(
+          theme: theme,
           value: 'refresh',
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              Icon(Icons.refresh,
-                  size: 14, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(width: 8),
-              Text(
-                'Refresh',
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
+          icon: Icons.refresh,
+          label: 'Refresh',
         ),
         const PopupMenuDivider(height: 1),
-        PopupMenuItem(
+        AppPopupMenu.iconItem(
+          theme: theme,
           value: 'about',
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline,
-                  size: 14, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(width: 8),
-              Text(
-                'About',
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
+          icon: Icons.info_outline,
+          label: 'About',
         ),
       ],
     );

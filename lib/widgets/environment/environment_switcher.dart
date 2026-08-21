@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/providers.dart';
 import '../../utils/constants.dart';
+import '../common/app_popup_menu.dart';
 import 'environment_manager_dialog.dart';
 
 /// 环境切换器
@@ -49,22 +50,25 @@ class EnvironmentSwitcher extends ConsumerWidget {
               tooltip: 'Select environment',
               offset: const Offset(0, 28),
               constraints: const BoxConstraints(minWidth: 160, maxWidth: 280),
+              shape: AppPopupMenu.menuShape(theme),
+              elevation: AppPopupMenu.menuElevation,
+              color: AppPopupMenu.menuColor(theme),
               onSelected: (id) {
                 ref.read(activeEnvironmentIdProvider.notifier).setActive(id);
               },
               itemBuilder: (context) => [
-                _buildMenuItem(
-                  theme,
-                  null,
-                  'No Environment',
+                AppPopupMenu.textItem(
+                  theme: theme,
+                  value: null,
+                  label: 'No Environment',
                   selected: activeEnv == null,
-                  isPlaceholder: true,
+                  color: theme.colorScheme.outline,
                 ),
                 for (final env in environments)
-                  _buildMenuItem(
-                    theme,
-                    env.id,
-                    env.name,
+                  AppPopupMenu.textItem(
+                    theme: theme,
+                    value: env.id,
+                    label: env.name,
                     selected: activeEnv?.id == env.id,
                   ),
               ],
@@ -118,33 +122,6 @@ class EnvironmentSwitcher extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  PopupMenuItem<String?> _buildMenuItem(
-    ThemeData theme,
-    String? value,
-    String label, {
-    required bool selected,
-    bool isPlaceholder = false,
-  }) {
-    return PopupMenuItem<String?>(
-      value: value,
-      height: 36,
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 12,
-          color: isPlaceholder
-              ? theme.colorScheme.outline
-              : selected
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface,
-          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-        ),
       ),
     );
   }

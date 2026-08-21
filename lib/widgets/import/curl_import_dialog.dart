@@ -14,6 +14,7 @@ import '../../../providers/curl/curl_import_provider.dart';
 import '../../../providers/request/request_tab_provider.dart';
 import '../../../utils/app_logger.dart';
 import '../../../utils/constants.dart';
+import '../common/app_popup_menu.dart';
 
 /// 显示 cURL 导入对话框
 Future<void> showCurlImportDialog(BuildContext context) async {
@@ -670,37 +671,23 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
               ),
             ),
             const SizedBox(height: 4),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: theme.colorScheme.outlineVariant,
-                ),
-                borderRadius: BorderRadius.circular(AppConstants.radiusM),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedCollectionId,
-                  isExpanded: true,
-                  icon: const Icon(Icons.arrow_drop_down, size: 20),
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  borderRadius: BorderRadius.circular(AppConstants.radiusM),
-                  items: collections.map((collection) {
-                    return DropdownMenuItem<String>(
-                      value: collection.id,
-                      child: Text(
-                        collection.name,
-                        style: const TextStyle(fontSize: 13),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCollectionId = value;
-                    });
-                  },
-                ),
-              ),
+            AppPopupSelect<String>(
+              value: _selectedCollectionId,
+              hint: 'Select Collection',
+              boxed: true,
+              fontSize: 13,
+              items: [
+                for (final collection in collections)
+                  AppPopupSelectEntry(
+                    value: collection.id,
+                    label: collection.name,
+                  ),
+              ],
+              onSelected: (value) {
+                setState(() {
+                  _selectedCollectionId = value;
+                });
+              },
             ),
           ],
         );

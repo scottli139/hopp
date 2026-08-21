@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/environment.dart';
 import '../../providers/providers.dart';
 import '../../utils/constants.dart';
+import '../common/app_popup_menu.dart';
 
 /// 打开环境管理对话框
 Future<void> showEnvironmentManagerDialog(BuildContext context) {
@@ -566,50 +567,25 @@ class _EnvironmentManagerDialogState
               ),
             ),
           ),
-          // Type
+          // Type（统一样式的弹出选择器）
           Expanded(
             flex: 2,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<VariableType>(
-                  value: variable.type,
-                  isExpanded: true,
-                  isDense: true,
-                  // 显式指定文字颜色：未指定时在部分主题下解析为浅色，
-                  // 导致亮色模式下几乎不可读
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: theme.colorScheme.onSurface,
+              child: AppPopupSelect<VariableType>(
+                value: variable.type,
+                items: const [
+                  AppPopupSelectEntry(
+                    value: VariableType.string,
+                    label: 'string',
                   ),
-                  items: [
-                    DropdownMenuItem(
-                      value: VariableType.string,
-                      child: Text(
-                        'string',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    DropdownMenuItem(
-                      value: VariableType.secret,
-                      child: Text(
-                        'secret',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ],
-                  onChanged: (type) {
-                    if (type != null) {
-                      _updateVariable(variable.copyWith(type: type));
-                    }
-                  },
-                ),
+                  AppPopupSelectEntry(
+                    value: VariableType.secret,
+                    label: 'secret',
+                  ),
+                ],
+                onSelected: (type) =>
+                    _updateVariable(variable.copyWith(type: type)),
               ),
             ),
           ),

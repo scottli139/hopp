@@ -11,6 +11,7 @@ import '../../utils/app_logger.dart';
 import '../../utils/constants.dart';
 import '../../utils/testing/ui_test_mode.dart';
 import '../../utils/url_params_sync.dart';
+import '../common/app_popup_menu.dart';
 import '../common/code_editor.dart';
 
 class RequestEditor extends ConsumerStatefulWidget {
@@ -232,6 +233,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: MenuAnchor(
               controller: _methodMenuController,
+              style: AppPopupMenu.menuStyle(theme),
               menuChildren: HttpMethod.values.map((method) {
                 final color = _getMethodColor(method.value);
                 return MenuItemButton(
@@ -1553,6 +1555,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       ),
       child: MenuAnchor(
         controller: _rawContentTypeMenuController,
+        style: AppPopupMenu.menuStyle(theme),
         menuChildren: contentTypes.map((type) {
           return MenuItemButton(
             style: MenuItemButton.styleFrom(

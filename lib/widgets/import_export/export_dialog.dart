@@ -13,6 +13,7 @@ import '../../../providers/import_export/import_export_provider.dart';
 import '../../../services/import_export/postman_schema.dart';
 import '../../../utils/app_logger.dart';
 import '../../../utils/constants.dart';
+import '../common/app_popup_menu.dart';
 
 /// Show export dialog
 Future<void> showExportDialog(
@@ -241,37 +242,28 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Collection selection
-            DropdownButtonFormField<String>(
+            Text(
+              'Select Collection',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            AppPopupSelect<String>(
               value: _selectedCollectionId,
-              decoration: InputDecoration(
-                labelText: 'Select Collection',
-                labelStyle: AppTextStyles.bodySmall.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.radiusM),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.spaceM,
-                  vertical: AppConstants.spaceS,
-                ),
-                isDense: true,
-              ),
-              style: AppTextStyles.bodySmall.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-              items: collections.map((collection) {
-                return DropdownMenuItem(
-                  value: collection.id,
-                  child: Text(
-                    collection.name,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: theme.colorScheme.onSurface,
-                    ),
+              hint: 'Select Collection',
+              boxed: true,
+              fontSize: 13,
+              items: [
+                for (final collection in collections)
+                  AppPopupSelectEntry(
+                    value: collection.id,
+                    label: collection.name,
                   ),
-                );
-              }).toList(),
-              onChanged: (value) {
+              ],
+              onSelected: (value) {
                 setState(() {
                   _selectedCollectionId = value;
                 });
@@ -280,39 +272,29 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
             const SizedBox(height: 16),
 
             // Format version
-            DropdownButtonFormField<PostmanVersion>(
+            Text(
+              'Format Version',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            AppPopupSelect<PostmanVersion>(
               value: _version,
-              decoration: InputDecoration(
-                labelText: 'Format Version',
-                labelStyle: AppTextStyles.bodySmall.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.radiusM),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.spaceM,
-                  vertical: AppConstants.spaceS,
-                ),
-                isDense: true,
-              ),
-              style: AppTextStyles.bodySmall.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-              items: PostmanVersion.values.map((version) {
-                return DropdownMenuItem(
-                  value: version,
-                  child: Text(
-                    version.value,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: theme.colorScheme.onSurface,
-                    ),
+              boxed: true,
+              fontSize: 13,
+              items: [
+                for (final version in PostmanVersion.values)
+                  AppPopupSelectEntry(
+                    value: version,
+                    label: version.value,
                   ),
-                );
-              }).toList(),
-              onChanged: (value) {
+              ],
+              onSelected: (value) {
                 setState(() {
-                  _version = value!;
+                  _version = value;
                 });
               },
             ),

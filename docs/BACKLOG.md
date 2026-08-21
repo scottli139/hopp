@@ -26,12 +26,13 @@
 | F2.4 | Postman 导入/导出 | 2026-03-16 | Collection/Environment 支持 v2.0/v2.1 格式 |
 | F1.1-1 | 4XX/5XX 响应修复 | 2026-03-17 | 正确显示服务端返回的错误内容 |
 | F1.11-1 | 真实证书获取 | 2026-03-17 | Certificate Tab 显示真实 SSL/TLS 证书 |
+| M8.0 | 状态纠偏 + UX 审计 | 2026-08-21 | test-mode 逐屏截图 + 读图复核，瑕疵清单见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md) |
 
 ### 进行中 🔄
 
 | ID | 功能 | 优先级 | 预估工作量 | 说明 |
 |----|------|--------|------------|------|
-| M8.0 | 状态纠偏 + UX 审计 | ⭐⭐⭐ | 1-2天 | 跑 app 逐屏过，产出瑕疵清单 |
+| — | 暂无 | | | |
 
 ---
 
@@ -148,7 +149,11 @@
 
 | 问题 | 优先级 | 状态 |
 |------|--------|------|
-| 行号与内容滚动不同步 | P2 | 待修（CodeEditor 组件） |
+| 行号与内容滚动不同步 | P2 | 待修（CodeEditor 组件；test-mode 滚动指令修复前需人工验证，见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md) TI-03） |
+| Settings Tab 内容不可滚动，空间不足直接裁切（UI-01） | P2 | 待修（2026-08-21 M8.0 审计） |
+| 响应区空状态/工具条溢出 BOTTOM OVERFLOWED（UI-02） | P2 | 待修（2026-08-21 M8.0 审计） |
+| 布局重建把请求编辑器 Tab 重置回 Params（UI-03） | P2 | 待修（2026-08-21 M8.0 审计） |
+| auto header 判定硬编码 key 集合，手填同名 header 会被误标（UI-04） | P3 | 待修（2026-08-21 M8.0 审计） |
 | ~~导出对话框主按钮疑似缺失/文字重叠~~ | ~~P1~~ | ✅ 已复核排除（2026-08-20，RepaintBoundary 截图 + 像素级复核）：Export 按钮存在，未选 Collection 时为禁用态（低对比度导致 OCR 漏识别）；"Select Collection" 显示完整，"lect Collection" 系 OCR 误读 |
 | ~~测试日志噪音~~ | ~~P2~~ | ✅ 已修复（2026-08-20）：`_AllLogFilter` 在 `flutter test` 环境（进程环境变量 `FLUTTER_TEST=true`）下只输出 warning 及以上级别，trace/debug/info 不再刷屏；单个测试文件输出 120 行 → 10 行。注意编译期 `bool.fromEnvironment('FLUTTER_TEST')` 在 Flutter 3.27.4 下为 false，必须用 `Platform.environment` 检测 |
 
@@ -165,6 +170,7 @@
 | TD-1 | 后代集合遍历逻辑重复 | `collection_provider.dart` 的 `collectDescendants` 与 `postman_import_service.dart` 的 `_collectAllChildIds` 是同一段「按 parentId 递归收集子孙」逻辑 | 抽成公共工具函数，两处复用 | P2 | 下次改动集合层级 / 导入导出逻辑时 |
 | TD-2 | URL 查询参数解析重复 | `utils/url_params_sync.dart` 已提供 parse/build/sync，但 `http_service.dart`、`postman_mapper.dart`、`curl_import_service.dart` 各自重写 | 统一走 `url_params_sync.dart` | P2 | 下次改动 URL 处理相关代码时 |
 | TD-3 | Timing 的 TCP/TLS/TTFB 为估算值 | `http_service.dart` 用硬编码 `30/20/45` 及 `totalMs ~/ 3` 填充 | 改为真实测量，测不到就标记为未测量（null），避免误导 | P2 | 实现真实计时或重做 Timing Tab 时 |
+| TD-4 | UI 测试指令存在死指令/不可靠指令 | `set_window_size`、`trigger_curl_import_dialog` 无监听者；`scroll_response` 只驱动 Certificate 控制器；`switch_request_tab` / `expand_raw_content_type_dropdown` one-shot 不可靠（详见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md) TI-01～04） | 补齐监听、修正滚动目标、指令改幂等 | P2 | 下次扩展 UI 自动化测试时 |
 
 ---
 
@@ -172,7 +178,7 @@
 
 ### v0.8.0 - 战略转型：本地 + 私有 AI
 
-- [ ] 状态纠偏 + UX 审计
+- [x] 状态纠偏 + UX 审计（2026-08-21，见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md)）
 - [ ] 环境变量系统（作为基础）
 - [ ] 预请求链 + 变量转换（登录→token、密码加密）
 - [ ] Tier 0：OpenAPI 导入生成请求

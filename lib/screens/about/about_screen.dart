@@ -1,8 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../utils/app_logger.dart';
 
 /// About Screen - Displays app information and branding
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
+
+  /// 打开外部链接（系统默认浏览器）
+  static Future<void> _openLink(String url) async {
+    final uri = Uri.parse(url);
+    final canLaunch = await canLaunchUrl(uri);
+    AppLogger.info('[About] open link: $url, canLaunch=$canLaunch');
+    if (canLaunch) {
+      final launched =
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+      AppLogger.info('[About] launchUrl result: $launched');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -360,6 +375,7 @@ class AboutScreen extends StatelessWidget {
               icon: Icons.home_outlined,
               title: 'GitHub Repository',
               subtitle: 'github.com/scottli139/hopp',
+              url: 'https://github.com/scottli139/hopp',
             ),
             const Divider(height: 24),
             _buildLinkItem(
@@ -367,6 +383,7 @@ class AboutScreen extends StatelessWidget {
               icon: Icons.bug_report_outlined,
               title: 'Report Issues',
               subtitle: 'Submit bug reports and feature requests',
+              url: 'https://github.com/scottli139/hopp/issues',
             ),
             const Divider(height: 24),
             _buildLinkItem(
@@ -374,6 +391,8 @@ class AboutScreen extends StatelessWidget {
               icon: Icons.favorite_outline,
               title: 'Contribute',
               subtitle: 'Help make Hopp better',
+              url:
+                  'https://github.com/scottli139/hopp/blob/main/CONTRIBUTING.md',
             ),
           ],
         ),
@@ -386,14 +405,13 @@ class AboutScreen extends StatelessWidget {
     required IconData icon,
     required String title,
     required String subtitle,
+    required String url,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return InkWell(
-      onTap: () {
-        // TODO: Implement link opening
-      },
+      onTap: () => _openLink(url),
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),

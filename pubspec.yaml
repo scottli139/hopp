@@ -33,6 +33,7 @@ dependencies:
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
   crypto: ^3.0.3
+  url_launcher: ^6.3.1
   
   # UI Components
   flutter_code_editor: ^0.3.2

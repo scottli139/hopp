@@ -59,6 +59,33 @@ class _SidebarState extends ConsumerState<Sidebar> {
       }
     });
 
+    // Listen to new collection dialog trigger
+    ref.listen<int?>(uiTestNewCollectionDialogProvider, (previous, current) {
+      if (current != null && current != previous) {
+        _showNewCollectionDialog(context);
+      }
+    });
+
+    // Listen to add folder dialog trigger（以第一个 Collection 为父级）
+    ref.listen<int?>(uiTestAddFolderDialogProvider, (previous, current) {
+      if (current != null && current != previous) {
+        ref.read(collectionProvider).whenData((collections) {
+          if (collections.isNotEmpty) {
+            _showAddFolderDialog(context, collections.first);
+          }
+        });
+      }
+    });
+
+    // Listen to open about screen trigger
+    ref.listen<int?>(uiTestOpenAboutScreenProvider, (previous, current) {
+      if (current != null && current != previous) {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const AboutScreen()),
+        );
+      }
+    });
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -1030,71 +1057,89 @@ class _SidebarState extends ConsumerState<Sidebar> {
   }
 
   void _showAddFolderDialog(BuildContext context, Collection parentCollection) {
-    final controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('New Folder'),
-        content: TextField(
-          controller: controller,
-          decoration: AppComponentStyles.outlineInputDecoration(
-            hintText: 'Enter folder name',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                final newFolder = Collection.empty().copyWith(
-                  name: controller.text,
-                  parentId: parentCollection.id,
-                );
-                ref.read(collectionProvider.notifier).addCollection(newFolder);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Create'),
-          ),
-        ],
-      ),
+    _showNameInputDialog(
+      context,
+      title: 'New Folder',
+      hintText: 'Enter folder name',
+      onCreate: (name) {
+        final newFolder = Collection.empty().copyWith(
+          name: name,
+          parentId: parentCollection.id,
+        );
+        ref.read(collectionProvider.notifier).addCollection(newFolder);
+      },
     );
   }
 
   void _showNewCollectionDialog(BuildContext context) {
+    _showNameInputDialog(
+      context,
+      title: 'New Collection',
+      hintText: 'Enter collection name',
+      onCreate: (name) {
+        ref.read(collectionProvider.notifier).addCollection(
+              Collection.empty().copyWith(name: name),
+            );
+      },
+    );
+  }
+
+  /// 规范样式的命名输入对话框（New Collection / New Folder 共用）
+  ///
+  /// 遵循 UI_UX_GUIDELINES：标题 AppTextStyles.title、输入框 36px 高、
+  /// Cancel 用 ghostButton、主按钮用 primaryButton、按钮文字 caption。
+  void _showNameInputDialog(
+    BuildContext context, {
+    required String title,
+    required String hintText,
+    required void Function(String name) onCreate,
+  }) {
     final controller = TextEditingController();
+    final theme = Theme.of(context);
+
+    void submit() {
+      if (controller.text.isNotEmpty) {
+        onCreate(controller.text);
+        Navigator.pop(context);
+      }
+    }
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('New Collection'),
-        content: TextField(
-          controller: controller,
-          decoration: AppComponentStyles.outlineInputDecoration(
-            hintText: 'Enter collection name',
+        title: Text(
+          title,
+          style: AppTextStyles.title.copyWith(
+            color: theme.colorScheme.onSurface,
           ),
-          autofocus: true,
+        ),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: SizedBox(
+            height: AppConstants.buttonHeightM,
+            child: TextField(
+              controller: controller,
+              autofocus: true,
+              style: AppTextStyles.body.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+              decoration: AppComponentStyles.outlineInputDecoration(
+                hintText: hintText,
+              ),
+              onSubmitted: (_) => submit(),
+            ),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            style: AppComponentStyles.ghostButton(context),
+            child: const Text('Cancel', style: AppTextStyles.caption),
           ),
           FilledButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                ref.read(collectionProvider.notifier).addCollection(
-                      Collection.empty().copyWith(name: controller.text),
-                    );
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Create'),
+            style: AppComponentStyles.primaryButton(context),
+            onPressed: submit,
+            child: const Text('Create', style: AppTextStyles.caption),
           ),
         ],
       ),

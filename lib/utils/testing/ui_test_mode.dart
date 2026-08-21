@@ -13,6 +13,7 @@ import 'dart:convert';
 import 'dart:io' as io;
 import 'dart:ui' as ui;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -237,6 +238,18 @@ class UITestModeManager {
         final amount = params['amount'] as int? ?? 100;
         return await _scrollResponse(direction, amount);
 
+      case 'tap_at':
+        final x = (params['x'] as num).toDouble();
+        final y = (params['y'] as num).toDouble();
+        return await _tapAt(x, y);
+
+      case 'scroll_at':
+        final x = (params['x'] as num).toDouble();
+        final y = (params['y'] as num).toDouble();
+        final dx = (params['dx'] as num?)?.toDouble() ?? 0;
+        final dy = (params['dy'] as num?)?.toDouble() ?? -100;
+        return await _scrollAt(x, y, dx, dy);
+
       case 'set_window_size':
         final width = params['width'] as int?;
         final height = params['height'] as int?;
@@ -296,6 +309,15 @@ class UITestModeManager {
 
       case 'trigger_delete_collection_dialog':
         return await _triggerDeleteCollectionDialog();
+
+      case 'trigger_new_collection_dialog':
+        return await _triggerNewCollectionDialog();
+
+      case 'trigger_add_folder_dialog':
+        return await _triggerAddFolderDialog();
+
+      case 'open_about_screen':
+        return await _triggerOpenAboutScreen();
 
       case 'simulate_4xx_response':
         final statusCode = params['status_code'] as int? ?? 400;
@@ -1417,6 +1439,47 @@ class UITestModeManager {
     };
   }
 
+  /// 在指定逻辑坐标注入一次点击（指针 down/up 事件，走真实命中测试）
+  ///
+  /// 坐标为逻辑像素（窗口左上角原点），截图为 @2x 时需除以 2。
+  Future<Map<String, dynamic>> _tapAt(double x, double y) async {
+    final position = Offset(x, y);
+    final viewId = ui.PlatformDispatcher.instance.implicitView?.viewId ?? 0;
+
+    // 先自行命中测试一次，用于诊断报告
+    final probe = HitTestResult();
+    GestureBinding.instance.hitTestInView(probe, position, viewId);
+
+    // down 事件由 handlePointerEvent 自动命中测试并记录；
+    // up 事件按 pointer id 复用同一路径分发
+    GestureBinding.instance
+        .handlePointerEvent(PointerDownEvent(position: position));
+    await Future.delayed(const Duration(milliseconds: 80));
+    GestureBinding.instance
+        .handlePointerEvent(PointerUpEvent(position: position));
+    AppLogger.info('[UI_TEST] tap_at ($x, $y), hit targets: '
+        '${probe.path.length}');
+
+    return {
+      'tapped': true,
+      'x': x,
+      'y': y,
+      'hitTargets': probe.path.length,
+    };
+  }
+
+  /// 在指定逻辑坐标注入滚轮滚动事件（作用于命中位置下的 Scrollable）
+  Future<Map<String, dynamic>> _scrollAt(
+      double x, double y, double dx, double dy) async {
+    final position = Offset(x, y);
+    GestureBinding.instance.handlePointerEvent(
+      PointerScrollEvent(position: position, scrollDelta: Offset(dx, dy)),
+    );
+    AppLogger.info('[UI_TEST] scroll_at ($x, $y) delta ($dx, $dy)');
+
+    return {'scrolled': true, 'x': x, 'y': y, 'dx': dx, 'dy': dy};
+  }
+
   /// 设置窗口大小
   Future<Map<String, dynamic>> _setWindowSize(int? width, int? height) async {
     // 设置窗口大小状态通知 UI
@@ -1719,6 +1782,30 @@ class UITestModeManager {
   Future<Map<String, dynamic>> _triggerDeleteCollectionDialog() async {
     // 设置状态通知 UI 显示删除 Collection 对话框
     _ref!.read(uiTestDeleteCollectionDialogProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {'triggered': true};
+  }
+
+  /// 触发新建 Collection 对话框
+  Future<Map<String, dynamic>> _triggerNewCollectionDialog() async {
+    _ref!.read(uiTestNewCollectionDialogProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {'triggered': true};
+  }
+
+  /// 触发新建 Folder 对话框
+  Future<Map<String, dynamic>> _triggerAddFolderDialog() async {
+    _ref!.read(uiTestAddFolderDialogProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {'triggered': true};
+  }
+
+  /// 打开 About 页面
+  Future<Map<String, dynamic>> _triggerOpenAboutScreen() async {
+    _ref!.read(uiTestOpenAboutScreenProvider.notifier).state =
         DateTime.now().millisecondsSinceEpoch;
 
     return {'triggered': true};
@@ -2557,6 +2644,15 @@ final uiTestExportDialogProvider = StateProvider<int?>((ref) => null);
 
 /// UI 测试 - 删除 Collection 对话框触发器
 final uiTestDeleteCollectionDialogProvider = StateProvider<int?>((ref) => null);
+
+/// UI 测试 - 新建 Collection 对话框触发器
+final uiTestNewCollectionDialogProvider = StateProvider<int?>((ref) => null);
+
+/// UI 测试 - 新建 Folder 对话框触发器
+final uiTestAddFolderDialogProvider = StateProvider<int?>((ref) => null);
+
+/// UI 测试 - 打开 About 页面触发器
+final uiTestOpenAboutScreenProvider = StateProvider<int?>((ref) => null);
 
 /// UI 测试 - cURL 导入对话框触发器
 final uiTestCurlImportDialogProvider = StateProvider<int?>((ref) => null);

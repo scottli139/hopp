@@ -1,6 +1,6 @@
 # Hopp 开发计划与里程碑
 
-> 本文档记录 Hopp 项目的开发计划、里程碑和任务进度。详细实现说明请查看 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md)。
+> 本文档只记录开发计划、里程碑和任务进度。设计规范见 [UI_UX_GUIDELINES.md](./UI_UX_GUIDELINES.md)，技术栈与依赖见 [ARCHITECTURE.md](./ARCHITECTURE.md)，详细实现说明见 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md)，测试方案见 [TESTING.md](./TESTING.md)。
 
 ---
 
@@ -95,12 +95,7 @@
 | MethodChannel 通信 | ✅ | P0 | Swift ↔ Dart |
 | Peekaboo E2E 测试 | ✅ | P1 | 完整自动化测试套件 |
 
-**快捷键**:
-- `Cmd+N` - 新建请求
-- `Cmd+Enter` - 发送请求
-- `Cmd+S` - 保存请求
-- `Cmd+W` - 关闭标签
-- `Cmd+1-9` - 切换标签
+快捷键清单见 [UI_UX_GUIDELINES.md](./UI_UX_GUIDELINES.md#快捷键)。
 
 #### M3.4 HTTPS 证书查看 (F1.11)
 
@@ -123,12 +118,7 @@
 | 虚拟化列表 | ✅ | P1 | 初始 500 行，支持加载更多 |
 | UI 测试支持 | ✅ | P1 | 3 个测试指令 |
 
-**优化策略**:
-| 响应大小 | 默认模式 | 说明 |
-|---------|---------|------|
-| < 10KB | Full | 完整语法高亮 |
-| 10KB - 50KB | Full | 完整语法高亮 |
-| > 50KB | Performance | 虚拟化列表，轻量高亮 |
+显示模式切换策略见 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md#响应优化-optimizedresponseviewer)。
 
 #### M3.6 请求时间分析 (Timing)
 
@@ -242,25 +232,7 @@
 - Dio HTTP 客户端配置
 - 平台原生 TLS/SSL 配置支持
 
-**核心功能列表**:
-
-| 功能项 | 类型 | 默认值 | 说明 | 状态 |
-|--------|------|--------|------|------|
-| HTTP Version | Dropdown | Auto | HTTP 版本选择 (Auto/HTTP1.1/HTTP2) | ⏳ |
-| Enable SSL certificate verification | Toggle | ON | SSL 证书验证开关 | ✅ 已实现 |
-| Automatically follow redirects | Toggle | ON | 自动跟随 HTTP 3xx 重定向 | ✅ 已实现 |
-| Follow original HTTP Method | Toggle | OFF | 重定向时使用原始 HTTP 方法而非 GET | ⏳ |
-| Follow Authorization header | Toggle | OFF | 跨域重定向时保留 Authorization 头 | ⏳ |
-| Remove referer header on redirect | Toggle | OFF | 重定向时移除 Referer 头 | ⏳ |
-| Enable strict HTTP parser | Toggle | OFF | 严格解析 HTTP 响应头 | ⏳ |
-| Encode URL automatically | Toggle | ON | 自动编码 URL 路径、参数和认证字段 | ⏳ |
-| Disable cookie jar | Toggle | OFF | 禁用该请求的 Cookie 存储和发送 | ⏳ |
-| Use server cipher suite during handshake | Toggle | OFF | TLS 握手时使用服务器加密套件顺序 | ⏳ |
-| Maximum number of redirects | Number Input | 10 | 最大重定向次数上限 | ✅ 已实现 |
-| TLS/SSL protocols disabled | Multi-select | - | 禁用的 TLS/SSL 协议版本 | ⏳ |
-| Cipher suite selection | Text Input | - | 自定义加密套件列表 | ⏳ |
-
-详细实现说明请查看 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md#请求设置-request-settings)。
+**功能清单**: 13 项请求级设置中已实现 3 项（SSL 证书验证开关、自动跟随重定向、最大重定向次数），完整清单与 Dio 支持度分析见 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md#请求设置-request-settings)。
 
 #### M4.2 数据库迁移框架
 
@@ -303,23 +275,7 @@
 - 所有 Body 类型映射
 - 冲突处理机制 (覆盖/重命名/合并/跳过)
 
-**Body 类型映射表**:
-| Postman mode | Hopp BodyType |
-|--------------|---------------|
-| raw | raw (支持 json/xml/html/javascript/text 子类型) |
-| urlencoded | x-www-form-urlencoded |
-| formdata | form-data (文本类型) |
-| graphql | graphql |
-| binary | binary |
-
-**依赖库**:
-```yaml
-dependencies:
-  file_picker: ^6.1.1
-  uuid: ^4.3.3
-```
-
-详细实现说明请查看 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md#postman-导入导出)。
+详细实现说明（含 Body 类型映射表）请查看 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md#postman-导入导出)。
 
 ---
 
@@ -340,57 +296,13 @@ dependencies:
 | 动态变量 | ✅ | P2 | 6h | `$timestamp`/`$timestampMs`/`$isoTimestamp`/`$randomUUID`/`$randomInt` |
 | 未定义变量标记 | ✅ | P1 | 3h | 切换器 + URL 栏警告图标（替代悬停预览/快速编辑） |
 | 变量预览/快速编辑 | ⏳ | P2 | 7h | 悬停显示变量值，双击快速编辑（后续迭代） |
-| 环境导入/导出 | ✅ | P1 | - | Postman Environment 导入已落地（导出待 F3.4） |
+| 环境导入/导出 | ✅ | P1 | - | Postman Environment 导入已落地（导出待 F3.7） |
 
 **实现要点**:
 - 发送前在 `RequestResponseNotifier.sendRequest` 统一应用变量替换
 - `url_params_sync.dart` 增加占位符保护，修复 `{{var}}` 被 `Uri.parse` 百分号编码破坏的问题
 - test-mode 新增 10 个环境指令（`create_environment` / `set_active_environment` / `resolve_text` / `get_resolved_request` 等）
 - 验收：`integration_test/test_environment_variables.py` 9/9 通过
-
-#### M6.1 功能详细设计
-
-**数据模型**:
-```dart
-@freezed
-class Environment with _$Environment {
-  const factory Environment({
-    required String id,
-    required String name,
-    required List<EnvironmentVariable> variables,
-    String? description,
-  }) = _Environment;
-}
-
-@freezed
-class EnvironmentVariable with _$EnvironmentVariable {
-  const factory EnvironmentVariable({
-    required String key,
-    required String value,
-    @Default(VariableType.string) VariableType type,
-    @Default(true) bool enabled,
-  }) = _EnvironmentVariable;
-}
-
-enum VariableType { string, secret }
-```
-
-**变量替换流程**:
-```
-1. 用户发送请求前
-2. 提取当前激活的 Environment
-3. 扫描 URL/Headers/Body 中的 {{variable}} 占位符
-4. 按优先级查找变量值 (环境 > 全局，就近原则)
-5. 替换占位符为实际值
-6. 发送请求 (使用替换后的值)
-7. 在 Request Tab 中显示替换前后的对比
-```
-
-**UI 设计**:
-- 环境管理对话框 (类似 Postman)
-- 侧边栏或顶部工具栏环境切换器
-- 变量输入框支持 `{{` 触发自动建议
-- 颜色区分：已解析变量 (蓝色) / 未定义变量 (红色)
 
 **验收标准** (PRD F3.1-F3.3):
 - [x] 可创建多个环境配置 (开发/测试/生产)
@@ -399,6 +311,8 @@ enum VariableType { string, secret }
 - [x] 发送前自动替换变量为实际值
 - [x] 未定义变量在 UI 中明显标记
 - [x] 变量值支持字符串和密文类型
+
+详细设计（数据模型 / 替换流程 / UI 设计）请查看 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md#环境变量系统-m81)。
 
 ---
 
@@ -414,13 +328,7 @@ enum VariableType { string, secret }
 | Peekaboo E2E 测试 | ✅ | P2 | 完整套件 |
 | CI/CD 配置 | ✅ | P0 | GitHub Actions |
 
-**E2E 测试套件** (`integration_test/peekaboo/`):
-```bash
-cd integration_test/peekaboo
-make test   # 完整测试
-make quick  # 快速测试
-make logs   # 查看日志
-```
+测试方案、UI 测试模式与 Peekaboo 套件用法见 [TESTING.md](./TESTING.md)。
 
 ---
 
@@ -495,24 +403,9 @@ make logs   # 查看日志
 
 **状态**: ✅ 已完成 (2026-03-18)
 
-**技术方案**:
-- Tokenizer - 词法分析器
-- Parser - 语法分析器
-- 支持常用选项: `-X`, `-H`, `-d`, `-F`, `--data-urlencode`, `-u`, `-k`, `-L`
+**技术方案**: Tokenizer（词法分析）+ Parser（语法分析），支持常用选项 `-X` / `-H` / `-d` / `-F` / `--data-urlencode` / `-u` / `-k` / `-L`。
 
-**支持选项映射**:
-| cURL 选项 | 映射 |
-|-----------|------|
-| `-X POST` | `HttpMethod.post` |
-| `-H "key:value"` | `KeyValuePair` 列表 |
-| `-d "data"` | Body 内容 |
-| `-F "key=value"` | `BodyType.formData` |
-| `--data-urlencode` | URL 编码处理 |
-| `-u user:pass` | Authorization header |
-| `-k` | `validateCertificates = false` |
-| `-L` | `followRedirects = true` |
-
-详细实现说明请查看 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md#curl-导入)。
+详细实现说明（含选项映射表）请查看 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md#curl-导入)。
 
 #### M6.2 URL 参数双向联动 (Issue #11)
 
@@ -523,8 +416,6 @@ make logs   # 查看日志
 - Params Tab 修改 → 自动更新 URL
 - 使用标志位防止循环更新
 - 36 个单元测试覆盖
-
-详细实现说明请查看 [AGENTS.md](../AGENTS.md#url-查询参数与-params-tab-双向联动-issue-11)。
 
 #### M6.3 Collection 扁平化存储重构 (Issue #3)
 
@@ -539,8 +430,6 @@ make logs   # 查看日志
 - `deleteCollection`: 通过 `parentId` 查询递归删除子集合
 - `rootCollectionsProvider`: 返回根级集合
 
-详细实现说明请查看 [AGENTS.md](../AGENTS.md#collection-扁平化存储重构-issue-3)。
-
 #### M6.4 空状态入口指引 (Issue #6)
 
 **状态**: ✅ 已完成 (2026-03-19)
@@ -551,8 +440,6 @@ make logs   # 查看日志
 - Sidebar 空状态添加 "Create Collection" 按钮
 - 主区域空状态添加 "Create Request" 按钮
 - Sidebar Header 添加可见的 "+" 按钮
-
-详细实现说明请查看 [AGENTS.md](../AGENTS.md#issue-6-空状态入口指引-ux-优化)。
 
 ---
 
@@ -603,15 +490,15 @@ make logs   # 查看日志
 
 按优先级排序：
 
-| 阶段 | 内容 | 优先级 | 状态 |
-|------|------|--------|------|
-| M8.0 | 状态纠偏 + UX 审计：跑 app 逐屏过，产出可验证瑕疵清单 | P0 | ✅ (2026-08-21) |
-| M8.1 | 环境变量系统（M6）：定位「可复用 + AI 变量注入基础」 | P0 | ✅ (2026-08-21) |
-| M8.2 | 预请求链 + 变量转换（F8）：登录→token、密码 sha1/aes 加密 | P0 | ⏳ |
-| M8.3 | Tier 0（F9）：OpenAPI/Swagger 导入 → 一键生成请求/collection | P0 | ⏳ |
-| M8.4 | 轻量断言（F4 降级）：状态/Header/Body/JSONPath + AI 生成 + CLI/CI 导出 | P1 | ⏳ |
-| M8.5 | Tier 1（F9）：本地模型（Ollama/LM Studio）解释响应 / 生成断言 / 自然语言建请求 | P1 | ⏳ |
-| M8.6 | Tier 2（F9）：BYOK 云端，默认关闭 | P2 | ⏳ |
+| 阶段 | 内容 | 优先级 | 预估 | 状态 |
+|------|------|--------|------|------|
+| M8.0 | 状态纠偏 + UX 审计：跑 app 逐屏过，产出可验证瑕疵清单 | P0 | — | ✅ (2026-08-21) |
+| M8.1 | 环境变量系统（M6）：定位「可复用 + AI 变量注入基础」 | P0 | — | ✅ (2026-08-21) |
+| M8.2 | 预请求链 + 变量转换（F8.1-F8.3）：登录→token、密码 sha1/aes 加密 | P0 | ≈5 周 | ⏳ |
+| M8.3 | Tier 0（F9）：OpenAPI/Swagger 导入 → 一键生成请求/collection | P0 | ≈2 周 | ⏳ |
+| M8.4 | 轻量断言（F4.1/F4.2/F4.4）：状态/Header/Body/JSONPath + AI 生成 + CLI/CI 导出 | P1 | ≈4 周 | ⏳ |
+| M8.5 | Tier 1（F9）：本地模型（Ollama/LM Studio）解释响应 / 生成断言 / 自然语言建请求 | P1 | ≈2 周 | ⏳ |
+| M8.6 | Tier 2（F9）：BYOK 云端，默认关闭 | P2 | ≈1 周 | ⏳ |
 
 **已搁置**（原 v0.8/v0.9 规划，非差异化，暂停）：
 - Mock 服务器（F7.4）、代理（F7.5）、WebSocket（F7.1）、代码片段生成（F7.6）→ 暂缓
@@ -631,17 +518,7 @@ make logs   # 查看日志
 
 ### Backlog (未来规划)
 
-| ID | 功能 | 状态 | 说明 |
-|----|------|------|------|
-| F1.8 | Cookie 管理 | ⏸️ | 查看/编辑/导入 Cookie（认证链需要时再启） |
-| F1.9 | 文件上传/下载 | ⏸️ | multipart/form-data、文件下载 |
-| F5.6 | 字体缩放 | ⏸️ | 编辑器字体大小调整 (Ctrl+滚轮) |
-| F7.1 | WebSocket 测试 | ⏸️ | ws/wss 协议 |
-| F7.3 | API 文档生成 | ⏸️ | 从集合生成 Markdown/HTML 文档 |
-| F7.4 | Mock 服务器 | ⏸️ | 本地 Mock 服务（暂缓） |
-| F7.7 | gRPC 测试 | Backlog | Protocol Buffers 接口测试 |
-| F6.2 | 云端同步 | Backlog | 用户数据云存储（与本地优先定位冲突，谨慎） |
-| F6.3 | 团队协作 | Backlog | 多人实时协作编辑 |
+未排期的候选功能、已知问题与技术债统一由 [BACKLOG.md](./BACKLOG.md) 维护，本文档不再重复记录。
 
 ## 🐛 已知问题修复记录
 
@@ -662,76 +539,14 @@ make logs   # 查看日志
 
 ---
 
-## 🛠️ 技术栈
-
-### 核心依赖
-
-| 包名 | 版本 | 用途 |
-|-----|------|------|
-| flutter_riverpod | ^2.6.1 | 状态管理 |
-| dio | ^5.8.0+1 | HTTP 客户端 |
-| hive | ^2.2.3 | NoSQL 存储 |
-| shared_preferences | ^2.5.2 | 配置存储 |
-| freezed_annotation | ^2.4.4 | 不可变类生成 |
-| multi_split_view | ^3.6.0 | 可拖拽分割面板 |
-| flutter_code_editor | ^0.3.2 | 代码高亮 |
-| file_picker | ^10.3.10 | 文件选择 |
-| uuid | ^4.5.3 | UUID 生成 |
-| crypto | ^3.0.3 | 证书指纹计算 |
-| url_launcher | ^6.3.1 | 外部链接跳转（About 页，Issue #8） |
-
-### 开发依赖
-
-| 包名 | 版本 | 用途 |
-|-----|------|------|
-| build_runner | ^2.4.6 | 代码生成 |
-| freezed | ^2.4.5 | 不可变类生成 |
-| riverpod_generator | ^2.3.0 | Provider 生成 |
-| mockito | ^5.4.0 | 测试 Mock |
-
----
-
-## 🎨 设计规范
-
-### 颜色系统
-
-```dart
-const primaryColor = Color(0xFF6366F1);
-const successColor = Color(0xFF10B981);
-const warningColor = Color(0xFFF59E0B);
-const errorColor = Color(0xFFEF4444);
-```
-
-### 间距系统
-
-```dart
-// lib/utils/constants.dart
-class AppConstants {
-  static const double spaceXS = 4.0;
-  static const double spaceS = 8.0;
-  static const double spaceM = 12.0;
-  static const double spaceL = 16.0;
-  static const double spaceXL = 24.0;
-}
-```
-
-### 字体规范
-
-| 样式 | 字号 | 用途 |
-|------|------|------|
-| Display | 24px | 页面标题 |
-| Title | 16px | 区块标题 |
-| Body | 14px | 正文 |
-| Caption | 12px | 按钮文字 |
-| Tiny | 11px | 标签、徽章 |
-| Code | 12px | 代码显示（行号 11px） |
-
----
-
 ## 🔗 参考链接
 
-- [详细实现说明](./IMPLEMENTATION_NOTES.md)
 - [产品需求规格说明书](./PRD.md)
+- [架构设计（技术栈与依赖）](./ARCHITECTURE.md)
+- [UI/UX 设计规范](./UI_UX_GUIDELINES.md)
+- [详细实现说明](./IMPLEMENTATION_NOTES.md)
+- [测试方案](./TESTING.md)
+- [Backlog 任务清单](./BACKLOG.md)
 - [项目知识积累](../AGENTS.md)
 - [Flutter 文档](https://docs.flutter.dev/)
 - [Riverpod 文档](https://riverpod.dev/)

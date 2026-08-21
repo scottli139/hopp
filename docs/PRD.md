@@ -10,6 +10,8 @@
 
 **口号**: *Hop to your APIs*（跃向你的 API）
 
+**战略方向（2026-08-20 决策）**: 不追平 Postman 功能集，聚焦两个核心楔子——**F8 预请求链与变量转换**、**F9 本地 + 私有 AI（三层）**。里程碑与排期见 [DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)，未排期候选见 [BACKLOG.md](./BACKLOG.md)。
+
 ---
 
 ## 功能需求
@@ -27,11 +29,56 @@
 | F1.7 | 响应预览 | ✅ | 原始/预览/JSON/图片等多种视图 | 自动识别 Content-Type 切换视图 |
 | F1.8 | Cookie 管理 | ⏸️ | 查看/编辑/导入 Cookie | Cookie 列表展示，支持手动添加 |
 | F1.9 | 文件上传/下载 | ⏸️ | multipart/form-data、文件下载 | 支持文件选择、进度显示 |
-| F1.10 | cURL 生成 | ⏳ | cURL 命令生成与复制 | 一键复制生成的 cURL 命令 (v0.6.0) |
+| F1.10 | cURL 生成 | ⏳ | cURL 命令生成与复制 | 一键复制生成的 cURL 命令（后续并入 Tier 0，见 F9） |
 | F1.11 | HTTPS 证书查看 | ✅ | 查看 SSL/TLS 证书详细信息 | 证书颁发者、有效期、域名、指纹等 |
 | F1.12 | 请求时间分析 | ✅ | 展示请求各环节耗时 | DNS、TCP、SSL、TTFB、下载时间分段展示 |
 | F1.13 | 请求详情展示 | ✅ | 显示实际发送的请求信息 | 展示变量替换后的最终 URL、Headers、Body |
 | F1.14 | 请求设置 | 🟡 部分实现 | 请求级别的配置选项 | SSL 验证、Follow Redirects、Max Redirects 已实现（3 项），其他配置项待完成 |
+
+#### F1.14 请求设置 (Request Settings) 详细需求
+
+**功能概述**: 提供请求级别的精细配置，允许用户针对单个请求覆盖全局默认行为。
+
+**设置项清单**:
+
+| 设置项 | 控件类型 | 默认值 | 需求描述 | 状态 |
+|--------|----------|--------|----------|------|
+| HTTP Version | Dropdown | Auto | 选择 HTTP/1.1 或 HTTP/2，Auto 由系统自动选择 | ⏳ |
+| Enable SSL certificate verification | Toggle | ON | 开启/关闭 SSL 证书验证，关闭后允许访问自签名证书 | ✅ 已实现 |
+| Automatically follow redirects | Toggle | ON | 是否自动跟随 3xx 重定向响应 | ✅ 已实现 |
+| Follow original HTTP Method | Toggle | OFF | 重定向时是否保持原始 HTTP 方法（默认转为 GET）| ⏳ |
+| Follow Authorization header | Toggle | OFF | 跨域重定向时是否保留 Authorization Header | ⏳ |
+| Remove referer header on redirect | Toggle | OFF | 重定向时是否自动移除 Referer Header | ⏳ |
+| Enable strict HTTP parser | Toggle | OFF | 是否严格解析 HTTP 响应头，遇到无效 header 时失败 | ⏳ |
+| Encode URL automatically | Toggle | ON | 自动对 URL 路径、查询参数进行百分号编码 | ⏳ |
+| Disable cookie jar | Toggle | OFF | 禁用此请求的 Cookie 存储和发送，Cookie 完全隔离 | ⏳ |
+| Use server cipher suite during handshake | Toggle | OFF | TLS 握手时优先使用服务器提供的加密套件顺序 | ⏳ |
+| Maximum number of redirects | Number Input | 10 | 设置最大重定向次数，0 表示不限制 | ✅ 已实现 |
+| TLS/SSL protocols disabled | Multi-select | - | 选择禁用的 TLS/SSL 协议版本（如 SSLv3、TLS1.0）| ⏳ |
+| Cipher suite selection | Text Input | - | 自定义加密套件列表，留空使用系统默认 | ⏳ |
+
+**交互需求**:
+1. 每个设置项显示「默认值: Settings」提示，表示继承全局设置
+2. 修改设置后显示「已修改」标记（如点状指示器）
+3. 支持「重置为默认」功能
+4. 设置与请求数据一起持久化到 Collection
+
+**技术需求**:
+1. Dio HTTP 客户端需支持动态 Options 配置
+2. SSL/TLS 高级设置需要平台原生支持
+3. 设置变更实时生效，无需重启应用
+
+**UI 规范**:
+- 设置项采用卡片式布局
+- 分组标题使用 11px Tiny 样式（如 SSL/TLS、Coming Soon）
+- 设置项标题使用 12px Caption 样式
+- 描述文字使用 11px Tiny 样式
+- Switch 开关尺寸 24×14px（Material 默认 60% 缩放）
+- Switch ON 状态：Indigo 500 轨道
+- Switch OFF 状态：outlineVariant 轨道
+- 状态文字 ON/OFF 使用 12px Caption 样式
+
+---
 
 ### 二、集合与组织功能 ⏳
 
@@ -164,230 +211,6 @@
 | 格式无效 | "无法解析 cURL 命令，请检查格式" |
 | 不支持的选项 | "警告: 忽略不支持的选项 --xxx" |
 | URL 缺失 | "cURL 命令缺少 URL" |
-
----
-
-### 三、环境变量功能 📋 计划（决策：做，作为基础）
-
-> **决策（2026-08-20）**: 做。但定位为「可复用 + AI 变量注入的基础」，不是「追平 Postman 的 checklist 项」。AI 生成的请求引用 `{{baseUrl}}` / `{{token}}`，而非硬编码。
->
-> **现状**: 仅实现 Postman Environment 格式的导入导出；核心功能（环境管理、变量替换）待实现。
-
-| ID | 功能 | 状态 | 需求描述 | 验收标准 |
-|----|------|------|----------|----------|
-| F3.1 | 环境变量 | ⏳ | 不同环境（开发/测试/生产） | 可创建多个环境配置 |
-| F3.2 | 全局变量 | ⏳ | 跨环境共享变量 | 独立于环境的全局变量 |
-| F3.3 | 变量替换 | ⏳ | URL/Headers/Body 中使用 `{{var}}` | 发送前自动替换变量 |
-| F3.4 | 变量作用域 | ⏳ | 全局 > 环境 > 本地 优先级 | 正确解析同名变量 |
-| F3.5 | 动态变量 | ⏳ | `{{$timestamp}}` / `{{$randomUUID}}` | 发送时实时生成 |
-| F3.6 | 变量转换 | ⏳ | 内置哈希/加密/签名函数 | 见「F8 预请求链与变量转换」 |
-
-### 四、测试与断言功能 📋 计划（决策：降级，不做完整 JS 沙箱）
-
-> **决策（2026-08-20）**: 不做 Postman 兼容的完整 JS 沙箱 + pre-request/test script。AI 时代「写断言脚本」正是 LLM 的强项。
->
-> - 预请求的「动态签名 / 加密 / 拿 token」能力，改由 **F8 预请求链 + 变量转换** 承担（声明式，零门槛）。
-> - 测试能力降级为：轻量断言子集 + AI 生成断言 + 导出给 CLI/CI 跑。
-
-| ID | 功能 | 状态 | 需求描述 | 验收标准 |
-|----|------|------|----------|----------|
-| F4.1 | 响应断言（轻量） | ⏳ | 状态码 / Header / Body / JSONPath 断言 | 无需写代码，UI 配置断言规则 |
-| F4.2 | 断言生成（AI） | ⏳ | 由 AI 根据响应样本生成断言 | 一键生成、可编辑、可保存 |
-| F4.3 | 批量运行 | ⏳ | 集合级别批量执行 + 断言 | 顺序/并行，导出 CSV/HTML 报告 |
-| F4.4 | CLI / CI 导出 | ⏳ | 将集合 + 断言导出为可运行脚本 | 在 CI 中 `hopp run collection.json` |
-
-> 原 F4.2 Pre-request Script / F4.3 Test Script（JS 沙箱）已 **取消**，能力并入 F8。
-
-### 五、UI/UX 功能
-
-| ID | 功能 | 状态 | 需求描述 | 验收标准 |
-|----|------|------|----------|----------|
-| F5.1 | 多标签页 | ✅ | 同时打开多个请求 | 标签可切换、关闭 |
-| F5.2 | 深色/浅色主题 | ✅ | 主题切换 | 跟随系统或手动切换 |
-| F5.3 | 快捷键支持 | ✅ | 常用操作快捷键 | Cmd+N, Cmd+Enter, Cmd+S, Cmd+W |
-| F5.4 | 响应体搜索 | ⏸️ | 在响应内容中搜索 | 支持正则，高亮匹配 |
-| F5.5 | 分屏视图 | ✅ | 请求/响应上下布局 | 可拖拽调整分割比例 |
-| F5.6 | 字体缩放 | ⏸️ | 编辑器字体大小调整 | Ctrl+滚轮或设置调整 |
-
-### 六、数据与同步功能
-
-| ID | 功能 | 状态 | 需求描述 | 验收标准 |
-|----|------|------|----------|----------|
-| F6.1 | 本地存储 | ✅ | Hive/SharedPreferences 存储数据 | 数据持久化，应用重启不丢失 |
-| F6.4 | 数据备份 | ⏳ | 自动/手动备份 | 可导出完整数据备份 |
-
-**Backlog（未来规划）：**
-
-| ID | 功能 | 状态 | 说明 |
-|----|------|------|------|
-| F6.2 | 云端同步 | Backlog | 用户数据云存储，跨设备同步 |
-| F6.3 | 团队协作 | Backlog | 多人实时协作编辑 |
-
-### 七、高级功能
-
-| ID | 功能 | 状态 | 需求描述 | 验收标准 |
-|----|------|------|----------|----------|
-| F7.1 | WebSocket 测试 | ⏳ | WebSocket 连接测试 | 支持 ws/wss，消息收发 |
-
-#### F7.4 Mock 服务详细需求 (v0.8.0)
-
-**国内痛点**: 前后端分离、敏捷迭代，Mock 是"并行开发"的关键。免费版提供**本地 Mock 服务器**，无需云端依赖。
-
-**功能概述**:
-- 基于本地 HTTP 服务器的 Mock 服务（非云端）
-- 从 Collection 自动生成 Mock 规则
-- 支持动态响应模板、延迟模拟、状态码模拟
-
-**Mock 规则配置**:
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| 匹配路径 | String | /api/example | 支持路径参数 `:id` |
-| HTTP 方法 | Enum | GET | GET/POST/PUT/DELETE 等 |
-| 响应状态码 | Number | 200 | 可模拟 400/500 错误场景 |
-| 响应头 | Object | {} | Content-Type 等 |
-| 响应体 | Text/JSON | {} | 支持模板变量 |
-| 延迟 | Number | 0 | 模拟网络延迟 (ms) |
-
-**模板变量支持**:
-
-| 变量 | 示例 | 说明 |
-|------|------|------|
-| `{{$params.name}}` | `{{$params.id}}` | URL 路径参数 |
-| `{{$query.name}}` | `{{$query.page}}` | Query 参数 |
-| `{{$body.path}}` | `{{$body.user.name}}` | 请求体字段 |
-| `{{$random.uuid}}` | `550e8400-e29b-41d4-a716-446655440000` | 随机 UUID |
-| `{{$random.name}}` | `John Doe` | 随机姓名 |
-| `{{$random.email}}` | `john@example.com` | 随机邮箱 |
-| `{{$timestamp}}` | `1710825600` | 当前时间戳 |
-
-**动态响应示例**:
-```json
-{
-  "code": 200,
-  "data": {
-    "id": "{{$params.id}}",
-    "name": "{{$random.name}}",
-    "email": "{{$random.email}}",
-    "createdAt": "{{$timestamp}}",
-    "orders": [
-      {"id": "{{$random.uuid}}", "amount": 99.99}
-    ]
-  }
-}
-```
-
-**Mock 服务器管理**:
-- 启动/停止按钮
-- 端口配置（默认 3000）
-- CORS 自动启用（支持前端跨域访问）
-- 请求日志实时查看
-
-**从集合生成 Mock**:
-```
-1. 选择 Collection → 右键 "生成 Mock 规则"
-2. 为每个请求配置响应模板
-3. 一键启动 Mock 服务器
-4. 前端切换 baseURL 到 localhost:3000
-```
-
----
-| F7.3 | API 文档生成 | ⏸️ | 从集合生成文档 | 导出 Markdown/HTML |
-| F7.5 | 代理设置 | ⏸️ | HTTP/HTTPS 代理 | 支持系统代理和自定义代理 |
-| F7.7 | gRPC 测试 | Backlog | Protocol Buffers 接口测试 | 支持 .proto 文件导入和测试 |
-| F7.6 | 代码生成 | ⏳ | 生成 Python/JS/cURL 等代码 | 支持 20+ 语言，一键复制 |
-
-#### F7.6 代码生成详细需求
-
-**国内痛点**: 减少重复编码、降低对接成本，新人快速上手。
-
-**支持语言列表**:
-
-| 语言/工具 | 状态 | 说明 |
-|-----------|------|------|
-| cURL | ✅ | 基础命令行 |
-| JavaScript (fetch) | ⏳ | 原生 fetch API |
-| JavaScript (axios) | ⏳ | 流行的 HTTP 库 |
-| Python (requests) | ⏳ | Python 标准库 |
-| Python (httpx) | ⏳ | 异步 HTTP 库 |
-| Java (OkHttp) | ⏳ | Android/Java 常用 |
-| Java (HttpClient) | ⏳ | Java 11+ 标准库 |
-| Go | ⏳ | net/http 包 |
-| PHP | ⏳ | cURL 扩展 |
-| Ruby | ⏳ | net/http |
-| C# (HttpClient) | ⏳ | .NET 标准库 |
-| Swift | ⏳ | URLSession |
-| Kotlin | ⏳ | OkHttp |
-| Rust (reqwest) | ⏳ | 流行的 Rust HTTP 库 |
-
-**代码模板引擎**:
-- 使用 Mustache 模板引擎
-- 支持自定义模板（高级功能）
-- 自动处理：URL 编码、JSON 转义、特殊字符处理
-
-**UI 设计**:
-```
-┌─────────────────────────────────────────┐
-│  生成代码                                │
-├─────────────────────────────────────────┤
-│  语言: [Python ▼] [复制] [下载]          │
-├─────────────────────────────────────────┤
-│                                         │
-│  ```python                              │
-│  import requests                        │
-│                                         │
-│  url = "https://api.example.com/user"   │
-│  headers = {"Authorization": "Bearer"}  │
-│  response = requests.get(url, ...)      │
-│  ```                                    │
-│                                         │
-└─────────────────────────────────────────┘
-```
-
-#### F1.14 请求设置 (Request Settings) 详细需求
-
-**功能概述**: 提供请求级别的精细配置，允许用户针对单个请求覆盖全局默认行为。
-
-**设置项清单**:
-
-| 设置项 | 控件类型 | 默认值 | 需求描述 | 状态 |
-|--------|----------|--------|----------|------|
-| HTTP Version | Dropdown | Auto | 选择 HTTP/1.1 或 HTTP/2，Auto 由系统自动选择 | ⏳ |
-| Enable SSL certificate verification | Toggle | ON | 开启/关闭 SSL 证书验证，关闭后允许访问自签名证书 | ✅ 已实现 |
-| Automatically follow redirects | Toggle | ON | 是否自动跟随 3xx 重定向响应 | ✅ 已实现 |
-| Follow original HTTP Method | Toggle | OFF | 重定向时是否保持原始 HTTP 方法（默认转为 GET）| ⏳ |
-| Follow Authorization header | Toggle | OFF | 跨域重定向时是否保留 Authorization Header | ⏳ |
-| Remove referer header on redirect | Toggle | OFF | 重定向时是否自动移除 Referer Header | ⏳ |
-| Enable strict HTTP parser | Toggle | OFF | 是否严格解析 HTTP 响应头，遇到无效 header 时失败 | ⏳ |
-| Encode URL automatically | Toggle | ON | 自动对 URL 路径、查询参数进行百分号编码 | ⏳ |
-| Disable cookie jar | Toggle | OFF | 禁用此请求的 Cookie 存储和发送，Cookie 完全隔离 | ⏳ |
-| Use server cipher suite during handshake | Toggle | OFF | TLS 握手时优先使用服务器提供的加密套件顺序 | ⏳ |
-| Maximum number of redirects | Number Input | 10 | 设置最大重定向次数，0 表示不限制 | ✅ 已实现 |
-| TLS/SSL protocols disabled | Multi-select | - | 选择禁用的 TLS/SSL 协议版本（如 SSLv3、TLS1.0）| ⏳ |
-| Cipher suite selection | Text Input | - | 自定义加密套件列表，留空使用系统默认 | ⏳ |
-
-**交互需求**:
-1. 每个设置项显示「默认值: Settings」提示，表示继承全局设置
-2. 修改设置后显示「已修改」标记（如点状指示器）
-3. 支持「重置为默认」功能
-4. 设置与请求数据一起持久化到 Collection
-
-**技术需求**:
-1. Dio HTTP 客户端需支持动态 Options 配置
-2. SSL/TLS 高级设置需要平台原生支持
-3. 设置变更实时生效，无需重启应用
-
-**UI 规范**:
-- 设置项采用卡片式布局
-- 分组标题使用 11px Tiny 样式（如 SSL/TLS、Coming Soon）
-- 设置项标题使用 12px Caption 样式
-- 描述文字使用 11px Tiny 样式
-- Switch 开关尺寸 24×14px（Material 默认 60% 缩放）
-- Switch ON 状态：Indigo 500 轨道
-- Switch OFF 状态：outlineVariant 轨道
-- 状态文字 ON/OFF 使用 12px Caption 样式
-
----
 
 #### F2.4 导入/导出 (Postman 格式) 详细需求
 
@@ -619,12 +442,185 @@
 - [x] 导出环境变量（可选）
 - [x] 导出成功后显示文件保存路径
 
-**Backlog（未来规划）：**
+---
 
-| ID | 功能 | 状态 | 说明 |
-|----|------|------|------|
-| F7.2 | gRPC 测试 | Backlog | Protocol Buffers 接口测试 |
-| F7.4 | Mock 云端服务 | Backlog | 云端 Mock 服务器（付费功能）|
+### 三、环境变量功能 ✅ 核心已完成（2026-08-21，M8.1）
+
+> **决策（2026-08-20）**: 做。但定位为「可复用 + AI 变量注入的基础」，不是「追平 Postman 的 checklist 项」。AI 生成的请求引用 `{{baseUrl}}` / `{{token}}`，而非硬编码。
+>
+> **现状（2026-08-21）**: F3.1-F3.5 已由 M8.1 落地（多环境 + 全局变量 + `{{var}}` 替换引擎 + 动态变量 + secret 掩码 + 未定义变量警告），详细设计见 [IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md#环境变量系统-m81)。
+
+| ID | 功能 | 状态 | 需求描述 | 验收标准 |
+|----|------|------|----------|----------|
+| F3.1 | 环境变量 | ✅ | 不同环境（开发/测试/生产） | 可创建多个环境配置 |
+| F3.2 | 全局变量 | ✅ | 跨环境共享变量 | 独立于环境的全局变量 |
+| F3.3 | 变量替换 | ✅ | URL/Headers/Body 中使用 `{{var}}` | 发送前自动替换变量 |
+| F3.4 | 变量作用域 | ✅ | 环境 > 全局 优先级（就近原则） | 正确解析同名变量 |
+| F3.5 | 动态变量 | ✅ | `{{$timestamp}}` / `{{$randomUUID}}` 等 5 个 | 发送时实时生成 |
+| F3.6 | 变量转换 | ⏳ | 内置哈希/加密/签名函数 | 见「F8 预请求链与变量转换」（F8.3，排期 v0.8.0 M8.2） |
+| F3.7 | 环境导出 | ⏳ | 导出为 Postman Environment 格式 | 导出文件可被 Postman 正常导入（导入已支持，见 F2.4） |
+| F3.8 | 变量悬停预览/快速编辑 | ⏳ | 悬停显示变量值，双击快速编辑 | 编辑器内可直接查看解析结果 |
+
+---
+
+### 四、测试与断言功能 📋 计划（决策：降级，不做完整 JS 沙箱）
+
+> **决策（2026-08-20）**: 不做 Postman 兼容的完整 JS 沙箱 + pre-request/test script。AI 时代「写断言脚本」正是 LLM 的强项。
+>
+> - 预请求的「动态签名 / 加密 / 拿 token」能力，改由 **F8 预请求链 + 变量转换** 承担（声明式，零门槛）。
+> - 测试能力降级为：轻量断言子集 + AI 生成断言 + 导出给 CLI/CI 跑。
+> - F4.1 / F4.2 / F4.4 排期 v0.8.0 M8.4；F4.3 批量运行在其后视需求排期。
+
+| ID | 功能 | 状态 | 需求描述 | 验收标准 |
+|----|------|------|----------|----------|
+| F4.1 | 响应断言（轻量） | ⏳ | 状态码 / Header / Body / JSONPath 断言 | 无需写代码，UI 配置断言规则 |
+| F4.2 | 断言生成（AI） | ⏳ | 由 AI 根据响应样本生成断言 | 一键生成、可编辑、可保存 |
+| F4.3 | 批量运行 | ⏳ | 集合级别批量执行 + 断言 | 顺序/并行，导出 CSV/HTML 报告 |
+| F4.4 | CLI / CI 导出 | ⏳ | 将集合 + 断言导出为可运行脚本 | 在 CI 中 `hopp run collection.json` |
+
+> 原 F4.2 Pre-request Script / F4.3 Test Script（JS 沙箱）已 **取消**，能力并入 F8。
+
+### 五、UI/UX 功能
+
+| ID | 功能 | 状态 | 需求描述 | 验收标准 |
+|----|------|------|----------|----------|
+| F5.1 | 多标签页 | ✅ | 同时打开多个请求 | 标签可切换、关闭 |
+| F5.2 | 深色/浅色主题 | ✅ | 主题切换 | 跟随系统或手动切换 |
+| F5.3 | 快捷键支持 | ✅ | 常用操作快捷键 | Cmd+N, Cmd+Enter, Cmd+S, Cmd+W |
+| F5.4 | 响应体搜索 | ⏸️ | 在响应内容中搜索 | 支持正则，高亮匹配 |
+| F5.5 | 分屏视图 | ✅ | 请求/响应上下布局 | 可拖拽调整分割比例 |
+| F5.6 | 字体缩放 | ⏸️ | 编辑器字体大小调整 | Ctrl+滚轮或设置调整 |
+
+### 六、数据与同步功能
+
+| ID | 功能 | 状态 | 需求描述 | 验收标准 |
+|----|------|------|----------|----------|
+| F6.1 | 本地存储 | ✅ | Hive/SharedPreferences 存储数据 | 数据持久化，应用重启不丢失 |
+| F6.4 | 数据备份 | ⏳ | 自动/手动备份 | 可导出完整数据备份 |
+| F6.2 | 云端同步 | Backlog | 用户数据云存储，跨设备同步 | 与本地优先定位冲突，谨慎评估 |
+| F6.3 | 团队协作 | Backlog | 多人实时协作编辑 | 依赖云端同步，远期 |
+
+### 七、高级功能（⏸️ 整体暂缓）
+
+> **决策（2026-08-20）**: 以下均为非差异化能力，整体暂缓；待核心楔子（F8 / F9）落地后视需求重启。已完成的详细需求保留存档，重启时直接可用。
+
+| ID | 功能 | 状态 | 需求描述 | 验收标准 |
+|----|------|------|----------|----------|
+| F7.1 | WebSocket 测试 | ⏸️ 暂缓 | WebSocket 连接测试 | 支持 ws/wss，消息收发 |
+| F7.3 | API 文档生成 | ⏸️ 暂缓 | 从集合生成文档 | 导出 Markdown/HTML |
+| F7.4 | Mock 服务 | ⏸️ 暂缓 | 本地 Mock 服务器 | 详细需求见下方存档 |
+| F7.5 | 代理设置 | ⏸️ 暂缓 | HTTP/HTTPS 代理 | 支持系统代理和自定义代理 |
+| F7.6 | 代码生成 | ⏸️ 暂缓 | 生成 Python/JS/cURL 等代码 | 多语言生成暂缓；cURL 生成（F1.10）保留，后续并入 Tier 0 |
+| F7.7 | gRPC 测试 | Backlog | Protocol Buffers 接口测试 | 支持 .proto 文件导入和测试 |
+
+#### F7.4 Mock 服务详细需求（⏸️ 已搁置，存档保留）
+
+**国内痛点**: 前后端分离、敏捷迭代，Mock 是"并行开发"的关键。免费版提供**本地 Mock 服务器**，无需云端依赖。
+
+**功能概述**:
+- 基于本地 HTTP 服务器的 Mock 服务（非云端）
+- 从 Collection 自动生成 Mock 规则
+- 支持动态响应模板、延迟模拟、状态码模拟
+
+**Mock 规则配置**:
+
+| 配置项 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| 匹配路径 | String | /api/example | 支持路径参数 `:id` |
+| HTTP 方法 | Enum | GET | GET/POST/PUT/DELETE 等 |
+| 响应状态码 | Number | 200 | 可模拟 400/500 错误场景 |
+| 响应头 | Object | {} | Content-Type 等 |
+| 响应体 | Text/JSON | {} | 支持模板变量 |
+| 延迟 | Number | 0 | 模拟网络延迟 (ms) |
+
+**模板变量支持**:
+
+| 变量 | 示例 | 说明 |
+|------|------|------|
+| `{{$params.name}}` | `{{$params.id}}` | URL 路径参数 |
+| `{{$query.name}}` | `{{$query.page}}` | Query 参数 |
+| `{{$body.path}}` | `{{$body.user.name}}` | 请求体字段 |
+| `{{$random.uuid}}` | `550e8400-e29b-41d4-a716-446655440000` | 随机 UUID |
+| `{{$random.name}}` | `John Doe` | 随机姓名 |
+| `{{$random.email}}` | `john@example.com` | 随机邮箱 |
+| `{{$timestamp}}` | `1710825600` | 当前时间戳 |
+
+**动态响应示例**:
+```json
+{
+  "code": 200,
+  "data": {
+    "id": "{{$params.id}}",
+    "name": "{{$random.name}}",
+    "email": "{{$random.email}}",
+    "createdAt": "{{$timestamp}}",
+    "orders": [
+      {"id": "{{$random.uuid}}", "amount": 99.99}
+    ]
+  }
+}
+```
+
+**Mock 服务器管理**:
+- 启动/停止按钮
+- 端口配置（默认 3000）
+- CORS 自动启用（支持前端跨域访问）
+- 请求日志实时查看
+
+**从集合生成 Mock**:
+```
+1. 选择 Collection → 右键 "生成 Mock 规则"
+2. 为每个请求配置响应模板
+3. 一键启动 Mock 服务器
+4. 前端切换 baseURL 到 localhost:3000
+```
+
+#### F7.6 代码生成详细需求（⏸️ 已搁置，存档保留）
+
+**国内痛点**: 减少重复编码、降低对接成本，新人快速上手。
+
+**支持语言列表**:
+
+| 语言/工具 | 状态 | 说明 |
+|-----------|------|------|
+| cURL | ✅ | 基础命令行 |
+| JavaScript (fetch) | ⏳ | 原生 fetch API |
+| JavaScript (axios) | ⏳ | 流行的 HTTP 库 |
+| Python (requests) | ⏳ | Python 标准库 |
+| Python (httpx) | ⏳ | 异步 HTTP 库 |
+| Java (OkHttp) | ⏳ | Android/Java 常用 |
+| Java (HttpClient) | ⏳ | Java 11+ 标准库 |
+| Go | ⏳ | net/http 包 |
+| PHP | ⏳ | cURL 扩展 |
+| Ruby | ⏳ | net/http |
+| C# (HttpClient) | ⏳ | .NET 标准库 |
+| Swift | ⏳ | URLSession |
+| Kotlin | ⏳ | OkHttp |
+| Rust (reqwest) | ⏳ | 流行的 Rust HTTP 库 |
+
+**代码模板引擎**:
+- 使用 Mustache 模板引擎
+- 支持自定义模板（高级功能）
+- 自动处理：URL 编码、JSON 转义、特殊字符处理
+
+**UI 设计**:
+```
+┌─────────────────────────────────────────┐
+│  生成代码                                │
+├─────────────────────────────────────────┤
+│  语言: [Python ▼] [复制] [下载]          │
+├─────────────────────────────────────────┤
+│                                         │
+│  ```python                              │
+│  import requests                        │
+│                                         │
+│  url = "https://api.example.com/user"   │
+│  headers = {"Authorization": "Bearer"}  │
+│  response = requests.get(url, ...)      │
+│  ```                                    │
+│                                         │
+└─────────────────────────────────────────┘
+```
 
 ---
 

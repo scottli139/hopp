@@ -10,6 +10,8 @@
 - [请求设置 (Request Settings)](#请求设置-request-settings)
 - [Postman 导入/导出](#postman-导入导出)
 - [cURL 导入](#curl-导入)
+- [响应优化 (OptimizedResponseViewer)](#响应优化-optimizedresponseviewer)
+- [环境变量系统 (M8.1)](#环境变量系统-m81)
 - [测试与自动化](#测试与自动化)
 - [Mock 服务器](#mock-服务器)
 
@@ -349,6 +351,16 @@ class PostmanExportService {
 ```
 
 #### PostmanMapper
+
+Body 类型映射（Postman → Hopp）：
+
+| Postman mode | Hopp BodyType |
+|--------------|---------------|
+| raw | raw (支持 json/xml/html/javascript/text 子类型) |
+| urlencoded | x-www-form-urlencoded |
+| formdata | form-data (文本类型) |
+| graphql | graphql |
+| binary | binary |
 
 ```dart
 class PostmanMapper {
@@ -716,6 +728,92 @@ group('CurlParser', () {
   });
 });
 ```
+
+---
+
+## 响应优化 (OptimizedResponseViewer)
+
+大响应体虚拟化显示组件：`lib/widgets/common/optimized_response_viewer.dart`。
+
+### 显示模式切换策略
+
+| 响应大小 | 默认模式 | 说明 |
+|---------|---------|------|
+| < 10KB | Full | 完整语法高亮 |
+| 10KB - 50KB | Full | 完整语法高亮 |
+| > 50KB | Performance | 虚拟化列表，轻量高亮 |
+
+### 要点
+
+- 显示模式：Auto / Performance / Full / Raw
+- 虚拟化列表：初始 500 行，支持加载更多
+- Performance 模式下使用轻量级 JSON 高亮
+
+---
+
+## 环境变量系统 (M8.1)
+
+> 定位（2026-08-20 决策）：「可复用 + AI 变量注入的基础」，不是 Postman parity。AI 生成的请求引用 `{{baseUrl}}` / `{{token}}`。
+
+### 数据模型
+
+`lib/models/environment.dart`（Hive typeId：Environment=11 / EnvironmentVariable=12 / VariableType=13）：
+
+```dart
+@freezed
+class Environment with _$Environment {
+  const factory Environment({
+    required String id,
+    required String name,
+    required List<EnvironmentVariable> variables,
+    String? description,
+  }) = _Environment;
+}
+
+@freezed
+class EnvironmentVariable with _$EnvironmentVariable {
+  const factory EnvironmentVariable({
+    required String key,
+    required String value,
+    @Default(VariableType.string) VariableType type,
+    @Default(true) bool enabled,
+  }) = _EnvironmentVariable;
+}
+
+enum VariableType { string, secret }
+```
+
+### 变量替换流程
+
+```
+1. 用户发送请求前
+2. 提取当前激活的 Environment
+3. 扫描 URL/Headers/Body 中的 {{variable}} 占位符
+4. 按优先级查找变量值 (环境 > 全局，就近原则)
+5. 替换占位符为实际值
+6. 发送请求 (使用替换后的值)
+7. 在 Request Tab 中显示替换前后的对比
+```
+
+### 作用域与动态变量
+
+- 优先级：环境变量 > 全局变量（就近原则）
+- 动态变量：`$timestamp` / `$timestampMs` / `$isoTimestamp` / `$randomUUID` / `$randomInt`
+- 解析器：`lib/services/variable_resolver.dart`
+
+### 实现要点
+
+- 发送前在 `RequestResponseNotifier.sendRequest` 统一应用变量替换
+- `lib/utils/url_params_sync.dart` 增加占位符保护，修复 `{{var}}` 被 `Uri.parse` 百分号编码破坏的问题
+- test-mode 新增 10 个环境指令（`create_environment` / `set_active_environment` / `resolve_text` / `get_resolved_request` 等）
+- 验收：`integration_test/test_environment_variables.py` 9/9 通过
+
+### UI 设计
+
+- 环境管理对话框（`lib/widgets/environment/environment_manager_dialog.dart`）：列表 + 变量表格 + secret 掩码
+- Sidebar 顶部环境切换器（`environment_switcher.dart`），持久化激活状态
+- 未定义变量：切换器 + URL 栏警告图标（替代悬停预览/快速编辑）
+- 后续迭代：变量输入框 `{{` 触发自动建议；已解析变量（蓝色）/ 未定义变量（红色）着色；悬停预览与双击快速编辑
 
 ---
 

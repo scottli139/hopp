@@ -99,6 +99,40 @@
 | Hive | Collection、Request 等复杂数据 |
 | SharedPreferences | 设置、主题等简单配置 |
 
+### 核心依赖
+
+> 版本以 `pubspec.yaml` 为准（2026-08-21 核对）。
+
+| 包名 | 版本 | 用途 |
+|-----|------|------|
+| flutter_riverpod | ^2.6.1 | 状态管理 |
+| riverpod_annotation | ^2.6.1 | Provider 注解 |
+| dio | ^5.8.0+1 | HTTP 客户端 |
+| hive / hive_flutter | ^2.2.3 / ^1.1.0 | NoSQL 存储 |
+| shared_preferences | ^2.5.2 | 配置存储 |
+| freezed_annotation | ^2.4.4 | 不可变类注解 |
+| multi_split_view | ^3.6.0 | 可拖拽分割面板 |
+| tabbed_view | ^1.22.0 | 标签页容器 |
+| data_table_2 | ^2.5.18 | 数据表格 |
+| flutter_code_editor | ^0.3.2 | 代码高亮 |
+| flutter_svg | ^2.0.17 | SVG 显示 |
+| file_picker | ^10.3.10 | 文件选择 |
+| uuid | ^4.5.3 | UUID 生成 |
+| crypto | ^3.0.3 | 证书指纹计算 |
+| url_launcher | ^6.3.1 | 外部链接跳转（About 页，Issue #8） |
+
+### 开发依赖
+
+| 包名 | 版本 | 用途 |
+|-----|------|------|
+| build_runner | ^2.4.6 | 代码生成 |
+| freezed | ^2.4.5 | 不可变类生成 |
+| json_serializable | ^6.7.0 | JSON 序列化生成 |
+| hive_generator | ^2.0.1 | Hive Adapter 生成 |
+| riverpod_generator | ^2.3.0 | Provider 生成 |
+| mockito | ^5.4.0 | 测试 Mock |
+| flutter_lints | ^5.0.0 | 静态分析规则 |
+
 ---
 
 ## 项目结构

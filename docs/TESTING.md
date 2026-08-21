@@ -573,6 +573,21 @@ python3 integration_test/test_client.py --port <PORT> full_test
 
 ---
 
+## Peekaboo E2E 测试
+
+基于 macOS 无障碍 API 的系统级 E2E 测试套件，位于 `integration_test/peekaboo/`：
+
+```bash
+cd integration_test/peekaboo
+make test   # 完整测试
+make quick  # 快速测试
+make logs   # 查看日志
+```
+
+详细使用经验与坑位记录见 [PEEKABOO_CLI_LEARNING.md](./PEEKABOO_CLI_LEARNING.md)。
+
+---
+
 ## 测试覆盖率
 
 ### 生成覆盖率报告

@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hopp Design System · 设计系统预览</title>
+<style>
+/* ============================================================
+   Hopp Design Tokens — 与 lib/theme/ 目标 token 一一对应
+   ============================================================ */
+:root {
+  /* Brand */
+  --brand: #6366F1;
+  --brand-hover: #4F46E5;
+  --brand-soft: #EEF2FF;
+  --brand-text: #6366F1;
+
+  /* Neutral — Light (Tailwind Slate) */
+  --bg: #FFFFFF;
+  --surface: #F8FAFC;
+  --surface-2: #F1F5F9;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --text-1: #0F172A;
+  --text-2: #475569;
+  --text-3: #94A3B8;
+
+  /* Semantic */
+  --success: #10B981; --success-soft: #ECFDF5;
+  --warning: #F59E0B; --warning-soft: #FFFBEB;
+  --error:   #EF4444; --error-soft:   #FEF2F2;
+  --info:    #3B82F6; --info-soft:    #EFF6FF;
+
+  /* HTTP Methods */
+  --m-get: #3B82F6; --m-post: #10B981; --m-put: #F59E0B;
+  --m-delete: #EF4444; --m-patch: #8B5CF6; --m-other: #64748B;
+
+  /* Syntax — Light */
+  --syn-key: #1E40AF; --syn-string: #15803D; --syn-number: #2563EB;
+  --syn-keyword: #7C3AED; --syn-punct: #64748B;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(15,23,42,.06);
+  --shadow-md: 0 4px 12px rgba(15,23,42,.10), 0 1px 3px rgba(15,23,42,.06);
+
+  /* Radius */
+  --r-s: 4px; --r-m: 6px; --r-l: 8px; --r-xl: 10px;
+
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: Menlo, 'JetBrains Mono', Consolas, monospace;
+}
+[data-theme="dark"] {
+  --brand: #818CF8;
+  --brand-hover: #6366F1;
+  --brand-soft: rgba(129,140,248,.14);
+  --brand-text: #818CF8;
+
+  --bg: #0F172A;
+  --surface: #1E293B;
+  --surface-2: #334155;
+  --border: #2B3A55;
+  --border-strong: #475569;
+  --text-1: #F1F5F9;
+  --text-2: #94A3B8;
+  --text-3: #64748B;
+
+  --success-soft: rgba(16,185,129,.14);
+  --warning-soft: rgba(245,158,11,.14);
+  --error-soft:   rgba(239,68,68,.14);
+  --info-soft:    rgba(59,130,246,.14);
+
+  --syn-key: #93C5FD; --syn-string: #86EFAC; --syn-number: #60A5FA;
+  --syn-keyword: #C4B5FD; --syn-punct: #94A3B8;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.3);
+}
+
+/* ============================================================
+   文档页布局
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: #0F172A;
+  background: #F1F5F9;
+  display: flex;
+}
+.doc-nav {
+  width: 220px; min-height: 100vh;
+  background: #0F172A; color: #94A3B8;
+  padding: 24px 16px; position: sticky; top: 0; height: 100vh;
+  flex-shrink: 0;
+}
+.doc-nav h1 { color: #FFF; font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.doc-nav .ver { font-size: 11px; color: #64748B; margin-bottom: 24px; display: block; }
+.doc-nav a {
+  display: block; color: #94A3B8; text-decoration: none;
+  font-size: 13px; padding: 7px 10px; border-radius: 6px; margin-bottom: 2px;
+}
+.doc-nav a:hover { background: #1E293B; color: #F1F5F9; }
+.doc-main { flex: 1; padding: 40px 48px 120px; max-width: 1180px; }
+section { margin-bottom: 64px; }
+h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+h3 { font-size: 15px; font-weight: 600; margin: 28px 0 12px; }
+.sub { color: #64748B; font-size: 13px; margin-bottom: 20px; }
+.card {
+  background: #FFF; border: 1px solid #E2E8F0; border-radius: 10px;
+  padding: 24px; margin-bottom: 16px;
+}
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.tag {
+  display: inline-block; font-family: var(--font-mono); font-size: 11px;
+  background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 4px;
+  padding: 2px 6px; color: #475569;
+}
+table.spec { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.spec th {
+  text-align: left; font-size: 11px; font-weight: 600; color: #64748B;
+  text-transform: uppercase; letter-spacing: .04em;
+  padding: 8px 12px; border-bottom: 1px solid #E2E8F0;
+}
+table.spec td { padding: 9px 12px; border-bottom: 1px solid #F1F5F9; }
+table.spec tr:last-child td { border-bottom: none; }
+
+/* 色板 */
+.swatch { border-radius: 8px; overflow: hidden; border: 1px solid #E2E8F0; background: #FFF; }
+.swatch .c { height: 56px; }
+.swatch .meta { padding: 8px 10px; }
+.swatch .name { font-size: 12px; font-weight: 600; }
+.swatch .hex { font-family: var(--font-mono); font-size: 11px; color: #64748B; }
+
+/* 主题画板（亮/暗组件展示容器） */
+.board {
+  border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text-1);
+  padding: 20px; position: relative;
+}
+.board .board-label {
+  position: absolute; top: -9px; left: 14px;
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  background: var(--brand); color: #FFF; border-radius: 4px; padding: 2px 8px;
+}
+.board + .board { margin-top: 20px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+/* ============================================================
+   组件样式（目标规格，直接以 token 实现）
+   ============================================================ */
+/* 按钮 */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-family: var(--font-ui); font-weight: 500; border: 1px solid transparent;
+  border-radius: var(--r-m); cursor: pointer; white-space: nowrap;
+  transition: background .1s ease;
+}
+.btn-s { height: 28px; padding: 0 12px; font-size: 12px; }
+.btn-m { height: 32px; padding: 0 14px; font-size: 13px; }
+.btn-primary { background: #6366F1; color: #FFF; }
+.btn-primary:hover { background: #4F46E5; }
+.btn-secondary { background: transparent; border-color: var(--border-strong); color: var(--text-1); }
+.btn-secondary:hover { background: var(--surface-2); }
+.btn-ghost { background: transparent; color: var(--text-2); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text-1); }
+.btn-danger { background: var(--error); color: #FFF; }
+.btn:disabled { opacity: .45; cursor: default; }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: var(--r-m);
+  color: var(--text-2); border: none; background: transparent; cursor: pointer;
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text-1); }
+.icon-btn.bordered { border: 1px solid var(--border-strong); background: var(--bg); }
+
+/* 输入框 */
+.input {
+  height: 32px; padding: 0 10px; font-size: 13px; font-family: var(--font-ui);
+  color: var(--text-1); background: var(--bg);
+  border: 1px solid var(--border-strong); border-radius: var(--r-m); outline: none;
+  width: 220px;
+}
+.input::placeholder { color: var(--text-3); }
+.input:focus { border-color: #6366F1; box-shadow: 0 0 0 2px rgba(99,102,241,.18); }
+.input-sm { height: 28px; font-size: 12px; }
+
+/* 徽章 */
+.badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 18px; padding: 0 5px; border-radius: var(--r-s);
+  font-size: 10px; font-weight: 700; letter-spacing: .02em;
+  font-family: var(--font-ui); min-width: 34px;
+}
+.status-chip {
+  display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
+  border-radius: var(--r-s); font-size: 11px; font-weight: 600;
+}
+
+/* Tabs */
+.tabs { display: flex; align-items: center; gap: 2px; border-bottom: 1px solid var(--border); }
+.tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 12px; font-size: 12px; font-weight: 500;
+  color: var(--text-2); border-bottom: 2px solid transparent; cursor: pointer;
+  margin-bottom: -1px;
+}
+.tab:hover { color: var(--text-1); }
+.tab.active { color: var(--brand-text); border-bottom-color: var(--brand); }
+.tab .count {
+  font-size: 10px; background: var(--surface-2); color: var(--text-2);
+  border-radius: 8px; padding: 1px 6px; font-weight: 600;
+}
+.tab.active .count { background: var(--brand-soft); color: var(--brand-text); }
+.dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); }
+
+/* 开关 / 勾选 */
+.switch {
+  width: 32px; height: 18px; border-radius: 9px; background: var(--border-strong);
+  position: relative; cursor: pointer; border: none; transition: background .15s;
+}
+.switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%; background: #FFF;
+  transition: left .15s; box-shadow: var(--shadow-sm);
+}
+.switch.on { background: #6366F1; }
+.switch.on::after { left: 16px; }
+.checkbox {
+  width: 15px; height: 15px; border-radius: 4px;
+  border: 1.5px solid var(--border-strong); background: var(--bg);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #FFF; font-size: 10px; cursor: pointer;
+}
+.checkbox.on { background: #6366F1; border-color: #6366F1; }
+
+/* 菜单 */
+.menu {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--r-m); box-shadow: var(--shadow-md);
+  padding: 4px; width: 200px;
+}
+.menu-item {
+  display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px;
+  font-size: 12px; font-weight: 500; color: var(--text-1);
+  border-radius: var(--r-s); cursor: pointer;
+}
+.menu-item:hover { background: var(--surface-2); }
+.menu-item.danger { color: var(--error); }
+.menu-item .mi { width: 14px; text-align: center; color: var(--text-2); font-size: 12px; }
+.menu-item.danger .mi { color: var(--error); }
+
+/* 对话框 */
+.dialog {
+  width: 420px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--r-l); box-shadow: var(--shadow-md); overflow: hidden;
+}
+.dialog-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 0;
+}
+.dialog-title { font-size: 15px; font-weight: 600; }
+.dialog-body { padding: 16px 20px; font-size: 13px; color: var(--text-2); }
+.dialog-foot {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 0 20px 16px;
+}
+
+/* KV 行 */
+.kv-row {
+  display: grid; grid-template-columns: 24px 1fr 1fr 28px;
+  align-items: center; gap: 8px; height: 36px;
+  border-bottom: 1px solid var(--border);
+  padding: 0 8px;
+}
+.kv-row .k, .kv-row .v { font-size: 12px; color: var(--text-1); font-family: var(--font-mono); }
+.kv-head { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: none; }
+
+/* 代码 */
+.code {
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.6;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-m); padding: 12px 14px; overflow: auto;
+}
+.ck { color: var(--syn-key); } .cs { color: var(--syn-string); }
+.cn { color: var(--syn-number); } .ckw { color: var(--syn-keyword); }
+.cp { color: var(--syn-punct); }
+.ln { color: var(--text-3); display: inline-block; width: 22px; text-align: right; margin-right: 12px; user-select: none; }
+
+/* ============================================================
+   App 原型（主界面 mockup）
+   ============================================================ */
+.appframe {
+  border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text-1);
+  overflow: hidden; box-shadow: var(--shadow-md);
+  display: flex; flex-direction: column;
+  font-size: 12px;
+}
+.app-titlebar {
+  height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 12px;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.tl-dot { width: 11px; height: 11px; border-radius: 50%; }
+.app-body { display: flex; min-height: 560px; }
+.app-sidebar {
+  width: 218px; border-right: 1px solid var(--border); background: var(--surface);
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+.sb-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; }
+.sb-logo { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 13px; }
+.sb-logo .logo-ic {
+  width: 20px; height: 20px; border-radius: 6px;
+  background: linear-gradient(135deg, #8B5CF6, #EC4899);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #FFF; font-size: 11px;
+}
+.sb-env {
+  display: flex; align-items: center; gap: 6px; margin: 0 8px 8px;
+  height: 30px; padding: 0 8px; border: 1px solid var(--border);
+  border-radius: var(--r-m); font-size: 12px; color: var(--text-2);
+  background: var(--bg);
+}
+.sb-filter {
+  margin: 0 8px 8px; height: 28px; padding: 0 8px;
+  border: 1px solid var(--border); border-radius: var(--r-m);
+  color: var(--text-3); font-size: 12px; display: flex; align-items: center;
+  background: var(--bg);
+}
+.sb-tree { flex: 1; padding: 2px 6px; }
+.sb-item {
+  display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 6px;
+  border-radius: var(--r-s); color: var(--text-1); cursor: default;
+}
+.sb-item:hover { background: var(--surface-2); }
+.sb-item .name { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-item .arrow { color: var(--text-3); font-size: 9px; width: 10px; }
+.sb-item .folder { color: var(--brand-text); font-size: 12px; }
+.sb-item.indent { padding-left: 22px; }
+.sb-item .more { margin-left: auto; color: var(--text-3); opacity: 0; font-size: 13px; }
+.sb-item:hover .more { opacity: 1; }
+
+.app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.app-tabbar {
+  display: flex; align-items: center; height: 35px; border-bottom: 1px solid var(--border);
+  background: var(--surface); padding: 0 8px; gap: 2px;
+}
+.app-tab {
+  display: flex; align-items: center; gap: 6px; height: 35px; padding: 0 12px;
+  font-size: 12px; color: var(--text-2); border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.app-tab.active { color: var(--text-1); border-bottom-color: var(--brand); background: var(--bg); }
+.app-tab .x { color: var(--text-3); font-size: 11px; border-radius: 3px; padding: 1px 3px; }
+.app-tab .x:hover { background: var(--surface-2); color: var(--text-1); }
+.urlbar { display: flex; gap: 8px; padding: 10px 12px; align-items: center; }
+.url-method {
+  display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px;
+  border: 1px solid var(--border-strong); border-radius: var(--r-m);
+  font-size: 12px; font-weight: 700; color: var(--m-get); background: var(--bg);
+}
+.url-input {
+  flex: 1; height: 32px; display: flex; align-items: center; padding: 0 10px;
+  border: 1px solid var(--border-strong); border-radius: var(--r-m);
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-1);
+  background: var(--bg);
+}
+.url-input .var { color: var(--brand-text); background: var(--brand-soft); border-radius: 3px; padding: 0 2px; }
+.pane { border-top: 1px solid var(--border); }
+.resp-infobar {
+  display: flex; align-items: center; gap: 14px; height: 38px; padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+.resp-meta { display: flex; align-items: center; gap: 5px; color: var(--text-2); font-size: 12px; }
+.app-statusbar {
+  height: 26px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px; border-top: 1px solid var(--border); background: var(--surface);
+  color: var(--text-3); font-size: 11px;
+}
+.ready-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); display: inline-block; margin-right: 5px; }
+
+.annot { position: relative; }
+.annot .n {
+  position: absolute; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--error); color: #FFF; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; z-index: 5;
+}
+.legend { font-size: 13px; }
+.legend li { margin-bottom: 8px; list-style: none; }
+.legend .n {
+  display: inline-flex; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--error); color: #FFF; font-size: 11px; font-weight: 700;
+  align-items: center; justify-content: center; margin-right: 8px;
+}
+</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <h1>Hopp Design System</h1>
+  <span class="ver">v1.0 · 2026-08-21 · 预览原型</span>
+  <a href="#principles">设计原则</a>
+  <a href="#colors">色彩</a>
+  <a href="#typography">字体</a>
+  <a href="#spacing">间距 · 圆角 · 高度</a>
+  <a href="#components">组件库</a>
+  <a href="#mockup">界面原型</a>
+  <a href="#enforcement">执行保障</a>
+</nav>
+
+<main class="doc-main">
+
+<!-- ================= 设计原则 ================= -->
+<section id="principles">
+  <h2>设计原则</h2>
+  <p class="sub">面向开发者的桌面工具：密度、克制、可预期</p>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0">1. 密度优先</h3>
+      <p style="font-size:13px;color:#475569;line-height:1.7">
+        对标 Postman / Insomnia / VS Code 的信息密度：正文 13px、辅助 11-12px、主控件高 32px。
+        层级靠<b>字重与颜色</b>表达，而不是堆砌字号种类——全局仅 7 档字号。
+      </p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">2. 单一事实来源</h3>
+      <p style="font-size:13px;color:#475569;line-height:1.7">
+        每个视觉值只有一个出处：<b>token → ThemeExtension → 组件</b>。
+        业务代码禁止出现颜色字面量、内联字号、魔法间距——由自动化守卫保证（见「执行保障」）。
+      </p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">3. 语义化命名</h3>
+      <p style="font-size:13px;color:#475569;line-height:1.7">
+        颜色按用途命名（surface / border / textSecondary / methodGet），不按色值命名。
+        暗色主题只是同一语义色的另一套取值，业务代码零分支。
+      </p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">4. 克制即专业</h3>
+      <p style="font-size:13px;color:#475569;line-height:1.7">
+        1px 分隔线只有两档透明度；圆角只有 4/6/8/10；阴影仅用于浮层（菜单、对话框）；
+        按钮无阴影、无渐变；品牌色只出现在需要引导视线的地方。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 色彩 ================= -->
+<section id="colors">
+  <h2>色彩</h2>
+  <p class="sub">品牌色 + 语义色 + 领域色（HTTP 方法 / 状态码 / 语法高亮），全部亮暗双套</p>
+
+  <h3>品牌色</h3>
+  <div class="grid4">
+    <div class="swatch"><div class="c" style="background:#6366F1"></div><div class="meta"><div class="name">brand</div><div class="hex">#6366F1</div></div></div>
+    <div class="swatch"><div class="c" style="background:#4F46E5"></div><div class="meta"><div class="name">brandHover</div><div class="hex">#4F46E5</div></div></div>
+    <div class="swatch"><div class="c" style="background:#818CF8"></div><div class="meta"><div class="name">brand (dark)</div><div class="hex">#818CF8</div></div></div>
+    <div class="swatch"><div class="c" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)"></div><div class="meta"><div class="name">brandGradient（仅 logo）</div><div class="hex">#8B5CF6→#EC4899</div></div></div>
+  </div>
+
+  <h3>中性色（Light / Dark）</h3>
+  <div class="card" style="padding:0">
+  <table class="spec">
+    <tr><th>语义</th><th>Light</th><th>Dark</th><th>用途</th></tr>
+    <tr><td><span class="tag">background</span></td><td>#FFFFFF</td><td>#0F172A</td><td>窗口底色</td></tr>
+    <tr><td><span class="tag">surface</span></td><td>#F8FAFC</td><td>#1E293B</td><td>侧栏、卡片、表头</td></tr>
+    <tr><td><span class="tag">surfaceVariant</span></td><td>#F1F5F9</td><td>#334155</td><td>hover、填充、开关 off</td></tr>
+    <tr><td><span class="tag">border</span></td><td>#E2E8F0</td><td>#2B3A55</td><td>分隔线、卡片边（唯一）</td></tr>
+    <tr><td><span class="tag">borderStrong</span></td><td>#CBD5E1</td><td>#475569</td><td>输入框、按钮描边</td></tr>
+    <tr><td><span class="tag">textPrimary</span></td><td>#0F172A</td><td>#F1F5F9</td><td>正文、标题</td></tr>
+    <tr><td><span class="tag">textSecondary</span></td><td>#475569</td><td>#94A3B8</td><td>辅助文字、图标</td></tr>
+    <tr><td><span class="tag">textTertiary</span></td><td>#94A3B8</td><td>#64748B</td><td>占位符、禁用</td></tr>
+  </table>
+  </div>
+  <p style="font-size:12px;color:#EF4444;margin-top:8px">
+    ⛔ 规则：分隔线/细边框只允许 <span class="tag">border</span> 与 <span class="tag">border 50%</span> 两档，
+    现状的 7 种写法（dividerColor×0.3/0.5、outlineVariant×0.5、outline×0.15…）全部废弃。
+  </p>
+
+  <h3>语义色（功能色）</h3>
+  <div class="grid4">
+    <div class="swatch"><div class="c" style="background:#10B981"></div><div class="meta"><div class="name">success</div><div class="hex">#10B981</div></div></div>
+    <div class="swatch"><div class="c" style="background:#F59E0B"></div><div class="meta"><div class="name">warning</div><div class="hex">#F59E0B</div></div></div>
+    <div class="swatch"><div class="c" style="background:#EF4444"></div><div class="meta"><div class="name">error</div><div class="hex">#EF4444</div></div></div>
+    <div class="swatch"><div class="c" style="background:#3B82F6"></div><div class="meta"><div class="name">info</div><div class="hex">#3B82F6</div></div></div>
+  </div>
+  <p style="font-size:12px;color:#475569;margin-top:6px">每色配 <span class="tag">*Soft</span> 底色（Light 10% / Dark 14% alpha）用于 chip、banner、状态卡片。</p>
+
+  <h3>HTTP 方法色（唯一定义，全端一致）</h3>
+  <div class="row" style="gap:8px">
+    <span class="badge" style="color:#3B82F6;background:#3B82F61A">GET</span>
+    <span class="badge" style="color:#10B981;background:#10B9811A">POST</span>
+    <span class="badge" style="color:#F59E0B;background:#F59E0B1A">PUT</span>
+    <span class="badge" style="color:#EF4444;background:#EF44441A">DELETE</span>
+    <span class="badge" style="color:#8B5CF6;background:#8B5CF61A">PATCH</span>
+    <span class="badge" style="color:#64748B;background:#64748B1A">HEAD</span>
+    <span class="badge" style="color:#64748B;background:#64748B1A">OPTIONS</span>
+  </div>
+  <p style="font-size:12px;color:#475569;margin-top:8px">
+    现状问题：GET 在侧栏是 #3B82F6、在标签栏是 Material Colors.blue #2196F3（肉眼可辨）。
+    统一后仅 <span class="tag">AppColors.methodGet</span> 一个出处，侧栏 / 标签栏 / 方法下拉 / 响应概览全部引用。
+  </p>
+
+  <h3>语法高亮（合并 code_editor 与 optimized_response_viewer 两份重复定义）</h3>
+  <div class="grid2">
+    <div class="board" data-theme="light">
+      <span class="board-label">LIGHT</span>
+      <div class="code" style="border:none;background:transparent;padding:0">
+<span class="cp">{</span><br>
+&nbsp;&nbsp;<span class="ck">"name"</span><span class="cp">:</span> <span class="cs">"Hopp"</span><span class="cp">,</span><br>
+&nbsp;&nbsp;<span class="ck">"version"</span><span class="cp">:</span> <span class="cn">0.8</span><span class="cp">,</span><br>
+&nbsp;&nbsp;<span class="ck">"local"</span><span class="cp">:</span> <span class="ckw">true</span><br>
+<span class="cp">}</span>
+      </div>
+    </div>
+    <div class="board" data-theme="dark">
+      <span class="board-label">DARK</span>
+      <div class="code" style="border:none;background:transparent;padding:0">
+<span class="cp">{</span><br>
+&nbsp;&nbsp;<span class="ck">"name"</span><span class="cp">:</span> <span class="cs">"Hopp"</span><span class="cp">,</span><br>
+&nbsp;&nbsp;<span class="ck">"version"</span><span class="cp">:</span> <span class="cn">0.8</span><span class="cp">,</span><br>
+&nbsp;&nbsp;<span class="ck">"local"</span><span class="cp">:</span> <span class="ckw">true</span><br>
+<span class="cp">}</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 字体 ================= -->
+<section id="typography">
+  <h2>字体</h2>
+  <p class="sub">UI 用系统字体栈（不打包字体文件），代码统一 Menlo；字号收敛为 7 档</p>
+  <div class="card" style="padding:0">
+  <table class="spec">
+    <tr><th>Token</th><th>字号 / 字重</th><th>用途</th><th>示例</th></tr>
+    <tr><td><span class="tag">display</span></td><td>20 / 600</td><td>空态标题、About</td><td style="font-size:20px;font-weight:600">No requests yet</td></tr>
+    <tr><td><span class="tag">title</span></td><td>16 / 600</td><td>对话框标题</td><td style="font-size:16px;font-weight:600">Manage Environments</td></tr>
+    <tr><td><span class="tag">body</span></td><td>13 / 400·500</td><td>正文、输入框、按钮</td><td style="font-size:13px">https://api.example.com</td></tr>
+    <tr><td><span class="tag">caption</span></td><td>12 / 400·500</td><td>辅助正文、菜单项、Tab</td><td style="font-size:12px">Headers</td></tr>
+    <tr><td><span class="tag">tiny</span></td><td>11 / 400·500</td><td>表头、描述、徽章计数</td><td style="font-size:11px;color:#475569">Verify the server's certificate</td></tr>
+    <tr><td><span class="tag">micro</span></td><td>10 / 500·700</td><td>方法徽章、状态 chip</td><td style="font-size:10px;font-weight:700;color:#10B981">POST</td></tr>
+    <tr><td><span class="tag">code</span></td><td>12 / 400 · Menlo</td><td>URL、请求/响应体、KV 值</td><td style="font-size:12px;font-family:Menlo,monospace">"status": "success"</td></tr>
+  </table>
+  </div>
+  <p style="font-size:12px;color:#EF4444">
+    ⛔ 废弃现状的 8/9/14/18/24px 随机字号与 w700/bold 混用；等宽字体三选一（Menlo/monospace/JetBrains Mono）统一为 Menlo。
+  </p>
+</section>
+
+<!-- ================= 间距 ================= -->
+<section id="spacing">
+  <h2>间距 · 圆角 · 高度</h2>
+  <p class="sub">4px 基数网格；圆角 4 档；控件高度 4 档，消灭魔法数</p>
+  <div class="grid3">
+    <div class="card">
+      <h3 style="margin-top:0">间距</h3>
+      <div style="display:flex;align-items:flex-end;gap:6px;margin:12px 0">
+        <div style="width:4px;height:16px;background:#6366F1;border-radius:2px"></div>
+        <div style="width:8px;height:16px;background:#6366F1;border-radius:2px"></div>
+        <div style="width:12px;height:16px;background:#6366F1;border-radius:2px"></div>
+        <div style="width:16px;height:16px;background:#6366F1;border-radius:2px"></div>
+        <div style="width:20px;height:16px;background:#6366F1;border-radius:2px"></div>
+        <div style="width:24px;height:16px;background:#6366F1;border-radius:2px"></div>
+        <div style="width:32px;height:16px;background:#6366F1;border-radius:2px"></div>
+      </div>
+      <p style="font-size:12px;color:#475569">4 · 8 · 12 · 16 · 20 · 24 · 32（特殊微距允许 2 / 6）</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">圆角</h3>
+      <div style="display:flex;gap:10px;margin:12px 0">
+        <div style="width:36px;height:36px;background:#EEF2FF;border:2px solid #6366F1;border-radius:4px"></div>
+        <div style="width:36px;height:36px;background:#EEF2FF;border:2px solid #6366F1;border-radius:6px"></div>
+        <div style="width:36px;height:36px;background:#EEF2FF;border:2px solid #6366F1;border-radius:8px"></div>
+        <div style="width:36px;height:36px;background:#EEF2FF;border:2px solid #6366F1;border-radius:10px"></div>
+      </div>
+      <p style="font-size:12px;color:#475569">4 徽章 · 6 控件/菜单 · 8 卡片/对话框 · 10 大面板<br>废弃 2/3/16/28</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">高度</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;margin:12px 0;align-items:flex-start">
+        <div style="height:24px;width:90px;background:#EEF2FF;border:1px solid #6366F1;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;color:#6366F1">24 工具钮</div>
+        <div style="height:28px;width:130px;background:#EEF2FF;border:1px solid #6366F1;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;color:#6366F1">28 次级控件/Tab</div>
+        <div style="height:32px;width:170px;background:#EEF2FF;border:1px solid #6366F1;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;color:#6366F1">32 主控件/URL栏/按钮</div>
+      </div>
+      <p style="font-size:12px;color:#475569">36 保留给 KV 表行</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 组件库 ================= -->
+<section id="components">
+  <h2>组件库</h2>
+  <p class="sub">lib/widgets/common/ 目标封装，亮/暗双主题对照；业务代码只组装组件，不手写样式</p>
+
+  <h3>按钮 AppButton · AppIconButton</h3>
+  <div class="grid2">
+    <div class="board">
+      <span class="board-label">LIGHT</span>
+      <div class="row">
+        <button class="btn btn-m btn-primary">▶&nbsp;&nbsp;Send</button>
+        <button class="btn btn-m btn-secondary">Save as…</button>
+        <button class="btn btn-m btn-ghost">Cancel</button>
+        <button class="btn btn-s btn-primary">Parse</button>
+        <button class="btn btn-s btn-secondary">Add Variable</button>
+        <button class="icon-btn bordered" title="Save">💾</button>
+        <button class="icon-btn" title="More">⋯</button>
+      </div>
+      <p style="font-size:11px;color:#475569;margin-top:12px">
+        规格：primary 填充 #6366F1（暗色同）、secondary 描边 borderStrong、ghost 无框；
+        高 28/32；圆角 6；<b>无阴影无渐变</b>（现状 Send 按钮的 elevation 2 + 阴影废弃）。
+      </p>
+    </div>
+    <div class="board" data-theme="dark">
+      <span class="board-label">DARK</span>
+      <div class="row">
+        <button class="btn btn-m btn-primary">▶&nbsp;&nbsp;Send</button>
+        <button class="btn btn-m btn-secondary">Save as…</button>
+        <button class="btn btn-m btn-ghost">Cancel</button>
+        <button class="btn btn-s btn-primary">Parse</button>
+        <button class="btn btn-s btn-secondary">Add Variable</button>
+        <button class="icon-btn bordered">💾</button>
+        <button class="icon-btn">⋯</button>
+      </div>
+      <p style="font-size:11px;color:#94A3B8;margin-top:12px">
+        现状手写按钮（InkWell/GestureDetector/Container 三套）全部替换为 AppButton，
+        禁用态统一 opacity .45。
+      </p>
+    </div>
+  </div>
+
+  <h3>输入框 AppTextField · 选择器 AppPopupSelect · 开关/勾选</h3>
+  <div class="grid2">
+    <div class="board">
+      <span class="board-label">LIGHT</span>
+      <div class="row">
+        <input class="input" placeholder="https://api.example.com">
+        <input class="input input-sm" placeholder="Key" style="width:140px">
+        <button class="btn btn-m btn-secondary" style="justify-content:space-between;width:150px">JSON <span style="color:#94A3B8">▾</span></button>
+        <button class="switch on"></button>
+        <span class="checkbox on">✓</span>
+        <span class="checkbox"></span>
+      </div>
+      <p style="font-size:11px;color:#475569;margin-top:12px">
+        边框 borderStrong 1px、focus 时 brand 1px + 2px 柔和光晕（统一 1.5/2px 两种现状）；
+        Switch 32×18（废弃 Transform.scale(0.6) hack）；Checkbox 15px 紧凑规格。
+      </p>
+    </div>
+    <div class="board" data-theme="dark">
+      <span class="board-label">DARK</span>
+      <div class="row">
+        <input class="input" placeholder="https://api.example.com">
+        <input class="input input-sm" placeholder="Key" style="width:140px">
+        <button class="btn btn-m btn-secondary" style="justify-content:space-between;width:150px">JSON <span style="color:#64748B">▾</span></button>
+        <button class="switch on"></button>
+        <span class="checkbox on">✓</span>
+        <span class="checkbox"></span>
+      </div>
+    </div>
+  </div>
+
+  <h3>徽章 MethodBadge / StatusChip · 标签页 AppTabs</h3>
+  <div class="grid2">
+    <div class="board">
+      <span class="board-label">LIGHT</span>
+      <div class="row" style="margin-bottom:14px">
+        <span class="badge" style="color:#3B82F6;background:#3B82F61A">GET</span>
+        <span class="badge" style="color:#10B981;background:#10B9811A">POST</span>
+        <span class="status-chip" style="color:#10B981;background:#ECFDF5">200 OK</span>
+        <span class="status-chip" style="color:#F59E0B;background:#FFFBEB">301</span>
+        <span class="status-chip" style="color:#EF4444;background:#FEF2F2">404</span>
+        <span class="status-chip" style="color:#EF4444;background:#FEF2F2">500</span>
+      </div>
+      <div class="tabs">
+        <span class="tab active">⧉ Params <span class="count">2</span></span>
+        <span class="tab">☰ Headers <span class="count">11</span></span>
+        <span class="tab">&lt;/&gt; Body <span class="dot"></span></span>
+        <span class="tab">⚙ Settings</span>
+      </div>
+      <p style="font-size:11px;color:#475569;margin-top:12px">
+        Tab 32px、12px w500、激活=brand 文字 + 2px 下划线 + brand-soft 计数底；
+        状态 chip 22px、语义色 + Soft 底（替代 Colors.green/orange 硬编码）。
+      </p>
+    </div>
+    <div class="board" data-theme="dark">
+      <span class="board-label">DARK</span>
+      <div class="row" style="margin-bottom:14px">
+        <span class="badge" style="color:#3B82F6;background:#3B82F624">GET</span>
+        <span class="badge" style="color:#10B981;background:#10B98124">POST</span>
+        <span class="status-chip" style="color:#10B981;background:rgba(16,185,129,.14)">200 OK</span>
+        <span class="status-chip" style="color:#F59E0B;background:rgba(245,158,11,.14)">301</span>
+        <span class="status-chip" style="color:#EF4444;background:rgba(239,68,68,.14)">404</span>
+        <span class="status-chip" style="color:#EF4444;background:rgba(239,68,68,.14)">500</span>
+      </div>
+      <div class="tabs">
+        <span class="tab active">⧉ Params <span class="count">2</span></span>
+        <span class="tab">☰ Headers <span class="count">11</span></span>
+        <span class="tab">&lt;/&gt; Body <span class="dot"></span></span>
+        <span class="tab">⚙ Settings</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>菜单 AppPopupMenu · 对话框 AppDialog · KV 行</h3>
+  <div class="grid3">
+    <div class="board">
+      <span class="board-label">LIGHT · MENU</span>
+      <div class="menu">
+        <div class="menu-item"><span class="mi">✎</span>Rename</div>
+        <div class="menu-item"><span class="mi">⧉</span>Duplicate</div>
+        <div class="menu-item"><span class="mi">⇪</span>Export</div>
+        <div style="height:1px;background:var(--border);margin:4px 6px"></div>
+        <div class="menu-item danger"><span class="mi">🗑</span>Delete</div>
+      </div>
+    </div>
+    <div class="board" data-theme="dark">
+      <span class="board-label">DARK · MENU</span>
+      <div class="menu">
+        <div class="menu-item"><span class="mi">✎</span>Rename</div>
+        <div class="menu-item"><span class="mi">⧉</span>Duplicate</div>
+        <div class="menu-item"><span class="mi">⇪</span>Export</div>
+        <div style="height:1px;background:var(--border);margin:4px 6px"></div>
+        <div class="menu-item danger"><span class="mi">🗑</span>Delete</div>
+      </div>
+    </div>
+    <div class="board">
+      <span class="board-label">DIALOG</span>
+      <div class="dialog" style="width:100%">
+        <div class="dialog-head"><span class="dialog-title">Delete Collection</span><span style="color:#94A3B8;cursor:pointer">✕</span></div>
+        <div class="dialog-body">Delete "User API" and all its requests? This cannot be undone.</div>
+        <div class="dialog-foot">
+          <button class="btn btn-s btn-ghost">Cancel</button>
+          <button class="btn btn-s btn-danger">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="board" style="margin-top:16px">
+    <span class="board-label">KV ROW</span>
+    <div class="kv-row kv-head" style="height:28px"><span></span><span>Key</span><span>Value</span><span></span></div>
+    <div class="kv-row"><span class="checkbox on">✓</span><span class="k">Content-Type</span><span class="v">application/json</span><span style="color:#94A3B8;text-align:center;cursor:pointer">🗑</span></div>
+    <div class="kv-row"><span class="checkbox on">✓</span><span class="k">Authorization</span><span class="v" style="color:#6366F1;background:#EEF2FF;border-radius:3px;padding:0 3px">{{token}}</span><span style="color:#94A3B8;text-align:center;cursor:pointer">🗑</span></div>
+    <div class="kv-row" style="border-bottom:none"><span class="checkbox"></span><span class="k" style="color:#94A3B8">X-Custom</span><span class="v" style="color:#94A3B8">value</span><span style="color:#94A3B8;text-align:center;cursor:pointer">🗑</span></div>
+    <p style="font-size:11px;color:#475569;margin-top:10px">
+      行高 36、等宽字体、变量 <span class="tag">{{var}}</span> 高亮 brand-soft 底、删除钮 hover 才显现（替代常驻垃圾桶）。
+    </p>
+  </div>
+</section>
+
+<!-- ================= 界面原型 ================= -->
+<section id="mockup">
+  <h2>界面原型 · 主窗口</h2>
+  <p class="sub">目标效果（Light），红色标记 = 相对现状的关键修正点</p>
+
+  <div class="appframe annot">
+    <div class="n" style="top:44px;left:214px">1</div>
+    <div class="n" style="top:44px;left:556px">2</div>
+    <div class="n" style="top:86px;left:660px">3</div>
+    <div class="n" style="top:126px;left:420px">4</div>
+    <div class="n" style="top:332px;left:520px">5</div>
+    <div class="n" style="bottom:6px;left:60px">6</div>
+    <!-- 标题栏 -->
+    <div class="app-titlebar">
+      <span class="tl-dot" style="background:#FF5F57"></span>
+      <span class="tl-dot" style="background:#FEBC2E"></span>
+      <span class="tl-dot" style="background:#28C840"></span>
+    </div>
+    <div class="app-body">
+      <!-- 侧栏 -->
+      <div class="app-sidebar">
+        <div class="sb-head">
+          <span class="sb-logo"><span class="logo-ic">🐰</span>Hopp</span>
+          <span style="display:flex;gap:2px">
+            <button class="icon-btn" style="width:24px;height:24px">＋</button>
+            <button class="icon-btn" style="width:24px;height:24px">⋯</button>
+          </span>
+        </div>
+        <div class="sb-env">◍&nbsp;No Environment <span style="margin-left:auto;color:#94A3B8">▾</span></div>
+        <div class="sb-filter">Filter…</div>
+        <div class="sb-tree">
+          <div class="sb-item"><span class="arrow">▸</span><span class="folder">📁</span><span class="name">new</span><span class="more">⋯</span></div>
+          <div class="sb-item"><span class="arrow">▾</span><span class="folder">📁</span><span class="name">User API</span><span class="more">⋯</span></div>
+          <div class="sb-item indent"><span class="badge" style="color:#10B981;background:#10B9811A;min-width:32px;height:16px;font-size:9px">POST</span><span class="name">Create User</span></div>
+          <div class="sb-item indent"><span class="badge" style="color:#F59E0B;background:#F59E0B1A;min-width:32px;height:16px;font-size:9px">PUT</span><span class="name">Update User</span></div>
+          <div class="sb-item indent" style="background:var(--brand-soft)"><span class="badge" style="color:#3B82F6;background:#3B82F61A;min-width:32px;height:16px;font-size:9px">GET</span><span class="name" style="color:var(--brand-text);font-weight:500">Get User</span></div>
+          <div class="sb-item"><span class="arrow">▸</span><span class="folder">📁</span><span class="name">Payment</span><span class="more">⋯</span></div>
+        </div>
+      </div>
+      <!-- 主区 -->
+      <div class="app-main">
+        <div class="app-tabbar">
+          <span class="app-tab active"><span style="color:#3B82F6;font-weight:700;font-size:10px">GET</span>Get User<span class="x">✕</span></span>
+          <span class="app-tab"><span style="color:#10B981;font-weight:700;font-size:10px">POST</span>Create User<span class="x">✕</span></span>
+          <span style="color:#94A3B8;padding:0 6px">＋</span>
+        </div>
+        <div class="urlbar">
+          <span class="url-method">GET ▾</span>
+          <span class="url-input">https://<span class="var">{{host}}</span>/v1/users/<span class="var">{{userId}}</span></span>
+          <button class="icon-btn bordered">💾</button>
+          <button class="btn btn-m btn-primary" style="height:32px">▶&nbsp;&nbsp;Send</button>
+        </div>
+        <div style="padding:0 12px">
+          <div class="tabs" style="border-bottom:none">
+            <span class="tab active">⧉ Params <span class="count">2</span></span>
+            <span class="tab">☰ Headers <span class="count">3</span></span>
+            <span class="tab">&lt;/&gt; Body</span>
+            <span class="tab">⚿ Auth</span>
+            <span class="tab">⚙ Settings</span>
+          </div>
+        </div>
+        <div class="pane" style="padding:0 12px">
+          <div class="kv-row kv-head" style="height:26px"><span></span><span>Key</span><span>Value</span><span></span></div>
+          <div class="kv-row"><span class="checkbox on">✓</span><span class="k">include</span><span class="v">profile</span><span></span></div>
+          <div class="kv-row"><span class="checkbox on">✓</span><span class="k">page</span><span class="v">1</span><span></span></div>
+          <div class="kv-row" style="border-bottom:none"><span></span><span class="k" style="color:#94A3B8">Key</span><span class="v" style="color:#94A3B8">Value</span><span></span></div>
+        </div>
+        <!-- 响应区 -->
+        <div class="pane" style="flex:1;display:flex;flex-direction:column">
+          <div class="resp-infobar">
+            <span class="status-chip" style="color:#10B981;background:#ECFDF5">200 OK</span>
+            <span class="resp-meta">⏱ 245 ms</span>
+            <span class="resp-meta">⬇ 12.4 KB</span>
+            <span style="margin-left:auto;display:flex;gap:6px">
+              <button class="icon-btn bordered" style="width:26px;height:26px">⧉</button>
+              <button class="icon-btn bordered" style="width:26px;height:26px">💾</button>
+            </span>
+          </div>
+          <div style="padding:0 12px">
+            <div class="tabs" style="border-bottom:none">
+              <span class="tab active">&lt;/&gt; Body</span>
+              <span class="tab">☰ Headers <span class="count">9</span></span>
+              <span class="tab">🍪 Cookies</span>
+              <span class="tab">⏱ Timing</span>
+            </div>
+          </div>
+          <div style="padding:10px 12px;flex:1">
+            <div class="code">
+<span class="ln">1</span><span class="cp">{</span><br>
+<span class="ln">2</span>&nbsp;&nbsp;<span class="ck">"id"</span><span class="cp">:</span> <span class="cn">42</span><span class="cp">,</span><br>
+<span class="ln">3</span>&nbsp;&nbsp;<span class="ck">"name"</span><span class="cp">:</span> <span class="cs">"Zhang San"</span><span class="cp">,</span><br>
+<span class="ln">4</span>&nbsp;&nbsp;<span class="ck">"active"</span><span class="cp">:</span> <span class="ckw">true</span><br>
+<span class="ln">5</span><span class="cp">}</span>
+            </div>
+          </div>
+        </div>
+        <div class="app-statusbar">
+          <span>🐰 Hopp&nbsp;&nbsp;v0.8.4</span>
+          <span><span class="ready-dot"></span>Ready</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3 style="margin-top:0">关键修正点</h3>
+    <ul class="legend">
+      <li><span class="n">1</span>侧栏 ⋮ 按钮 hover 才显现，行高 28、徽章统一 9px/16px 高（现状 8/9/11px 混用且 ⋮ 常驻）。</li>
+      <li><span class="n">2</span>URL 栏统一 32px 高、白底 + borderStrong 描边（现状灰底填充、36px）；<span class="tag">{{var}}</span> 变量 brand-soft 高亮。</li>
+      <li><span class="n">3</span>Save 改为带框图标钮、Send 去阴影（现状 Send 是全局唯一 elevation 2 按钮）。</li>
+      <li><span class="n">4</span>次级 Tab 统一 AppTabs：32px、12px、激活下划线 + brand-soft 计数（现状 10/11px 混用、Response Tab 的 "Time: 245ms" 动态标签改回固定 "Timing"）。</li>
+      <li><span class="n">5</span>响应信息栏统一 38px（现状空态 36/正常 40/错误 44 三种）；状态 chip 用语义 StatusChip（现状 Colors.green 硬编码）。</li>
+      <li><span class="n">6</span>状态栏版本号与 pubspec 统一（现状硬编码 v0.6.0，Issue #13）。</li>
+    </ul>
+  </div>
+
+  <h3>暗色主题</h3>
+  <p class="sub">同一语义 token 的另一套取值，业务代码零分支</p>
+  <div class="appframe" data-theme="dark">
+    <div class="app-titlebar">
+      <span class="tl-dot" style="background:#FF5F57"></span>
+      <span class="tl-dot" style="background:#FEBC2E"></span>
+      <span class="tl-dot" style="background:#28C840"></span>
+    </div>
+    <div class="app-body" style="min-height:300px">
+      <div class="app-sidebar">
+        <div class="sb-head">
+          <span class="sb-logo"><span class="logo-ic">🐰</span>Hopp</span>
+          <span style="display:flex;gap:2px">
+            <button class="icon-btn" style="width:24px;height:24px">＋</button>
+            <button class="icon-btn" style="width:24px;height:24px">⋯</button>
+          </span>
+        </div>
+        <div class="sb-env">◍&nbsp;Production <span style="margin-left:auto;color:#64748B">▾</span></div>
+        <div class="sb-filter">Filter…</div>
+        <div class="sb-tree">
+          <div class="sb-item"><span class="arrow">▾</span><span class="folder">📁</span><span class="name">User API</span><span class="more">⋯</span></div>
+          <div class="sb-item indent"><span class="badge" style="color:#10B981;background:#10B98124;min-width:32px;height:16px;font-size:9px">POST</span><span class="name">Create User</span></div>
+          <div class="sb-item indent" style="background:var(--brand-soft)"><span class="badge" style="color:#3B82F6;background:#3B82F624;min-width:32px;height:16px;font-size:9px">GET</span><span class="name" style="color:var(--brand-text);font-weight:500">Get User</span></div>
+        </div>
+      </div>
+      <div class="app-main">
+        <div class="app-tabbar">
+          <span class="app-tab active"><span style="color:#3B82F6;font-weight:700;font-size:10px">GET</span>Get User<span class="x">✕</span></span>
+        </div>
+        <div class="urlbar">
+          <span class="url-method">GET ▾</span>
+          <span class="url-input">https://<span class="var">{{host}}</span>/v1/users</span>
+          <button class="icon-btn bordered">💾</button>
+          <button class="btn btn-m btn-primary" style="height:32px">▶&nbsp;&nbsp;Send</button>
+        </div>
+        <div class="pane" style="padding:10px 12px">
+          <div class="code" style="background:var(--surface)">
+<span class="ln">1</span><span class="cp">{</span><br>
+<span class="ln">2</span>&nbsp;&nbsp;<span class="ck">"id"</span><span class="cp">:</span> <span class="cn">42</span><span class="cp">,</span><br>
+<span class="ln">3</span>&nbsp;&nbsp;<span class="ck">"name"</span><span class="cp">:</span> <span class="cs">"Zhang San"</span><br>
+<span class="ln">4</span><span class="cp">}</span>
+          </div>
+        </div>
+        <div class="app-statusbar" style="margin-top:auto">
+          <span>🐰 Hopp&nbsp;&nbsp;v0.8.4</span>
+          <span><span class="ready-dot"></span>Ready</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 执行保障 ================= -->
+<section id="enforcement">
+  <h2>执行保障 · 让规范被强制遵守</h2>
+  <p class="sub">规范无人遵守的根因：没有反馈回路。方案是把规范变成「跑在 CI 里的测试」和「看得见的组件目录」</p>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0">① 设计守卫测试（核心）</h3>
+      <p style="font-size:13px;color:#475569;line-height:1.8">
+        <span class="tag">test/design_guard_test.dart</span> 静态扫描 lib/ 源码，CI 必过：<br>
+        · 禁 <span class="tag">Colors.xxx</span> / <span class="tag">Color(0x…)</span>（白名单仅 lib/theme/）<br>
+        · 禁内联 <span class="tag">TextStyle(fontSize:)</span> / <span class="tag">fontFamily:</span><br>
+        · 禁 <span class="tag">BorderRadius.circular(字面量)</span><br>
+        · 禁 <span class="tag">withOpacity</span>（统一 withValues / token）<br>
+        现存违规记入基线文件，<b>只减不增</b>（ratchet），新违规直接 fail。
+      </p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">② 组件 Gallery + Golden Test</h3>
+      <p style="font-size:13px;color:#475569;line-height:1.8">
+        test-mode 新指令 <span class="tag">open_design_gallery</span>：一页展示全部 token 与组件的双主题渲染，
+        作为视觉验收基准；核心组件配 <span class="tag">matchesGoldenFile</span> 测试，样式回归直接变红。
+      </p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">③ 截图审计固化</h3>
+      <p style="font-size:13px;color:#475569;line-height:1.8">
+        <span class="tag">integration_test/ui_audit_screenshots.py</span> 一键遍历主界面/各对话框 × 亮暗双主题截图，
+        纳入 TESTING.md 验收流程；UI 改动提交前必须跑一遍对照。
+      </p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">④ 规范镜像 + 守门条款</h3>
+      <p style="font-size:13px;color:#475569;line-height:1.8">
+        重写 <span class="tag">docs/UI_UX_GUIDELINES.md</span> 与代码一一对应（真实类名、真实数值），
+        删除文档中不存在的 NeutralColors/AppSpacing 等幽灵类；
+        AGENTS.md 增加「UI 变更四步」：查规范 → 用 common 组件 → 过守卫测试 → 截图对照。
+      </p>
+    </div>
+  </div>
+  <div class="card" style="background:#0F172A;border-color:#0F172A">
+    <h3 style="margin-top:0;color:#F1F5F9">实施路线（5 个独立可验收阶段）</h3>
+    <table class="spec" style="color:#CBD5E1">
+      <tr><th style="color:#64748B;border-color:#1E293B">阶段</th><th style="color:#64748B;border-color:#1E293B">内容</th><th style="color:#64748B;border-color:#1E293B">视觉变化</th></tr>
+      <tr><td style="border-color:#1E293B">P1 基建</td><td style="border-color:#1E293B">lib/theme/ token 层 + ThemeExtension + ThemeData 显式映射 + 守卫测试与基线上线 + 合并语法高亮</td><td style="border-color:#1E293B">无（数值先对齐现状）</td></tr>
+      <tr><td style="border-color:#1E293B">P2 收口</td><td style="border-color:#1E293B">方法色/状态码色唯一入口、Menlo 统一、AppDivider 替换 7 种分隔线、徽章统一</td><td style="border-color:#1E293B">细微</td></tr>
+      <tr><td style="border-color:#1E293B">P3 组件</td><td style="border-color:#1E293B">AppButton/AppIconButton/AppTextField/AppDialog/AppTabs/AppSwitch 落地并全量替换</td><td style="border-color:#1E293B">明显</td></tr>
+      <tr><td style="border-color:#1E293B">P4 翻新</td><td style="border-color:#1E293B">侧栏/编辑器/响应区/环境管理/About 逐区域 polish（间距网格、hover/focus、空态、URL 栏 32、版本号 #13）</td><td style="border-color:#1E293B">显著</td></tr>
+      <tr><td style="border-color:#1E293B">P5 闭环</td><td style="border-color:#1E293B">Gallery + Golden + 规范文档重写 + AGENTS 守门条款 + 基线清零</td><td style="border-color:#1E293B">—</td></tr>
+    </table>
+  </div>
+</section>
+
+</main>
+</body>
+</html>

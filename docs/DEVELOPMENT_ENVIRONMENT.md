@@ -243,6 +243,20 @@ fvm flutter test test/models/http_request_test.dart
 fvm flutter test --coverage
 ```
 
+### 6. 配置 Git Hooks（pre-push 格式检查）
+
+仓库自带 `.githooks/pre-push`，在 `git push` 前自动执行与 CI 完全一致的格式检查
+（`dart format --output=none --set-exit-if-changed lib/ test/`），避免 CI 的
+Format check 失败。每个 clone 只需启用一次：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Hook 优先使用 `.fvm/flutter_sdk` 锁定的 SDK 自带 dart（与 CI 的 Flutter 3.27.4
+格式化行为一致），不依赖 `fvm` 在 PATH 中，GUI Git 客户端同样生效。
+检查失败时运行 `fvm dart format lib/ test/` 修复后重新提交即可。
+
 ---
 
 ## 常见问题

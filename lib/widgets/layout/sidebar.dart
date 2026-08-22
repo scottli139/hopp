@@ -23,6 +23,7 @@ import '../common/app_dialog.dart';
 import '../common/app_divider.dart';
 import '../common/app_empty_state.dart';
 import '../common/app_popup_menu.dart';
+import '../common/app_segmented_control.dart';
 import '../common/app_text_field.dart';
 import '../environment/environment_manager_dialog.dart';
 import '../environment/environment_switcher.dart';
@@ -185,7 +186,44 @@ class _SidebarState extends ConsumerState<Sidebar> {
               ),
             ),
           ),
+          // Footer：主题模式切换
+          const AppDivider(),
+          _buildFooter(context),
         ],
+      ),
+    );
+  }
+
+  /// 底栏：主题模式切换（跟随系统 / 浅色 / 深色），持久化到 AppSettings
+  Widget _buildFooter(BuildContext context) {
+    final themeMode =
+        ref.watch(settingsProvider).valueOrNull?.themeMode ?? 'system';
+
+    return Container(
+      height: AppMetrics.height36,
+      padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space8),
+      alignment: Alignment.centerLeft,
+      child: AppSegmentedControl<String>(
+        value: themeMode,
+        items: const [
+          AppSegmentedItem(
+            value: 'system',
+            icon: Icons.brightness_auto_outlined,
+            tooltip: 'System theme',
+          ),
+          AppSegmentedItem(
+            value: 'light',
+            icon: Icons.light_mode_outlined,
+            tooltip: 'Light theme',
+          ),
+          AppSegmentedItem(
+            value: 'dark',
+            icon: Icons.dark_mode_outlined,
+            tooltip: 'Dark theme',
+          ),
+        ],
+        onChanged: (mode) =>
+            ref.read(settingsProvider.notifier).updateThemeMode(mode),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hopp/models/app_settings.dart';
 import 'package:hopp/models/collection.dart';
 import 'package:hopp/models/http_method.dart';
 import 'package:hopp/models/http_request.dart';
@@ -36,6 +37,10 @@ void main() {
       when(mockStorageService.getActiveEnvironmentId())
           .thenAnswer((_) async => null);
       when(mockStorageService.getGlobalVariables()).thenAnswer((_) async => []);
+      // Footer theme switcher reads/writes settings
+      when(mockStorageService.getSettings())
+          .thenAnswer((_) async => AppSettings.defaults());
+      when(mockStorageService.saveSettings(any)).thenAnswer((_) async {});
     });
 
     Widget buildTestWidget({
@@ -579,6 +584,36 @@ void main() {
         expect(find.text('POST Users'), findsOneWidget);
         // The method badge uses small font and is part of the row
         expect(find.textContaining('POST'), findsWidgets);
+      });
+    });
+
+    group('theme switcher', () {
+      testWidgets('should render theme mode segmented control in footer',
+          (tester) async {
+        final container = createContainer();
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.brightness_auto_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.light_mode_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.dark_mode_outlined), findsOneWidget);
+      });
+
+      testWidgets('should persist theme mode when segment is tapped',
+          (tester) async {
+        final container = createContainer();
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.dark_mode_outlined));
+        await tester.pumpAndSettle();
+
+        final saved = verify(mockStorageService.saveSettings(captureAny))
+            .captured
+            .last as AppSettings;
+        expect(saved.themeMode, 'dark');
       });
     });
   });

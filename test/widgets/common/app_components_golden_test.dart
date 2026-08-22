@@ -9,6 +9,7 @@ import 'package:hopp/widgets/common/app_dialog.dart';
 import 'package:hopp/widgets/common/app_divider.dart';
 import 'package:hopp/widgets/common/app_empty_state.dart';
 import 'package:hopp/widgets/common/app_popup_menu.dart';
+import 'package:hopp/widgets/common/app_segmented_control.dart';
 import 'package:hopp/widgets/common/app_tabs.dart';
 import 'package:hopp/widgets/common/app_text_field.dart';
 
@@ -200,6 +201,52 @@ void main() {
         ),
         'app_controls',
         size: const Size(420, 160),
+      );
+    });
+  });
+
+  group('AppSegmentedControl', () {
+    testWidgets('golden', (tester) async {
+      const items = [
+        AppSegmentedItem(
+          value: 'system',
+          icon: Icons.brightness_auto_outlined,
+          tooltip: 'System',
+        ),
+        AppSegmentedItem(
+          value: 'light',
+          icon: Icons.light_mode_outlined,
+          tooltip: 'Light',
+        ),
+        AppSegmentedItem(
+          value: 'dark',
+          icon: Icons.dark_mode_outlined,
+          tooltip: 'Dark',
+        ),
+      ];
+      await expectGolden(
+        tester,
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppSegmentedControl<String>(
+                items: items,
+                value: 'system',
+                onChanged: (_) {},
+              ),
+              const SizedBox(height: 16),
+              AppSegmentedControl<String>(
+                items: items,
+                value: 'dark',
+                onChanged: (_) {},
+              ),
+            ],
+          ),
+        ),
+        'app_segmented_control',
+        size: const Size(200, 120),
       );
     });
   });

@@ -137,6 +137,13 @@
 - `AppSwitch`：32×18，滑块 14px 白色带 shadowSm；off 底 borderStrong，on 底 brand；animFast 滑动；禁用 opacity 0.45。
 - `AppCheckbox`：15×15，圆角 br4；off 1.5px borderStrong 边 + background 底，on 底 brand + 白色对勾（11px）；`label` 非空时右侧带 caption12 文字且整行可点。
 
+### AppSegmentedControl（app_segmented_control.dart）
+
+2~4 个互斥选项的紧凑分段切换（如主题模式）。规格：容器高 24、surfaceVariant 底、圆角 br6、内 padding 2；段宽 28、图标 13；选中段 surface 底 + shadowSm + 圆角 br4、图标 brand；未选中图标 textTertiary，hover textPrimary。
+
+- 泛型 `AppSegmentedControl<T>`：`items` 为 `AppSegmentedItem(value, icon, tooltip)` 列表，`value` 当前选中值，`onChanged` 回报点选值。每段带 Tooltip。
+- 实例：侧栏 footer 主题切换（system / light / dark → `AppSettings.themeMode`）。
+
 ### AppTabs（app_tabs.dart）
 
 次级 Tab 条（请求编辑区 / 响应区共用）。规格：条高 32 + 底部 1px border；Tab 高 32、横 padding 12、图标 12、caption12 w500；选中 = brand 文字 + 2px brand 下划线；hover 文字 textPrimary。
@@ -269,7 +276,7 @@ DESIGN_GUARD_UPDATE=1 fvm flutter test test/design_guard_test.dart
 
 ### Golden 测试
 
-`test/widgets/common/app_components_golden_test.dart`：11 组组件 × 亮/暗双主题（AppButton、AppIconButton、AppTabs、AppDialog、AppSwitch & AppCheckbox、AppCard、AppTextField、Badges、AppPopupSelect、AppDivider、AppEmptyState）。样式回归时该文件变红，先对照 `goldens/` 确认是预期变化再更新：
+`test/widgets/common/app_components_golden_test.dart`：12 组组件 × 亮/暗双主题（AppButton、AppIconButton、AppTabs、AppDialog、AppSwitch & AppCheckbox、AppSegmentedControl、AppCard、AppTextField、Badges、AppPopupSelect、AppDivider、AppEmptyState）。样式回归时该文件变红，先对照 `goldens/` 确认是预期变化再更新：
 
 ```bash
 fvm flutter test test/widgets/common/ --update-goldens

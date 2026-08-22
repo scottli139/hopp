@@ -326,6 +326,9 @@ class UITestModeManager {
       case 'open_about_screen':
         return await _triggerOpenAboutScreen();
 
+      case 'open_design_gallery':
+        return await _triggerOpenDesignGallery();
+
       case 'simulate_4xx_response':
         final statusCode = params['status_code'] as int? ?? 400;
         return await _simulate4xxResponse(statusCode);
@@ -2122,6 +2125,14 @@ class UITestModeManager {
     return {'triggered': true};
   }
 
+  /// 打开 Design Gallery 页面
+  Future<Map<String, dynamic>> _triggerOpenDesignGallery() async {
+    _ref!.read(uiTestDesignGalleryProvider.notifier).state =
+        DateTime.now().millisecondsSinceEpoch;
+
+    return {'triggered': true};
+  }
+
   /// 模拟 4XX 错误响应（带服务端返回的错误详情）
   Future<Map<String, dynamic>> _simulate4xxResponse(int statusCode) async {
     final activeTab = _ref!.read(activeTabProvider);
@@ -2980,6 +2991,9 @@ final uiTestAddFolderDialogProvider = StateProvider<int?>((ref) => null);
 
 /// UI 测试 - 打开 About 页面触发器
 final uiTestOpenAboutScreenProvider = StateProvider<int?>((ref) => null);
+
+/// UI 测试 - 打开 Design Gallery 页面触发器
+final uiTestDesignGalleryProvider = StateProvider<int?>((ref) => null);
 
 /// UI 测试 - cURL 导入对话框触发器
 final uiTestCurlImportDialogProvider = StateProvider<int?>((ref) => null);

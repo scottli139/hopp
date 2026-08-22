@@ -17,11 +17,14 @@ class AppMetrics {
   static const double space32 = 32;
 
   // ========== 圆角 ==========
+  /// 微型徽章 / 标签
+  static const double radius2 = 2;
   static const double radius4 = 4;
   static const double radius6 = 6;
   static const double radius8 = 8;
   static const double radius10 = 10;
 
+  static const BorderRadius br2 = BorderRadius.all(Radius.circular(2));
   static const BorderRadius br4 = BorderRadius.all(Radius.circular(4));
   static const BorderRadius br6 = BorderRadius.all(Radius.circular(6));
   static const BorderRadius br8 = BorderRadius.all(Radius.circular(8));
@@ -42,6 +45,9 @@ class AppMetrics {
 
   /// 响应信息栏（设计规范统一值）
   static const double height38 = 38;
+
+  /// 页面头部条（侧栏 header 等）
+  static const double height48 = 48;
 
   // ========== 动画时长 ==========
   static const Duration animFast = Duration(milliseconds: 100);

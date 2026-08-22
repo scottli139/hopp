@@ -6,10 +6,10 @@ import 'package:multi_split_view/multi_split_view.dart';
 import '../utils/testing/ui_test_mode.dart';
 
 import '../providers/providers.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_metrics.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_theme_data.dart';
-import '../utils/constants.dart' hide AppTextStyles;
 import '../widgets/common/app_empty_state.dart';
 import '../widgets/common/app_button.dart';
 import '../widgets/layout/sidebar.dart';
@@ -221,7 +221,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final colorScheme = theme.colorScheme;
     final appTheme = context.appTheme;
     final version =
-        ref.watch(appVersionProvider).valueOrNull ?? AppConstants.appVersion;
+        ref.watch(appVersionProvider).valueOrNull ?? kFallbackAppVersion;
 
     return Container(
       height: 28,
@@ -243,16 +243,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               gradient: LinearGradient(
                 colors: [
                   colorScheme.primary.withValues(alpha: 0.8),
-                  const Color(0xFF8B5CF6).withValues(alpha: 0.8),
+                  AppColors.methodPatch.withValues(alpha: 0.8),
                 ],
               ),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: AppMetrics.br4,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppMetrics.br2,
                   child: Image.asset(
                     'assets/images/logo.svg.png',
                     width: 12,
@@ -262,9 +262,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 const SizedBox(width: 4),
                 Text(
                   'Hopp',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 10,
-                    color: Colors.white,
+                  style: AppTextStyles.micro10.copyWith(
+                    color: AppColors.onBrand,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -274,8 +273,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           const SizedBox(width: 12),
           Text(
             'v$version',
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: 11,
+            style: AppTextStyles.tiny11.copyWith(
               color: appTheme.textTertiary,
             ),
           ),
@@ -286,14 +284,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             height: 6,
             decoration: BoxDecoration(
               color: appTheme.success,
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: AppMetrics.br4,
             ),
           ),
           const SizedBox(width: 6),
           Text(
             'Ready',
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: 11,
+            style: AppTextStyles.tiny11.copyWith(
               color: appTheme.textSecondary,
             ),
           ),

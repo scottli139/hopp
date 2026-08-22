@@ -200,7 +200,7 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
             value: _selectedCollectionId,
             hint: 'Select Collection',
             boxed: true,
-            fontSize: 13,
+            textStyle: AppTextStyles.body13,
             items: [
               for (final collection in collections)
                 AppPopupSelectEntry(
@@ -228,7 +228,7 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
           AppPopupSelect<PostmanVersion>(
             value: _version,
             boxed: true,
-            fontSize: 13,
+            textStyle: AppTextStyles.body13,
             items: [
               for (final version in PostmanVersion.values)
                 AppPopupSelectEntry(

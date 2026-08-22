@@ -7,6 +7,7 @@ import 'package:highlight/languages/xml.dart';
 import 'package:highlight/languages/htmlbars.dart';
 import 'package:highlight/languages/javascript.dart';
 
+import '../../theme/app_metrics.dart';
 import '../../theme/app_syntax_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/app_logger.dart';
@@ -133,8 +134,7 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
             return Text(
               '${index + 1}',
               textAlign: TextAlign.right,
-              style: AppTextStyles.code12.copyWith(
-                fontSize: 11,
+              style: AppTextStyles.code11.copyWith(
                 height: 1.5,
                 color:
                     theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
@@ -198,7 +198,7 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
       ),
       'punctuation': TextStyle(color: AppSyntaxColors.punctuation),
       'comment': TextStyle(
-        color: Colors.grey.shade500,
+        color: AppSyntaxColors.punctuation,
         fontStyle: FontStyle.italic,
       ),
     };
@@ -224,7 +224,7 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
       ),
       'punctuation': TextStyle(color: AppSyntaxColors.getPunctuation(true)),
       'comment': TextStyle(
-        color: Colors.grey.shade500,
+        color: AppSyntaxColors.getPunctuation(true),
         fontStyle: FontStyle.italic,
       ),
     };
@@ -270,7 +270,7 @@ class SimpleCodeEditor extends StatelessWidget {
           // 左侧不显示边框
           left: BorderSide.none,
         ),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppMetrics.br4,
       ),
       child: TextField(
         controller: TextEditingController(text: code),

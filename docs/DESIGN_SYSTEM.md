@@ -2,7 +2,7 @@
 
 > 目标：把 Hopp 的视觉品质提升到商业产品水准，并建立「规范能被强制遵守」的长期机制。
 > 配套原型：`docs/design/design_system_preview.html`（浏览器打开，含 token、组件、主界面双主题 mockup）。
-> 状态：**P1–P4 已完成**（P1 2026-08-21，P2–P4 2026-08-22）：lib/theme/ + 守卫基线上线（457→120）；方法色/状态码色唯一入口、Menlo 统一、MethodBadge/StatusChip/AppDivider 落地、withOpacity/FontWeight.bold 清零；**8 个统一组件落地**（AppButton/AppIconButton/AppTextField/AppDialog/AppTabs/AppSwitch/AppCheckbox/AppCard），Send/Save/全部 10 个对话框/请求与响应 Tab/KV 控件完成迁移，AppComponentStyles 已删除；组件 golden 16 张双主题基线图（test/widgets/common/）；**P4 区域翻新完成**：版本号统一（Issue #13，package_info_plus + pubspec 同步守护测试）、URL 栏 32px 白底 borderStrong + `{{var}}` 高亮、响应信息栏统一 38px、Timing Tab 固定标签、侧栏 hover ⋮（含菜单保活修复）与行高 28、环境切换器盒式 30px、空态统一 `AppEmptyState`、分隔线两档归一、logo SVG 化修暗色白块；**P5 待启动**
+> 状态：**P1–P5 全部完成**（P1 2026-08-21，P2–P5 2026-08-22）：lib/theme/ + 守卫基线上线并清零（457→0）；方法色/状态码色唯一入口、Menlo 统一、MethodBadge/StatusChip/AppDivider 落地、withOpacity/FontWeight.bold 清零；**8 个统一组件落地**（AppButton/AppIconButton/AppTextField/AppDialog/AppTabs/AppSwitch/AppCheckbox/AppCard），Send/Save/全部 10 个对话框/请求与响应 Tab/KV 控件完成迁移，AppComponentStyles 已删除；**P4 区域翻新完成**：版本号统一（Issue #13，package_info_plus + pubspec 同步守护测试）、URL 栏 32px 白底 borderStrong + `{{var}}` 高亮、响应信息栏统一 38px、Timing Tab 固定标签、侧栏 hover ⋮（含菜单保活修复）与行高 28、环境切换器盒式 30px、空态统一 `AppEmptyState`、分隔线两档归一、logo SVG 化修暗色白块；**P5 闭环完成**：`lib/utils/constants.dart` 删除（AppConstants 并入 AppMetrics，appVersion 兜底迁 `kFallbackAppVersion`）、幽灵 AppColors/AppTextStyles 清除、守卫基线 120→0；新增 token `code11`/`accentPink`/`br2`/`height48`；`AppPopupSelect` boxed 规格与 AppTextField 对齐（高 32/compact 28、底 background、边 borderStrong），环境管理对话框 Name/Type 控件盒式化且行高对齐；Design Gallery 页面上线（test-mode `open_design_gallery`，单页全 token/组件双主题）；组件 golden 补齐至 11 组 22 张；UI_UX_GUIDELINES.md 按代码现状重写；AGENTS.md 新增守门条款；**输入框渲染修复（2026-08-22 下午）**：发现并根治 InputDecorator isDense 描边不随外层 SizedBox 撑高的框架级陷阱（渲染 28 描边仅 16，环境对话框同页 4 种高度），AppTextField 改显式 Container 盒子（新增 enabled/suffix/fieldKey/expands），环境对话框与 cURL 粘贴区全对齐，新增规格测试 + 行高一致性回归测试
 
 ---
 
@@ -134,7 +134,7 @@ lib/widgets/… lib/screens/…   ← 业务层：只组装组件与 token，禁
 | **P2 收口** | 方法色/状态码色唯一入口（消灭 4+2 套实现）；Menlo 统一；`AppDivider` 统一 Divider 系写法（Container 边线分隔归 P4）；徽章统一 MethodBadge/StatusChip；`withOpacity`→`withValues` | 细微（颜色微调） | 守卫基线减少 ≥200 处（实际 -221）；截图对照 |
 | **P3 组件** | `AppButton/AppIconButton/AppTextField/AppDialog/AppTabs/AppSwitch/AppCheckbox/AppCard` 落地；替换 Send/Save/工具栏/全部对话框/响应区 Tab | 明显（按钮、对话框、Tab 统一） | 组件 golden 建立；截图审计通过 |
 | **P4 翻新** ✅ | 侧栏/request editor/response viewer/env manager/About 逐区域 polish：间距网格、hover/focus 统一、空态、URL 栏 32px、响应信息栏 38px 统一、版本号统一（Issue #13）、Timing Tab 固定标签 | 显著 | 全量截图审计双主题通过（18 场景）；守卫基线 163→120；测试 627 全绿 |
-| **P5 闭环** | Gallery + 组件 golden 补齐；UI_UX_GUIDELINES 重写；AGENTS 守门条款；守卫基线清零、删除幽灵 token | — | 基线 = 0；文档与代码一致 |
+| **P5 闭环** ✅ | Gallery + 组件 golden 补齐；UI_UX_GUIDELINES 重写；AGENTS 守门条款；守卫基线清零、删除幽灵 token | — | 基线 120→0；constants.dart 删除；golden 11 组 22 张；文档与代码一致 |
 
 工作量预估：P1 0.5d · P2 1d · P3 2d · P4 2–3d · P5 1d。
 

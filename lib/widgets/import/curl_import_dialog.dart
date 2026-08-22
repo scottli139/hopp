@@ -120,23 +120,15 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
         const SizedBox(height: AppMetrics.space4),
         // 文本输入框
         Expanded(
-          child: TextField(
+          child: AppTextField(
             controller: _textController,
-            maxLines: null,
             expands: true,
-            textAlignVertical: TextAlignVertical.top,
-            style: AppTextStyles.code12.copyWith(color: t.textPrimary),
-            decoration: AppTextField.decoration(
-              context,
-              hintText: 'Paste cURL command here...\n\n'
-                  'Example:\n'
-                  'curl -X POST https://api.example.com/users \\\n'
-                  '  -H "Content-Type: application/json" \\\n'
-                  '  -d \'{"name":"John"}\'',
-            ).copyWith(
-              hintStyle: AppTextStyles.code12.copyWith(color: t.textTertiary),
-              contentPadding: const EdgeInsets.all(AppMetrics.space12),
-            ),
+            style: AppTextStyles.code12,
+            hintText: 'Paste cURL command here...\n\n'
+                'Example:\n'
+                'curl -X POST https://api.example.com/users \\\n'
+                '  -H "Content-Type: application/json" \\\n'
+                '  -d \'{"name":"John"}\'',
             onChanged: (value) {
               ref.read(curlImportProvider.notifier).updateInput(value);
             },
@@ -556,7 +548,7 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
               value: _selectedCollectionId,
               hint: 'Select Collection',
               boxed: true,
-              fontSize: 13,
+              textStyle: AppTextStyles.body13,
               items: [
                 for (final collection in collections)
                   AppPopupSelectEntry(

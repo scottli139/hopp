@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/providers.dart';
 import '../../theme/app_metrics.dart';
+import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
 import '../common/app_button.dart';
 import '../common/app_popup_menu.dart';
@@ -87,8 +88,7 @@ class EnvironmentSwitcher extends ConsumerWidget {
                       maxLines: 1,
                       softWrap: false,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 12,
+                      style: AppTextStyles.caption12.copyWith(
                         color: activeEnv != null
                             ? appTheme.textPrimary
                             : appTheme.textTertiary,

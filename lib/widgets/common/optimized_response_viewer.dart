@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:highlight/languages/json.dart';
 
+import '../../theme/app_colors.dart';
 import '../../theme/app_metrics.dart';
 import '../../theme/app_syntax_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -386,22 +387,21 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     required ThemeData theme,
   }) {
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: AppMetrics.br4,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
             color: isActive
                 ? theme.colorScheme.primary.withValues(alpha: 0.1)
                 : null,
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: AppMetrics.br4,
           ),
           child: Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
+            style: AppTextStyles.tiny11.copyWith(
               fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
               color: isActive
                   ? theme.colorScheme.primary
@@ -423,10 +423,10 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(4),
+        color: AppColors.transparent,
+        borderRadius: AppMetrics.br4,
         child: InkWell(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: AppMetrics.br4,
           onTap: onPressed,
           child: Container(
             width: 28,
@@ -527,8 +527,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               return Text(
                 '${index + 1}',
                 textAlign: TextAlign.right,
-                style: AppTextStyles.code12.copyWith(
-                  fontSize: 11,
+                style: AppTextStyles.code11.copyWith(
                   height: 1.5,
                   color:
                       theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
@@ -703,10 +702,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                 child: CodeField(
                   controller: controller,
                   readOnly: true,
-                  textStyle: AppTextStyles.code12.copyWith(
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
+                  textStyle: AppTextStyles.code12.copyWith(height: 1.4),
                 ),
               ),
             ),
@@ -738,7 +734,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       ),
       'punctuation': TextStyle(color: AppSyntaxColors.punctuation),
       'comment': TextStyle(
-        color: Colors.grey.shade500,
+        color: AppSyntaxColors.punctuation,
         fontStyle: FontStyle.italic,
       ),
     };
@@ -764,7 +760,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       ),
       'punctuation': TextStyle(color: AppSyntaxColors.getPunctuation(true)),
       'comment': TextStyle(
-        color: Colors.grey.shade500,
+        color: AppSyntaxColors.getPunctuation(true),
         fontStyle: FontStyle.italic,
       ),
     };
@@ -804,7 +800,6 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             child: SelectableText(
               widget.content,
               style: AppTextStyles.code12.copyWith(
-                fontSize: 13,
                 height: 1.4,
                 color: theme.colorScheme.onSurface,
               ),
@@ -853,7 +848,7 @@ class LargeResponseWarning extends StatelessWidget {
             Icon(
               Icons.warning_amber,
               size: 48,
-              color: Colors.orange,
+              color: context.appTheme.warning,
             ),
             const SizedBox(height: 16),
             Text(

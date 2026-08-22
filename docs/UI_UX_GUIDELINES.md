@@ -1,1918 +1,303 @@
 # Hopp UI/UX 设计规范
 
-> 本文档定义 Hopp 产品的视觉设计规范和交互设计原则，确保产品具有专业、现代的审美水准和优秀的用户体验。
+> 本文档与代码严格一致：所有类名、字段名、数值都能在 `lib/theme/`、`lib/widgets/common/` 中找到。
+> 设计系统重构方案见 [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md)，可视化原型见 [design/design_system_preview.html](./design/design_system_preview.html)。
+> 写 UI 前请先读本文件；新增样式违规会被 `test/design_guard_test.dart` 拦截。
 
 ---
 
-## 📋 目录
+## 目录
 
 - [设计原则](#设计原则)
-- [色彩系统](#色彩系统)
-- [字体系统](#字体系统)
-- [间距系统](#间距系统)
-- [组件规范](#组件规范)
-- [布局规范](#布局规范)
-- [交互规范](#交互规范)
+- [设计 Token](#设计-token)
+- [统一组件](#统一组件)
+- [区域布局规格](#区域布局规格)
+- [强制遵守机制](#强制遵守机制)
 - [暗黑模式](#暗黑模式)
-- [Key-Value 编辑器规范](#key-value-编辑器规范)
-- [Certificate Tab UI 规范](#certificate-tab-ui-规范)
-- [Timing Tab UI 规范](#timing-tab-ui-规范)
-- [Request Tab UI 规范](#request-tab-ui-规范)
-- [Request Settings UI 规范](#request-settings-ui-规范)
-- [图标规范](#图标规范)
-- [快捷键](#快捷键)
-- [无障碍](#无障碍)
 
 ---
 
 ## 设计原则
 
-### 1. 简洁清晰
-
-- 减少视觉噪音，保持界面清爽
-- 信息层次分明，重点突出
-- 避免过度装饰，以内容为中心
-
-### 2. 一致性
-
-- 统一的设计语言贯穿整个产品
-- 相似的交互模式保持一致
-- 使用标准化的组件和样式
-
-### 3. 效率优先
-
-- 减少用户操作步骤
-- 提供快捷操作和快捷键
-- 界面响应迅速，反馈及时
-
-### 4. 专业质感
-
-- 精致的细节处理
-- 恰到好处的动画效果
-- 符合开发者工具的设计惯例
+1. **Token 唯一来源**：颜色 / 字号 / 圆角 / 阴影一律取自 `lib/theme/`，禁止字面值（守卫 G1–G7 强制）。
+2. **组件优先**：先找 `lib/widgets/common/` 里的统一组件，没有再写新的，不要手写第三套样式。
+3. **桌面密度**：面向桌面端的小号高密度 UI（正文 13px、控件高 28/32），不做移动端断点。
+4. **亮暗双主题**：只用 `context.appTheme` 语义色，不为暗色单独写一套值。
 
 ---
 
-## 色彩系统
+## 设计 Token
 
-### 主色调
+### 语义颜色：AppThemeData（随亮/暗主题变化）
 
-```dart
-class AppColors {
-  // 主色
-  static const primary = Color(0xFF6366F1);      // Indigo 500
-  static const primaryLight = Color(0xFF818CF8); // Indigo 400
-  static const primaryDark = Color(0xFF4F46E5);  // Indigo 600
-  
-  // 辅助色
-  static const secondary = Color(0xFF8B5CF6);    // Violet 500
-  static const success = Color(0xFF10B981);      // Emerald 500
-  static const warning = Color(0xFFF59E0B);      // Amber 500
-  static const error = Color(0xFFEF4444);        // Red 500
-  static const info = Color(0xFF3B82F6);         // Blue 500
-}
-```
+`lib/theme/app_theme_data.dart` · `ThemeExtension<AppThemeData>`，20 个字段，通过 `context.appTheme` 访问（未挂载主题时回退 `AppThemeData.light`）。
 
-### HTTP 方法颜色
+| 字段 | 用途 | Light | Dark |
+|------|------|-------|------|
+| `background` | 页面背景 | `#FFFFFF` | `#0F172A` |
+| `surface` | 一级表面（卡片 / 侧栏 / 分组容器） | `#F8FAFC` | `#1E293B` |
+| `surfaceVariant` | 二级表面（hover / 填充 / 选中底色） | `#F1F5F9` | `#334155` |
+| `border` | 常规分隔线 / 边框 | `#E2E8F0` | `#2B3A55` |
+| `borderStrong` | 强边框（输入框边、强调分隔） | `#CBD5E1` | `#475569` |
+| `textPrimary` | 主要文字 | `#0F172A` | `#F1F5F9` |
+| `textSecondary` | 次级文字 | `#475569` | `#94A3B8` |
+| `textTertiary` | 占位 / 禁用文字 | `#94A3B8` | `#64748B` |
+| `brand` / `brandHover` / `brandSoft` | 品牌色 / hover / 浅底（选中态） | `#6366F1` / `#4F46E5` / `#EEF2FF` | `#818CF8` / `#6366F1` / `#818CF8`@14% |
+| `success` / `successSoft` | 成功（2xx / POST）及浅底 | `#10B981` / `#ECFDF5` | 同色 / @14% |
+| `warning` / `warningSoft` | 警告（3xx / PUT）及浅底 | `#F59E0B` / `#FFFBEB` | 同色 / @14% |
+| `error` / `errorSoft` | 错误（4xx / DELETE）及浅底 | `#EF4444` / `#FEF2F2` | 同色 / @14% |
+| `info` / `infoSoft` | 信息（GET）及浅底 | `#3B82F6` / `#EFF6FF` | 同色 / @14% |
 
-```dart
-class HttpMethodColors {
-  static const get = Color(0xFF3B82F6);      // Blue 500
-  static const post = Color(0xFF10B981);     // Emerald 500
-  static const put = Color(0xFFF59E0B);      // Amber 500
-  static const delete = Color(0xFFEF4444);   // Red 500
-  static const patch = Color(0xFF8B5CF6);    // Violet 500
-  static const head = Color(0xFF6B7280);     // Gray 500
-  static const options = Color(0xFF6B7280);  // Gray 500
-}
-```
+用法：`final t = context.appTheme; ... color: t.textSecondary`。
 
-### 状态码颜色
+### 常量调色板：AppColors（与主题无关）
 
-```dart
-class StatusCodeColors {
-  static const success = Color(0xFF10B981);  // 2xx
-  static const redirect = Color(0xFFF59E0B); // 3xx
-  static const clientError = Color(0xFFEF4444); // 4xx
-  static const serverError = Color(0xFFDC2626); // 5xx
-}
-```
+`lib/theme/app_colors.dart`，私有构造，全部是静态常量 / 方法。
 
-### 中性色
+- 品牌：`brand #6366F1`、`brandLight #818CF8`（暗色主题用）、`brandDark #4F46E5`、`onBrand #FFFFFF`（品牌色上的前景）。
+- 基础：`transparent`（替代 `Colors.transparent`）、`black`（半透明遮罩用，如 danger hover 叠加 8%）。
+- 语义：`success / warning / error / info`（亮暗通用，值同上表）；`errorStrong #B91C1C`（5xx 专用）；`accentPink #EC4899`（装饰点缀）。
+- HTTP 方法色：`methodGet=info`、`methodPost=success`、`methodPut=warning`、`methodDelete=error`、`methodPatch #8B5CF6`、`methodOther #64748B`。
+- **唯一入口**：
+  - `AppColors.method(String)` —— 方法 → 颜色（未知方法归 `methodOther`）。
+  - `AppColors.statusCode(int?)` —— 2xx→success、3xx→warning、4xx→error、5xx→`errorStrong`、null/其他→`methodOther`。
 
-```dart
-class NeutralColors {
-  // 浅色模式
-  static const background = Color(0xFFFFFFFF);
-  static const surface = Color(0xFFF9FAFB);
-  static const surfaceVariant = Color(0xFFF3F4F6);
-  static const border = Color(0xFFE5E7EB);
-  static const divider = Color(0xFFE5E7EB);
-  static const textPrimary = Color(0xFF111827);
-  static const textSecondary = Color(0xFF6B7280);
-  static const textTertiary = Color(0xFF9CA3AF);
-  
-  // 深色模式
-  static const darkBackground = Color(0xFF0F172A);
-  static const darkSurface = Color(0xFF1E293B);
-  static const darkSurfaceVariant = Color(0xFF334155);
-  static const darkBorder = Color(0xFF334155);
-  static const darkDivider = Color(0xFF334155);
-  static const darkTextPrimary = Color(0xFFF9FAFB);
-  static const darkTextSecondary = Color(0xFF9CA3AF);
-  static const darkTextTertiary = Color(0xFF6B7280);
-}
-```
+### 文字：AppTextStyles（8 档收敛）
 
----
+`lib/theme/app_text_styles.dart`。禁止内联 `fontSize`（G3），从这里取或在其上 `copyWith`（仅限字重 / 颜色等非字号属性）。
 
-## 字体系统
+| 样式 | 字号 / 字重 / 行高 | 用途 |
+|------|------|------|
+| `display20` | 20 w600 h1.3 | 页面级大标题（极少使用） |
+| `title16` | 16 w600 h1.4 | 对话框标题 / 区块标题 |
+| `body13` | 13 w400 h1.4 | 正文基准（桌面密度） |
+| `caption12` | 12 w400 h1.35 | 辅助说明 / 次级信息 / 侧栏与 Tab 文字 |
+| `tiny11` | 11 w500 h1.3 | 徽标文字 / 状态行 |
+| `micro10` | 10 w700 h1.2 ls0.2 | 方法徽章等小号强调 |
+| `code12` | 12 w400 h1.45 Menlo | 代码 / 等宽文本统一入口（URL 输入、Body） |
+| `code11` | 11 w400 h1.4 Menlo | 密集代码场景（KV 行 / 头信息 / 行号） |
 
-### 字体栈
+### 间距 / 圆角 / 高度 / 动画：AppMetrics
 
-```dart
-class AppFonts {
-  static const ui = 'Inter';
-  static const mono = 'JetBrains Mono';
-  static const fallback = ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto'];
-}
-```
+`lib/theme/app_metrics.dart`。禁止 `BorderRadius.circular(数字)` 字面量（G5）。
 
-### 字号规范
+- 间距（4 的倍数网格）：`space4 / space8 / space12 / space16 / space20 / space24 / space32`。
+- 圆角：`radius2 / radius4 / radius6 / radius8 / radius10`，对应 `BorderRadius` 版本 `br2 / br4 / br6 / br8 / br10`。br2 微型徽章、br4 列表行 / 小徽章、br6 按钮 / 输入框 / 菜单、br8 对话框、br10 卡片。
+- 控件高度：`height24`（紧凑行 / 小控件）、`height28`（小按钮 / 图标按钮 / 状态栏 / 侧栏行）、`height32`（标准控件：URL 栏 / 主按钮 / 输入框 / Tab 条）、`height36`（宽松控件）、`height38`（响应信息栏）、`height48`（页面头部条 / 侧栏 header）。
+- 动画时长：`animFast 100ms`（hover / 开关）、`animNormal 200ms`、`animSlow 300ms`。
 
-| 样式 | 字号 | 字重 | 行高 | 用途 |
-|-----|------|------|------|------|
-| Display | 24px | 600 | 32px | 页面标题 |
-| Headline | 18px | 600 | 28px | 区块标题 |
-| Title | 16px | 600 | 24px | 卡片标题 |
-| Subtitle | 14px | 500 | 20px | 子标题 |
-| Body | 14px | 400 | 20px | 正文内容 |
-| Body Small | 13px | 400 | 18px | 次要文字 |
-| Caption | 12px | 500 | 16px | 标签、提示 |
-| Tiny | 11px | 500 | 14px | Tab 文字、徽章 |
-| Micro | 10px | 500 | 12px | Certificate 标签 |
-| Nano | 9px | 600 | 11px | Sidebar Method badge |
-| Code | 12px | 400 | 18px | 代码显示（Request/Response Body） |
-| Code Small | 11px | 400 | 16px | 行号显示 |
+### 阴影：AppShadows
 
-### 实际应用规范
+`lib/theme/app_shadows.dart`。仅浮层使用，按钮一律无阴影；亮暗两套值按 `Theme.brightness` 自动选择。
 
-| 位置 | 字号 | 字重 | 说明 |
-|------|------|------|------|
-| Request/Response Tab | 11px | 500 | 统一使用 Tiny |
-| Sidebar 请求名 | 11px | 400 | 紧凑显示 |
-| Sidebar Method badge | 9px | 600 | Nano 字号 |
-| Certificate 标签 | 10px | 400 | Micro 字号 |
-| Certificate 值 | 11px | 400 | Tiny 字号 |
-| Certificate 标题 | 13px | 600 | 卡片标题 |
-| Response Tab | 10px | 500 | 比 Request Tab 更小 |
-| URL 输入框 | 13px | 400 | Body Small |
-| Headers/Params 表头 | 11px | 500 | Tiny |
-| Key-Value 输入框 | 12px | 400 | Caption |
+- `AppShadows.sm(context)`：开关滑块 / 小浮层（blur 2, y1）。
+- `AppShadows.md(context)`：菜单 / 对话框 / 悬浮卡片（blur 12 y4 + blur 3 y1 双层）。
 
-```dart
-class AppTextStyles {
-  static const display = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.w600,
-    height: 1.33,
-  );
-  
-  static const headline = TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
-    height: 1.55,
-  );
-  
-  static const title = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-    height: 1.5,
-  );
-  
-  static const body = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    height: 1.43,
-  );
-  
-  static const bodySmall = TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w400,
-    height: 1.38,
-  );
-  
-  static const caption = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    height: 1.33,
-  );
-  
-  static const tiny = TextStyle(
-    fontSize: 11,
-    fontWeight: FontWeight.w500,
-    height: 1.27,
-  );
-  
-  static const code = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
-    height: 1.5,
-    fontFamily: 'Menlo',
-  );
-}
-```
+### 语法高亮：AppSyntaxColors
+
+`lib/theme/app_syntax_colors.dart`，JSON/XML 代码视图共用（code_editor 与 optimized_response_viewer 统一来源）。
+
+| Token | Light | Dark（经 `getX(isDark)`） |
+|-------|-------|------|
+| `key` | `#1E40AF` | `#93C5FD` |
+| `string` | `#15803D` | `#86EFAC` |
+| `number` | `#2563EB` | `#60A5FA` |
+| `keyword`（bool/null） | `#7C3AED` | `#C4B5FD` |
+| `punctuation` | `#6B7280` | `#9CA3AF` |
+
+### 主题组装：AppTheme
+
+`lib/theme/app_theme.dart` 的 `AppTheme.light() / dark()`：Material 3，显式 `ColorScheme` 映射 + `AppThemeData.light/dark` 注入 `extensions`。业务代码不直接读 `ColorScheme` 做中性色，优先 `context.appTheme`。
 
 ---
 
-## 间距系统
+## 统一组件
 
-### 基础单位
+全部位于 `lib/widgets/common/`，亮/暗 golden 见 `test/widgets/common/app_components_golden_test.dart`，实物预览见 Design Gallery（[强制遵守机制](#强制遵守机制)）。
 
-```dart
-class AppSpacing {
-  static const unit = 4.0;
-  
-  static const xs = 4.0;   // 4px
-  static const s = 8.0;    // 8px
-  static const m = 12.0;   // 12px
-  static const l = 16.0;   // 16px
-  static const xl = 24.0;  // 24px
-  static const xxl = 32.0; // 32px
-  static const xxxl = 48.0; // 48px
-}
-```
+### AppButton / AppIconButton（app_button.dart）
 
-### 组件间距
+统一按钮。规格：圆角 br6、w500、无阴影；禁用态 opacity 0.45。
 
-| 组件 | 内边距 | 间距 |
-|-----|-------|------|
-| Sidebar Item | 8px 12px | - |
-| Sidebar Divider | - | 1px |
-| Tab | 8px 16px | 0 |
-| Card | 16px | - |
-| Input | 10px 12px | - |
-| Button (S) | 6px 12px | - |
-| Button (M) | 8px 16px | - |
-| Button (L) | 12px 24px | - |
-| Section | - | 16px |
+- 变体 `AppButtonVariant`（命名构造同名）：`primary`（brand 底 + onBrand 字，hover→brandHover，主操作）；`secondary`（borderStrong 描边 + textPrimary，hover 底 surfaceVariant，次操作）；`ghost`（无边框 textSecondary，hover 底 surfaceVariant + textPrimary，取消 / 低强调）；`danger`（error 底 + onBrand，hover 叠加 black 8%，删除等破坏操作）。
+- 尺寸 `AppButtonSize`：`medium` 高 32 / 横 padding 14 / body13（默认）；`small` 高 28 / 横 padding 12 / caption12。可选 `icon`（16/14px，与文字间距 6）。
+- `onPressed: null` 即禁用。示例：`AppButton.primary(label: 'Send', icon: Icons.send, onPressed: ...)`。
 
-### 高度规范
+`AppIconButton`：28×28（`size` / `iconSize` 可调，默认 28 / 16）图标按钮，圆角 br6。默认图标 textSecondary，hover 底 surfaceVariant + 图标 textPrimary；`bordered: true` 加 borderStrong 边框 + background 底（输入区工具按钮）；`color` 覆盖图标色（如 dirty 态用 brand）；支持 `tooltip`；禁用 opacity 0.45。
 
-| 组件 | 高度 | 说明 |
-|-----|------|------|
-| URL Bar | 32px | Method下拉、URL输入框、按钮统一 |
-| Method Dropdown | 32px | 与 URL Bar 对齐 |
-| Method 选项 | 36px | 下拉菜单选项高度 |
-| Request Tab | 32px | 图标+文字+状态指示器 |
-| Request Editor Tabs | 28px | 次级 Tab，更紧凑 |
-| Response Tab | 28px | 字体 10px |
-| SegmentedButton | 28px | Content Type 切换 |
-| Key-Value Row | 36px | Headers/Params 列表行高 |
-| StatusBar | 28px | 底部状态栏 |
-| Send/Save Button | 32px | 与 URL Bar 统一 |
+### AppTextField（app_text_field.dart）
 
-### 对齐规范
+统一输入框（outline 风格）：默认高 32 / 字号 body13，`compact: true` 高 28 / 字号 caption12（工具条/表格行内嵌）；底 background、边 borderStrong、圆角 br6、focus 边 brand 1.5px；占位 textTertiary；横 padding 10。
 
-| 元素 | 对齐规则 |
-|-----|----------|
-| URL Bar | Method下拉、URL输入框、按钮高度统一，底部对齐 |
-| URL Focus 边框 | TextField 完全控制边框，紫色边框与灰色背景区域对齐 |
-| Key-Value 行 | Checkbox、Key输入框、Info图标、Value输入框、Delete按钮垂直居中对齐 |
-| Tab 文字 | 统一使用 11px，垂直居中 |
-| Sidebar 图标 | 与文字垂直居中对齐 |
+- 参数：`controller / focusNode / fieldKey / hintText / onChanged / onSubmitted / autofocus / enabled / compact / obscureText / maxLines / expands / height / style / suffix`。`height` 可覆盖固定高度（如侧栏搜索用 30，仅单行生效）；`maxLines > 1` 时盒子包裹内容高度；`expands: true` 撑满父级紧约束（大段粘贴区，文本顶对齐）；`suffix` 在盒内右端嵌控件（如 secret 显隐按钮）；`fieldKey` 挂到内部 TextField 供测试定位。
+- **实现红线**：输入框描边必须走 AppTextField 的显式 Container 盒子，不要退回 `SizedBox + InputDecorator(isDense)` 控高——装饰器描边只包「文字行高 + contentPadding」，不会撑满外层 SizedBox（`InputDecoration.constraints` 同样无效），会出现渲染 28 描边 16 的缩水框；也不要给 collapsed 装饰留任何 border 状态为 null，否则会继承主题 inputDecorationTheme 叠出第二道描边。多行/撑满场景同一组件已覆盖。
 
----
+### AppSwitch / AppCheckbox（app_controls.dart）
 
-## 组件规范
+- `AppSwitch`：32×18，滑块 14px 白色带 shadowSm；off 底 borderStrong，on 底 brand；animFast 滑动；禁用 opacity 0.45。
+- `AppCheckbox`：15×15，圆角 br4；off 1.5px borderStrong 边 + background 底，on 底 brand + 白色对勾（11px）；`label` 非空时右侧带 caption12 文字且整行可点。
 
-### 按钮
+### AppTabs（app_tabs.dart）
 
-#### 尺寸
+次级 Tab 条（请求编辑区 / 响应区共用）。规格：条高 32 + 底部 1px border；Tab 高 32、横 padding 12、图标 12、caption12 w500；选中 = brand 文字 + 2px brand 下划线；hover 文字 textPrimary。
 
-| 尺寸 | 高度 | 水平内边距 | 字体 |
-|-----|------|-----------|------|
-| Small | 28px | 12px | 12px Medium |
-| Medium | 36px | 16px | 13px Medium |
-| Large | 44px | 24px | 14px Medium |
+- `AppTabItem(label, icon, count, dot)`：`count` 计数徽章（micro10 w600，圆角 br8，选中 brandSoft 底 / 未选中 surfaceVariant 底，如 Params/Headers 条数）；`dot` 5px success 圆点（如 Body 有内容）。
+- `backgroundColor` 默认 `surface`。
 
-#### 样式
+### AppCard（app_card.dart）
 
-```dart
-class ButtonStyles {
-  // 主要按钮
-  static final primary = FilledButton.styleFrom(
-    backgroundColor: AppColors.primary,
-    foregroundColor: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(6),
-    ),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-  );
-  
-  // 次要按钮
-  static final secondary = OutlinedButton.styleFrom(
-    foregroundColor: AppColors.primary,
-    side: const BorderSide(color: AppColors.primary),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(6),
-    ),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-  );
-  
-  // 幽灵按钮
-  static final ghost = TextButton.styleFrom(
-    foregroundColor: AppColors.textSecondary,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-  );
-}
-```
+统一卡片容器，圆角 br10，默认 padding space16。
 
-### 输入框
+- 默认（standard）：surface 底 + 1px border 边。
+- `AppCard.elevated`：background 底 + shadowMd（浮层卡片）。
+- `onTap` 非空时包 InkWell。
 
-#### 尺寸
+### MethodBadge / StatusChip（app_badge.dart）
 
-| 尺寸 | 高度 | 水平内边距 | 字体 |
-|-----|------|-----------|------|
-| Small | 28px | 10px | 12px |
-| Medium | 32px | 12px | 13px |
-| Large | 36px | 16px | 14px |
-| XLarge | 44px | 16px | 14px |
+- `MethodBadge(method)`：HTTP 方法徽章。高 18、最小宽 34、横 padding 5、圆角 br4、micro10；方法色文字 + 方法色 soft 底（亮 10% / 暗 14%，组件内部按 brightness 处理）。颜色经 `AppColors.method()`。
+- `StatusChip(statusCode, {label})`：状态码徽章。高 22、横 padding 8、圆角 br4、tiny11 w600；颜色经 `AppColors.statusCode()`，底按档位取 successSoft / warningSoft / errorSoft（null 或非 2xx+ 取 surfaceVariant）。`label` 默认 `'$statusCode'`，可传「200 OK」。
 
-#### URL Bar 专用输入框
+### AppDialog / showAppDialog（app_dialog.dart）
 
-```dart
-// URL 输入框样式规范
-TextField(
-  decoration: InputDecoration(
-    filled: true,
-    fillColor: theme.colorScheme.surfaceContainerHighest,
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.horizontal(right: Radius.circular(6)),
-      borderSide: BorderSide(color: theme.colorScheme.outline),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.horizontal(right: Radius.circular(6)),
-      borderSide: BorderSide(color: AppColors.primary, width: 1.5),
-    ),
-    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-  ),
-)
-```
+统一对话框：圆角 br8、1px border 边、shadowMd、底 background、insetPadding 24。头部 padding 20/16/20/0、title16 标题、右上角 AppIconButton 关闭（24/14，`showClose` 可关）；正文默认 padding 20/16/20/16（大型对话框传 `EdgeInsets.zero` 自行布局）；`actions` 右对齐、间距 8。`width` 默认 420，`height` 可固定（如环境管理）。
 
-**关键点**:
-- 高度统一 32px
-- TextField 完全控制背景和边框（避免外层 Container 叠加）
-- Focus 状态紫色边框与背景区域完全对齐
-- 文字垂直居中
+业务代码用 `showAppDialog(...)` 弹出，底部按钮统一用 AppButton（惯例：Cancel 用 ghost，确认用 primary / danger）。
 
-#### 样式
+### AppPopupMenu / AppPopupSelect（app_popup_menu.dart）
 
-```dart
-class InputStyles {
-  static final outline = InputDecoration(
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(6),
-      borderSide: BorderSide(color: NeutralColors.border),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(6),
-      borderSide: BorderSide(color: NeutralColors.border),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(6),
-      borderSide: BorderSide(color: AppColors.primary, width: 2),
-    ),
-    errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(6),
-      borderSide: BorderSide(color: AppColors.error),
-    ),
-    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    isDense: true,
-  );
-}
-```
+命令菜单（`PopupMenuButton` / `showMenu` / `MenuAnchor`）统一容器与菜单项：
 
-### 标签
+- 容器：`menuShape(theme)` = 圆角 br6 + dividerColor 50% 细边；`menuElevation = 4`；`menuColor(theme)` = colorScheme.surface；MenuAnchor 用 `menuStyle(theme)`。
+- 菜单项：高 32、横 padding 12、图标 14（默认 onSurfaceVariant）、文字 caption12 w500。`iconItem`（图标 + 文字命令项，危险操作 icon/label 传 `AppColors.error`）；`textItem`（纯文字选择项，`selected` 时 primary + w600）。
 
-```dart
-class TagStyles {
-  // HTTP 方法标签
-  static Widget httpMethod(String method) {
-    final color = HttpMethodColors.getColor(method);
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(3),
-      ),
-      child: Text(
-        method.toUpperCase(),
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
-      ),
-    );
-  }
-  
-  // 状态标签
-  static Widget status(int code) {
-    final color = StatusCodeColors.getColor(code);
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(3),
-      ),
-      child: Text(
-        '$code',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
-      ),
-    );
-  }
-}
-```
+`AppPopupSelect<T>`：值选择场景，**DropdownButton 的统一替代**（其菜单容器无法与本规范对齐）。触发器为「文字 + arrow_drop_down」，当前值在菜单中选中态高亮。
 
-### 卡片
+- `boxed: false`（默认）：无边框紧凑触发器，工具栏等极简场景。
+- `boxed: true`：带边框表单触发器，规格与 AppTextField 对齐（高 32、background 底、borderStrong 边、br6），菜单宽度 = 触发器宽度；`compact: true` 时高 28（表格行内，与 AppTextField compact 对齐）。
+- 参数：`value / items(AppPopupSelectEntry) / onSelected / hint / boxed / compact / textStyle`。
 
-```dart
-class CardStyles {
-  static final standard = BoxDecoration(
-    color: NeutralColors.surface,
-    borderRadius: BorderRadius.circular(8),
-    border: Border.all(color: NeutralColors.border),
-  );
-  
-  static final elevated = BoxDecoration(
-    color: NeutralColors.background,
-    borderRadius: BorderRadius.circular(8),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.05),
-        blurRadius: 8,
-        offset: Offset(0, 2),
-      ),
-    ],
-  );
-}
-```
+### AppDivider（app_divider.dart）
 
-### 开关 (Switch/Toggle)
+统一分隔线，替代散落的 `Divider` / `VerticalDivider` / 手写边线。
 
-#### 尺寸
+- `AppDivider()` 水平（线贴底，默认占高 1）；`AppDivider.vertical()` 垂直（线贴左，默认占宽 1）。
+- `subtle: true` 用 border × 50%，否则实色 border。`height` / `width` 只改占用空间，不改变线宽。
 
-| 尺寸 | 宽度 | 高度 | 圆角 |
-|-----|------|------|------|
-| Default | 40px | 24px | 12px |
-| Small | 32px | 18px | 9px |
+### AppEmptyState（app_empty_state.dart）
 
-#### 样式
+统一空态（侧栏 / 请求编辑区 / 响应区等「无内容」场景）：56×56 surfaceVariant 圆角 br10 底块 + 28px 图标（textTertiary）、标题 body13 w600 textSecondary、可选副标题 caption12 textTertiary、可选 `action` 按钮（如「Create Collection」）。
 
-```dart
-class SwitchStyles {
-  // 开启状态
-  static final active = SwitchThemeData(
-    thumbColor: MaterialStateProperty.all(Colors.white),
-    trackColor: MaterialStateProperty.resolveWith((states) {
-      if (states.contains(MaterialState.selected)) {
-        return AppColors.primary;
-      }
-      return NeutralColors.border;
-    }),
-    trackOutlineColor: MaterialStateProperty.all(Colors.transparent),
-  );
-}
-```
+### 交互反馈（统一约定）
 
-#### 使用规范
-
-- 开关右侧显示状态文字："ON"/"OFF" 或 "开启"/"关闭"
-- 状态文字使用 12px Regular，颜色为 textSecondary
-- 开关与文字间距：8px
-
-### 下拉选择 (Dropdown)
-
-#### 尺寸
-
-| 尺寸 | 高度 | 水平内边距 | 字体 |
-|-----|------|-----------|------|
-| Small | 28px | 10px | 12px |
-| Medium | 32px | 12px | 13px |
-
-#### 样式
-
-```dart
-class DropdownStyles {
-  static final outline = InputDecoration(
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(6),
-      borderSide: BorderSide(color: NeutralColors.border),
-    ),
-    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    isDense: true,
-    suffixIcon: Icon(Icons.arrow_drop_down, size: 20),
-  );
-}
-```
-
-### 弹出菜单 (Popup Menu)
-
-> 命令菜单与选择器弹出菜单的统一规范，由共享组件
-> `lib/widgets/common/app_popup_menu.dart`（`AppPopupMenu`）实现。
-> 适用于 `PopupMenuButton`、`showMenu`、`MenuAnchor` 三类入口。
-
-#### 菜单容器
-
-| 属性 | 值 |
-|-----|-----|
-| 圆角 | 6px (radiusM) |
-| 边框 | 1px dividerColor 50% |
-| Elevation | 4 |
-| 底色 | colorScheme.surface |
-
-`MenuAnchor` 通过 `AppPopupMenu.menuStyle(theme)` 应用同一容器样式。
-
-#### 菜单项
-
-| 属性 | 值 |
-|-----|-----|
-| 高度 | 32px |
-| 水平内边距 | 12px |
-| 图标 | 14px，默认 onSurfaceVariant |
-| 图标与文字间距 | 8px |
-| 文字 | caption（12px / w500），默认 onSurface |
-| 危险操作 | 图标与文字均用 AppColors.error |
-| 选中态（选择器） | primary + w600 |
-
-```dart
-// 图标 + 文字命令项
-AppPopupMenu.iconItem(
-  theme: theme, value: 'delete',
-  icon: Icons.delete_outline, label: 'Delete',
-  iconColor: AppColors.error, labelColor: AppColors.error,
-)
-
-// 纯文字选择器项（如环境切换）
-AppPopupMenu.textItem(
-  theme: theme, value: id, label: name, selected: isActive,
-)
-
-// PopupMenuButton / showMenu 容器
-shape: AppPopupMenu.menuShape(theme),
-elevation: AppPopupMenu.menuElevation,
-color: AppPopupMenu.menuColor(theme),
-
-// MenuAnchor 容器
-MenuAnchor(style: AppPopupMenu.menuStyle(theme), ...)
-```
-
-#### 值选择器 (AppPopupSelect)
-
-值选择场景（原 `DropdownButton` / `DropdownButtonFormField`）统一使用
-`AppPopupSelect`，触发器为「文字 + 下拉箭头」，弹出菜单复用上述容器与
-菜单项样式，当前值以选中态（primary + w600）高亮。
-
-| 变体 | 触发器 | 场景 |
-|-----|-------|------|
-| `boxed: false`（默认） | 无边框紧凑（文字 + 箭头） | 表格单元格（如变量类型） |
-| `boxed: true` | 圆角边框（outlineVariant），菜单宽度=触发器宽度 | 对话框表单（导出/导入） |
-
-```dart
-AppPopupSelect<VariableType>(
-  value: variable.type,
-  hint: 'Select',           // value 为 null 时的占位
-  boxed: true,              // 表单场景
-  fontSize: 13,
-  items: const [
-    AppPopupSelectEntry(value: VariableType.string, label: 'string'),
-    AppPopupSelectEntry(value: VariableType.secret, label: 'secret'),
-  ],
-  onSelected: (type) => ...,
-)
-```
-
-> 不再直接使用 `DropdownButton` / `DropdownButtonFormField`：
-> 其菜单容器（圆角/边框/项尺寸）无法与本规范对齐。
+- hover：按钮按变体定义（primary→brandHover、secondary/ghost→surfaceVariant 底、danger→black 8% 叠加），图标按钮 / Tab / 列表行 hover 底 surfaceVariant；过渡统一 animFast（100ms，AnimatedContainer）。
+- 禁用：统一组件 `onPressed / onChanged` 传 `null` 即禁用，视觉 opacity 0.45。
+- 展开 / 收起等状态切换用 `AppMetrics.animFast`（如侧栏 AnimatedCrossFade、chevron AnimatedRotation）；更长动效用 animNormal / animSlow，不自造时长。
 
 ---
 
-## 布局规范
+## 区域布局规格
+
+以下数值均已从代码核实（`lib/screens/main_screen.dart`、`lib/widgets/layout/sidebar.dart`、`lib/widgets/layout/request_tabs.dart`、`lib/widgets/request/request_editor.dart`、`lib/widgets/request/response_viewer.dart`、`lib/widgets/environment/environment_switcher.dart`）。
 
 ### 整体布局
 
-```
-┌─────────────────────────────────────────────────────┐
-│                     MainScreen                       │
-├──────────┬──────────────────────────────────────────┤
-│          │              RequestArea                  │
-│  Sidebar │  ┌─────────────────────────────────────┐  │
-│  22%     │  │           RequestTabs               │  │
-│          │  ├─────────────────────────────────────┤  │
-│          │  │                                     │  │
-│          │  │         RequestEditor               │  │
-│          │  │         (Vertical Split)            │  │
-│          │  │                                     │  │
-│          │  ├─────────────────────────────────────┤  │
-│          │  │         ResponseViewer              │  │
-│          │  │                                     │  │
-│          │  └─────────────────────────────────────┘  │
-├──────────┴──────────────────────────────────────────┤
-│                    StatusBar (28px)                  │
-└─────────────────────────────────────────────────────┘
-```
+- 水平分栏（MultiSplitView）：侧栏 flex 0.22（min 0.15 / max 0.4），内容区 0.78；分隔条 1px，border×50%，拖拽高亮 brand×50%。
+- 内容区垂直分栏：请求编辑区 0.6 / 响应区 0.4。
+- 主结构：侧栏 →（请求 Tab 条 + 请求编辑区 + 响应区）→ 状态栏。
 
-### 侧边栏
+### 侧栏
 
-- 宽度：22% (可调整，范围 15%-40%)
-- 最小宽度：200px
-- 背景色：surface
-- 右侧边框：1px divider
+- 容器：surface 底 + 右侧 1px border。
+- Header：高 48（`height48`），横 padding 8：品牌 Logo + 「New Collection」按钮（AppIconButton）+ 操作菜单。
+- 环境切换器（EnvironmentSwitcher）：盒式高 30，background 底 + border 边 + br6，外边距 左右 8 / 下 8；菜单项复用 AppPopupMenu.textItem，菜单宽 min 160 / max 280。
+- 搜索框：AppTextField `compact: true` + `height: 30`，外边距 左右 8 / 下 8，与环境切换器左缘对齐。
+- 树区域：横 padding 6 / 纵 2。
+- 行：高 28（`height28`），圆角 br4；缩进 `space8 + depth × space12`（请求行再 +12）。
+  - Collection 行：chevron 16 + 文件夹图标 16（展开时 brand，否则 brand×70%）+ 名称 caption12。
+  - 请求行：MethodBadge + 名称 caption12（选中态 brand 文字 w500）。
+  - 选中态：brandSoft 底 + br4 圆角；hover：surfaceVariant 底。
+  - ⋮ 菜单按钮 hover / 选中 / 菜单打开时才显现，平时以 28px 占位保持行宽稳定（菜单打开期间必须保持挂载，否则 PopupMenuButton 的 onSelected 会被吞掉）。
 
-### 标签栏
+### 请求编辑区
 
-- 高度：36px
-- 标签样式：文字 + 关闭按钮
-- 活动标签：底部 2px 主色指示器
-- 背景：surface
+- 请求 Tab 条（打开的 Tab，request_tabs.dart）：高 32，surface 底。
+- URL 栏：整体高 32（`height32`），白底（background）+ borderStrong 描边，圆角 6。Method 下拉与 URL 输入框 fused 连接（下拉左圆角、输入框右圆角）；URL 文字 code12；Send 用 `AppButton.primary`（高 32），Save 用 bordered `AppIconButton`（dirty 时图标 brand 色）。
+- 编辑器 Tab 条（AppTabs，高 32）：Params（count）/ Headers（count）/ Body（dot）/ Auth / Settings。
+- Key-Value 编辑器（Headers/Params）：
+  - 表头行：高 32，surfaceVariant 底，横 padding 12。
+  - 数据行：高 36，横 padding 12；Checkbox + Key 输入 + Info 图标（常见 Header 悬停显示说明）+ Value 输入 + 删除按钮，垂直居中。
+  - Headers 启用 key 自动完成，Params 关闭（`showAutocomplete`）。
+- Settings Tab：分组卡片式（分组间距 24、组内间距 12、页面 padding 16）。当前分组：SSL/TLS（证书校验开关 + info 提示条）、Redirects（follow redirects 开关 + Maximum redirects 0–50 数字输入）、Coming Soon（禁用占位项）。
+- 无打开请求时：AppEmptyState。
 
-### Request Editor Tabs
+### 响应区
 
-- 高度：28px
-- 标签样式：图标 + 文字 + 状态指示器
-- 状态指示器：
-  - Body Tab：有内容时显示绿色圆点（4px）
-  - Headers/Params Tab：显示数量标记（如 "Headers 11"）
-- 选中状态：底部 2px 主色指示线
-- 字体：11px Medium
-- 间距：Tab 之间 4px
+- 响应信息栏：高 38（`height38`），background 底 + 底部 border，横 padding 12；内容依次 StatusChip（「200 OK」）、耗时、大小等；网络错误态同栏展示（error 配色，可展开至 150px 看全文）。
+- 响应 Tab 条（AppTabs，高 32）：Request / Body / Headers / Cookies，动态追加 Timing（有 timingInfo 时）、Certificate（有 certificateInfo 时）。
+- Body 空 / Headers 空：AppEmptyState。
+- 大响应体：OptimizedResponseViewer，>50KB（`performanceThreshold = 50000`）进入 Performance 模式（虚拟化 + 初始 500 行 `maxInitialLines`），工具栏提供 Performance / Full / Raw 切换；行号区宽 40、右 padding 8。
 
-```dart
-Widget _buildTabItem({
-  required IconData icon,
-  required String label,
-  String? badge,        // 数量标记
-  bool hasDot = false,  // 绿色圆点指示器
-  required bool isActive,
-  required VoidCallback onTap,
-}) {
-  return Container(
-    height: 28,
-    padding: EdgeInsets.symmetric(horizontal: 12),
-    decoration: BoxDecoration(
-      border: isActive
-        ? Border(bottom: BorderSide(color: AppColors.primary, width: 2))
-        : null,
-    ),
-    child: Row(
-      children: [
-        Icon(icon, size: 14),
-        SizedBox(width: 6),
-        Text(label, style: AppTextStyles.tiny),
-        if (badge != null) ...[
-          SizedBox(width: 4),
-          Text(badge, style: AppTextStyles.caption),
-        ],
-        if (hasDot) ...[
-          SizedBox(width: 4),
-          DotIndicator(color: AppColors.success),
-        ],
-      ],
-    ),
-  );
-}
-```
+### 状态栏
 
-### Response Viewer Tabs
-
-- 高度：28px
-- 字体：10px Medium（比 Request Tab 更小）
-- 标签样式：图标 + 文字
-- 动态 Tab：Certificate Tab 仅在 HTTPS 响应时显示
-- 选中状态：底部 2px 主色指示线
-
-**Tab 顺序**: Body → Headers → Cookies → Certificate → Timing → Request
-
-### URL Bar
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│ [GET ▼] [URL Input                    ] [💾 Save] [▶ Send]          │
-│  32px          32px（与两侧对齐）            32px      32px           │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-- 整体高度：32px
-- Method Dropdown：左侧圆角，宽度自适应
-- URL Input：右侧圆角，与 Method fused 连接
-- 按钮：与输入框高度一致，Send 按钮使用主色填充
-
-### 响应式断点
-
-| 断点 | 宽度 | 行为 |
-|-----|------|------|
-| Mobile | < 768px | 隐藏 Sidebar，使用抽屉 |
-| Tablet | 768px - 1200px | 缩小 Sidebar 至 200px |
-| Desktop | > 1200px | 默认布局 |
-
-### 大响应体显示策略
-
-| 响应大小 | 默认模式 | 说明 |
-|---------|---------|------|
-| < 10KB | Full | 完整语法高亮，全部显示 |
-| 10KB - 50KB | Full | 完整语法高亮，全部显示 |
-| > 50KB | Performance | 虚拟化列表，初始 500 行，轻量高亮 |
-
-**Performance 模式 UI**:
-- 顶部工具栏：Performance / Full / Raw 切换按钮（始终显示）
-- 底部加载提示："Showing 500 of 5008 lines"
-- 加载更多按钮："Load 4508 more" / "Load all"
+高 28（`height28`），surface 底 + 顶部 border，横 padding 12；左侧品牌徽标 + 版本号（`appVersionProvider`，读取失败回退 `kFallbackAppVersion`，见 `lib/providers/core/app_info_provider.dart`；旧 `lib/utils/constants.dart` 已删除），右侧状态点。
 
 ---
 
-## 交互规范
+## 强制遵守机制
 
-### 悬停效果
+### 设计守卫（静态扫描）
 
-| 元素 | 悬停效果 |
-|-----|---------|
-| Button | 背景色加深 8% |
-| List Item | 背景色变为 surfaceVariant |
-| Tab | 背景色变为 surfaceVariant |
-| Link | 颜色变为主色 |
+`test/design_guard_test.dart` 扫描 `lib/` 全部 Dart 源码（排除 `.g.dart` / `.freezed.dart` / `lib/l10n/`），注释行不计入。
 
-### 点击效果
+| 规则 | 内容 | 改用 |
+|------|------|------|
+| G1 | 禁止 `Colors.*`（Material 色板） | `context.appTheme` / AppColors |
+| G2 | 禁止 `Color(0x…)` 字面色值 | 同上 |
+| G3 | 禁止内联 `fontSize:` | AppTextStyles |
+| G4 | 禁止 `fontFamily:` 字面量 | AppTextStyles.code12/code11 |
+| G5 | 禁止 `BorderRadius.circular(数字)` | AppMetrics.br2–br10 |
+| G6 | 禁止 `withOpacity(` | `withValues(alpha:)` 或 token |
+| G7 | 禁止 `FontWeight.bold` | 显式 w600 / w700 |
 
-| 元素 | 点击效果 |
-|-----|---------|
-| Button | Scale 0.98 |
-| List Item | 背景色加深 |
-| Card | 轻微阴影变化 |
+G1–G5 白名单 `lib/theme/`（token 定义所在地）；G6/G7 全局适用（含 lib/theme/）。
 
-### 焦点样式
+**基线 ratchet**：存量违规记录在 `test/design_guard_baseline.json`（文件×规则计数），只允许减少、不允许增加；当前基线已为 **0**（`files: {}`），即任何新增违规直接红。误报或违规减少后收紧基线：
 
-```dart
-class FocusStyles {
-  static final outline = BoxDecoration(
-    border: Border.all(color: AppColors.primary, width: 2),
-    borderRadius: BorderRadius.circular(6),
-  );
-}
+```bash
+DESIGN_GUARD_UPDATE=1 fvm flutter test test/design_guard_test.dart
 ```
 
-### 过渡动画
+### Golden 测试
 
-```dart
-class Transitions {
-  static const fast = Duration(milliseconds: 100);
-  static const normal = Duration(milliseconds: 200);
-  static const slow = Duration(milliseconds: 300);
-  
-  static const curve = Curves.easeInOut;
-}
+`test/widgets/common/app_components_golden_test.dart`：11 组组件 × 亮/暗双主题（AppButton、AppIconButton、AppTabs、AppDialog、AppSwitch & AppCheckbox、AppCard、AppTextField、Badges、AppPopupSelect、AppDivider、AppEmptyState）。样式回归时该文件变红，先对照 `goldens/` 确认是预期变化再更新：
+
+```bash
+fvm flutter test test/widgets/common/ --update-goldens
 ```
 
-### 常用动画
+### Design Gallery 走查
 
-```dart
-// 淡入淡出
-AnimatedOpacity(
-  opacity: visible ? 1.0 : 0.0,
-  duration: Transitions.normal,
-  child: child,
-)
-
-// 滑入
-AnimatedSlide(
-  offset: visible ? Offset.zero : Offset(0, 0.1),
-  duration: Transitions.normal,
-  child: child,
-)
-
-// 缩放
-AnimatedScale(
-  scale: pressed ? 0.98 : 1.0,
-  duration: Transitions.fast,
-  child: child,
-)
-```
-
----
-
-## Request Settings UI 规范
-
-> **功能状态**: ✅ 已实现 (SSL/TLS 设置)
-
-### 整体布局
+`lib/screens/design_gallery/design_gallery_screen.dart`：单页展示全部 token（颜色 / 文字 / 度量 / 阴影）与统一组件的亮/暗双主题效果，与应用全局主题无关（内部各自包 Theme）。通过 test-mode 指令打开（`lib/utils/testing/ui_test_mode.dart`）：
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  Settings Tab                                           │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  SSL/TLS                                                │ ← 分组标题 11px
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ Enable SSL certificate verification    [●] ON   │   │
-│  │ Verify the server's SSL certificate chain       │   │ ← 描述 11px
-│  │ ℹ️ Disable this option to allow...              │   │ ← 提示 11px
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  Coming Soon                                            │ ← 分组标题 11px
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ Follow redirects                     [🔒]       │   │
-│  │ Automatically follow HTTP redirects             │   │ ← 描述 11px
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+open_design_gallery
 ```
 
-### 功能清单
-
-| 设置项 | 控件类型 | 默认值 | Dio 支持 |
-|--------|----------|--------|----------|
-| HTTP Version | Dropdown | Auto | ✅ via `httpVersion` |
-| Enable SSL certificate verification | Toggle | ON | ✅ via `HttpClient` |
-| Automatically follow redirects | Toggle | ON | ✅ via `followRedirects` |
-| Follow original HTTP Method | Toggle | OFF | ⚠️ 需自定义拦截器 |
-| Follow Authorization header | Toggle | OFF | ⚠️ 需自定义拦截器 |
-| Remove referer header on redirect | Toggle | OFF | ⚠️ 需自定义拦截器 |
-| Enable strict HTTP parser | Toggle | OFF | ❌ 平台特定 |
-| Encode URL automatically | Toggle | ON | ✅ 默认行为 |
-| Disable cookie jar | Toggle | OFF | ✅ via `CookieManager` |
-| Use server cipher suite during handshake | Toggle | OFF | ⚠️ 平台特定 |
-| Maximum number of redirects | Number | 10 | ✅ via `maxRedirects` |
-| TLS/SSL protocols disabled | Multi-select | - | ⚠️ 平台特定 |
-| Cipher suite selection | Text | - | ⚠️ 平台特定 |
-
-### 设置项结构
-
-每个设置项采用统一的卡片式布局：
-
-```dart
-class SettingItem extends StatelessWidget {
-  final String title;           // 设置项标题 (12px)
-  final String description;     // 设置项描述 (11px)
-  final Widget control;         // 控件（Switch/Dropdown/Input）
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: CardStyles.standard,
-      child: Row(
-        children: [
-          // 左侧：标题和描述
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.caption.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  description,
-                  style: AppTextStyles.tiny.copyWith(
-                    color: theme.colorScheme.outline,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // 右侧：控件
-          control,
-        ],
-      ),
-    );
-  }
-}
-```
-
-### 字体规范
-
-| 元素 | 字号 | 字重 | 颜色 |
-|------|------|------|------|
-| 分组标题 (SSL/TLS) | 11px (tiny) | 600 | onSurfaceVariant |
-| 设置项标题 | 12px (caption) | 500 | onSurface |
-| 设置项描述 | 11px (tiny) | 400 | outline |
-| 提示信息 | 11px (tiny) | 400 | outline |
-| 状态文字 (ON/OFF) | 12px (caption) | 500 | primary (ON) / outline (OFF) |
-| 禁用项文字 | 12px (caption) | 500 | outline |
-
-### 间距规范
-
-| 元素 | 间距 |
-|-----|------|
-| 设置项之间 | 12px |
-| 设置项内边距 | 16px |
-| 标题与描述之间 | 4px |
-| 描述与默认值之间 | 4px |
-| 控件与文字之间 | 16px |
-| 分组之间 | 24px (spaceXL) |
-
-### 实现规划
-
-```
-lib/
-├── models/
-│   └── request_settings.dart          # Freezed 模型
-├── providers/
-│   └── request/
-│       └── request_settings_provider.dart
-├── widgets/
-│   └── request/
-│       ├── request_editor.dart        # 添加 Settings Tab
-│       └── request_settings_tab.dart  # 设置面板 UI
-└── services/
-    └── http/
-        └── request_options_builder.dart   # 构建 Dio Options
-```
-
-### 技术要点
-
-1. 请求设置应与请求数据一起持久化到 Collection
-2. Dio 支持通过 `Options` 配置大部分设置
-3. SSL 验证通过 `DioHttpClientAdapter` 的 `onHttpClientCreate` 配置
-4. TLS/SSL 协议禁用需要平台特定的实现
-5. 设置项需要支持「继承全局默认值」和「请求级别覆盖」两种模式
-
-### 控件类型
-
-#### 1. Toggle Switch
-
-用于布尔类型设置项（ON/OFF）
-
-**样式规范**:
-| 属性 | 值 |
-|------|-----|
-| 尺寸 | 24×14px (Material 默认 40×24 缩放 60%) |
-| ON 状态轨道 | Indigo 500 (#6366F1) |
-| OFF 状态轨道 | outlineVariant |
-| Thumb 颜色 | 白色 |
-| 状态文字 | ON/OFF，使用 caption 样式 |
-
-**实现代码**:
-```dart
-Row(
-  mainAxisSize: MainAxisSize.min,
-  children: [
-    // Switch 缩小到 60% (约 24×14px)
-    Transform.scale(
-      scale: 0.6,
-      child: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeColor: Colors.white,
-        activeTrackColor: AppColors.primary,
-        inactiveThumbColor: Colors.white,
-        inactiveTrackColor: theme.colorScheme.outlineVariant,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-    ),
-    SizedBox(width: 8),
-    // 状态文字
-    Text(
-      value ? 'ON' : 'OFF',
-      style: AppTextStyles.caption.copyWith(
-        color: value ? AppColors.primary : theme.colorScheme.outline,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-  ],
-)
-```
-
-#### 2. Dropdown
-
-用于选择类型设置项
-
-```dart
-SettingItem(
-  title: 'HTTP Version',
-  description: 'Select the HTTP version to use for sending the request',
-  defaultValue: 'Settings',
-  control: SizedBox(
-    width: 120,
-    child: DropdownButtonFormField(
-      value: selectedValue,
-      items: ['Auto', 'HTTP/1.1', 'HTTP/2'],
-      onChanged: onChanged,
-      decoration: InputStyles.outline,
-    ),
-  ),
-)
-```
-
-#### 3. Number Input
-
-用于数值类型设置项
-
-```dart
-SettingItem(
-  title: 'Maximum number of redirects',
-  description: 'Set a cap on the maximum number of redirects to follow',
-  control: SizedBox(
-    width: 80,
-    child: TextField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      decoration: InputStyles.outline.copyWith(
-        suffixText: 'times',
-      ),
-    ),
-  ),
-)
-```
-
-#### 4. Text Input
-
-用于文本类型设置项（如加密套件列表）
-
-```dart
-SettingItem(
-  title: 'Cipher suite selection',
-  description: 'Order of cipher suites that the SSL server profile uses...',
-  control: Expanded(
-    child: TextField(
-      controller: controller,
-      decoration: InputStyles.outline.copyWith(
-        hintText: 'Enter cipher suites',
-      ),
-    ),
-  ),
-)
-```
-
-#### 5. Multi-select Chips
-
-用于多选类型设置项（如 TLS 协议禁用）
-
-```dart
-SettingItem(
-  title: 'TLS/SSL protocols disabled during handshake',
-  description: 'Specify the SSL and TLS protocol versions to be disabled',
-  control: Wrap(
-    spacing: 8,
-    children: [
-      FilterChip(label: Text('SSLv3'), onSelected: ...),
-      FilterChip(label: Text('TLS 1.0'), onSelected: ...),
-      FilterChip(label: Text('TLS 1.1'), onSelected: ...),
-    ],
-  ),
-)
-```
-
-### 视觉状态
-
-| 状态 | 视觉表现 |
-|-----|---------|
-| 默认值 | 无特殊标记 |
-| 已修改 | 标题旁显示紫色圆点指示器 |
-| 悬停 | 卡片背景色变为 surfaceVariant |
-| 禁用 | 控件置灰，透明度 0.5 |
-
-### 分组标题
-
-相关设置项可使用分组标题进行组织：
-
-```dart
-class SettingGroup extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 12),
-          child: Text(
-            title,
-            style: AppTextStyles.caption.copyWith(
-              color: NeutralColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        ...children,
-      ],
-    );
-  }
-}
-```
-
----
-
-## Key-Value 编辑器规范
-
-### Headers/Params 列表
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│ ✓ │ Key                    │ ⓘ │ Value                 │ Description  │
-├─────────────────────────────────────────────────────────────────────────┤
-│ ✓ │ Content-Type           │ ⓘ │ application/json      │ The MIME...  │
-│ ✓ │ Authorization          │   │ Bearer xxx            │              │
-│ ☐ │ X-Custom-Header        │   │                       │              │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### 行规范
-
-- 高度：36px
-- 结构：Checkbox (24px) + Key Input + Info Icon (条件显示) + Value Input + Delete Button
-- 对齐：所有元素垂直居中
-- 间距：元素之间 8px
-
-### Info Icon 规则
-
-常见 Headers 显示 Info 图标，悬停显示说明：
-
-| Header Key | 说明 |
-|-----------|------|
-| Accept | Media types that are acceptable for the response |
-| Content-Type | The MIME type of the body of the request |
-| Authorization | Credentials for authenticating the client |
-| User-Agent | Information about the user agent |
-| Cache-Control | Directives for caching mechanisms |
-| ... | ... |
-
-### 自动完成
-
-Header Key 输入时显示下拉建议：
-
-```dart
-Autocomplete<String>(
-  optionsBuilder: (TextEditingValue textEditingValue) {
-    if (textEditingValue.text.isEmpty) return const [];
-    return _commonHeaderKeys.where((key) => 
-      key.toLowerCase().contains(textEditingValue.text.toLowerCase())
-    );
-  },
-  fieldViewBuilder: (context, controller, focusNode, onSubmit) {
-    return TextField(
-      controller: controller,
-      focusNode: focusNode,
-      decoration: InputDecoration(
-        hintText: 'Key',
-        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 9),
-      ),
-    );
-  },
-)
-```
-
----
-
-## Certificate Tab UI 规范
-
-### 整体布局
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Certificate Tab                                                          │
-├─────────────────────────────────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 🔒 Certificate is valid                                             │ │
-│ │ Valid from: 2023-01-01 to 2024-01-01                                │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                         │
-│ Subject:                                                                │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ Common Name (CN)       example.com                                  │ │
-│ │ Organization (O)       Example Inc.                                 │ │
-│ │ Organizational Unit    IT Department                                │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                         │
-│ Issuer:                                                                 │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ Common Name (CN)       DigiCert TLS RSA SHA256 2020 CA1             │ │
-│ │ Organization (O)       DigiCert Inc                                 │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                         │
-│ Certificate Chain:                                                      │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ ⬇ example.com                                                       │ │
-│ │ ⬇ DigiCert TLS RSA SHA256 2020 CA1                                  │ │
-│ │ ⬇ DigiCert Global Root CA                                           │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### 字体规范
-
-| 元素 | 字号 | 字重 | 颜色 |
-|-----|------|------|------|
-| 状态标题 | 13px | 600 | success/error |
-| 分组标题 | 12px | 500 | textSecondary |
-| 详情标签 | 10px | 400 | textSecondary |
-| 详情值 | 11px | 400 | textPrimary |
-| 有效期 | 11px | 400 | textSecondary |
-
-### 状态卡片
-
-```dart
-Container(
-  padding: EdgeInsets.all(16),
-  decoration: BoxDecoration(
-    color: isValid 
-      ? AppColors.success.withOpacity(0.1)
-      : AppColors.error.withOpacity(0.1),
-    borderRadius: BorderRadius.circular(8),
-    border: Border.all(
-      color: isValid ? AppColors.success : AppColors.error,
-    ),
-  ),
-  child: Row(
-    children: [
-      Icon(
-        isValid ? Icons.lock : Icons.lock_open,
-        color: isValid ? AppColors.success : AppColors.error,
-      ),
-      SizedBox(width: 12),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            isValid ? 'Certificate is valid' : 'Certificate is invalid',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isValid ? AppColors.success : AppColors.error,
-            ),
-          ),
-          Text(
-            'Valid from: $validFrom to $validTo',
-            style: TextStyle(fontSize: 11, color: NeutralColors.textSecondary),
-          ),
-        ],
-      ),
-    ],
-  ),
-)
-```
-
----
-
-## Timing Tab UI 规范
-
-### 整体布局
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Timing Tab                                                               │
-├─────────────────────────────────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │           ⏱ 156 ms                                                  │ │
-│ │              Total Duration                                         │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                         │
-│ Phase Details:                                                          │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ DNS Lookup     ████████ 25ms (16%)                                  │ │
-│ │ TCP Handshake  ██████ 18ms (12%)                                    │ │
-│ │ TLS Handshake  ████████████ 42ms (27%)                              │ │
-│ │ TTFB           ████████████████ 58ms (37%)                          │ │
-│ │ Download       ███ 13ms (8%)                                        │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                         │
-│ Timeline:                                                               │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ DNS │ TCP │  TLS   │     TTFB      │ Down│                         │ │
-│ │█████│█████│████████│████████████████│█████│                         │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### 总时间卡片
-
-```dart
-Container(
-  padding: EdgeInsets.all(20),
-  decoration: BoxDecoration(
-    gradient: LinearGradient(
-      colors: [AppColors.primary, AppColors.secondary],
-    ),
-    borderRadius: BorderRadius.circular(12),
-  ),
-  child: Column(
-    children: [
-      Icon(Icons.timer, color: Colors.white, size: 32),
-      SizedBox(height: 8),
-      Text(
-        '${timingInfo.totalMs} ms',
-        style: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-      Text(
-        'Total Duration',
-        style: TextStyle(
-          fontSize: 12,
-          color: Colors.white.withOpacity(0.8),
-        ),
-      ),
-    ],
-  ),
-)
-```
-
-### 阶段详情
-
-| 阶段 | 颜色 | 说明 |
-|-----|------|------|
-| DNS Lookup | Blue 500 | 域名解析时间 |
-| TCP Handshake | Green 500 | TCP 连接建立时间 |
-| TLS Handshake | Purple 500 | SSL/TLS 握手时间 |
-| TTFB | Amber 500 | 首字节时间 |
-| Download | Gray 500 | 响应体下载时间 |
-
----
-
-## Request Tab UI 规范
-
-### 整体布局
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Request Tab                                                              │
-├─────────────────────────────────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │  POST                                          https://api.ex.com   │ │
-│ │  /v1/users?include=profile                                          │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                         │
-│ Headers (2):                                                            │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ Content-Type           application/json                             │ │
-│ │ Authorization          Bearer xxx                                   │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                         │
-│ Body (JSON):                                                            │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ {                                                                   │ │
-│ │   "name": "John",                                                   │ │
-│ │   "email": "john@example.com"                                       │ │
-│ │ }                                                                   │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### 请求概览卡片
-
-```dart
-Container(
-  padding: EdgeInsets.all(16),
-  decoration: BoxDecoration(
-    gradient: LinearGradient(
-      colors: [
-        methodColor.withOpacity(0.1),
-        methodColor.withOpacity(0.05),
-      ],
-    ),
-    borderRadius: BorderRadius.circular(8),
-    border: Border.all(color: methodColor.withOpacity(0.3)),
-  ),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          HttpMethodTag(method: request.method),
-          SizedBox(width: 8),
-          Expanded(
-            child: SelectableText(
-              request.url,
-              style: AppTextStyles.bodySmall,
-            ),
-          ),
-        ],
-      ),
-      if (queryParams.isNotEmpty)
-        SelectableText(
-          '?${queryParams.entries.map((e) => "${e.key}=${e.value}").join("&")}',
-          style: AppTextStyles.tiny.copyWith(
-            color: NeutralColors.textSecondary,
-          ),
-        ),
-    ],
-  ),
-)
-```
-
-### HTTP 方法颜色
-
-```dart
-Color _getMethodColor(HttpMethod method) {
-  switch (method) {
-    case HttpMethod.get: return Color(0xFF3B82F6);    // Blue 500
-    case HttpMethod.post: return Color(0xFF10B981);   // Green 500
-    case HttpMethod.put: return Color(0xFFF59E0B);    // Amber 500
-    case HttpMethod.delete: return Color(0xFFEF4444); // Red 500
-    case HttpMethod.patch: return Color(0xFF8B5CF6);  // Violet 500
-    default: return Color(0xFF6B7280);                // Gray 500
-  }
-}
-```
+改 token 或统一组件后：① 跑 golden；② 打开 Gallery 肉眼走查亮/暗两区；③ 必要时同步 `docs/design/design_system_preview.html` 原型。
+
+### 新增 UI checklist
+
+1. 颜色 / 字号 / 圆角 / 阴影全部来自 token（过 G1–G7），无 `Color(0x`、无 `fontSize:`。
+2. 按钮 / 输入框 / 菜单 / 对话框 / 空态 / 分隔线优先用统一组件；确需新组件则放进 `lib/widgets/common/` 并补 golden + Gallery 展示。
+3. 亮 / 暗两个主题都看过（Gallery 或手动切换主题）。
+4. 高度落在 height24/28/32/36/38/48 档位内，间距用 space4–32。
+5. 对话框用 `showAppDialog`，值选择用 `AppPopupSelect`（禁止 DropdownButton），菜单项用 `AppPopupMenu.iconItem/textItem`。
 
 ---
 
 ## 暗黑模式
 
-### 切换逻辑
-
-```dart
-class ThemeModeNotifier extends StateNotifier<ThemeMode> {
-  ThemeModeNotifier() : super(ThemeMode.system);
-
-  void setLight() => state = ThemeMode.light;
-  void setDark() => state = ThemeMode.dark;
-  void setSystem() => state = ThemeMode.system;
-}
-```
-
-### 颜色映射
-
-| 浅色模式 | 深色模式 |
-|---------|---------|
-| background | darkBackground |
-| surface | darkSurface |
-| surfaceVariant | darkSurfaceVariant |
-| border | darkBorder |
-| textPrimary | darkTextPrimary |
-| textSecondary | darkTextSecondary |
-
-### 特殊处理
-
-- 阴影：降低不透明度或移除
-- 边框：降低对比度
-- 图片：添加亮度调整
-
----
-
-## 图标规范
-
-### 图标尺寸
-
-| 用途 | 尺寸 |
-|-----|------|
-| Tab 内 | 14px |
-| 按钮内 | 16px |
-| 列表项 | 16px |
-| 工具栏 | 20px |
-| Sidebar Item | 16px |
-| 空状态 | 48px |
-| 特性展示 | 64px |
-
-### Tab 图标映射
-
-| Tab | 图标 |
-|-----|------|
-| Body | Icons.code |
-| Headers | Icons.list_alt |
-| Params | Icons.tune |
-| Cookies | Icons.cookie |
-| Certificate | Icons.verified |
-| Timing | Icons.timer |
-| Request | Icons.send |
-| Settings | Icons.settings |
-
-### 图标库
-
-- 主要：Material Icons
-- 备选：Phosphor Icons
-
----
-
-## 快捷键
-
-| 快捷键 | 功能 | 状态 |
-|-------|------|------|
-| Cmd + N | 新建请求 | ✅ 已实现 |
-| Cmd + Enter | 发送请求 | ✅ 已实现 |
-| Cmd + S | 保存请求 | ✅ 已实现 |
-| Cmd + Shift + S | 另存为 | ✅ 已实现 |
-| Cmd + W | 关闭标签 | ✅ 已实现 |
-| Cmd + 1-9 | 切换标签 | ✅ 已实现 |
-| Ctrl/Cmd + Shift + T | 重新打开关闭的标签 | ⏸️ Backlog |
-| Ctrl/Cmd + / | 切换 Sidebar | ⏸️ Backlog |
-| Ctrl/Cmd + , | 打开设置 | ⏸️ Backlog |
-| Ctrl/Cmd + Shift + P | 命令面板 | ⏸️ Backlog |
-
-### macOS 菜单集成
-
-应用支持 macOS 系统菜单通过 MethodChannel 与 Flutter 通信：
-
-```
-File
-  ├── New Request (Cmd+N)
-  ├── Save (Cmd+S)
-  └── Save As... (Cmd+Shift+S)
-
-Edit
-  └── (系统默认编辑菜单)
-
-View
-  └── (预留)
-
-Window
-  ├── Close (Cmd+W)
-  └── (系统默认窗口菜单)
-```
-
----
-
-## 无障碍
-
-### 色彩对比度
-
-- 正文文字：对比度 >= 4.5:1
-- 大号文字：对比度 >= 3:1
-- 图标/UI 元素：对比度 >= 3:1
-
-### 焦点管理
-
-- 所有交互元素可见焦点
-- 合理的 Tab 顺序
-- 跳过链接支持
-
-### 屏幕阅读器
-
-- 所有图标添加语义标签
-- 复杂组件提供完整描述
-- 动态内容变化通知
-
----
-
-## Code Editor UI 规范
-
-> **改进目标**: 参考 Postman 提升 Response Body 和 Request Body 区域的视觉精致度
-
-### 问题分析
-
-对比 Postman 的 Response Body 区域，当前 Hopp 存在以下视觉差距：
-
-| 对比项 | Postman | Hopp (当前) | 改进方向 |
-|-------|---------|-------------|---------|
-| 行号宽度 | 约 35px，紧凑 | 默认宽度，偏宽 | 缩小至 32-36px |
-| 行号背景 | 灰色背景，与代码区明显分隔 | 无独立背景 | 添加灰色背景区分 |
-| 编辑器边框 | 精致圆角边框 | 简单边框或无边框 | 添加 6px 圆角边框 |
-| 语法高亮 | 清晰：Key 深蓝、String 绿、Number 蓝 | 基础高亮 | 优化配色方案 |
-| 工具栏 | 格式选择下拉 + Beautify 按钮 | Performance/Full 切换 | 添加 Beautify 按钮 |
-| 整体质感 | 现代、精致 | 略显原始 | 提升细节处理 |
-
-### Response Body 规范
-
-#### 整体布局
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Response Body Tab                                                        │
-├─────────────────────────────────────────────────────────────────────────┤
-│ [JSON ▼] [Preview] [Visualize ▼]                   [Beautify] [Copy]    │  ← 工具栏
-├─────────────────────────────────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │  1 │ {                                                              │ │
-│ │  2 │   "userId": 422661012,                                        │ │  ← 行号区
-│ │  3 │   "token": "0e0b7ebd0ddc46fe832bddc45e3cfc59",                │ │    (灰色背景)
-│ │  4 │   "username": "zhongmou",                                     │ │
-│ │  5 │   "org": "北京中创视讯科技有限公司"                           │ │
-│ │  6 │ }                                                              │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-#### 字体规范
-
-Request Body 和 Response Body 编辑器统一使用以下字体规范：
-
-| 元素 | 字体 | 字号 | 行高 | 字重 |
-|-----|------|------|------|------|
-| 代码内容 | Menlo | 12px | 1.5 | 400 (Regular) |
-| 行号 | Menlo | 11px | 1.5 | 400 (Regular) |
-
-**说明**:
-- 使用 macOS 系统自带等宽字体 `Menlo` 确保代码对齐
-- Menlo 是 macOS 标准等宽字体，无需额外安装
-- 代码字号 12px 适合长时间阅读
-- 行号字号 11px 略小，不喧宾夺主
-- 行高 1.5 提供舒适的阅读体验
-
-### 行号区域规范
-
-```dart
-// 行号区域样式
-class LineNumberStyle {
-  // 宽度固定为内容自适应，最大 48px
-  static const width = 40.0;
-  
-  // 背景色 - 浅灰色与代码区区分
-  static Color backgroundColor(BuildContext context) {
-    final theme = Theme.of(context);
-    return theme.colorScheme.surfaceContainerHighest.withOpacity(0.5);
-  }
-  
-  // 文字样式
-  static const textStyle = TextStyle(
-    fontFamily: 'Menlo', // macOS 系统自带等宽字体
-    fontSize: 11,        // 行号字号略小
-    color: Colors.grey,  // 灰色，不喧宾夺主
-    height: 1.5,
-  );
-  
-  // 内边距
-  static const padding = EdgeInsets.only(right: 8);
-}
-```
-
-**关键要求**:
-1. **宽度**: 行号区域宽度固定 40px，右对齐显示
-2. **背景**: 使用 `surfaceContainerHighest.withOpacity(0.5)` 作为背景色
-3. **分隔**: 行号区与代码区之间添加 1px 分割线
-4. **对齐**: 行号与代码行严格对齐
-
-#### 编辑器边框规范
-
-```dart
-// 代码编辑器容器样式
-Container(
-  decoration: BoxDecoration(
-    color: theme.colorScheme.surface,
-    borderRadius: BorderRadius.circular(6),
-    border: Border.all(
-      color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-      width: 1,
-    ),
-  ),
-  child: ClipRRect(
-    borderRadius: BorderRadius.circular(6),
-    child: Row(
-      children: [
-        // 行号区域
-        _buildLineNumberArea(),
-        // 分割线
-        VerticalDivider(width: 1, thickness: 1),
-        // 代码区域
-        Expanded(child: _buildCodeArea()),
-      ],
-    ),
-  ),
-)
-```
-
-#### 工具栏改进
-
-```dart
-// Response Body 工具栏
-Container(
-  height: 36,
-  padding: EdgeInsets.symmetric(horizontal: 12),
-  child: Row(
-    children: [
-      // 格式选择下拉 (JSON/XML/Text/HTML)
-      _buildFormatDropdown(),
-      SizedBox(width: 12),
-      // Preview 按钮 (HTML 响应时启用)
-      _buildPreviewButton(),
-      Spacer(),
-      // Beautify 按钮
-      _buildBeautifyButton(),
-      SizedBox(width: 8),
-      // Copy 按钮
-      _buildCopyButton(),
-    ],
-  ),
-)
-```
-
-**工具栏按钮样式**:
-
-```dart
-// Beautify 按钮
-TextButton.icon(
-  onPressed: _beautifyCode,
-  icon: Icon(Icons.format_align_left, size: 14),
-  label: Text('Beautify'),
-  style: TextButton.styleFrom(
-    foregroundColor: theme.colorScheme.primary,
-    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    textStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-  ),
-)
-```
-
-#### JSON 语法高亮配色
-
-```dart
-// 优化后的语法高亮配色
-class JsonSyntaxColors {
-  // Key - 深蓝色
-  static const key = Color(0xFF1E40AF);  // Blue 800
-  
-  // String - 深绿色
-  static const string = Color(0xFF15803D);  // Green 700
-  
-  // Number - 蓝色
-  static const number = Color(0xFF2563EB);  // Blue 600
-  
-  // Boolean/Null - 紫色
-  static const keyword = Color(0xFF7C3AED);  // Violet 600
-  
-  // Punctuation - 灰色
-  static const punctuation = Color(0xFF6B7280);  // Gray 500
-  
-  // 深色模式适配
-  static Color getKey(bool isDark) => isDark ? Color(0xFF93C5FD) : key;
-  static Color getString(bool isDark) => isDark ? Color(0xFF86EFAC) : string;
-  static Color getNumber(bool isDark) => isDark ? Color(0xFF60A5FA) : number;
-}
-```
-
-### Request Body 规范
-
-Request Body 区域应与 Response Body 保持一致的编辑器样式。
-
-#### 整体布局
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Request Body Tab                                                         │
-├─────────────────────────────────────────────────────────────────────────┤
-│ ○ none  ○ form-data  ○ x-www-form-urlencoded  ● raw  [JSON ▼]           │  ← Radio 组
-├─────────────────────────────────────────────────────────────────────────┤
-│ [JSON ▼]                                            [Beautify] [Clear]  │  ← 工具栏
-├─────────────────────────────────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │  1 │ {                                                              │ │
-│ │  2 │   "username": "zhongmou",                                     │ │
-│ │  3 │   "password": "7110eda4d09e062aa5e4a390b0a572ac0d2c0220"       │ │
-│ │  4 │ }                                                              │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-#### 类型选择器样式 (Radio 组)
-
-```dart
-// Radio 组样式
-Row(
-  children: [
-    _buildRadioOption('none', BodyType.none),
-    _buildRadioOption('form-data', BodyType.formData),
-    _buildRadioOption('x-www-form-urlencoded', BodyType.formUrlEncoded),
-    _buildRadioOption('raw', BodyType.raw),
-    if (selectedType == BodyType.raw) _buildRawSubtypeDropdown(),
-  ],
-)
-
-// Radio 选项样式
-Widget _buildRadioOption(String label, BodyType value) {
-  final isSelected = selectedType == value;
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Radio<BodyType>(
-        value: value,
-        groupValue: selectedType,
-        onChanged: onChanged,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        visualDensity: VisualDensity.compact,
-      ),
-      Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          color: isSelected 
-            ? theme.colorScheme.primary 
-            : theme.colorScheme.onSurface,
-          fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-        ),
-      ),
-      SizedBox(width: 16),
-    ],
-  );
-}
-```
-
-#### Raw 子类型下拉
-
-```dart
-// Raw 子类型选择器
-DropdownButtonFormField<String>(
-  value: rawContentType,
-  items: [
-    DropdownMenuItem(value: 'text', child: Text('Text')),
-    DropdownMenuItem(value: 'javascript', child: Text('JavaScript')),
-    DropdownMenuItem(value: 'json', child: Text('JSON')),
-    DropdownMenuItem(value: 'html', child: Text('HTML')),
-    DropdownMenuItem(value: 'xml', child: Text('XML')),
-  ],
-  onChanged: onChanged,
-  decoration: InputDecoration(
-    isDense: true,
-    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(4),
-    ),
-  ),
-  style: TextStyle(fontSize: 12),
-)
-```
-
-### 实现优先级
-
-| 改进项 | 优先级 | 工时 | 说明 |
-|-------|--------|------|------|
-| 行号区域样式优化 | P1 | 3h | 缩小宽度、添加背景色 |
-| 编辑器边框样式 | P1 | 2h | 添加圆角边框 |
-| JSON 语法高亮优化 | P1 | 3h | 优化配色方案 |
-| Beautify 按钮 | P1 | 2h | JSON/XML 格式化功能 |
-| 工具栏布局调整 | P2 | 2h | 格式选择下拉 |
-| 深色模式适配 | P2 | 2h | 语法高亮深色配色 |
-
-### 参考实现
-
-```dart
-// 完整的 Code Editor 组件示例
-class ImprovedCodeEditor extends StatelessWidget {
-  final String code;
-  final String? language;
-  final bool showLineNumbers;
-  final VoidCallback? onBeautify;
-  
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: Column(
-          children: [
-            // 工具栏
-            _buildToolbar(),
-            // 编辑器区域
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 行号
-                  if (showLineNumbers) _buildLineNumbers(),
-                  // 代码
-                  Expanded(child: _buildCodeField()),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildLineNumbers() {
-    final lines = code.split('\n');
-    return Container(
-      width: 40,
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-      padding: EdgeInsets.only(right: 8, top: 12, bottom: 12),
-      child: Column(
-        children: lines.asMap().entries.map((entry) {
-          return Text(
-            '${entry.key + 1}',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontFamily: 'JetBrains Mono',
-              fontSize: 12,
-              height: 1.4,
-              color: Colors.grey,
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-```
-
----
-
-<p align="center">Designed with ❤️ by AI · Powered by Kimi</p>
+- **不要手写两套颜色**。随主题变化的颜色全部走 `context.appTheme`（`AppThemeData.light / dark` 已在 `AppTheme.light() / dark()` 中注入，主题切换即自动换值）。
+- 与主题无关的常量色（方法色、语义主色）用 AppColors；需要 soft 底时用 AppThemeData 的 `*Soft` 字段，不要自己 `withValues` 调透明度（MethodBadge 的 10%/14% 双档是已封装的例外，新代码优先复用 MethodBadge / StatusChip）。
+- 阴影用 `AppShadows.sm/md(context)`（内部按 brightness 选值）；语法高亮用 `AppSyntaxColors.getKey(isDark)` 等取值方法。
+- 暗色下品牌色自动换 `brandLight` 系（`t.brand` 在 dark 下即 #818CF8），输入框 focus 边等已在 AppTheme / 组件内处理，业务代码无需分支。

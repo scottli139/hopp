@@ -543,59 +543,34 @@ class UserNotifier extends StateNotifier<AsyncValue<User>> {
 
 ### 2. 颜色和主题
 
+颜色唯一来源是 `lib/theme/` 的 token（禁止 `ColorScheme.fromSeed` 假设、
+禁止业务代码出现 `Colors.` / `Color(0x…)` 字面量，守卫测试会拦截）：
+
 ```dart
-// ✅ Good - 使用 Theme
-class AppTheme {
-  static const primaryColor = Color(0xFF6366F1);
-  static const secondaryColor = Color(0xFF8B5CF6);
-  static const successColor = Color(0xFF10B981);
-  static const warningColor = Color(0xFFF59E0B);
-  static const errorColor = Color(0xFFEF4444);
-
-  static ThemeData get lightTheme {
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        brightness: Brightness.light,
-      ),
-      // ... 其他配置
-    );
-  }
-}
-
-// 使用
+// ✅ Good - 随主题变化的语义色用 AppThemeData
 Container(
-  color: Theme.of(context).colorScheme.primary,
-  child: Text(
-    'Title',
-    style: Theme.of(context).textTheme.headlineSmall,
-  ),
+  color: context.appTheme.surface,
+  child: Text('Title', style: TextStyle(color: context.appTheme.textPrimary)),
 )
+
+// ✅ Good - 主题无关的常量色（品牌/方法/状态码）用 AppColors
+Icon(Icons.send, color: AppColors.brand)
 ```
+
+详见 docs/UI_UX_GUIDELINES.md 与 lib/theme/app_theme_data.dart、
+app_colors.dart。
 
 ### 3. 间距规范
 
 ```dart
-// ✅ Good - 使用一致的间距 (AppConstants)
-// lib/utils/constants.dart
-class AppConstants {
-  static const double spaceXS = 4.0;
-  static const double spaceS = 8.0;
-  static const double spaceM = 12.0;
-  static const double spaceL = 16.0;
-  static const double spaceXL = 24.0;
-  static const double spaceXXL = 32.0;
-}
-
-// 使用
+// ✅ Good - 使用 AppMetrics（lib/theme/app_metrics.dart）
 Padding(
-  padding: const EdgeInsets.all(AppConstants.spaceM),
+  padding: const EdgeInsets.all(AppMetrics.space16),
   child: Column(
     children: [
-      const SizedBox(height: AppConstants.spaceS),
+      const SizedBox(height: AppMetrics.space8),
       const Text('Title'),
-      const SizedBox(height: AppConstants.spaceL),
+      const SizedBox(height: AppMetrics.space16),
     ],
   ),
 )
@@ -604,23 +579,14 @@ Padding(
 ### 4. Widget 尺寸规范
 
 ```dart
-class AppConstants {
-  // 按钮高度
-  static const double buttonHeightS = 28.0;
-  static const double buttonHeightM = 36.0;
-  static const double buttonHeightL = 44.0;
+// AppMetrics 控件高度与圆角
+static const double height24 = 24;  // 紧凑行 / 小控件
+static const double height28 = 28;  // 小按钮 / 图标按钮 / 状态栏
+static const double height32 = 32;  // 标准控件（URL 栏 / 输入框 / Tab 条）
+static const double height38 = 38;  // 响应信息栏
+static const double height48 = 48;  // 页面头部条
 
-  // 输入框高度
-  static const double inputHeightS = 28.0;
-  static const double inputHeightM = 36.0;
-  static const double inputHeightL = 44.0;
-
-  // 圆角
-  static const double radiusS = 4.0;
-  static const double radiusM = 6.0;
-  static const double radiusL = 8.0;
-  static const double radiusXL = 12.0;
-}
+static const BorderRadius br4 = ...;  // 圆角统一 br2/br4/br6/br8/br10
 ```
 
 ---

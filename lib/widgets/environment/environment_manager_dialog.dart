@@ -359,17 +359,12 @@ class _EnvironmentManagerDialogState
           child: Row(
             children: [
               Expanded(
-                // 测试按 key 定位 TextField，key 须挂在裸 TextField 上，
-                // 且需要 enabled 支持，故不换成 AppTextField
-                child: TextField(
-                  key: const Key('environment_name_field'),
+                // 测试按 fieldKey 定位内部 TextField 输入
+                child: AppTextField(
+                  fieldKey: const Key('environment_name_field'),
                   controller: _nameController,
                   enabled: env != null,
-                  style: AppTextStyles.body13.copyWith(color: t.textPrimary),
-                  decoration: const InputDecoration(
-                    labelText: 'Name',
-                    isDense: true,
-                  ),
+                  hintText: 'Name',
                   onChanged: (value) {
                     if (env == null) return;
                     setState(() {
@@ -508,6 +503,8 @@ class _EnvironmentManagerDialogState
                   const EdgeInsets.symmetric(horizontal: AppMetrics.space4),
               child: AppPopupSelect<VariableType>(
                 value: variable.type,
+                boxed: true,
+                compact: true,
                 items: const [
                   AppPopupSelectEntry(
                     value: VariableType.string,
@@ -539,8 +536,7 @@ class _EnvironmentManagerDialogState
     );
   }
 
-  /// Value 输入框：secret 类型需要内嵌显隐切换按钮，
-  /// AppTextField 不支持 suffixIcon，退回裸 TextField + 统一装饰
+  /// Value 输入框：secret 类型内嵌显隐切换按钮（AppTextField suffix）
   Widget _buildValueField(
     AppThemeData t,
     EnvironmentVariable variable,
@@ -555,35 +551,27 @@ class _EnvironmentManagerDialogState
         onChanged: (value) => _updateVariable(variable.copyWith(value: value)),
       );
     }
-    return SizedBox(
-      height: AppMetrics.height28,
-      child: TextField(
-        controller: _valueController(variable),
-        obscureText: !revealed,
-        style: AppTextStyles.caption12.copyWith(color: t.textPrimary),
-        decoration:
-            AppTextField.decoration(context, hintText: 'Value', compact: true)
-                .copyWith(
-          suffixIconConstraints:
-              const BoxConstraints(minWidth: 24, minHeight: 24),
-          suffixIcon: AppIconButton(
-            icon: revealed ? Icons.visibility_off : Icons.visibility,
-            tooltip: revealed ? 'Hide value' : 'Show value',
-            size: AppMetrics.height24,
-            iconSize: 14,
-            onPressed: () {
-              setState(() {
-                if (revealed) {
-                  _revealedSecretIds.remove(variable.id);
-                } else {
-                  _revealedSecretIds.add(variable.id);
-                }
-              });
-            },
-          ),
-        ),
-        onChanged: (value) => _updateVariable(variable.copyWith(value: value)),
+    return AppTextField(
+      compact: true,
+      controller: _valueController(variable),
+      obscureText: !revealed,
+      hintText: 'Value',
+      suffix: AppIconButton(
+        icon: revealed ? Icons.visibility_off : Icons.visibility,
+        tooltip: revealed ? 'Hide value' : 'Show value',
+        size: AppMetrics.height24,
+        iconSize: 14,
+        onPressed: () {
+          setState(() {
+            if (revealed) {
+              _revealedSecretIds.remove(variable.id);
+            } else {
+              _revealedSecretIds.add(variable.id);
+            }
+          });
+        },
       ),
+      onChanged: (value) => _updateVariable(variable.copyWith(value: value)),
     );
   }
 }

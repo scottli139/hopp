@@ -12,9 +12,8 @@ import '../../providers/request/request_tab_provider.dart';
 import '../../providers/providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_metrics.dart';
-import '../../theme/app_text_styles.dart' as theme_text;
+import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
-import '../../utils/constants.dart' hide AppColors;
 import '../../utils/testing/ui_test_mode.dart';
 
 import '../common/app_badge.dart';
@@ -242,7 +241,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             const SizedBox(width: 6),
             Text(
               'No response yet',
-              style: theme_text.AppTextStyles.tiny11.copyWith(
+              style: AppTextStyles.tiny11.copyWith(
                 color: appTheme.textTertiary,
               ),
             ),
@@ -290,7 +289,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 height: 24,
                 decoration: BoxDecoration(
                   color: AppColors.error.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                  borderRadius: AppMetrics.br4,
                 ),
                 child: const Icon(
                   Icons.error_outline,
@@ -304,7 +303,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                     ? SingleChildScrollView(
                         child: SelectableText(
                           errorText,
-                          style: theme_text.AppTextStyles.tiny11.copyWith(
+                          style: AppTextStyles.tiny11.copyWith(
                             color: AppColors.error,
                             height: 1.4,
                           ),
@@ -312,7 +311,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                       )
                     : Text(
                         errorText,
-                        style: theme_text.AppTextStyles.tiny11.copyWith(
+                        style: AppTextStyles.tiny11.copyWith(
                           color: AppColors.error,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -330,16 +329,16 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               if (isLongError) const SizedBox(width: 8),
               // Copy error button
               Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                color: AppColors.transparent,
+                borderRadius: AppMetrics.br4,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                  borderRadius: AppMetrics.br4,
                   onTap: () => _copyToClipboard(errorText),
                   child: Container(
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                      borderRadius: AppMetrics.br4,
                       border: Border.all(
                         color: AppColors.error.withValues(alpha: 0.3),
                       ),
@@ -388,7 +387,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           const SizedBox(width: 4),
           Text(
             '${response.durationMs ?? 0} ms',
-            style: theme_text.AppTextStyles.tiny11.copyWith(
+            style: AppTextStyles.tiny11.copyWith(
               color: appTheme.textSecondary,
             ),
           ),
@@ -402,7 +401,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           const SizedBox(width: 4),
           Text(
             _formatSize(response.sizeBytes),
-            style: theme_text.AppTextStyles.tiny11.copyWith(
+            style: AppTextStyles.tiny11.copyWith(
               color: appTheme.textSecondary,
             ),
           ),
@@ -435,12 +434,11 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     required String tooltip,
     required VoidCallback? onPressed,
   }) {
-    final theme = Theme.of(context);
     return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(AppConstants.radiusM),
+      color: AppColors.transparent,
+      borderRadius: AppMetrics.br6,
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppConstants.radiusM),
+        borderRadius: AppMetrics.br6,
         onTap: onPressed,
         child: Tooltip(
           message: tooltip,
@@ -448,19 +446,19 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppConstants.radiusM),
+              borderRadius: AppMetrics.br6,
               border: Border.all(
                 color: onPressed != null
-                    ? theme.colorScheme.outline.withValues(alpha: 0.3)
-                    : Colors.transparent,
+                    ? context.appTheme.textTertiary.withValues(alpha: 0.3)
+                    : AppColors.transparent,
               ),
             ),
             child: Icon(
               icon,
               size: 16,
               color: onPressed != null
-                  ? theme.colorScheme.onSurfaceVariant
-                  : theme.colorScheme.outline.withValues(alpha: 0.5),
+                  ? context.appTheme.textSecondary
+                  : context.appTheme.textTertiary.withValues(alpha: 0.5),
             ),
           ),
         ),
@@ -525,7 +523,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                   width: 200,
                   child: Text(
                     'Header Name',
-                    style: theme_text.AppTextStyles.micro10.copyWith(
+                    style: AppTextStyles.micro10.copyWith(
                       color: appTheme.textTertiary,
                     ),
                   ),
@@ -533,7 +531,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 Expanded(
                   child: Text(
                     'Value',
-                    style: theme_text.AppTextStyles.micro10.copyWith(
+                    style: AppTextStyles.micro10.copyWith(
                       color: appTheme.textTertiary,
                     ),
                   ),
@@ -566,7 +564,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                         width: 200,
                         child: SelectableText(
                           header.key,
-                          style: theme_text.AppTextStyles.tiny11.copyWith(
+                          style: AppTextStyles.tiny11.copyWith(
                             fontWeight: FontWeight.w600,
                             color: appTheme.textPrimary,
                           ),
@@ -575,7 +573,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                       Expanded(
                         child: SelectableText(
                           header.value,
-                          style: theme_text.AppTextStyles.tiny11.copyWith(
+                          style: AppTextStyles.tiny11.copyWith(
                             color: appTheme.textPrimary,
                           ),
                         ),
@@ -617,7 +615,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   Widget _buildRequestTab(BuildContext context) {
-    final theme = Theme.of(context);
     final response = ref.watch(currentResponseProvider);
 
     // 优先使用 response 中的 requestInfo（实际发送的请求信息）
@@ -644,7 +641,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     final hasBody = request.body.isNotEmpty && request.bodyType != 'none';
 
     return Container(
-      color: theme.colorScheme.surface,
+      color: context.appTheme.surface,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -676,11 +673,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   /// 使用 HttpRequestInfo 构建 Request Tab
   Widget _buildRequestInfoTab(
       BuildContext context, HttpRequestInfo requestInfo) {
-    final theme = Theme.of(context);
     final methodColor = AppColors.method(requestInfo.method);
 
     return Container(
-      color: theme.colorScheme.surface,
+      color: context.appTheme.surface,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -718,8 +714,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     String fullUrl,
     Color methodColor,
   ) {
-    final theme = Theme.of(context);
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -731,7 +725,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(AppConstants.radiusL),
+        borderRadius: AppMetrics.br8,
         border: Border.all(color: methodColor.withValues(alpha: 0.2)),
       ),
       child: Column(
@@ -742,12 +736,11 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: methodColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(AppConstants.radiusS),
+              borderRadius: AppMetrics.br4,
             ),
             child: Text(
               request.method.value.toUpperCase(),
-              style: TextStyle(
-                fontSize: 11,
+              style: AppTextStyles.tiny11.copyWith(
                 fontWeight: FontWeight.w700,
                 color: methodColor,
               ),
@@ -757,8 +750,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           // 完整 URL
           SelectableText(
             fullUrl,
-            style: theme_text.AppTextStyles.code12.copyWith(
-              color: theme.colorScheme.onSurface,
+            style: AppTextStyles.code12.copyWith(
+              color: context.appTheme.textPrimary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -785,8 +778,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   Widget _buildRequestBodySection(BuildContext context, HttpRequest request) {
-    final theme = Theme.of(context);
-
     return _buildCompactInfoSection(
       context: context,
       title: 'Body (${request.bodyType})',
@@ -794,12 +785,12 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(AppConstants.radiusS),
+            color: context.appTheme.surfaceVariant,
+            borderRadius: AppMetrics.br4,
           ),
           child: SelectableText(
             request.body,
-            style: theme_text.AppTextStyles.code12.copyWith(fontSize: 11),
+            style: AppTextStyles.code11,
           ),
         ),
       ],
@@ -812,8 +803,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     HttpRequestInfo requestInfo,
     Color methodColor,
   ) {
-    final theme = Theme.of(context);
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -825,7 +814,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(AppConstants.radiusL),
+        borderRadius: AppMetrics.br8,
         border: Border.all(color: methodColor.withValues(alpha: 0.2)),
       ),
       child: Column(
@@ -838,12 +827,11 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: methodColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                  borderRadius: AppMetrics.br4,
                 ),
                 child: Text(
                   requestInfo.method.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 11,
+                  style: AppTextStyles.tiny11.copyWith(
                     fontWeight: FontWeight.w700,
                     color: methodColor,
                   ),
@@ -852,9 +840,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               const Spacer(),
               Text(
                 _formatTimestamp(requestInfo.timestamp),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: theme.colorScheme.outline,
+                style: AppTextStyles.micro10.copyWith(
+                  color: context.appTheme.textTertiary,
                 ),
               ),
             ],
@@ -863,8 +850,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           // 完整 URL
           SelectableText(
             requestInfo.fullUrl,
-            style: theme_text.AppTextStyles.code12.copyWith(
-              color: theme.colorScheme.onSurface,
+            style: AppTextStyles.code12.copyWith(
+              color: context.appTheme.textPrimary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -888,23 +875,20 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
   /// 构建 URL 信息 chip
   Widget _buildUrlInfoChip(BuildContext context, String label, String value) {
-    final theme = Theme.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           '$label: ',
-          style: TextStyle(
-            fontSize: 10,
-            color: theme.colorScheme.outline,
+          style: AppTextStyles.micro10.copyWith(
+            color: context.appTheme.textTertiary,
             fontWeight: FontWeight.w500,
           ),
         ),
         Text(
           value,
-          style: theme_text.AppTextStyles.code12.copyWith(
-            fontSize: 10,
-            color: theme.colorScheme.onSurfaceVariant,
+          style: AppTextStyles.code11.copyWith(
+            color: context.appTheme.textSecondary,
           ),
         ),
       ],
@@ -926,8 +910,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     List<KeyValuePair> headers,
     List<String> autoHeaderKeys,
   ) {
-    final theme = Theme.of(context);
-
     // 将 headers 分为用户添加的和自动添加的（按构建时记录的来源，而非 key 名猜测）
     final autoKeySet = autoHeaderKeys.map((k) => k.toLowerCase()).toSet();
     final userHeaders = <KeyValuePair>[];
@@ -949,19 +931,18 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           children: [
             Text(
               'Headers (${headers.length})',
-              style: TextStyle(
-                fontSize: 10,
+              style: AppTextStyles.micro10.copyWith(
                 fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
+                color: context.appTheme.textPrimary,
               ),
             ),
             const Spacer(),
             if (userHeaders.isNotEmpty)
               Text(
                 '${userHeaders.length} custom',
-                style: TextStyle(
-                  fontSize: 9,
-                  color: theme.colorScheme.outline,
+                style: AppTextStyles.micro10.copyWith(
+                  fontWeight: FontWeight.w400,
+                  color: context.appTheme.textTertiary,
                 ),
               ),
           ],
@@ -972,7 +953,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: context.appTheme.surfaceVariant,
-            borderRadius: BorderRadius.circular(AppConstants.radiusM),
+            borderRadius: AppMetrics.br6,
             border: Border.all(
               color: context.appTheme.border.withValues(alpha: 0.5),
             ),
@@ -990,9 +971,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 const AppDivider(height: 16),
                 Text(
                   'Auto-added Headers',
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: theme.colorScheme.outline,
+                  style: AppTextStyles.micro10.copyWith(
+                    color: context.appTheme.textTertiary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1017,8 +997,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     KeyValuePair header, {
     required bool isAuto,
   }) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -1032,12 +1010,11 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                   child: Text(
                     header.key,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 10,
+                    style: AppTextStyles.micro10.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isAuto
-                          ? theme.colorScheme.outline
-                          : theme.colorScheme.primary,
+                          ? context.appTheme.textTertiary
+                          : AppColors.brand,
                     ),
                   ),
                 ),
@@ -1049,14 +1026,14 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                       vertical: 1,
                     ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(2),
+                      color: context.appTheme.surfaceVariant,
+                      borderRadius: AppMetrics.br2,
                     ),
                     child: Text(
                       'auto',
-                      style: TextStyle(
-                        fontSize: 8,
-                        color: theme.colorScheme.outline,
+                      style: AppTextStyles.micro10.copyWith(
+                        fontWeight: FontWeight.w400,
+                        color: context.appTheme.textTertiary,
                       ),
                     ),
                   ),
@@ -1067,9 +1044,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           Expanded(
             child: SelectableText(
               header.value,
-              style: theme_text.AppTextStyles.code12.copyWith(
-                fontSize: 10,
-                color: theme.colorScheme.onSurface,
+              style: AppTextStyles.code11.copyWith(
+                color: context.appTheme.textPrimary,
               ),
             ),
           ),
@@ -1083,8 +1059,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     BuildContext context,
     HttpRequestInfo requestInfo,
   ) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1092,10 +1066,9 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           children: [
             Text(
               'Body',
-              style: TextStyle(
-                fontSize: 10,
+              style: AppTextStyles.micro10.copyWith(
                 fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
+                color: context.appTheme.textPrimary,
               ),
             ),
             const Spacer(),
@@ -1107,12 +1080,11 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.brand.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                  borderRadius: AppMetrics.br4,
                 ),
                 child: Text(
                   requestInfo.bodyType!.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 9,
+                  style: AppTextStyles.micro10.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.brand,
                   ),
@@ -1122,9 +1094,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               const SizedBox(width: 8),
               Text(
                 _formatSize(requestInfo.bodySize),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: theme.colorScheme.outline,
+                style: AppTextStyles.micro10.copyWith(
+                  color: context.appTheme.textTertiary,
                 ),
               ),
             ],
@@ -1135,12 +1106,12 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(AppConstants.radiusS),
+            color: context.appTheme.surfaceVariant,
+            borderRadius: AppMetrics.br4,
           ),
           child: SelectableText(
             requestInfo.body ?? '',
-            style: theme_text.AppTextStyles.code12.copyWith(fontSize: 11),
+            style: AppTextStyles.code11,
           ),
         ),
       ],
@@ -1148,11 +1119,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   Widget _buildTimingTab(BuildContext context, TimingInfo timing) {
-    final theme = Theme.of(context);
     final percentages = timing.getPhasePercentages();
 
     return Container(
-      color: theme.colorScheme.surface,
+      color: context.appTheme.surface,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1173,8 +1143,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   Widget _buildTimingTotalCard(BuildContext context, TimingInfo timing) {
-    final theme = Theme.of(context);
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1186,7 +1154,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(AppConstants.radiusL),
+        borderRadius: AppMetrics.br8,
         border: Border.all(color: AppColors.brand.withValues(alpha: 0.2)),
       ),
       child: Row(
@@ -1196,7 +1164,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             height: 48,
             decoration: BoxDecoration(
               color: AppColors.brand.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppConstants.radiusM),
+              borderRadius: AppMetrics.br6,
             ),
             child: const Icon(
               Icons.timer,
@@ -1211,17 +1179,14 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               children: [
                 Text(
                   'Total Request Time',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: theme.colorScheme.outline,
-                    fontWeight: FontWeight.w500,
+                  style: AppTextStyles.tiny11.copyWith(
+                    color: context.appTheme.textTertiary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   timing.totalFormatted,
-                  style: TextStyle(
-                    fontSize: 24,
+                  style: AppTextStyles.display20.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppColors.brand,
                   ),
@@ -1294,8 +1259,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     required double percentage,
     required Color color,
   }) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
@@ -1307,19 +1270,18 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 width: 140,
                 child: Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: theme.colorScheme.outline,
+                  style: AppTextStyles.micro10.copyWith(
+                    color: context.appTheme.textTertiary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
               Expanded(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppMetrics.br2,
                   child: LinearProgressIndicator(
                     value: percentage / 100,
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    backgroundColor: context.appTheme.surfaceVariant,
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                     minHeight: 6,
                   ),
@@ -1330,10 +1292,9 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 width: 50,
                 child: Text(
                   value,
-                  style: TextStyle(
-                    fontSize: 10,
+                  style: AppTextStyles.micro10.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
+                    color: context.appTheme.textPrimary,
                   ),
                   textAlign: TextAlign.right,
                 ),
@@ -1345,9 +1306,9 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             padding: const EdgeInsets.only(left: 140),
             child: Text(
               '${percentage.toStringAsFixed(1)}%',
-              style: TextStyle(
-                fontSize: 8,
-                color: theme.colorScheme.outline.withValues(alpha: 0.7),
+              style: AppTextStyles.micro10.copyWith(
+                fontWeight: FontWeight.w400,
+                color: context.appTheme.textTertiary.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -1368,7 +1329,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         const SizedBox(height: 8),
         // 时间线条形图
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: AppMetrics.br4,
           child: Row(
             children: [
               if (timing.dnsMs != null && timing.dnsMs! > 0)
@@ -1444,14 +1405,13 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           height: 8,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: AppMetrics.br2,
           ),
         ),
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 9,
+          style: AppTextStyles.micro10.copyWith(
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -1506,12 +1466,11 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   Widget _buildCertificateTab(BuildContext context, CertificateInfo cert) {
-    final theme = Theme.of(context);
     final isValid = cert.isValid;
     final validityColor = isValid ? AppColors.success : AppColors.error;
 
     return Container(
-      color: theme.colorScheme.surface,
+      color: context.appTheme.surface,
       child: SingleChildScrollView(
         controller: _certificateScrollController,
         padding: const EdgeInsets.all(16),
@@ -1543,7 +1502,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: validityColor.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(AppConstants.radiusM),
+        borderRadius: AppMetrics.br6,
         border: Border.all(color: validityColor.withValues(alpha: 0.2)),
       ),
       child: Row(
@@ -1553,7 +1512,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             height: 40,
             decoration: BoxDecoration(
               color: validityColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppConstants.radiusS),
+              borderRadius: AppMetrics.br4,
             ),
             child: Icon(
               isValid ? Icons.verified_user : Icons.warning_amber,
@@ -1568,8 +1527,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               children: [
                 Text(
                   isValid ? 'Certificate is valid' : 'Certificate expired',
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: AppTextStyles.caption12.copyWith(
                     fontWeight: FontWeight.w600,
                     color: validityColor,
                   ),
@@ -1579,9 +1537,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                   isValid
                       ? '${cert.remainingDays} days remaining'
                       : 'Expired on ${cert.validTo}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Theme.of(context).colorScheme.outline,
+                  style: AppTextStyles.micro10.copyWith(
+                    color: context.appTheme.textTertiary,
                   ),
                 ),
               ],
@@ -1639,7 +1596,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: context.appTheme.surfaceVariant,
-            borderRadius: BorderRadius.circular(AppConstants.radiusS),
+            borderRadius: AppMetrics.br4,
             border: Border.all(
               color: context.appTheme.border.withValues(alpha: 0.5),
             ),
@@ -1653,7 +1610,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                   color: chainCert.isValid
                       ? AppColors.success.withValues(alpha: 0.1)
                       : AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                  borderRadius: AppMetrics.br4,
                 ),
                 child: Icon(
                   chainCert.isValid ? Icons.check : Icons.error,
@@ -1669,18 +1626,17 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                   children: [
                     Text(
                       chainCert.subject,
-                      style: TextStyle(
-                        fontSize: 10,
+                      style: AppTextStyles.micro10.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: context.appTheme.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 1),
                     Text(
                       'Issued by: ${chainCert.issuer}',
-                      style: TextStyle(
-                        fontSize: 9,
-                        color: Theme.of(context).colorScheme.outline,
+                      style: AppTextStyles.micro10.copyWith(
+                        fontWeight: FontWeight.w400,
+                        color: context.appTheme.textTertiary,
                       ),
                     ),
                   ],
@@ -1689,14 +1645,14 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                  color: context.appTheme.surfaceVariant,
+                  borderRadius: AppMetrics.br4,
                 ),
                 child: Text(
                   '#${index + 1}',
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: Theme.of(context).colorScheme.outline,
+                  style: AppTextStyles.micro10.copyWith(
+                    fontWeight: FontWeight.w400,
+                    color: context.appTheme.textTertiary,
                   ),
                 ),
               ),
@@ -1717,7 +1673,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: context.appTheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(AppConstants.radiusM),
+        borderRadius: AppMetrics.br6,
         border: Border.all(
           color: context.appTheme.border.withValues(alpha: 0.5),
         ),
@@ -1727,10 +1683,9 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         children: [
           Text(
             title,
-            style: TextStyle(
-              fontSize: 10,
+            style: AppTextStyles.micro10.copyWith(
               fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: context.appTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
@@ -1754,9 +1709,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             width: 110,
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 9,
-                color: Theme.of(context).colorScheme.outline,
+              style: AppTextStyles.micro10.copyWith(
+                color: context.appTheme.textTertiary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1764,9 +1718,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           Expanded(
             child: SelectableText(
               value,
-              style: theme_text.AppTextStyles.code12.copyWith(
-                fontSize: 10,
-                color: Theme.of(context).colorScheme.onSurface,
+              style: AppTextStyles.code11.copyWith(
+                color: context.appTheme.textPrimary,
               ),
             ),
           ),

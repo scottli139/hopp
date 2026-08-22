@@ -81,6 +81,17 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 
 ---
 
+## 设计系统守门（UI 改动必读）
+
+视觉规范的唯一事实来源是代码，不是文档：
+
+- **Token**：颜色 / 字号 / 间距 / 圆角 / 高度 / 阴影只能用 `lib/theme/`（`context.appTheme.*`、`AppColors`、`AppTextStyles`、`AppMetrics`、`AppShadows`、`AppSyntaxColors`）；组件只能用 `lib/widgets/common/`（AppButton/AppTextField/AppTabs/AppPopupSelect 等）。规范细节见 [UI_UX_GUIDELINES](./docs/UI_UX_GUIDELINES.md)。
+- **守卫测试**：`test/design_guard_test.dart` 静态拦截 `Colors.` / `Color(0x…)` / 内联 `fontSize:` / `fontFamily:` / `BorderRadius.circular(数字)` / `withOpacity(` / `FontWeight.bold`。基线已清零，**任何新增违规都会直接挂掉测试**——不要绕过守卫，该加 token 就加在 `lib/theme/`。
+- **组件 visual 变更**：更新 golden（`fvm flutter test test/widgets/common/ --update-goldens`）并人工目检 PNG；页面级变更用 test-mode 截图做亮/暗双主题审计（Gallery 页：`open_design_gallery` 指令）。
+- **收尾同步**：视觉相关改动提交前更新 `docs/DESIGN_SYSTEM.md` 状态行与 `docs/CHANGELOG.md`。
+
+---
+
 ## 文档索引
 
 `/docs` 按功能分类存放详细文档：

@@ -4,10 +4,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../providers/providers.dart';
+import '../../theme/app_colors.dart';
 import '../../theme/app_metrics.dart';
+import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
 import '../../utils/app_logger.dart';
-import '../../utils/constants.dart';
 import '../../widgets/common/app_divider.dart';
 
 /// About Screen - Displays app information and branding
@@ -57,7 +58,7 @@ class AboutScreen extends ConsumerWidget {
                       ..shader = LinearGradient(
                         colors: [
                           colorScheme.primary,
-                          const Color(0xFFEC4899),
+                          AppColors.accentPink,
                         ],
                       ).createShader(
                         const Rect.fromLTWH(0, 0, 200, 50),
@@ -81,7 +82,7 @@ class AboutScreen extends ConsumerWidget {
                   context,
                   title: 'Version',
                   content: ref.watch(appVersionProvider).valueOrNull ??
-                      AppConstants.appVersion,
+                      kFallbackAppVersion,
                   icon: Icons.info_outline,
                 ),
                 const SizedBox(height: 16),
@@ -247,7 +248,7 @@ class AboutScreen extends ConsumerWidget {
                         height: 6,
                         decoration: BoxDecoration(
                           color: context.appTheme.brand,
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: AppMetrics.br4,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -478,9 +479,8 @@ class AboutScreen extends ConsumerWidget {
         const SizedBox(height: 8),
         Text(
           '© 2026 Hopp. All rights reserved.',
-          style: theme.textTheme.bodySmall?.copyWith(
+          style: AppTextStyles.tiny11.copyWith(
             color: context.appTheme.textTertiary,
-            fontSize: 11,
           ),
         ),
         const SizedBox(height: 8),
@@ -490,10 +490,10 @@ class AboutScreen extends ConsumerWidget {
             gradient: LinearGradient(
               colors: [
                 colorScheme.primary.withValues(alpha: 0.1),
-                const Color(0xFFEC4899).withValues(alpha: 0.1),
+                AppColors.accentPink.withValues(alpha: 0.1),
               ],
             ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppMetrics.br10,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -506,10 +506,9 @@ class AboutScreen extends ConsumerWidget {
               const SizedBox(width: 6),
               Text(
                 'Powered by AI · Built with Flutter',
-                style: theme.textTheme.bodySmall?.copyWith(
+                style: AppTextStyles.tiny11.copyWith(
                   color: context.appTheme.brand,
                   fontWeight: FontWeight.w500,
-                  fontSize: 11,
                 ),
               ),
             ],

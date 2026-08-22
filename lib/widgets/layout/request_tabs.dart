@@ -6,9 +6,9 @@ import '../../models/request_tab.dart';
 import '../../providers/providers.dart';
 import '../../utils/app_logger.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_metrics.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
-import '../../utils/constants.dart' hide AppColors, AppTextStyles;
 
 /// 请求标签栏组件
 ///
@@ -70,7 +70,7 @@ class RequestTabs extends ConsumerWidget with LogMixin {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: isActive ? AppColors.brand : Colors.transparent,
+                color: isActive ? AppColors.brand : AppColors.transparent,
                 width: 2,
               ),
               right: BorderSide(
@@ -112,10 +112,10 @@ class RequestTabs extends ConsumerWidget with LogMixin {
               const SizedBox(width: 4),
               // Close button（透明底，hover 显现）
               Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                color: AppColors.transparent,
+                borderRadius: AppMetrics.br4,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                  borderRadius: AppMetrics.br4,
                   hoverColor: appTheme.surfaceVariant,
                   onTap: () => _closeTab(ref, tab),
                   child: SizedBox(

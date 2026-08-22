@@ -10,7 +10,9 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../utils/constants.dart';
+import '../../theme/app_metrics.dart';
+import '../../theme/app_text_styles.dart';
+import '../../theme/app_theme_data.dart';
 
 class AppPopupMenu {
   AppPopupMenu._();
@@ -30,7 +32,7 @@ class AppPopupMenu {
   /// 菜单容器形状（圆角 + 细边框）
   static RoundedRectangleBorder menuShape(ThemeData theme) {
     return RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(AppConstants.radiusM),
+      borderRadius: AppMetrics.br6,
       side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5)),
     );
   }
@@ -53,7 +55,7 @@ class AppPopupMenu {
     Color? color,
     FontWeight? fontWeight,
   }) {
-    return AppTextStyles.caption.copyWith(
+    return AppTextStyles.caption12.copyWith(
       color: color ?? theme.colorScheme.onSurface,
       fontWeight: fontWeight ?? FontWeight.w500,
     );
@@ -125,8 +127,8 @@ class AppPopupSelectEntry<T> {
 /// 触发器为「文字 + 下拉箭头」，弹出菜单复用 [AppPopupMenu] 统一容器与
 /// 菜单项样式，当前值在菜单中以选中态（primary + w600）高亮。
 ///
-/// - [boxed] = false：无边框紧凑触发器（表格单元格内，如变量类型）
-/// - [boxed] = true：带边框触发器（对话框表单，菜单宽度与触发器一致）
+/// - [boxed] = false：无边框紧凑触发器（工具栏等极简场景）
+/// - [boxed] = true：带边框触发器（表单 / 表格单元格，菜单宽度与触发器一致）
 class AppPopupSelect<T> extends StatelessWidget {
   const AppPopupSelect({
     super.key,
@@ -135,7 +137,8 @@ class AppPopupSelect<T> extends StatelessWidget {
     required this.onSelected,
     this.hint,
     this.boxed = false,
-    this.fontSize = 12,
+    this.compact = false,
+    this.textStyle,
   });
 
   /// 当前值；为 null 或不匹配任何项时显示 [hint]
@@ -153,12 +156,16 @@ class AppPopupSelect<T> extends StatelessWidget {
   /// 是否使用带边框的表单触发器
   final bool boxed;
 
-  /// 触发器文字字号
-  final double fontSize;
+  /// 紧凑模式（仅 [boxed] 时生效）：触发器高 28 而非 32，与
+  /// AppTextField compact 对齐（表格行内场景）
+  final bool compact;
+
+  /// 触发器文字样式（默认 [AppTextStyles.caption12]）
+  final TextStyle? textStyle;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final t = context.appTheme;
 
     String? selectedLabel;
     for (final entry in items) {
@@ -175,33 +182,37 @@ class AppPopupSelect<T> extends StatelessWidget {
 
         return PopupMenuButton<T>(
           tooltip: '',
-          offset: Offset(0, boxed ? 34 : 22),
+          offset: Offset(0, boxed ? (compact ? 30 : 34) : 22),
           constraints: BoxConstraints(
             minWidth: triggerWidth ?? 120,
             maxWidth: triggerWidth ?? 280,
           ),
-          shape: AppPopupMenu.menuShape(theme),
+          shape: AppPopupMenu.menuShape(Theme.of(context)),
           elevation: AppPopupMenu.menuElevation,
-          color: AppPopupMenu.menuColor(theme),
+          color: AppPopupMenu.menuColor(Theme.of(context)),
           onSelected: onSelected,
           itemBuilder: (context) => [
             for (final entry in items)
               AppPopupMenu.textItem(
-                theme: theme,
+                theme: Theme.of(context),
                 value: entry.value,
                 label: entry.label,
                 selected: entry.value == value,
               ),
           ],
+          // boxed 触发器规格与 AppTextField 对齐：高 32（compact 28）、
+          // 底 background、边 borderStrong、圆角 6
           child: Container(
+            height: boxed ? (compact ? 28.0 : 32.0) : null,
             padding: EdgeInsets.symmetric(
               horizontal: boxed ? 10 : 4,
-              vertical: boxed ? 8 : 2,
+              vertical: boxed ? 0 : 2,
             ),
             decoration: boxed
                 ? BoxDecoration(
-                    border: Border.all(color: theme.colorScheme.outlineVariant),
-                    borderRadius: BorderRadius.circular(AppConstants.radiusM),
+                    color: t.background,
+                    border: Border.all(color: t.borderStrong),
+                    borderRadius: AppMetrics.br6,
                   )
                 : null,
             child: Row(
@@ -211,18 +222,17 @@ class AppPopupSelect<T> extends StatelessWidget {
                     selectedLabel ?? hint ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: fontSize,
+                    style: (textStyle ?? AppTextStyles.caption12).copyWith(
                       color: selectedLabel != null
-                          ? theme.colorScheme.onSurface
-                          : theme.colorScheme.outline,
+                          ? t.textPrimary
+                          : t.textTertiary,
                     ),
                   ),
                 ),
                 Icon(
                   Icons.arrow_drop_down,
                   size: 18,
-                  color: theme.colorScheme.outline,
+                  color: t.textTertiary,
                 ),
               ],
             ),

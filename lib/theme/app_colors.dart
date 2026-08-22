@@ -36,6 +36,9 @@ class AppColors {
   /// 5xx 状态码专用（error 加深一档）
   static const Color errorStrong = Color(0xFFB91C1C);
 
+  /// 点缀粉（"Built with love" 徽章等装饰场景）
+  static const Color accentPink = Color(0xFFEC4899);
+
   // ========== HTTP 方法色（亮暗通用） ==========
   static const Color methodGet = info;
   static const Color methodPost = success;

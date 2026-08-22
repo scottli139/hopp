@@ -546,6 +546,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `resolve_text` | 解析文本中的 {{variable}}（验证替换引擎与动态变量） |
 | `get_resolved_request` | 获取活动请求应用变量替换后的结果 |
 | `trigger_environment_dialog` | 打开环境管理对话框 |
+| `open_design_gallery` | 打开 Design Gallery 页（全 token/组件双主题展示） |
 | `full_test` | 完整测试流程 |
 
 ### UI 测试脚本列表

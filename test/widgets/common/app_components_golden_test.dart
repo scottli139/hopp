@@ -6,6 +6,9 @@ import 'package:hopp/widgets/common/app_button.dart';
 import 'package:hopp/widgets/common/app_card.dart';
 import 'package:hopp/widgets/common/app_controls.dart';
 import 'package:hopp/widgets/common/app_dialog.dart';
+import 'package:hopp/widgets/common/app_divider.dart';
+import 'package:hopp/widgets/common/app_empty_state.dart';
+import 'package:hopp/widgets/common/app_popup_menu.dart';
 import 'package:hopp/widgets/common/app_tabs.dart';
 import 'package:hopp/widgets/common/app_text_field.dart';
 
@@ -14,7 +17,8 @@ import 'package:hopp/widgets/common/app_text_field.dart';
 /// 更新基线图：fvm flutter test test/widgets/common/ --update-goldens
 /// 样式回归时本文件变红，先对照 goldens/ 确认是预期变化再更新。
 void main() {
-  Widget wrap(Widget child, {required bool dark, Size size = const Size(420, 320)}) {
+  Widget wrap(Widget child,
+      {required bool dark, Size size = const Size(420, 320)}) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: dark ? AppTheme.dark() : AppTheme.light(),
@@ -275,6 +279,130 @@ void main() {
         ),
         'app_badge',
         size: const Size(420, 160),
+      );
+    });
+  });
+
+  group('AppPopupSelect', () {
+    // 只截触发器形态：弹出层经由 Overlay 渲染，在 golden 环境中
+    // 位置/尺寸不稳定，因此不覆盖 AppPopupMenu 弹出面板本身。
+    testWidgets('golden', (tester) async {
+      const entries = [
+        AppPopupSelectEntry(value: 'get', label: 'GET'),
+        AppPopupSelectEntry(value: 'post', label: 'POST'),
+        AppPopupSelectEntry(value: 'put', label: 'PUT'),
+      ];
+      await expectGolden(
+        tester,
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                SizedBox(
+                  width: 120,
+                  child: AppPopupSelect<String>(
+                    value: 'post',
+                    items: entries,
+                    onSelected: (_) {},
+                  ),
+                ),
+                const SizedBox(width: 24),
+                SizedBox(
+                  width: 120,
+                  child: AppPopupSelect<String>(
+                    value: null,
+                    hint: 'Method',
+                    items: entries,
+                    onSelected: (_) {},
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 20),
+              AppPopupSelect<String>(
+                value: 'get',
+                items: entries,
+                boxed: true,
+                onSelected: (_) {},
+              ),
+            ],
+          ),
+        ),
+        'app_popup_select',
+        size: const Size(420, 160),
+      );
+    });
+  });
+
+  group('AppDivider', () {
+    testWidgets('golden', (tester) async {
+      await expectGolden(
+        tester,
+        const Padding(
+          padding: EdgeInsets.all(24),
+          // stretch：水平分隔线需要占满宽度（否则 SizedBox 宽度塌缩为 0）
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppDivider(),
+              SizedBox(height: 20),
+              AppDivider(subtle: true),
+              SizedBox(height: 20),
+              AppDivider(height: 16),
+              SizedBox(height: 20),
+              SizedBox(
+                height: 32,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AppDivider.vertical(),
+                    SizedBox(width: 20),
+                    AppDivider.vertical(subtle: true),
+                    SizedBox(width: 20),
+                    AppDivider.vertical(width: 8),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        'app_divider',
+        size: const Size(420, 180),
+      );
+    });
+  });
+
+  group('AppEmptyState', () {
+    testWidgets('golden', (tester) async {
+      await expectGolden(
+        tester,
+        Column(
+          children: [
+            Expanded(
+              child: AppEmptyState(
+                icon: Icons.inbox_outlined,
+                title: 'No collections yet',
+                subtitle: 'Create a collection to organize your requests.',
+                action: AppButton.primary(
+                  label: 'New Collection',
+                  size: AppButtonSize.small,
+                  onPressed: () {},
+                ),
+              ),
+            ),
+            const AppDivider(),
+            const Expanded(
+              child: AppEmptyState(
+                icon: Icons.search_off,
+                title: 'No results',
+              ),
+            ),
+          ],
+        ),
+        'app_empty_state',
+        size: const Size(420, 360),
       );
     });
   });

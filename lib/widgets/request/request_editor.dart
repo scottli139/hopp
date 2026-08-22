@@ -12,7 +12,6 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_metrics.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
-import '../../utils/constants.dart' hide AppColors, AppTextStyles;
 import '../../utils/testing/ui_test_mode.dart';
 import '../../utils/url_params_sync.dart';
 import '../common/app_badge.dart';
@@ -247,7 +246,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 bottom: BorderSide(color: appTheme.borderStrong),
               ),
               borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(AppConstants.radiusM),
+                left: Radius.circular(AppMetrics.radius6),
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -318,7 +317,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   // 非 focus 状态的边框
                   enabledBorder: OutlineInputBorder(
                     borderRadius: const BorderRadius.horizontal(
-                      right: Radius.circular(AppConstants.radiusM),
+                      right: Radius.circular(AppMetrics.radius6),
                     ),
                     borderSide: BorderSide(
                       color: appTheme.borderStrong,
@@ -328,7 +327,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   // Focus 状态的品牌色边框
                   focusedBorder: OutlineInputBorder(
                     borderRadius: const BorderRadius.horizontal(
-                      right: Radius.circular(AppConstants.radiusM),
+                      right: Radius.circular(AppMetrics.radius6),
                     ),
                     borderSide: BorderSide(
                       color: appTheme.brand,
@@ -364,12 +363,12 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               ),
             ),
           ),
-          const SizedBox(width: AppConstants.spaceM),
+          const SizedBox(width: AppMetrics.space12),
           // 未定义变量警告（存在 {{var}} 无法解析时显示）
           ..._buildUnresolvedWarning(context, ref),
           // Save button - always clickable
           _buildSaveButton(context, ref, request),
-          const SizedBox(width: AppConstants.spaceS),
+          const SizedBox(width: AppMetrics.space8),
           // Send button
           _buildSendButton(context, ref, request),
         ],
@@ -396,7 +395,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           color: theme.colorScheme.error,
         ),
       ),
-      const SizedBox(width: AppConstants.spaceS),
+      const SizedBox(width: AppMetrics.space8),
     ];
   }
 
@@ -622,7 +621,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     final theme = Theme.of(context);
 
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         onTap: () {
           // 先把当前 controller 中的值同步到 items
@@ -741,16 +740,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   border: InputBorder.none,
-                  hintStyle: TextStyle(
-                    fontSize: 12,
+                  hintStyle: AppTextStyles.caption12.copyWith(
                     color: theme.colorScheme.outline.withValues(alpha: 0.7),
                   ),
                 ),
-                style: TextStyle(
-                  fontSize: 12,
+                style: AppTextStyles.caption12.copyWith(
                   color: isCommonHeader
-                      ? theme.colorScheme.onSurface
-                      : theme.colorScheme.onSurface,
+                      ? context.appTheme.textPrimary
+                      : context.appTheme.textPrimary,
                 ),
                 onChanged: showAutocomplete
                     ? (value) {
@@ -805,16 +802,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 border: InputBorder.none,
-                hintStyle: TextStyle(
-                  fontSize: 12,
+                hintStyle: AppTextStyles.caption12.copyWith(
                   color: theme.colorScheme.outline.withValues(alpha: 0.5),
                 ),
               ),
-              style: TextStyle(
-                fontSize: 12,
+              style: AppTextStyles.caption12.copyWith(
                 color: _isCalculatedValue(item.key)
                     ? theme.colorScheme.outline
-                    : theme.colorScheme.onSurface,
+                    : context.appTheme.textPrimary,
               ),
               onSubmitted: (_) {
                 // 回车时更新 provider（从 controller 读取最新值）
@@ -970,7 +965,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                             Expanded(
                               child: Text(
                                 header,
-                                style: const TextStyle(fontSize: 12),
+                                style: AppTextStyles.caption12,
                               ),
                             ),
                           ],
@@ -1025,8 +1020,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         // Body type selector - Postman 风格 Radio 组
         Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.spaceL,
-            vertical: AppConstants.spaceS,
+            horizontal: AppMetrics.space16,
+            vertical: AppMetrics.space8,
           ),
           decoration: BoxDecoration(
             color: context.appTheme.background,
@@ -1079,8 +1074,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(AppConstants.radiusL),
+              color: context.appTheme.surfaceVariant,
+              borderRadius: AppMetrics.br8,
             ),
             child: Icon(
               Icons.block,
@@ -1268,10 +1263,10 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     final theme = Theme.of(context);
 
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppMetrics.br4,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Row(
@@ -1309,7 +1304,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 option.label,
                 style: AppTextStyles.caption12.copyWith(
                   color: isSelected
-                      ? theme.colorScheme.onSurface
+                      ? context.appTheme.textPrimary
                       : theme.colorScheme.onSurfaceVariant,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
@@ -1333,8 +1328,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     return Container(
       margin: const EdgeInsets.only(left: 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppConstants.radiusS),
+        color: context.appTheme.surfaceVariant,
+        borderRadius: AppMetrics.br4,
         border: Border.all(
           color: theme.colorScheme.outlineVariant,
         ),
@@ -1380,7 +1375,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   Text(
                     request.rawContentType.toUpperCase(),
                     style: AppTextStyles.caption12.copyWith(
-                      color: theme.colorScheme.onSurface,
+                      color: context.appTheme.textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1457,7 +1452,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       thumbVisibility: true,
       child: SingleChildScrollView(
         controller: _settingsScrollController,
-        padding: const EdgeInsets.all(AppConstants.spaceL),
+        padding: const EdgeInsets.all(AppMetrics.space16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1478,14 +1473,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     _updateRequest(ref, updatedRequest);
                   },
                 ),
-                const SizedBox(height: AppConstants.spaceM),
+                const SizedBox(height: AppMetrics.space12),
                 // 提示信息
                 Container(
-                  padding: const EdgeInsets.all(AppConstants.spaceM),
+                  padding: const EdgeInsets.all(AppMetrics.space12),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(AppConstants.radiusM),
+                    color:
+                        context.appTheme.surfaceVariant.withValues(alpha: 0.5),
+                    borderRadius: AppMetrics.br6,
                   ),
                   child: Row(
                     children: [
@@ -1494,7 +1489,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                         size: 16,
                         color: theme.colorScheme.outline,
                       ),
-                      const SizedBox(width: AppConstants.spaceS),
+                      const SizedBox(width: AppMetrics.space8),
                       Expanded(
                         child: Text(
                           'Disable this option to allow self-signed certificates or bypass certificate errors for testing purposes.',
@@ -1508,7 +1503,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 ),
               ],
             ),
-            const SizedBox(height: AppConstants.spaceXL),
+            const SizedBox(height: AppMetrics.space24),
             // 重定向设置
             _buildSettingsSection(
               context: context,
@@ -1526,7 +1521,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     _updateRequest(ref, updatedRequest);
                   },
                 ),
-                const SizedBox(height: AppConstants.spaceM),
+                const SizedBox(height: AppMetrics.space12),
                 // Max redirects (only show when followRedirects is enabled)
                 if (request.followRedirects)
                   _buildNumberInputTile(
@@ -1546,7 +1541,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   ),
               ],
             ),
-            const SizedBox(height: AppConstants.spaceXL),
+            const SizedBox(height: AppMetrics.space24),
             // 更多设置将在未来版本中实现
             _buildSettingsSection(
               context: context,
@@ -1583,15 +1578,15 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: AppConstants.spaceM),
+        const SizedBox(height: AppMetrics.space12),
         Container(
-          padding: const EdgeInsets.all(AppConstants.spaceL),
+          padding: const EdgeInsets.all(AppMetrics.space16),
           decoration: BoxDecoration(
             color: context.appTheme.surface,
             border: Border.all(
               color: context.appTheme.border.withValues(alpha: 0.5),
             ),
-            borderRadius: BorderRadius.circular(AppConstants.radiusM),
+            borderRadius: AppMetrics.br6,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1643,7 +1638,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             Text(
               value ? 'ON' : 'OFF',
               style: AppTextStyles.caption12.copyWith(
-                color: value ? AppColors.brand : theme.colorScheme.outline,
+                color: value ? AppColors.brand : context.appTheme.textTertiary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1727,12 +1722,12 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             ],
           ),
         ),
-        const SizedBox(width: AppConstants.spaceM),
+        const SizedBox(width: AppMetrics.space12),
         // Number input with +/- buttons
         Container(
           decoration: BoxDecoration(
             border: Border.all(color: theme.colorScheme.outlineVariant),
-            borderRadius: BorderRadius.circular(AppConstants.radiusS),
+            borderRadius: AppMetrics.br4,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1748,7 +1743,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     Icons.remove,
                     size: 16,
                     color: value > min
-                        ? theme.colorScheme.onSurface
+                        ? context.appTheme.textPrimary
                         : theme.colorScheme.outline.withValues(alpha: 0.3),
                   ),
                 ),
@@ -1782,7 +1777,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     Icons.add,
                     size: 16,
                     color: value < max
-                        ? theme.colorScheme.onSurface
+                        ? context.appTheme.textPrimary
                         : theme.colorScheme.outline.withValues(alpha: 0.3),
                   ),
                 ),
@@ -1851,7 +1846,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             duration: const Duration(seconds: 3),
             action: SnackBarAction(
               label: 'Retry',
-              textColor: Colors.white,
+              textColor: AppColors.onBrand,
               onPressed: () => _saveRequest(ref, request),
             ),
           ),

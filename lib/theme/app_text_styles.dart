@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// 应用文字样式：7 档收敛（20/16/13/12/11/10 + code 12）。
+/// 应用文字样式：8 档收敛（20/16/13/12/11/10 + code 12/11）。
 ///
 /// 业务代码禁止内联 fontSize 字面量（守卫规则 G3），统一从这里取，
 /// 或在其基础上 copyWith（仅限字重 / 颜色等非字号属性）。
@@ -55,6 +55,14 @@ class AppTextStyles {
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.45,
+    fontFamily: 'Menlo',
+  );
+
+  /// 11 w400 Menlo —— 密集代码场景（KV 行 / 头信息等）
+  static const code11 = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
     fontFamily: 'Menlo',
   );
 }

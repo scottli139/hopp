@@ -7,12 +7,12 @@ import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../providers/providers.dart';
 import '../../screens/about/about_screen.dart';
+import '../../screens/design_gallery/design_gallery_screen.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_metrics.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
 import '../../utils/app_logger.dart';
-import '../../utils/constants.dart' hide AppColors, AppTextStyles;
 import '../../utils/testing/ui_test_mode.dart';
 import '../../widgets/import/curl_import_dialog.dart';
 import '../../widgets/import_export/export_dialog.dart';
@@ -108,6 +108,17 @@ class _SidebarState extends ConsumerState<Sidebar> {
       }
     });
 
+    // Listen to open design gallery trigger
+    ref.listen<int?>(uiTestDesignGalleryProvider, (previous, current) {
+      if (current != null && current != previous) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const DesignGalleryScreen(),
+          ),
+        );
+      }
+    });
+
     // Listen to environment manager dialog trigger
     ref.listen<int?>(uiTestEnvironmentDialogProvider, (previous, current) {
       if (current != null && current != previous) {
@@ -181,8 +192,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
 
   Widget _buildHeader(BuildContext context) {
     return Container(
-      height: AppConstants.appBarHeight,
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spaceS),
+      height: AppMetrics.height48,
+      padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space8),
       child: Row(
         children: [
           // Brand Logo
@@ -190,7 +201,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
           const Spacer(),
           // Quick add button
           _buildQuickAddButton(context),
-          const SizedBox(width: AppConstants.spaceXS),
+          const SizedBox(width: AppMetrics.space4),
           // Actions menu
           _buildActionsMenu(context),
         ],
@@ -367,7 +378,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           borderRadius: AppMetrics.br4,
           child: MouseRegion(
             onEnter: (_) =>
@@ -388,24 +399,24 @@ class _SidebarState extends ConsumerState<Sidebar> {
               child: Container(
                 height: AppMetrics.height28,
                 padding: EdgeInsets.only(
-                  left: AppConstants.spaceS + depth * AppConstants.spaceM,
-                  right: AppConstants.spaceS,
+                  left: AppMetrics.space8 + depth * AppMetrics.space12,
+                  right: AppMetrics.space8,
                 ),
                 child: Row(
                   children: [
                     AnimatedRotation(
                       turns: isExpanded ? 0.25 : 0,
-                      duration: AppConstants.animFast,
+                      duration: AppMetrics.animFast,
                       child: Icon(
                         Icons.chevron_right,
                         size: 16,
                         color: collection.children.isEmpty &&
                                 collection.requests.isEmpty
-                            ? Colors.transparent
+                            ? AppColors.transparent
                             : context.appTheme.textTertiary,
                       ),
                     ),
-                    const SizedBox(width: AppConstants.spaceXS),
+                    const SizedBox(width: AppMetrics.space4),
                     Icon(
                       isExpanded ? Icons.folder_open : Icons.folder,
                       size: 16,
@@ -413,7 +424,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
                           ? context.appTheme.brand
                           : context.appTheme.brand.withValues(alpha: 0.7),
                     ),
-                    const SizedBox(width: AppConstants.spaceXS),
+                    const SizedBox(width: AppMetrics.space4),
                     Expanded(
                       child: Text(
                         collection.name,
@@ -455,7 +466,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
           ),
           crossFadeState:
               isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-          duration: AppConstants.animFast,
+          duration: AppMetrics.animFast,
         ),
       ],
     );
@@ -487,7 +498,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
         }
 
         return Material(
-          color: isActive ? context.appTheme.brandSoft : Colors.transparent,
+          color: isActive ? context.appTheme.brandSoft : AppColors.transparent,
           borderRadius: AppMetrics.br4,
           child: MouseRegion(
             onEnter: (_) => setState(() => _hoveredRequestId = request.id),
@@ -510,8 +521,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
               child: Container(
                 height: AppMetrics.height28,
                 padding: EdgeInsets.only(
-                  left: AppConstants.spaceS + depth * AppConstants.spaceM + 12,
-                  right: AppConstants.spaceS,
+                  left: AppMetrics.space8 + depth * AppMetrics.space12 + 12,
+                  right: AppMetrics.space8,
                 ),
                 child: Row(
                   children: [
@@ -588,18 +599,18 @@ class _SidebarState extends ConsumerState<Sidebar> {
           contentPadding:
               const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppMetrics.br4,
             borderSide:
                 BorderSide(color: AppColors.brand.withValues(alpha: 0.5)),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppMetrics.br4,
             borderSide:
                 BorderSide(color: AppColors.brand.withValues(alpha: 0.3)),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
-            borderSide: const BorderSide(color: AppColors.brand),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: AppMetrics.br4,
+            borderSide: BorderSide(color: AppColors.brand),
           ),
         ),
         onSubmitted: (_) => _saveRequestName(context, request, setState),
@@ -645,16 +656,16 @@ class _SidebarState extends ConsumerState<Sidebar> {
     final theme = Theme.of(context);
 
     return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+      color: AppColors.transparent,
+      borderRadius: AppMetrics.br4,
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppConstants.radiusS),
+        borderRadius: AppMetrics.br4,
         onTap: () {},
         child: PopupMenuButton<String>(
           icon: Icon(
             Icons.more_vert,
             size: 14,
-            color: theme.colorScheme.outline,
+            color: context.appTheme.textTertiary,
           ),
           offset: const Offset(0, 24),
           constraints: const BoxConstraints(minWidth: 140),
@@ -852,16 +863,16 @@ class _SidebarState extends ConsumerState<Sidebar> {
     final theme = Theme.of(context);
 
     return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(AppConstants.radiusS),
+      color: AppColors.transparent,
+      borderRadius: AppMetrics.br4,
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppConstants.radiusS),
+        borderRadius: AppMetrics.br4,
         onTap: () {}, // PopupMenuButton will handle the tap
         child: PopupMenuButton<String>(
           icon: Icon(
             Icons.more_vert,
             size: 16,
-            color: theme.colorScheme.outline,
+            color: context.appTheme.textTertiary,
           ),
           offset: const Offset(0, 28),
           constraints: const BoxConstraints(minWidth: 160),
@@ -1060,7 +1071,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
     final theme = Theme.of(context);
 
     return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert, size: 18, color: theme.colorScheme.outline),
+      icon:
+          Icon(Icons.more_vert, size: 18, color: context.appTheme.textTertiary),
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
       offset: const Offset(0, 28),
@@ -1191,7 +1203,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
                 ..shader = LinearGradient(
                   colors: [
                     colorScheme.primary,
-                    const Color(0xFFEC4899),
+                    AppColors.accentPink,
                   ],
                 ).createShader(
                   const Rect.fromLTWH(0, 0, 100, 30),
@@ -1203,7 +1215,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
           Text(
             'Hop to your APIs',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurface.withValues(alpha: 0.6),
+              color: context.appTheme.textPrimary.withValues(alpha: 0.6),
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -1214,8 +1226,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
           _buildInfoRow(
             context,
             'Version',
-            ref.watch(appVersionProvider).valueOrNull ??
-                AppConstants.appVersion,
+            ref.watch(appVersionProvider).valueOrNull ?? kFallbackAppVersion,
           ),
           const SizedBox(height: 8),
           _buildInfoRow(context, 'Platform', 'macOS'),
@@ -1246,9 +1257,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
           const SizedBox(height: 4),
           Text(
             '© 2026 Hopp. All rights reserved.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurface.withValues(alpha: 0.4),
-              fontSize: 11,
+            style: AppTextStyles.tiny11.copyWith(
+              color: context.appTheme.textPrimary.withValues(alpha: 0.4),
             ),
           ),
         ],
@@ -1275,7 +1285,6 @@ class _SidebarState extends ConsumerState<Sidebar> {
 
   Widget _buildInfoRow(BuildContext context, String label, String value) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1283,14 +1292,14 @@ class _SidebarState extends ConsumerState<Sidebar> {
         Text(
           '$label: ',
           style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurface.withValues(alpha: 0.6),
+            color: context.appTheme.textPrimary.withValues(alpha: 0.6),
           ),
         ),
         Text(
           value,
           style: theme.textTheme.bodySmall?.copyWith(
             fontWeight: FontWeight.w600,
-            color: colorScheme.onSurface,
+            color: context.appTheme.textPrimary,
           ),
         ),
       ],

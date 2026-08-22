@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopp/models/environment.dart';
 import 'package:hopp/providers/core/providers.dart';
+import 'package:hopp/widgets/common/app_popup_menu.dart';
+import 'package:hopp/widgets/common/app_text_field.dart';
 import 'package:hopp/widgets/environment/environment_manager_dialog.dart';
 import 'package:mockito/mockito.dart';
 
@@ -230,6 +232,61 @@ void main() {
 
       verifyNever(mockStorageService.saveEnvironment(any));
       expect(find.byKey(const Key('environment_manager_dialog')), findsNothing);
+    });
+
+    /// 高度一致性回归（UI 审计发现）：
+    /// 旧实现 InputDecorator 描边不随外层 SizedBox 撑开，导致同页输入框
+    /// 出现 16/18/24/28 多种高度。新实现显式盒子，渲染盒 == 绘制盒。
+    testWidgets('variable row controls share uniform heights', (tester) async {
+      const envWithSecret = Environment(
+        id: 'env-sec',
+        name: 'Secrets',
+        variables: [
+          EnvironmentVariable(id: 'v1', key: 'host', value: 'x'),
+          EnvironmentVariable(
+            id: 'v2',
+            key: 'token',
+            value: 'y',
+            type: VariableType.secret,
+          ),
+        ],
+      );
+      when(mockStorageService.getEnvironments())
+          .thenAnswer((_) async => [envWithSecret]);
+
+      final container = buildContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(buildTestWidget(container));
+      await openDialog(tester);
+
+      // 名称字段：独立表单字段规格 32
+      final nameField = find.ancestor(
+        of: find.byKey(const Key('environment_name_field')),
+        matching: find.byType(AppTextField),
+      );
+      expect(tester.getSize(nameField).height, 32);
+
+      // 行内控件统一 28（Key/Value 输入框 + secret 带显隐按钮 + Type 下拉）
+      final rowFields = find.descendant(
+        of: find.byKey(const Key('variable_row_v1')),
+        matching: find.byType(AppTextField),
+      );
+      final secretRowFields = find.descendant(
+        of: find.byKey(const Key('variable_row_v2')),
+        matching: find.byType(AppTextField),
+      );
+      for (final f in [rowFields, secretRowFields]) {
+        expect(f, findsNWidgets(2));
+        for (final e in f.evaluate()) {
+          expect(e.size!.height, 28, reason: 'row field must be 28pt');
+        }
+      }
+      final selects = find.byType(AppPopupSelect<VariableType>);
+      expect(selects, findsNWidgets(2));
+      for (final e in selects.evaluate()) {
+        expect(e.size!.height, 28, reason: 'type select must be 28pt');
+      }
     });
   });
 }

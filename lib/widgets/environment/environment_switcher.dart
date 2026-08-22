@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/providers.dart';
-import '../../utils/constants.dart';
+import '../../theme/app_metrics.dart';
+import '../../theme/app_theme_data.dart';
 import '../common/app_button.dart';
 import '../common/app_popup_menu.dart';
 import 'environment_manager_dialog.dart';
@@ -21,24 +22,29 @@ class EnvironmentSwitcher extends ConsumerWidget {
     final activeEnv = ref.watch(activeEnvironmentProvider);
     final unresolved = ref.watch(unresolvedVariablesProvider);
 
+    final appTheme = context.appTheme;
     final environments = environmentsAsync.valueOrNull ?? [];
 
+    // 盒式选择器：30px 高、描边圆角（设计原型 .sb-env 规格）
     return Container(
-      height: 36,
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spaceS),
+      height: 30,
+      margin: const EdgeInsets.only(
+        left: AppMetrics.space8,
+        right: AppMetrics.space8,
+        bottom: AppMetrics.space8,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space8),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: theme.dividerColor),
-        ),
+        color: appTheme.background,
+        border: Border.all(color: appTheme.border),
+        borderRadius: AppMetrics.br6,
       ),
       child: Row(
         children: [
           Icon(
             Icons.public,
             size: 14,
-            color: activeEnv != null
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outline,
+            color: activeEnv != null ? appTheme.brand : appTheme.textTertiary,
           ),
           const SizedBox(width: 6),
           // 环境选择弹出菜单
@@ -63,7 +69,7 @@ class EnvironmentSwitcher extends ConsumerWidget {
                   value: null,
                   label: 'No Environment',
                   selected: activeEnv == null,
-                  color: theme.colorScheme.outline,
+                  color: appTheme.textTertiary,
                 ),
                 for (final env in environments)
                   AppPopupMenu.textItem(
@@ -84,15 +90,15 @@ class EnvironmentSwitcher extends ConsumerWidget {
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 12,
                         color: activeEnv != null
-                            ? theme.colorScheme.onSurface
-                            : theme.colorScheme.outline,
+                            ? appTheme.textPrimary
+                            : appTheme.textTertiary,
                       ),
                     ),
                   ),
                   Icon(
                     Icons.arrow_drop_down,
                     size: 18,
-                    color: theme.colorScheme.outline,
+                    color: appTheme.textTertiary,
                   ),
                 ],
               ),
@@ -106,7 +112,7 @@ class EnvironmentSwitcher extends ConsumerWidget {
                 key: const Key('unresolved_variables_warning'),
                 Icons.warning_amber_rounded,
                 size: 16,
-                color: theme.colorScheme.error,
+                color: appTheme.error,
               ),
             ),
           // 管理环境按钮
@@ -114,6 +120,8 @@ class EnvironmentSwitcher extends ConsumerWidget {
             key: const Key('manage_environments_button'),
             icon: Icons.tune,
             tooltip: 'Manage Environments',
+            size: 24,
+            iconSize: 14,
             onPressed: () => showEnvironmentManagerDialog(context),
           ),
         ],

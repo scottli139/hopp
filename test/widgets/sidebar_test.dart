@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +10,16 @@ import 'package:hopp/widgets/layout/sidebar.dart';
 import 'package:mockito/mockito.dart';
 
 import '../mocks/service_mocks.mocks.dart';
+
+/// 模拟鼠标悬停到指定 widget 上
+/// （侧栏行的 ⋮ 菜单按钮按设计规范 hover 才显现，点击前需先悬停）
+Future<void> hoverOver(WidgetTester tester, Finder finder) async {
+  final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+  await gesture.addPointer(location: Offset.zero);
+  addTearDown(gesture.removePointer);
+  await gesture.moveTo(tester.getCenter(finder));
+  await tester.pump();
+}
 
 void main() {
   group('Sidebar', () {
@@ -341,6 +352,9 @@ void main() {
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
 
+        // hover 集合行显现 ⋮ 按钮（设计规范：hover 才显现）
+        await hoverOver(tester, find.text('Collection with Actions'));
+
         // Collection items have their own more_vert icon for actions
         // There are multiple more_vert icons (header and each collection)
         final moreVertIcons = find.byIcon(Icons.more_vert);
@@ -409,6 +423,9 @@ void main() {
 
         await tester.pumpWidget(buildTestWidget(container: container));
         await tester.pumpAndSettle();
+
+        // hover 集合行显现 ⋮ 按钮（设计规范：hover 才显现）
+        await hoverOver(tester, find.text('Deletable Collection'));
 
         // Find collection actions menu (second more_vert icon)
         final moreVertIcons = find.byIcon(Icons.more_vert);

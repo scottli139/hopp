@@ -40,6 +40,9 @@ class AppMetrics {
   /// 宽松控件（响应信息栏等）
   static const double height36 = 36;
 
+  /// 响应信息栏（设计规范统一值）
+  static const double height38 = 38;
+
   // ========== 动画时长 ==========
   static const Duration animFast = Duration(milliseconds: 100);
   static const Duration animNormal = Duration(milliseconds: 200);

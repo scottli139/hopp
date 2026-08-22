@@ -9,11 +9,15 @@ import '../../models/key_value_pair.dart';
 import '../../providers/providers.dart';
 import '../../utils/app_logger.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_metrics.dart';
+import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
-import '../../utils/constants.dart' hide AppColors;
+import '../../utils/constants.dart' hide AppColors, AppTextStyles;
 import '../../utils/testing/ui_test_mode.dart';
 import '../../utils/url_params_sync.dart';
+import '../common/app_badge.dart';
 import '../common/app_button.dart';
+import '../common/app_empty_state.dart';
 import '../common/app_controls.dart';
 import '../common/app_popup_menu.dart';
 import '../common/app_tabs.dart';
@@ -29,7 +33,7 @@ class RequestEditor extends ConsumerStatefulWidget {
 class _RequestEditorState extends ConsumerState<RequestEditor>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _urlController = TextEditingController();
+  final _urlController = _UrlEditingController();
   final _nameController = TextEditingController();
   final _urlFocusNode = FocusNode();
   final _methodMenuController = MenuController();
@@ -82,6 +86,13 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     _tabController.addListener(_persistTabIndex);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 刷新 URL 高亮的主题色（主题切换时重建会重新取色）
+    _urlController.appTheme = context.appTheme;
+  }
+
   /// 将当前编辑器 Tab 索引持久化到 provider（动画结束后才写入）
   void _persistTabIndex() {
     if (_tabController.indexIsChanging) return;
@@ -125,7 +136,11 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     final activeTab = ref.watch(activeTabProvider);
 
     if (activeTab == null) {
-      return const Center(child: Text('Select a request'));
+      return const AppEmptyState(
+        icon: Icons.tab_outlined,
+        title: 'Select a request',
+        subtitle: 'Select a request from the sidebar or create a new one',
+      );
     }
 
     // Only update controllers when tab changes, not on every build
@@ -208,28 +223,28 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   Widget _buildUrlBar(
       BuildContext context, WidgetRef ref, HttpRequest request) {
     final theme = Theme.of(context);
-    const fontSize = 13.0;
+    final appTheme = context.appTheme;
 
     return Container(
-      padding: const EdgeInsets.all(AppConstants.spaceL),
+      padding: const EdgeInsets.all(AppMetrics.space12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: appTheme.background,
         border: Border(
-          bottom: BorderSide(color: theme.dividerColor),
+          bottom: BorderSide(color: appTheme.border),
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Method dropdown - 使用固定高度 36px
+          // Method dropdown - 统一 32px 高（设计规范）
           Container(
-            height: 36,
+            height: AppMetrics.height32,
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
+              color: appTheme.background,
               border: Border(
-                left: BorderSide(color: theme.colorScheme.outlineVariant),
-                top: BorderSide(color: theme.colorScheme.outlineVariant),
-                bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+                left: BorderSide(color: appTheme.borderStrong),
+                top: BorderSide(color: appTheme.borderStrong),
+                bottom: BorderSide(color: appTheme.borderStrong),
               ),
               borderRadius: const BorderRadius.horizontal(
                 left: Radius.circular(AppConstants.radiusM),
@@ -240,7 +255,6 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               controller: _methodMenuController,
               style: AppPopupMenu.menuStyle(theme),
               menuChildren: HttpMethod.values.map((method) {
-                final color = _getMethodColor(method.value);
                 return MenuItemButton(
                   onPressed: () {
                     _updateRequest(ref, request.copyWith(method: method));
@@ -251,23 +265,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     minimumSize: const Size(0, 32),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      method.value,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        height: 1.2,
-                      ),
-                    ),
-                  ),
+                  child: MethodBadge(method.value),
                 );
               }).toList(),
               builder: (context, controller, child) {
@@ -279,76 +277,67 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       controller.open();
                     }
                   },
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildMethodMenuItem(request.method.value,
-                            _getMethodColor(request.method.value)),
-                        Icon(
-                          Icons.arrow_drop_down,
-                          color: theme.colorScheme.outline,
-                          size: 18,
-                        ),
-                      ],
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      MethodBadge(request.method.value),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.arrow_drop_down,
+                        color: appTheme.textTertiary,
+                        size: 18,
+                      ),
+                    ],
                   ),
                 );
               },
             ),
           ),
-          // URL input - 使用固定高度 36px（包含边框和背景）
+          // URL input - 统一 32px 高（设计规范），白底 + borderStrong 描边
           Expanded(
             child: SizedBox(
-              height: 36,
+              height: AppMetrics.height32,
               child: TextField(
                 controller: _urlController,
                 focusNode: _urlFocusNode,
                 decoration: InputDecoration(
                   hintText: 'Enter URL',
-                  hintStyle: TextStyle(
-                    fontSize: fontSize,
-                    color: theme.colorScheme.outline,
+                  hintStyle: AppTextStyles.code12.copyWith(
+                    color: appTheme.textTertiary,
                     height: 1.0,
                   ),
                   // 背景色设置
                   filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest,
-                  // 调整 padding 使内容垂直居中（36px 高度 - 14px 字体）/ 2 ≈ 11px
+                  fillColor: appTheme.background,
+                  // 调整 padding 使内容垂直居中
+                  // （32px 高度 - 边框 - 12px 字体）/ 2 ≈ 9px
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 11,
+                    vertical: 9,
                   ),
-                  // 非 focus 状态的边框（灰色）
+                  // 非 focus 状态的边框
                   enabledBorder: OutlineInputBorder(
                     borderRadius: const BorderRadius.horizontal(
                       right: Radius.circular(AppConstants.radiusM),
                     ),
                     borderSide: BorderSide(
-                      color: theme.colorScheme.outlineVariant,
+                      color: appTheme.borderStrong,
                       width: 1.0,
                     ),
                   ),
-                  // Focus 状态的紫色边框
+                  // Focus 状态的品牌色边框
                   focusedBorder: OutlineInputBorder(
                     borderRadius: const BorderRadius.horizontal(
                       right: Radius.circular(AppConstants.radiusM),
                     ),
                     borderSide: BorderSide(
-                      color: AppColors.brand,
+                      color: appTheme.brand,
                       width: 1.5,
                     ),
                   ),
                 ),
-                style: TextStyle(
-                  fontSize: fontSize,
-                  color: theme.colorScheme.onSurface,
+                style: AppTextStyles.code12.copyWith(
+                  color: appTheme.textPrimary,
                   height: 1.0,
                 ),
                 onChanged: (value) {
@@ -409,29 +398,6 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       ),
       const SizedBox(width: AppConstants.spaceS),
     ];
-  }
-
-  /// 构建 Method 下拉菜单项
-  Widget _buildMethodMenuItem(String method, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        method,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: color,
-          height: 1.2,
-        ),
-      ),
-    );
   }
 
   Widget _buildSendButton(
@@ -563,19 +529,18 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     HttpRequest Function(List<KeyValuePair>) updateFn, {
     bool showAutocomplete = false,
   }) {
-    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
 
     return Column(
       children: [
-        // Header row - 参考 Postman 的表头样式
+        // Header row - 中性色表头（设计规范 kv-head 样式）
         Container(
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          height: AppMetrics.height32,
+          padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.5),
+            color: appTheme.surfaceVariant,
             border: Border(
-              bottom: BorderSide(color: theme.dividerColor),
+              bottom: BorderSide(color: appTheme.border),
             ),
           ),
           child: Row(
@@ -588,9 +553,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 flex: 2,
                 child: Text(
                   'Key',
-                  style: AppTextStyles.tiny.copyWith(
+                  style: AppTextStyles.tiny11.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: appTheme.textTertiary,
                   ),
                 ),
               ),
@@ -600,9 +565,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 flex: 3,
                 child: Text(
                   'Value',
-                  style: AppTextStyles.tiny.copyWith(
+                  style: AppTextStyles.tiny11.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: appTheme.textTertiary,
                   ),
                 ),
               ),
@@ -612,9 +577,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 flex: 2,
                 child: Text(
                   'Description',
-                  style: AppTextStyles.tiny.copyWith(
+                  style: AppTextStyles.tiny11.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: appTheme.textTertiary,
                   ),
                 ),
               ),
@@ -691,7 +656,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               const SizedBox(width: 6),
               Text(
                 'Add new',
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption12.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.w500,
                 ),
@@ -882,7 +847,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       headerDescription,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.tiny.copyWith(
+                      style: AppTextStyles.tiny11.copyWith(
                         color: theme.colorScheme.outline.withValues(alpha: 0.7),
                       ),
                     ),
@@ -976,13 +941,13 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             offset: const Offset(0, 32),
             child: Material(
               elevation: 4,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: AppMetrics.br6,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(6),
+                  color: context.appTheme.background,
+                  borderRadius: AppMetrics.br6,
                   border: Border.all(
-                    color: Theme.of(context).dividerColor,
+                    color: context.appTheme.border.withValues(alpha: 0.5),
                   ),
                 ),
                 child: Column(
@@ -1055,8 +1020,6 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
   Widget _buildBodyTab(
       BuildContext context, WidgetRef ref, HttpRequest request) {
-    final theme = Theme.of(context);
-
     return Column(
       children: [
         // Body type selector - Postman 风格 Radio 组
@@ -1066,9 +1029,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             vertical: AppConstants.spaceS,
           ),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
+            color: context.appTheme.background,
             border: Border(
-              bottom: BorderSide(color: theme.dividerColor),
+              bottom: BorderSide(color: context.appTheme.border),
             ),
           ),
           child: _buildBodyTypeSelector(context, ref, request),
@@ -1128,14 +1091,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           const SizedBox(height: 16),
           Text(
             'No body content',
-            style: AppTextStyles.body.copyWith(
+            style: AppTextStyles.body13.copyWith(
               color: theme.colorScheme.outline,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'Select a body type to add content',
-            style: AppTextStyles.bodySmall.copyWith(
+            style: AppTextStyles.body13.copyWith(
               color: theme.colorScheme.outline.withValues(alpha: 0.7),
             ),
           ),
@@ -1154,7 +1117,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     return Center(
       child: Text(
         'form-data editor (coming soon)',
-        style: AppTextStyles.body.copyWith(
+        style: AppTextStyles.body13.copyWith(
           color: Theme.of(context).colorScheme.outline,
         ),
       ),
@@ -1171,7 +1134,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     return Center(
       child: Text(
         'x-www-form-urlencoded editor (coming soon)',
-        style: AppTextStyles.body.copyWith(
+        style: AppTextStyles.body13.copyWith(
           color: Theme.of(context).colorScheme.outline,
         ),
       ),
@@ -1216,7 +1179,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           const SizedBox(height: 16),
           Text(
             'Select file',
-            style: AppTextStyles.body.copyWith(
+            style: AppTextStyles.body13.copyWith(
               color: Theme.of(context).colorScheme.outline,
             ),
           ),
@@ -1243,7 +1206,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     return Center(
       child: Text(
         'GraphQL editor (coming soon)',
-        style: AppTextStyles.body.copyWith(
+        style: AppTextStyles.body13.copyWith(
           color: Theme.of(context).colorScheme.outline,
         ),
       ),
@@ -1344,7 +1307,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               // 标签文字
               Text(
                 option.label,
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption12.copyWith(
                   color: isSelected
                       ? theme.colorScheme.onSurface
                       : theme.colorScheme.onSurfaceVariant,
@@ -1394,7 +1357,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             },
             child: Text(
               type,
-              style: AppTextStyles.caption.copyWith(
+              style: AppTextStyles.caption12.copyWith(
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1416,8 +1379,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 children: [
                   Text(
                     request.rawContentType.toUpperCase(),
-                    style: AppTextStyles.caption.copyWith(
+                    style: AppTextStyles.caption12.copyWith(
                       color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -1534,7 +1498,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       Expanded(
                         child: Text(
                           'Disable this option to allow self-signed certificates or bypass certificate errors for testing purposes.',
-                          style: AppTextStyles.tiny.copyWith(
+                          style: AppTextStyles.tiny11.copyWith(
                             color: theme.colorScheme.outline,
                           ),
                         ),
@@ -1614,7 +1578,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       children: [
         Text(
           title,
-          style: AppTextStyles.tiny.copyWith(
+          style: AppTextStyles.tiny11.copyWith(
             fontWeight: FontWeight.w600,
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -1623,9 +1587,10 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         Container(
           padding: const EdgeInsets.all(AppConstants.spaceL),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            border:
-                Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
+            color: context.appTheme.surface,
+            border: Border.all(
+              color: context.appTheme.border.withValues(alpha: 0.5),
+            ),
             borderRadius: BorderRadius.circular(AppConstants.radiusM),
           ),
           child: Column(
@@ -1655,14 +1620,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             children: [
               Text(
                 title,
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption12.copyWith(
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: AppTextStyles.tiny.copyWith(
+                style: AppTextStyles.tiny11.copyWith(
                   color: theme.colorScheme.outline,
                 ),
               ),
@@ -1677,7 +1642,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             // Status text
             Text(
               value ? 'ON' : 'OFF',
-              style: AppTextStyles.caption.copyWith(
+              style: AppTextStyles.caption12.copyWith(
                 color: value ? AppColors.brand : theme.colorScheme.outline,
                 fontWeight: FontWeight.w500,
               ),
@@ -1704,7 +1669,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             children: [
               Text(
                 title,
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption12.copyWith(
                   fontWeight: FontWeight.w500,
                   color: theme.colorScheme.outline,
                 ),
@@ -1712,7 +1677,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: AppTextStyles.tiny.copyWith(
+                style: AppTextStyles.tiny11.copyWith(
                   color: theme.colorScheme.outline.withValues(alpha: 0.6),
                 ),
               ),
@@ -1748,14 +1713,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             children: [
               Text(
                 title,
-                style: AppTextStyles.caption.copyWith(
+                style: AppTextStyles.caption12.copyWith(
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: AppTextStyles.tiny.copyWith(
+                style: AppTextStyles.tiny11.copyWith(
                   color: theme.colorScheme.outline,
                 ),
               ),
@@ -1801,7 +1766,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 ),
                 child: Text(
                   value.toString(),
-                  style: AppTextStyles.caption.copyWith(
+                  style: AppTextStyles.caption12.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1908,9 +1873,46 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   KeyValuePair _createEmptyKeyValue() {
     return KeyValuePair.empty();
   }
+}
 
-  Color _getMethodColor(String method) {
-    return AppColors.method(method);
+/// URL 输入框专用控制器：把 `{{variable}}` 片段高亮为品牌色文字 +
+/// brandSoft 底色（设计规范：变量 brand-soft 高亮）。
+///
+/// [appTheme] 在 State.didChangeDependencies 中刷新，主题切换后
+/// 下一次重建即使用新颜色。
+class _UrlEditingController extends TextEditingController {
+  AppThemeData appTheme = AppThemeData.light;
+
+  static final RegExp _variablePattern = RegExp(r'\{\{[^{}]*\}\}');
+
+  @override
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    required bool withComposing,
+  }) {
+    final value = text;
+    if (!value.contains('{{')) {
+      return TextSpan(style: style, text: value);
+    }
+
+    final highlightStyle = style?.copyWith(
+      color: appTheme.brand,
+      backgroundColor: appTheme.brandSoft,
+    );
+    final spans = <TextSpan>[];
+    var start = 0;
+    for (final match in _variablePattern.allMatches(value)) {
+      if (match.start > start) {
+        spans.add(TextSpan(text: value.substring(start, match.start)));
+      }
+      spans.add(TextSpan(text: match.group(0), style: highlightStyle));
+      start = match.end;
+    }
+    if (start < value.length) {
+      spans.add(TextSpan(text: value.substring(start)));
+    }
+    return TextSpan(style: style, children: spans);
   }
 }
 

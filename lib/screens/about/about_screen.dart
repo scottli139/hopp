@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../providers/providers.dart';
+import '../../theme/app_metrics.dart';
+import '../../theme/app_theme_data.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/constants.dart';
 import '../../widgets/common/app_divider.dart';
 
 /// About Screen - Displays app information and branding
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
 
   /// 打开外部链接（系统默认浏览器）
@@ -21,7 +27,7 @@ class AboutScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -64,7 +70,7 @@ class AboutScreen extends StatelessWidget {
                 Text(
                   'Hop to your APIs',
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    color: context.appTheme.textTertiary,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -74,7 +80,8 @@ class AboutScreen extends StatelessWidget {
                 _buildInfoCard(
                   context,
                   title: 'Version',
-                  content: '0.6.0',
+                  content: ref.watch(appVersionProvider).valueOrNull ??
+                      AppConstants.appVersion,
                   icon: Icons.info_outline,
                 ),
                 const SizedBox(height: 16),
@@ -102,7 +109,7 @@ class AboutScreen extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 // Brand Footer
-                _buildBrandFooter(theme, colorScheme),
+                _buildBrandFooter(context, theme, colorScheme),
               ],
             ),
           ),
@@ -116,16 +123,7 @@ class AboutScreen extends StatelessWidget {
       width: 120,
       height: 120,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorScheme.primary,
-            const Color(0xFF8B5CF6),
-            const Color(0xFFEC4899),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: AppMetrics.br10,
         boxShadow: [
           BoxShadow(
             color: colorScheme.primary.withValues(alpha: 0.3),
@@ -135,13 +133,10 @@ class AboutScreen extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Image.asset(
-            'assets/images/logo.svg.png',
-            fit: BoxFit.contain,
-          ),
+        borderRadius: AppMetrics.br10,
+        child: SvgPicture.asset(
+          'assets/images/logo.svg',
+          fit: BoxFit.contain,
         ),
       ),
     );
@@ -154,14 +149,13 @@ class AboutScreen extends StatelessWidget {
     required IconData icon,
   }) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppMetrics.br10,
         side: BorderSide(
-          color: colorScheme.outline.withValues(alpha: 0.2),
+          color: context.appTheme.border,
         ),
       ),
       child: Padding(
@@ -174,14 +168,14 @@ class AboutScreen extends StatelessWidget {
                 Icon(
                   icon,
                   size: 20,
-                  color: colorScheme.primary,
+                  color: context.appTheme.brand,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   title,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: colorScheme.primary,
+                    color: context.appTheme.brand,
                   ),
                 ),
               ],
@@ -190,7 +184,7 @@ class AboutScreen extends StatelessWidget {
             Text(
               content,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.8),
+                color: context.appTheme.textSecondary,
                 height: 1.5,
               ),
             ),
@@ -202,7 +196,6 @@ class AboutScreen extends StatelessWidget {
 
   Widget _buildFeaturesCard(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final features = [
       '🔥 Lightweight & Fast',
       '💻 Cross-Platform (macOS, Windows, Linux)',
@@ -217,9 +210,9 @@ class AboutScreen extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppMetrics.br10,
         side: BorderSide(
-          color: colorScheme.outline.withValues(alpha: 0.2),
+          color: context.appTheme.border,
         ),
       ),
       child: Padding(
@@ -232,14 +225,14 @@ class AboutScreen extends StatelessWidget {
                 Icon(
                   Icons.star_outline,
                   size: 20,
-                  color: colorScheme.primary,
+                  color: context.appTheme.brand,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'Features',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: colorScheme.primary,
+                    color: context.appTheme.brand,
                   ),
                 ),
               ],
@@ -253,7 +246,7 @@ class AboutScreen extends StatelessWidget {
                         width: 6,
                         height: 6,
                         decoration: BoxDecoration(
-                          color: colorScheme.primary,
+                          color: context.appTheme.brand,
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),
@@ -262,7 +255,7 @@ class AboutScreen extends StatelessWidget {
                         child: Text(
                           feature,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha: 0.8),
+                            color: context.appTheme.textSecondary,
                           ),
                         ),
                       ),
@@ -277,7 +270,6 @@ class AboutScreen extends StatelessWidget {
 
   Widget _buildTechStackCard(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final techStack = [
       {'name': 'Flutter', 'version': '3.27.x', 'icon': '💙'},
       {'name': 'Dart', 'version': '3.6+', 'icon': '🔷'},
@@ -289,9 +281,9 @@ class AboutScreen extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppMetrics.br10,
         side: BorderSide(
-          color: colorScheme.outline.withValues(alpha: 0.2),
+          color: context.appTheme.border,
         ),
       ),
       child: Padding(
@@ -304,14 +296,14 @@ class AboutScreen extends StatelessWidget {
                 Icon(
                   Icons.code_outlined,
                   size: 20,
-                  color: colorScheme.primary,
+                  color: context.appTheme.brand,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'Tech Stack',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: colorScheme.primary,
+                    color: context.appTheme.brand,
                   ),
                 ),
               ],
@@ -324,8 +316,7 @@ class AboutScreen extends StatelessWidget {
                   .map((tech) => Chip(
                         avatar: Text(tech['icon']!),
                         label: Text('${tech['name']} ${tech['version']}'),
-                        backgroundColor:
-                            colorScheme.primaryContainer.withValues(alpha: 0.5),
+                        backgroundColor: context.appTheme.brandSoft,
                         side: BorderSide.none,
                       ))
                   .toList(),
@@ -338,14 +329,13 @@ class AboutScreen extends StatelessWidget {
 
   Widget _buildLinksCard(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppMetrics.br10,
         side: BorderSide(
-          color: colorScheme.outline.withValues(alpha: 0.2),
+          color: context.appTheme.border,
         ),
       ),
       child: Padding(
@@ -358,14 +348,14 @@ class AboutScreen extends StatelessWidget {
                 Icon(
                   Icons.link_outlined,
                   size: 20,
-                  color: colorScheme.primary,
+                  color: context.appTheme.brand,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'Links',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: colorScheme.primary,
+                    color: context.appTheme.brand,
                   ),
                 ),
               ],
@@ -409,11 +399,10 @@ class AboutScreen extends StatelessWidget {
     required String url,
   }) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return InkWell(
       onTap: () => _openLink(url),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppMetrics.br8,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -422,13 +411,13 @@ class AboutScreen extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(10),
+                color: context.appTheme.brandSoft,
+                borderRadius: AppMetrics.br10,
               ),
               child: Icon(
                 icon,
                 size: 20,
-                color: colorScheme.primary,
+                color: context.appTheme.brand,
               ),
             ),
             const SizedBox(width: 16),
@@ -446,7 +435,7 @@ class AboutScreen extends StatelessWidget {
                   Text(
                     subtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: context.appTheme.textTertiary,
                     ),
                   ),
                 ],
@@ -455,7 +444,7 @@ class AboutScreen extends StatelessWidget {
             Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: colorScheme.onSurface.withValues(alpha: 0.4),
+              color: context.appTheme.textTertiary,
             ),
           ],
         ),
@@ -463,7 +452,8 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBrandFooter(ThemeData theme, ColorScheme colorScheme) {
+  Widget _buildBrandFooter(
+      BuildContext context, ThemeData theme, ColorScheme colorScheme) {
     return Column(
       children: [
         const AppDivider(height: 16),
@@ -474,13 +464,13 @@ class AboutScreen extends StatelessWidget {
             Icon(
               Icons.favorite,
               size: 16,
-              color: Colors.red.withValues(alpha: 0.8),
+              color: context.appTheme.error,
             ),
             const SizedBox(width: 8),
             Text(
               'Built with passion by the Hopp team',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.6),
+                color: context.appTheme.textTertiary,
               ),
             ),
           ],
@@ -489,7 +479,7 @@ class AboutScreen extends StatelessWidget {
         Text(
           '© 2026 Hopp. All rights reserved.',
           style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurface.withValues(alpha: 0.4),
+            color: context.appTheme.textTertiary,
             fontSize: 11,
           ),
         ),
@@ -511,13 +501,13 @@ class AboutScreen extends StatelessWidget {
               Icon(
                 Icons.auto_awesome,
                 size: 14,
-                color: colorScheme.primary,
+                color: context.appTheme.brand,
               ),
               const SizedBox(width: 6),
               Text(
                 'Powered by AI · Built with Flutter',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.primary,
+                  color: context.appTheme.brand,
                   fontWeight: FontWeight.w500,
                   fontSize: 11,
                 ),

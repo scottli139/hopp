@@ -8,6 +8,7 @@ import '../../models/http_request.dart';
 import '../../providers/providers.dart';
 import '../../screens/about/about_screen.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_metrics.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
 import '../../utils/app_logger.dart';
@@ -20,6 +21,7 @@ import '../common/app_badge.dart';
 import '../common/app_button.dart';
 import '../common/app_dialog.dart';
 import '../common/app_divider.dart';
+import '../common/app_empty_state.dart';
 import '../common/app_popup_menu.dart';
 import '../common/app_text_field.dart';
 import '../environment/environment_manager_dialog.dart';
@@ -38,6 +40,16 @@ class _SidebarState extends ConsumerState<Sidebar> {
   String? _editingRequestId;
   final TextEditingController _nameController = TextEditingController();
 
+  // 行 hover 状态（控制 ⋮ 菜单按钮 hover 才显现，设计规范）
+  String? _hoveredCollectionId;
+  String? _hoveredRequestId;
+
+  // 菜单打开状态（菜单打开期间保持 ⋮ 按钮挂载——否则指针移入菜单
+  // 触发行 onExit 导致按钮卸载，PopupMenuButton 的 !mounted 检查
+  // 会吞掉 onSelected）
+  String? _openCollectionMenuId;
+  String? _openRequestMenuId;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -48,7 +60,6 @@ class _SidebarState extends ConsumerState<Sidebar> {
   Widget build(BuildContext context) {
     final collections = ref.watch(collectionProvider);
     final requestsAsync = ref.watch(requestsProvider);
-    final theme = Theme.of(context);
 
     // Listen to UI test dialog triggers
     ref.listen<int?>(uiTestImportDialogProvider, (previous, current) {
@@ -113,10 +124,10 @@ class _SidebarState extends ConsumerState<Sidebar> {
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: context.appTheme.surface,
         border: Border(
           right: BorderSide(
-            color: theme.colorScheme.outline.withValues(alpha: 0.15),
+            color: context.appTheme.border,
             width: 1,
           ),
         ),
@@ -198,10 +209,17 @@ class _SidebarState extends ConsumerState<Sidebar> {
   }
 
   Widget _buildSearch(BuildContext context) {
+    // 与环境选择器左缘对齐（8px 水平边距 + 8px 底距，设计原型规格）；
+    // 高度 30px 与上方环境选择器齐平
     return const Padding(
-      padding: EdgeInsets.all(AppConstants.spaceM),
+      padding: EdgeInsets.only(
+        left: AppMetrics.space8,
+        right: AppMetrics.space8,
+        bottom: AppMetrics.space8,
+      ),
       child: AppTextField(
         compact: true,
+        height: 30,
         hintText: 'Filter...',
       ),
     );
@@ -220,6 +238,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
     final rootCollections = _buildHierarchy(collections, requests);
 
     return ListView.builder(
+      // 树区域 6px 水平内边距（配合行 4px 圆角选中底，设计原型规格）
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       itemCount: rootCollections.length,
       itemBuilder: (context, index) {
         return _buildCollectionItem(
@@ -321,33 +341,15 @@ class _SidebarState extends ConsumerState<Sidebar> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.folder_open_outlined,
-            size: 48,
-            color: theme.colorScheme.outline.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: AppConstants.spaceM),
-          Text(
-            'No collections yet',
-            style: AppTextStyles.body13.copyWith(
-              color: theme.colorScheme.outline,
-            ),
-          ),
-          const SizedBox(height: AppConstants.spaceL),
-          // Create Collection button
-          AppButton.primary(
-            label: 'Create Collection',
-            icon: Icons.add,
-            size: AppButtonSize.small,
-            onPressed: () => _showNewCollectionDialog(context),
-          ),
-        ],
+    return AppEmptyState(
+      icon: Icons.folder_open_outlined,
+      title: 'No collections yet',
+      subtitle: 'Collections group your API requests',
+      action: AppButton.primary(
+        label: 'Create Collection',
+        icon: Icons.add,
+        size: AppButtonSize.small,
+        onPressed: () => _showNewCollectionDialog(context),
       ),
     );
   }
@@ -360,63 +362,80 @@ class _SidebarState extends ConsumerState<Sidebar> {
     List<HttpRequest> allRequests,
   ) {
     final isExpanded = collection.isExpanded;
-    final theme = Theme.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Material(
           color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              ref
-                  .read(collectionProvider.notifier)
-                  .toggleExpanded(collection.id);
+          borderRadius: AppMetrics.br4,
+          child: MouseRegion(
+            onEnter: (_) =>
+                setState(() => _hoveredCollectionId = collection.id),
+            onExit: (_) {
+              if (_hoveredCollectionId == collection.id) {
+                setState(() => _hoveredCollectionId = null);
+              }
             },
-            hoverColor: theme.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.5),
-            child: Container(
-              height: AppConstants.sidebarItemHeight,
-              padding: EdgeInsets.only(
-                left: AppConstants.spaceS + depth * AppConstants.spaceM,
-                right: AppConstants.spaceS,
-              ),
-              child: Row(
-                children: [
-                  AnimatedRotation(
-                    turns: isExpanded ? 0.25 : 0,
-                    duration: AppConstants.animFast,
-                    child: Icon(
-                      Icons.chevron_right,
-                      size: 16,
-                      color: collection.children.isEmpty &&
-                              collection.requests.isEmpty
-                          ? Colors.transparent
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(width: AppConstants.spaceXS),
-                  Icon(
-                    isExpanded ? Icons.folder_open : Icons.folder,
-                    size: 16,
-                    color: isExpanded
-                        ? AppColors.brand
-                        : AppColors.brand.withValues(alpha: 0.7),
-                  ),
-                  const SizedBox(width: AppConstants.spaceXS),
-                  Expanded(
-                    child: Text(
-                      collection.name,
-                      style: AppTextStyles.caption12.copyWith(
-                        color: theme.colorScheme.onSurface,
-                        fontWeight:
-                            isExpanded ? FontWeight.w600 : FontWeight.w500,
+            child: InkWell(
+              borderRadius: AppMetrics.br4,
+              onTap: () {
+                ref
+                    .read(collectionProvider.notifier)
+                    .toggleExpanded(collection.id);
+              },
+              hoverColor: context.appTheme.surfaceVariant,
+              child: Container(
+                height: AppMetrics.height28,
+                padding: EdgeInsets.only(
+                  left: AppConstants.spaceS + depth * AppConstants.spaceM,
+                  right: AppConstants.spaceS,
+                ),
+                child: Row(
+                  children: [
+                    AnimatedRotation(
+                      turns: isExpanded ? 0.25 : 0,
+                      duration: AppConstants.animFast,
+                      child: Icon(
+                        Icons.chevron_right,
+                        size: 16,
+                        color: collection.children.isEmpty &&
+                                collection.requests.isEmpty
+                            ? Colors.transparent
+                            : context.appTheme.textTertiary,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  _buildCollectionActions(context, collection),
-                ],
+                    const SizedBox(width: AppConstants.spaceXS),
+                    Icon(
+                      isExpanded ? Icons.folder_open : Icons.folder,
+                      size: 16,
+                      color: isExpanded
+                          ? context.appTheme.brand
+                          : context.appTheme.brand.withValues(alpha: 0.7),
+                    ),
+                    const SizedBox(width: AppConstants.spaceXS),
+                    Expanded(
+                      child: Text(
+                        collection.name,
+                        style: AppTextStyles.caption12.copyWith(
+                          color: context.appTheme.textPrimary,
+                          fontWeight:
+                              isExpanded ? FontWeight.w600 : FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // 菜单按钮 hover 才显现（设计规范）。
+                    // 注意必须用 Visibility 保持 State 常驻：菜单打开期间
+                    // 指针移入菜单会触发行 onExit，若按钮被卸载，
+                    // PopupMenuButton 内部 !mounted 检查会吞掉 onSelected。
+                    if (_hoveredCollectionId == collection.id ||
+                        _openCollectionMenuId == collection.id)
+                      _buildCollectionActions(context, collection)
+                    else
+                      const SizedBox(width: 28), // 占位，保持行宽稳定
+                  ],
+                ),
               ),
             ),
           ),
@@ -468,55 +487,55 @@ class _SidebarState extends ConsumerState<Sidebar> {
         }
 
         return Material(
-          color: isActive
-              ? AppColors.brand.withValues(alpha: 0.08)
-              : Colors.transparent,
-          child: InkWell(
-            onTap: _isEditingName && _editingRequestId == request.id
-                ? null
-                : () {
-                    ref.read(requestTabProvider.notifier).openTab(request);
-                    ref.read(activeTabIdProvider.notifier).state = request.id;
-                  },
-            onSecondaryTapDown: (details) => _showRequestContextMenu(
-                context, request, details.globalPosition, setState),
-            hoverColor: AppColors.brand.withValues(alpha: 0.04),
-            splashColor: AppColors.brand.withValues(alpha: 0.08),
-            child: Container(
-              height: 28,
-              padding: EdgeInsets.only(
-                left: AppConstants.spaceS + depth * AppConstants.spaceM + 12,
-                right: AppConstants.spaceS,
-              ),
-              decoration: isActive
-                  ? BoxDecoration(
-                      border: Border(
-                        left: BorderSide(
-                          color: AppColors.brand,
-                          width: 3,
-                        ),
-                      ),
-                    )
-                  : null,
-              child: Row(
-                children: [
-                  // Method badge
-                  MethodBadge(request.method.value),
-                  const SizedBox(width: 6),
-                  // 名称显示或编辑
-                  Expanded(
-                    child: _isEditingName && _editingRequestId == request.id
-                        ? _buildNameEditor(context, request, setState)
-                        : _buildNameDisplay(context, request, isActive),
-                  ),
-                  // 编辑时显示操作按钮，或选中/悬停时显示菜单按钮
-                  if (_isEditingName && _editingRequestId == request.id) ...[
-                    _buildEditActions(context, request, setState),
-                  ] else if (isActive)
-                    _buildRequestMenuButton(context, request)
-                  else
-                    const SizedBox(width: 28), // 保持间距一致
-                ],
+          color: isActive ? context.appTheme.brandSoft : Colors.transparent,
+          borderRadius: AppMetrics.br4,
+          child: MouseRegion(
+            onEnter: (_) => setState(() => _hoveredRequestId = request.id),
+            onExit: (_) {
+              if (_hoveredRequestId == request.id) {
+                setState(() => _hoveredRequestId = null);
+              }
+            },
+            child: InkWell(
+              borderRadius: AppMetrics.br4,
+              onTap: _isEditingName && _editingRequestId == request.id
+                  ? null
+                  : () {
+                      ref.read(requestTabProvider.notifier).openTab(request);
+                      ref.read(activeTabIdProvider.notifier).state = request.id;
+                    },
+              onSecondaryTapDown: (details) => _showRequestContextMenu(
+                  context, request, details.globalPosition, setState),
+              hoverColor: context.appTheme.surfaceVariant,
+              child: Container(
+                height: AppMetrics.height28,
+                padding: EdgeInsets.only(
+                  left: AppConstants.spaceS + depth * AppConstants.spaceM + 12,
+                  right: AppConstants.spaceS,
+                ),
+                child: Row(
+                  children: [
+                    // Method badge
+                    MethodBadge(request.method.value),
+                    const SizedBox(width: 6),
+                    // 名称显示或编辑
+                    Expanded(
+                      child: _isEditingName && _editingRequestId == request.id
+                          ? _buildNameEditor(context, request, setState)
+                          : _buildNameDisplay(context, request, isActive),
+                    ),
+                    // 编辑时显示操作按钮，选中/悬停/菜单打开时显示菜单按钮
+                    //（菜单打开期间必须保持挂载，否则 onSelected 会被吞掉）
+                    if (_isEditingName && _editingRequestId == request.id) ...[
+                      _buildEditActions(context, request, setState),
+                    ] else if (isActive ||
+                        _hoveredRequestId == request.id ||
+                        _openRequestMenuId == request.id)
+                      _buildRequestMenuButton(context, request)
+                    else
+                      const SizedBox(width: 28), // 保持间距一致
+                  ],
+                ),
               ),
             ),
           ),
@@ -528,13 +547,11 @@ class _SidebarState extends ConsumerState<Sidebar> {
   /// 构建名称显示
   Widget _buildNameDisplay(
       BuildContext context, HttpRequest request, bool isActive) {
-    final theme = Theme.of(context);
     return Text(
       request.name,
-      style: TextStyle(
-        fontSize: 11,
-        color: isActive ? AppColors.brandDark : theme.colorScheme.onSurface,
-        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+      style: AppTextStyles.caption12.copyWith(
+        color: isActive ? context.appTheme.brand : context.appTheme.textPrimary,
+        fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
       ),
       overflow: TextOverflow.ellipsis,
     );
@@ -546,8 +563,6 @@ class _SidebarState extends ConsumerState<Sidebar> {
     HttpRequest request,
     StateSetter setState,
   ) {
-    final theme = Theme.of(context);
-
     return Focus(
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent) {
@@ -564,9 +579,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
       child: TextField(
         controller: _nameController,
         autofocus: true,
-        style: TextStyle(
-          fontSize: 11,
-          color: theme.colorScheme.onSurface,
+        style: AppTextStyles.caption12.copyWith(
+          color: context.appTheme.textPrimary,
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
@@ -647,6 +661,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
           shape: AppPopupMenu.menuShape(theme),
           elevation: AppPopupMenu.menuElevation,
           color: AppPopupMenu.menuColor(theme),
+          onOpened: () => setState(() => _openRequestMenuId = request.id),
+          onCanceled: () => setState(() => _openRequestMenuId = null),
           itemBuilder: (context) => [
             AppPopupMenu.iconItem(
               theme: theme,
@@ -664,6 +680,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
             ),
           ],
           onSelected: (value) {
+            setState(() => _openRequestMenuId = null);
             switch (value) {
               case 'rename':
                 _startEditingName(request.id, request.name, setState);
@@ -851,6 +868,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
           shape: AppPopupMenu.menuShape(theme),
           elevation: AppPopupMenu.menuElevation,
           color: AppPopupMenu.menuColor(theme),
+          onOpened: () => setState(() => _openCollectionMenuId = collection.id),
+          onCanceled: () => setState(() => _openCollectionMenuId = null),
           itemBuilder: (context) => [
             AppPopupMenu.iconItem(
               theme: theme,
@@ -889,6 +908,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
             ),
           ],
           onSelected: (value) {
+            setState(() => _openCollectionMenuId = null);
             switch (value) {
               case 'add_request':
                 AppLogger.info(
@@ -1144,16 +1164,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  colorScheme.primary,
-                  const Color(0xFF8B5CF6),
-                  const Color(0xFFEC4899),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppMetrics.br10,
               boxShadow: [
                 BoxShadow(
                   color: colorScheme.primary.withValues(alpha: 0.3),
@@ -1163,9 +1174,9 @@ class _SidebarState extends ConsumerState<Sidebar> {
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.asset(
-                'assets/images/logo.svg.png',
+              borderRadius: AppMetrics.br10,
+              child: SvgPicture.asset(
+                'assets/images/logo.svg',
                 fit: BoxFit.cover,
               ),
             ),
@@ -1200,7 +1211,12 @@ class _SidebarState extends ConsumerState<Sidebar> {
           const AppDivider(height: 16),
           const SizedBox(height: 16),
           // Version
-          _buildInfoRow(context, 'Version', '0.6.0'),
+          _buildInfoRow(
+            context,
+            'Version',
+            ref.watch(appVersionProvider).valueOrNull ??
+                AppConstants.appVersion,
+          ),
           const SizedBox(height: 8),
           _buildInfoRow(context, 'Platform', 'macOS'),
           const SizedBox(height: 8),

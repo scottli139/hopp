@@ -2,15 +2,14 @@
   "note": "设计守卫基线（文件×规则计数，只减不增）。更新命令：DESIGN_GUARD_UPDATE=1 fvm flutter test test/design_guard_test.dart",
   "files": {
     "lib/screens/about/about_screen.dart": {
-      "G1": 1,
-      "G2": 4,
+      "G2": 2,
       "G3": 2,
-      "G5": 10
+      "G5": 2
     },
     "lib/screens/main_screen.dart": {
       "G1": 1,
-      "G2": 2,
-      "G3": 4,
+      "G2": 1,
+      "G3": 3,
       "G5": 3
     },
     "lib/utils/constants.dart": {
@@ -27,8 +26,8 @@
     },
     "lib/widgets/common/optimized_response_viewer.dart": {
       "G1": 5,
-      "G3": 6,
-      "G5": 7
+      "G3": 4,
+      "G5": 4
     },
     "lib/widgets/environment/environment_switcher.dart": {
       "G3": 1
@@ -40,24 +39,22 @@
       "G3": 2
     },
     "lib/widgets/layout/request_tabs.dart": {
-      "G1": 2,
-      "G3": 1,
-      "G5": 1
+      "G1": 2
     },
     "lib/widgets/layout/sidebar.dart": {
       "G1": 5,
-      "G2": 3,
-      "G3": 3,
-      "G5": 5
+      "G2": 1,
+      "G3": 1,
+      "G5": 3
     },
     "lib/widgets/request/request_editor.dart": {
       "G1": 3,
-      "G3": 9,
-      "G5": 5
+      "G3": 5,
+      "G5": 1
     },
     "lib/widgets/request/response_viewer.dart": {
       "G1": 3,
-      "G3": 39,
+      "G3": 30,
       "G5": 4
     }
   }

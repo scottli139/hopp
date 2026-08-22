@@ -6,7 +6,9 @@ import '../../models/request_tab.dart';
 import '../../providers/providers.dart';
 import '../../utils/app_logger.dart';
 import '../../theme/app_colors.dart';
-import '../../utils/constants.dart' hide AppColors;
+import '../../theme/app_text_styles.dart';
+import '../../theme/app_theme_data.dart';
+import '../../utils/constants.dart' hide AppColors, AppTextStyles;
 
 /// 请求标签栏组件
 ///
@@ -23,9 +25,15 @@ class RequestTabs extends ConsumerWidget with LogMixin {
       return const SizedBox.shrink();
     }
 
+    final appTheme = context.appTheme;
     return Container(
       height: 32,
-      color: Theme.of(context).colorScheme.surface,
+      decoration: BoxDecoration(
+        color: appTheme.surface,
+        border: Border(
+          bottom: BorderSide(color: appTheme.border),
+        ),
+      ),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: tabs.length + 1,
@@ -46,19 +54,16 @@ class RequestTabs extends ConsumerWidget with LogMixin {
     String? activeTabId,
   ) {
     final isActive = tab.id == activeTabId;
-    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
     final methodColor = _getMethodColor(tab.request.method.value);
 
     return Material(
-      color: isActive
-          ? theme.colorScheme.surfaceContainerHighest
-          : theme.colorScheme.surface,
+      color: isActive ? appTheme.background : appTheme.surface,
       child: InkWell(
         onTap: () {
           ref.read(activeTabIdProvider.notifier).state = tab.id;
         },
-        hoverColor:
-            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        hoverColor: appTheme.surfaceVariant,
         child: Container(
           constraints: const BoxConstraints(minWidth: 120, maxWidth: 200),
           padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -69,39 +74,27 @@ class RequestTabs extends ConsumerWidget with LogMixin {
                 width: 2,
               ),
               right: BorderSide(
-                color: theme.dividerColor.withValues(alpha: 0.5),
+                color: appTheme.border.withValues(alpha: 0.5),
               ),
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Method badge with improved styling
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                decoration: BoxDecoration(
-                  color: methodColor.withValues(alpha: isActive ? 0.15 : 0.1),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: Text(
-                  tab.request.method.value,
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: methodColor,
-                    fontWeight: FontWeight.w700,
-                    height: 1,
-                  ),
-                ),
+              // 方法标识：品牌色加粗小字（设计原型规格，无底块）
+              Text(
+                tab.request.method.value,
+                style: AppTextStyles.micro10.copyWith(color: methodColor),
               ),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
                   tab.request.name,
-                  style: AppTextStyles.tiny.copyWith(
+                  style: AppTextStyles.tiny11.copyWith(
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                     color: isActive
-                        ? theme.colorScheme.onSurface
-                        : theme.colorScheme.onSurfaceVariant,
+                        ? appTheme.textPrimary
+                        : appTheme.textSecondary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -117,25 +110,21 @@ class RequestTabs extends ConsumerWidget with LogMixin {
                   ),
                 ),
               const SizedBox(width: 4),
-              // Close button with hover effect
+              // Close button（透明底，hover 显现）
               Material(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(AppConstants.radiusS),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(AppConstants.radiusS),
+                  hoverColor: appTheme.surfaceVariant,
                   onTap: () => _closeTab(ref, tab),
-                  child: Container(
+                  child: SizedBox(
                     width: 16,
                     height: 16,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppConstants.radiusS),
-                      color: theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.5),
-                    ),
                     child: Icon(
                       Icons.close,
-                      size: 10,
-                      color: theme.colorScheme.outline,
+                      size: 12,
+                      color: appTheme.textTertiary,
                     ),
                   ),
                 ),
@@ -148,13 +137,13 @@ class RequestTabs extends ConsumerWidget with LogMixin {
   }
 
   Widget _buildNewTabButton(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
 
     return Material(
-      color: theme.colorScheme.surface,
+      color: appTheme.surface,
       child: InkWell(
         onTap: () => _createNewRequest(ref),
-        hoverColor: theme.colorScheme.surfaceContainerHighest,
+        hoverColor: appTheme.surfaceVariant,
         child: Container(
           width: 36,
           height: double.infinity,
@@ -162,14 +151,14 @@ class RequestTabs extends ConsumerWidget with LogMixin {
           decoration: BoxDecoration(
             border: Border(
               right: BorderSide(
-                color: theme.dividerColor.withValues(alpha: 0.5),
+                color: appTheme.border.withValues(alpha: 0.5),
               ),
             ),
           ),
           child: Icon(
             Icons.add,
             size: 16,
-            color: theme.colorScheme.onSurfaceVariant,
+            color: appTheme.textSecondary,
           ),
         ),
       ),

@@ -5,8 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:highlight/languages/json.dart';
 
+import '../../theme/app_metrics.dart';
 import '../../theme/app_syntax_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/app_theme_data.dart';
 import '../../utils/app_logger.dart';
 import 'app_button.dart';
 import 'app_divider.dart';
@@ -293,12 +295,12 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     final sizeText = _formatSize(contentLength);
 
     return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      height: AppMetrics.height38,
+      padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
+        color: context.appTheme.surface,
         border: Border(
-          bottom: BorderSide(color: theme.dividerColor),
+          bottom: BorderSide(color: context.appTheme.border),
         ),
       ),
       child: Row(
@@ -307,15 +309,13 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           Icon(
             Icons.data_usage,
             size: 14,
-            color: theme.colorScheme.outline,
+            color: context.appTheme.textTertiary,
           ),
           const SizedBox(width: 6),
           Text(
             '$sizeText • ${_lines.length} lines',
-            style: TextStyle(
-              fontSize: 11,
-              color: theme.colorScheme.outline,
-              fontWeight: FontWeight.w500,
+            style: AppTextStyles.tiny11.copyWith(
+              color: context.appTheme.textSecondary,
             ),
           ),
           const Spacer(),
@@ -348,9 +348,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: theme.dividerColor),
+        color: context.appTheme.surface,
+        borderRadius: AppMetrics.br4,
+        border: Border.all(color: context.appTheme.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -365,7 +365,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             width: 1,
             height: 16,
             margin: const EdgeInsets.symmetric(horizontal: 4),
-            color: theme.dividerColor,
+            color: context.appTheme.border,
           ),
           _buildModeButton(
             label: 'Full',
@@ -432,9 +432,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: AppMetrics.br4,
               border: Border.all(
-                color: theme.dividerColor.withValues(alpha: 0.5),
+                color: context.appTheme.border.withValues(alpha: 0.5),
               ),
             ),
             child: Icon(
@@ -609,11 +609,14 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     final remaining = _lines.length - _displayedLines;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppMetrics.space16,
+        vertical: AppMetrics.space12,
+      ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
+        color: context.appTheme.surface,
         border: Border(
-          top: BorderSide(color: theme.dividerColor),
+          top: BorderSide(color: context.appTheme.border),
         ),
       ),
       child: Row(
@@ -621,18 +624,17 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         children: [
           Text(
             'Showing $_displayedLines of ${_lines.length} lines',
-            style: TextStyle(
-              fontSize: 12,
-              color: theme.colorScheme.outline,
+            style: AppTextStyles.caption12.copyWith(
+              color: context.appTheme.textSecondary,
             ),
           ),
           const SizedBox(width: 16),
-          AppButton.primary(
+          AppButton.secondary(
             onPressed: _showMoreLines,
             label: 'Load $remaining more',
           ),
           const SizedBox(width: 8),
-          AppButton.secondary(
+          AppButton.ghost(
             onPressed: _showAllLinesNow,
             label: 'Load all',
           ),
@@ -841,9 +843,9 @@ class LargeResponseWarning extends StatelessWidget {
         width: 400,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.dividerColor),
+          color: context.appTheme.background,
+          borderRadius: AppMetrics.br8,
+          border: Border.all(color: context.appTheme.border),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

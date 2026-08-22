@@ -11,6 +11,7 @@ import '../../models/timing_info.dart';
 import '../../providers/request/request_tab_provider.dart';
 import '../../providers/providers.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_metrics.dart';
 import '../../theme/app_text_styles.dart' as theme_text;
 import '../../theme/app_theme_data.dart';
 import '../../utils/constants.dart' hide AppColors;
@@ -18,6 +19,7 @@ import '../../utils/testing/ui_test_mode.dart';
 
 import '../common/app_badge.dart';
 import '../common/app_divider.dart';
+import '../common/app_empty_state.dart';
 import '../common/app_tabs.dart';
 import '../common/optimized_response_viewer.dart';
 
@@ -145,7 +147,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   @override
   Widget build(BuildContext context) {
     final response = ref.watch(currentResponseProvider);
-    final theme = Theme.of(context);
 
     // Ensure TabController is synchronized with current response
     _updateTabController(response);
@@ -186,7 +187,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: theme.dividerColor),
+          top: BorderSide(color: context.appTheme.border),
         ),
       ),
       child: Column(
@@ -219,17 +220,16 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   Widget _buildInfoBar(BuildContext context, HttpResponse? response) {
-    const infoFontSize = 11.0;
-    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
 
     if (response == null) {
       return Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        height: AppMetrics.height38,
+        padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space12),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
+          color: appTheme.surface,
           border: Border(
-            bottom: BorderSide(color: theme.dividerColor),
+            bottom: BorderSide(color: appTheme.border),
           ),
         ),
         child: Row(
@@ -237,14 +237,13 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             Icon(
               Icons.hourglass_empty,
               size: 12,
-              color: theme.colorScheme.outline,
+              color: appTheme.textTertiary,
             ),
             const SizedBox(width: 6),
             Text(
               'No response yet',
-              style: TextStyle(
-                fontSize: infoFontSize,
-                color: theme.colorScheme.outline,
+              style: theme_text.AppTextStyles.tiny11.copyWith(
+                color: appTheme.textTertiary,
               ),
             ),
           ],
@@ -267,9 +266,12 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           constraints: BoxConstraints(
-            maxHeight: _isErrorExpanded ? 150 : 44,
+            maxHeight: _isErrorExpanded ? 150 : AppMetrics.height38,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppMetrics.space12,
+            vertical: 7,
+          ),
           decoration: BoxDecoration(
             color: context.appTheme.errorSoft,
             border: Border(
@@ -302,8 +304,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                     ? SingleChildScrollView(
                         child: SelectableText(
                           errorText,
-                          style: TextStyle(
-                            fontSize: infoFontSize,
+                          style: theme_text.AppTextStyles.tiny11.copyWith(
                             color: AppColors.error,
                             height: 1.4,
                           ),
@@ -311,10 +312,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                       )
                     : Text(
                         errorText,
-                        style: TextStyle(
-                          fontSize: infoFontSize,
+                        style: theme_text.AppTextStyles.tiny11.copyWith(
                           color: AppColors.error,
-                          fontWeight: FontWeight.w500,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -360,23 +359,16 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     }
 
     return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: AppMetrics.height38,
+      padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: appTheme.background,
         border: Border(
           bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
+            color: appTheme.border,
             width: 1,
           ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -386,36 +378,32 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             response.statusCode,
             label: '${response.statusCode} ${response.statusText ?? ''}'.trim(),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           // Time
           Icon(
             Icons.timer_outlined,
             size: 12,
-            color: theme.colorScheme.outline,
+            color: appTheme.textTertiary,
           ),
           const SizedBox(width: 4),
           Text(
             '${response.durationMs ?? 0} ms',
-            style: TextStyle(
-              fontSize: infoFontSize,
-              color: theme.colorScheme.outline,
-              fontWeight: FontWeight.w500,
+            style: theme_text.AppTextStyles.tiny11.copyWith(
+              color: appTheme.textSecondary,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           // Size
           Icon(
             Icons.storage_outlined,
             size: 12,
-            color: theme.colorScheme.outline,
+            color: appTheme.textTertiary,
           ),
           const SizedBox(width: 4),
           Text(
             _formatSize(response.sizeBytes),
-            style: TextStyle(
-              fontSize: infoFontSize,
-              color: theme.colorScheme.outline,
-              fontWeight: FontWeight.w500,
+            style: theme_text.AppTextStyles.tiny11.copyWith(
+              color: appTheme.textSecondary,
             ),
           ),
           const Spacer(),
@@ -482,29 +470,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
   Widget _buildBodyTab(BuildContext context, HttpResponse? response) {
     if (response?.body == null) {
-      return Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.code_off,
-                size: 48,
-                color: Theme.of(context)
-                    .colorScheme
-                    .outline
-                    .withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Send a request to see the response',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-              ),
-            ],
-          ),
-        ),
+      return const AppEmptyState(
+        icon: Icons.code_off,
+        title: 'No response',
+        subtitle: 'Send a request to see the response',
       );
     }
 
@@ -526,50 +495,28 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
   Widget _buildHeadersTab(BuildContext context, HttpResponse? response) {
     if (response?.headers.isEmpty ?? true) {
-      return Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.list_alt_outlined,
-                size: 48,
-                color: Theme.of(context)
-                    .colorScheme
-                    .outline
-                    .withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'No headers',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-              ),
-            ],
-          ),
-        ),
+      return const AppEmptyState(
+        icon: Icons.list_alt_outlined,
+        title: 'No headers',
+        subtitle: 'Send a request to see response headers',
       );
     }
 
+    final appTheme = context.appTheme;
     return Container(
-      color: Theme.of(context).colorScheme.surface,
+      color: appTheme.background,
       child: Column(
         children: [
-          // Header row - 使用更明显的样式区分
+          // Header row - 中性色表头（设计规范 kv-head 样式）
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppMetrics.space16,
+              vertical: AppMetrics.space8,
+            ),
             decoration: BoxDecoration(
-              color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+              color: appTheme.surfaceVariant,
               border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.2),
-                  width: 2,
-                ),
+                bottom: BorderSide(color: appTheme.border),
               ),
             ),
             child: Row(
@@ -578,20 +525,16 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                   width: 200,
                   child: Text(
                     'Header Name',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.primary,
+                    style: theme_text.AppTextStyles.micro10.copyWith(
+                      color: appTheme.textTertiary,
                     ),
                   ),
                 ),
                 Expanded(
                   child: Text(
                     'Value',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.primary,
+                    style: theme_text.AppTextStyles.micro10.copyWith(
+                      color: appTheme.textTertiary,
                     ),
                   ),
                 ),
@@ -605,14 +548,14 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               itemBuilder: (context, index) {
                 final header = response.headers[index];
                 return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppMetrics.space16,
+                    vertical: AppMetrics.space8 + 2,
+                  ),
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(
-                        color: Theme.of(context)
-                            .dividerColor
-                            .withValues(alpha: 0.5),
+                        color: appTheme.border.withValues(alpha: 0.5),
                       ),
                     ),
                   ),
@@ -623,19 +566,17 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                         width: 200,
                         child: SelectableText(
                           header.key,
-                          style: TextStyle(
-                            fontSize: 11,
+                          style: theme_text.AppTextStyles.tiny11.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: appTheme.textPrimary,
                           ),
                         ),
                       ),
                       Expanded(
                         child: SelectableText(
                           header.value,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Theme.of(context).colorScheme.onSurface,
+                          style: theme_text.AppTextStyles.tiny11.copyWith(
+                            color: appTheme.textPrimary,
                           ),
                         ),
                       ),
@@ -651,8 +592,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   Widget _buildCookiesTab(BuildContext context) {
-    return _buildEmptyState(
-      context: context,
+    return const AppEmptyState(
       icon: Icons.cookie_outlined,
       title: 'Cookies',
       subtitle: 'Cookie management coming soon',
@@ -689,8 +629,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     final activeTab = ref.watch(activeTabProvider);
 
     if (activeTab == null) {
-      return _buildEmptyState(
-        context: context,
+      return const AppEmptyState(
         icon: Icons.upload_outlined,
         title: 'No Request',
         subtitle: 'Create a request to see details',
@@ -1032,11 +971,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.5),
+            color: context.appTheme.surfaceVariant,
             borderRadius: BorderRadius.circular(AppConstants.radiusM),
             border: Border.all(
-              color: theme.dividerColor.withValues(alpha: 0.5),
+              color: context.appTheme.border.withValues(alpha: 0.5),
             ),
           ),
           child: Column(
@@ -1530,11 +1468,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       const AppTabItem(icon: Icons.cookie_outlined, label: 'Cookies'),
     ];
 
-    // Timing Tab
+    // Timing Tab（固定标签，总耗时在内容区展示，避免标签宽度随响应时间跳动）
     if (response?.timingInfo != null) {
-      final timing = response!.timingInfo!;
       items.add(
-        AppTabItem(icon: Icons.timer, label: 'Time: ${timing.totalMs}ms'),
+        const AppTabItem(icon: Icons.timer, label: 'Timing'),
       );
     }
 
@@ -1701,10 +1638,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           margin: const EdgeInsets.only(bottom: 6),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: context.appTheme.surfaceVariant,
             borderRadius: BorderRadius.circular(AppConstants.radiusS),
             border: Border.all(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+              color: context.appTheme.border.withValues(alpha: 0.5),
             ),
           ),
           child: Row(
@@ -1779,13 +1716,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest
-            .withValues(alpha: 0.5),
+        color: context.appTheme.surfaceVariant,
         borderRadius: BorderRadius.circular(AppConstants.radiusM),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+          color: context.appTheme.border.withValues(alpha: 0.5),
         ),
       ),
       child: Column(
@@ -1837,71 +1771,6 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Center(
-      child: SingleChildScrollView(
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Theme.of(context)
-                .colorScheme
-                .surfaceContainerHighest
-                .withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(AppConstants.radiusXL),
-            border: Border.all(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppConstants.radiusL),
-                ),
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.6),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                title,
-                style: AppTextStyles.title.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                style: AppTextStyles.body.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

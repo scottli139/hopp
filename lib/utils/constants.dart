@@ -4,6 +4,14 @@ import 'package:flutter/material.dart';
 class AppConstants {
   AppConstants._();
 
+  /// 应用版本号兜底值（与 pubspec.yaml `version` 保持一致，
+  /// 由 test/app_version_test.dart 守护同步）。
+  ///
+  /// 正常运行时版本号由 package_info_plus 从应用包信息读取
+  /// （见 appVersionProvider），此常量仅在该读取失败（如单元测试
+  /// 环境）时使用。
+  static const String appVersion = '0.7.0';
+
   // ========== 间距系统 ==========
   static const double spaceXS = 4.0;
   static const double spaceS = 8.0;

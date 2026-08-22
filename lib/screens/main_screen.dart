@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 
 import '../utils/testing/ui_test_mode.dart';
 
 import '../providers/providers.dart';
+import '../theme/app_metrics.dart';
+import '../theme/app_text_styles.dart';
+import '../theme/app_theme_data.dart';
+import '../utils/constants.dart' hide AppTextStyles;
+import '../widgets/common/app_empty_state.dart';
 import '../widgets/common/app_button.dart';
 import '../widgets/layout/sidebar.dart';
 import '../widgets/layout/request_tabs.dart';
@@ -66,8 +72,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final tabs = ref.watch(requestTabProvider);
     final activeTab = ref.watch(activeTabProvider);
 
-    final theme = Theme.of(context);
-
     // 监听 UI 测试模式的分隔线位置控制
     _listenToUITestCommands();
 
@@ -80,9 +84,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               data: MultiSplitViewThemeData(
                 dividerThickness: 1,
                 dividerPainter: DividerPainters.background(
-                  color: theme.dividerColor.withValues(alpha: 0.3),
+                  color: context.appTheme.border.withValues(alpha: 0.5),
                   highlightedColor:
-                      theme.colorScheme.primary.withValues(alpha: 0.3),
+                      context.appTheme.brand.withValues(alpha: 0.5),
                 ),
               ),
               child: MultiSplitView(
@@ -118,31 +122,35 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildEmptyState() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final appTheme = context.appTheme;
 
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-            'assets/images/logo.svg.png',
-            width: 80,
-            height: 80,
-            opacity: const AlwaysStoppedAnimation(0.5),
+          ClipRRect(
+            borderRadius: AppMetrics.br10,
+            child: Opacity(
+              opacity: 0.5,
+              child: SvgPicture.asset(
+                'assets/images/logo.svg',
+                width: 80,
+                height: 80,
+              ),
+            ),
           ),
           const SizedBox(height: 24),
           Text(
             'No requests yet',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: colorScheme.outline,
+            style: AppTextStyles.title16.copyWith(
+              color: appTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Get started by creating your first request',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.outline.withValues(alpha: 0.7),
+            style: AppTextStyles.body13.copyWith(
+              color: appTheme.textTertiary,
             ),
           ),
           const SizedBox(height: 24),
@@ -156,9 +164,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           // Keyboard shortcut hint
           Text(
             'or press Cmd+N',
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: 12,
-              color: colorScheme.outline.withValues(alpha: 0.6),
+            style: AppTextStyles.caption12.copyWith(
+              color: appTheme.textTertiary,
             ),
           ),
         ],
@@ -174,20 +181,21 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildNoActiveTabState() {
-    return const Center(
-      child: Text('Select a tab to start'),
+    return const AppEmptyState(
+      icon: Icons.tab_outlined,
+      title: 'Select a tab to start',
     );
   }
 
   Widget _buildRequestResponseArea() {
-    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
 
     return MultiSplitViewTheme(
       data: MultiSplitViewThemeData(
         dividerThickness: 12,
         dividerPainter: DividerPainters.grooved2(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-          highlightedColor: theme.colorScheme.primary.withValues(alpha: 0.6),
+          color: appTheme.border,
+          highlightedColor: appTheme.brand.withValues(alpha: 0.6),
           thickness: 2,
           count: 3,
           highlightedCount: 5,
@@ -211,15 +219,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget _buildStatusBar() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final appTheme = context.appTheme;
+    final version =
+        ref.watch(appVersionProvider).valueOrNull ?? AppConstants.appVersion;
 
     return Container(
       height: 28,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
+        color: appTheme.surface,
         border: Border(
           top: BorderSide(
-            color: theme.dividerColor,
+            color: appTheme.border,
           ),
         ),
       ),
@@ -262,10 +273,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ),
           const SizedBox(width: 12),
           Text(
-            'v0.6.0',
+            'v$version',
             style: theme.textTheme.bodySmall?.copyWith(
               fontSize: 11,
-              color: colorScheme.onSurface.withValues(alpha: 0.6),
+              color: appTheme.textTertiary,
             ),
           ),
           const Spacer(),
@@ -274,7 +285,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981),
+              color: appTheme.success,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -283,7 +294,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             'Ready',
             style: theme.textTheme.bodySmall?.copyWith(
               fontSize: 11,
-              color: colorScheme.onSurface.withValues(alpha: 0.8),
+              color: appTheme.textSecondary,
             ),
           ),
         ],

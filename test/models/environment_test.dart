@@ -25,6 +25,7 @@ void main() {
       expect(a.key, '');
       expect(a.value, '');
       expect(a.id, isNotEmpty);
+      expect(a.id, isNot(b.id));
     });
 
     test('isSecret should reflect type', () {

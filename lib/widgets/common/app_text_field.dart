@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_colors.dart';
 import '../../theme/app_metrics.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
@@ -9,6 +10,9 @@ import '../../theme/app_theme_data.dart';
 /// 规格：默认高 32（[compact] 高 28）、横 padding 10、字号 13（compact 12）、
 /// 底 background、边 borderStrong、圆角 6、focus 边 brand 1.5px。
 /// 占位文字 textTertiary。
+///
+/// [borderless] = true 时为「隐形」单元格风格（表格行 / 行内标题）：默认
+/// 透明底透明边，hover 显 border 细边，focus 显 brand 边；高度规则不变。
 ///
 /// 实现说明：**不能**依赖 `InputDecorator` 描边控高——`isDense` 下边框只
 /// 包住「文字行高 + contentPadding」，外层 SizedBox 只影响布局空间，不会
@@ -28,6 +32,7 @@ class AppTextField extends StatefulWidget {
     this.autofocus = false,
     this.enabled = true,
     this.compact = false,
+    this.borderless = false,
     this.obscureText = false,
     this.maxLines = 1,
     this.expands = false,
@@ -49,6 +54,10 @@ class AppTextField extends StatefulWidget {
 
   /// true 时高 28、字号 12（工具条/表格行内嵌输入）
   final bool compact;
+
+  /// true 时默认透明底透明边，hover 显 border 细边、focus 显 brand 边
+  ///（表格单元格 / 行内可编辑标题场景）
+  final bool borderless;
   final bool obscureText;
 
   /// 多行时 > 1（如 3），盒子高度包裹内容；单行固定高时忽略
@@ -72,6 +81,7 @@ class _AppTextFieldState extends State<AppTextField> {
   FocusNode? _ownedNode;
   FocusNode? _listenedNode;
   bool _focused = false;
+  bool _hovering = false;
 
   FocusNode get _effectiveNode =>
       widget.focusNode ?? (_ownedNode ??= FocusNode());
@@ -154,33 +164,49 @@ class _AppTextFieldState extends State<AppTextField> {
       onSubmitted: widget.onSubmitted,
     );
 
-    return Container(
-      height: singleLine
-          ? (widget.height ??
-              (widget.compact ? AppMetrics.height28 : AppMetrics.height32))
-          : null,
-      decoration: BoxDecoration(
-        color: t.background,
-        border: Border.all(
-          color: _focused ? t.brand : t.borderStrong,
-          width: _focused ? 1.5 : 1,
-        ),
-        borderRadius: AppMetrics.br6,
-      ),
-      padding: singleLine
-          ? const EdgeInsets.symmetric(horizontal: AppMetrics.space12 - 2)
-          : const EdgeInsets.symmetric(
-              horizontal: AppMetrics.space12 - 2,
-              vertical: AppMetrics.space8,
+    final boxDecoration = widget.borderless
+        ? BoxDecoration(
+            border: Border.all(
+              color: _focused
+                  ? t.brand
+                  : (_hovering ? t.border : AppColors.transparent),
+              width: _focused ? 1.5 : 1,
             ),
-      child: singleLine
-          ? Row(
-              children: [
-                Expanded(child: Center(child: field)),
-                if (widget.suffix != null) widget.suffix!,
-              ],
-            )
-          : field,
+            borderRadius: AppMetrics.br6,
+          )
+        : BoxDecoration(
+            color: t.background,
+            border: Border.all(
+              color: _focused ? t.brand : t.borderStrong,
+              width: _focused ? 1.5 : 1,
+            ),
+            borderRadius: AppMetrics.br6,
+          );
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: Container(
+        height: singleLine
+            ? (widget.height ??
+                (widget.compact ? AppMetrics.height28 : AppMetrics.height32))
+            : null,
+        decoration: boxDecoration,
+        padding: singleLine
+            ? const EdgeInsets.symmetric(horizontal: AppMetrics.space12 - 2)
+            : const EdgeInsets.symmetric(
+                horizontal: AppMetrics.space12 - 2,
+                vertical: AppMetrics.space8,
+              ),
+        child: singleLine
+            ? Row(
+                children: [
+                  Expanded(child: Center(child: field)),
+                  if (widget.suffix != null) widget.suffix!,
+                ],
+              )
+            : field,
+      ),
     );
   }
 }

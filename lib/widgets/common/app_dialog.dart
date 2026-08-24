@@ -5,6 +5,7 @@ import '../../theme/app_shadows.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
 import 'app_button.dart';
+import 'app_divider.dart';
 
 /// 应用统一对话框容器（规格见原型 .dialog）。
 ///
@@ -24,6 +25,8 @@ class AppDialog extends StatelessWidget {
     this.height,
     this.contentPadding = const EdgeInsets.fromLTRB(20, 16, 20, 16),
     this.showClose = true,
+    this.showDividers = false,
+    this.footerLeading,
   });
 
   final String title;
@@ -44,6 +47,12 @@ class AppDialog extends StatelessWidget {
   /// 是否显示右上角关闭按钮
   final bool showClose;
 
+  /// 头部下沿 / 底部上沿是否显示分隔细线（大型分区对话框用）
+  final bool showDividers;
+
+  /// 底部按钮区左侧内容（如用法提示），与右侧 actions 同一行
+  final Widget? footerLeading;
+
   @override
   Widget build(BuildContext context) {
     final t = context.appTheme;
@@ -58,6 +67,9 @@ class AppDialog extends StatelessWidget {
         width: width,
         height: height,
         decoration: BoxDecoration(
+          // 必须有填充色：BoxShadow 绘制在填充之下，无填充时阴影会
+          // 透过内部区域（整个对话框发灰）
+          color: t.background,
           borderRadius: AppMetrics.br8,
           border: Border.all(color: t.border),
           boxShadow: AppShadows.md(context),
@@ -95,22 +107,31 @@ class AppDialog extends StatelessWidget {
                   ],
                 ),
               ),
+              if (showDividers) ...[
+                const SizedBox(height: AppMetrics.space16),
+                const AppDivider(),
+              ],
               // 正文
               Flexible(
                 child: Padding(padding: contentPadding, child: child),
               ),
               // 底部按钮区
-              if (actions != null)
+              if (actions != null) ...[
+                if (showDividers) const AppDivider(),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
                     AppMetrics.space20,
-                    0,
+                    showDividers ? AppMetrics.space12 : 0,
                     AppMetrics.space20,
-                    AppMetrics.space16,
+                    showDividers ? AppMetrics.space12 : AppMetrics.space16,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
+                      if (footerLeading != null) ...[
+                        Expanded(child: footerLeading!),
+                        const SizedBox(width: AppMetrics.space8),
+                      ],
                       for (var i = 0; i < actions!.length; i++) ...[
                         if (i > 0) const SizedBox(width: AppMetrics.space8),
                         actions![i],
@@ -118,6 +139,7 @@ class AppDialog extends StatelessWidget {
                     ],
                   ),
                 ),
+              ],
             ],
           ),
         ),

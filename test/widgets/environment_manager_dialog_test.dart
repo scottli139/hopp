@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopp/models/environment.dart';
 import 'package:hopp/providers/core/providers.dart';
-import 'package:hopp/widgets/common/app_popup_menu.dart';
 import 'package:hopp/widgets/common/app_text_field.dart';
 import 'package:hopp/widgets/environment/environment_manager_dialog.dart';
 import 'package:mockito/mockito.dart';
@@ -78,7 +77,13 @@ void main() {
       await tester.pumpWidget(buildTestWidget(container));
       await openDialog(tester);
 
-      expect(find.widgetWithText(ListTile, 'Development'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('environment_entry_env-dev')),
+          matching: find.text('Development'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Globals'), findsOneWidget);
       // 名称输入框显示选中环境的名称
       final nameField = tester
@@ -197,12 +202,13 @@ void main() {
       await tester.tap(find.byKey(const Key('globals_entry')));
       await tester.pumpAndSettle();
 
-      // 添加全局变量
+      // 添加全局变量（Globals 空状态下的主按钮）
       await tester.tap(find.byKey(const Key('add_variable_button')));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextField).at(1), 'sharedKey');
-      await tester.enterText(find.byType(TextField).at(2), 'sharedValue');
+      // Globals 名称为只读标题，不占 TextField：key/value 为第 1/2 个输入框
+      await tester.enterText(find.byType(TextField).at(0), 'sharedKey');
+      await tester.enterText(find.byType(TextField).at(1), 'sharedValue');
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('environment_dialog_save_button')));
@@ -237,6 +243,7 @@ void main() {
     /// 高度一致性回归（UI 审计发现）：
     /// 旧实现 InputDecorator 描边不随外层 SizedBox 撑开，导致同页输入框
     /// 出现 16/18/24/28 多种高度。新实现显式盒子，渲染盒 == 绘制盒。
+    /// 重设计后规格：名称行内标题 32、行内单元格 28、类型徽章 24。
     testWidgets('variable row controls share uniform heights', (tester) async {
       const envWithSecret = Environment(
         id: 'env-sec',
@@ -260,14 +267,14 @@ void main() {
       await tester.pumpWidget(buildTestWidget(container));
       await openDialog(tester);
 
-      // 名称字段：独立表单字段规格 32
+      // 名称字段：行内标题规格 32
       final nameField = find.ancestor(
         of: find.byKey(const Key('environment_name_field')),
         matching: find.byType(AppTextField),
       );
       expect(tester.getSize(nameField).height, 32);
 
-      // 行内控件统一 28（Key/Value 输入框 + secret 带显隐按钮 + Type 下拉）
+      // 行内 Key/Value 输入框统一 28（含 secret 带显隐按钮行）
       final rowFields = find.descendant(
         of: find.byKey(const Key('variable_row_v1')),
         matching: find.byType(AppTextField),
@@ -282,11 +289,60 @@ void main() {
           expect(e.size!.height, 28, reason: 'row field must be 28pt');
         }
       }
-      final selects = find.byType(AppPopupSelect<VariableType>);
-      expect(selects, findsNWidgets(2));
-      for (final e in selects.evaluate()) {
-        expect(e.size!.height, 28, reason: 'type select must be 28pt');
+      // 类型徽章选择器统一 24
+      final pills = find.byType(TypePillSelect);
+      expect(pills, findsNWidgets(2));
+      for (final e in pills.evaluate()) {
+        expect(e.size!.height, 24, reason: 'type pill must be 24pt');
       }
+    });
+
+    testWidgets('should mark the active environment with a dot',
+        (tester) async {
+      when(mockStorageService.getEnvironments())
+          .thenAnswer((_) async => [devEnv]);
+      when(mockStorageService.getActiveEnvironmentId())
+          .thenAnswer((_) async => 'env-dev');
+
+      final container = buildContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(buildTestWidget(container));
+      await openDialog(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('environment_entry_env-dev')),
+          matching: find.byKey(const Key('active_env_dot')),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('should switch variable type via pill and save',
+        (tester) async {
+      when(mockStorageService.getEnvironments())
+          .thenAnswer((_) async => [devEnv]);
+
+      final container = buildContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(buildTestWidget(container));
+      await openDialog(tester);
+
+      // 打开类型徽章菜单并选择 secret
+      await tester.tap(find.byKey(const Key('variable_type_pill_v1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('secret').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('environment_dialog_save_button')));
+      await tester.pumpAndSettle();
+
+      final captured =
+          verify(mockStorageService.saveEnvironment(captureAny)).captured;
+      final saved = captured.last as Environment;
+      expect(saved.variables.single.type, VariableType.secret);
     });
   });
 }

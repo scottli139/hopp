@@ -176,6 +176,8 @@ class _AppButtonState extends State<AppButton> {
 /// 默认：图标 textSecondary，hover 底 surfaceVariant + 图标 textPrimary。
 /// [bordered] 为 true 时带 borderStrong 边框与 background 底（输入区工具按钮）。
 /// [color] 可覆盖图标色（如 dirty 态用 brand）。
+/// [danger] 为 true 时默认图标 textTertiary，hover 底 errorSoft + 图标 error
+///（删除等破坏性操作）。
 class AppIconButton extends StatefulWidget {
   const AppIconButton({
     super.key,
@@ -184,6 +186,7 @@ class AppIconButton extends StatefulWidget {
     this.tooltip,
     this.color,
     this.bordered = false,
+    this.danger = false,
     this.size = AppMetrics.height28,
     this.iconSize = 16,
   });
@@ -193,6 +196,9 @@ class AppIconButton extends StatefulWidget {
   final String? tooltip;
   final Color? color;
   final bool bordered;
+
+  /// 破坏性操作样式：hover 底 errorSoft + 图标 error
+  final bool danger;
   final double size;
   final double iconSize;
 
@@ -208,8 +214,11 @@ class _AppIconButtonState extends State<AppIconButton> {
   @override
   Widget build(BuildContext context) {
     final t = context.appTheme;
-    final baseColor = widget.color ?? t.textSecondary;
-    final iconColor = _hovering ? (widget.color ?? t.textPrimary) : baseColor;
+    final baseColor =
+        widget.color ?? (widget.danger ? t.textTertiary : t.textSecondary);
+    final iconColor = _hovering
+        ? (widget.color ?? (widget.danger ? t.error : t.textPrimary))
+        : baseColor;
 
     Widget child = AnimatedContainer(
       duration: AppMetrics.animFast,
@@ -217,7 +226,7 @@ class _AppIconButtonState extends State<AppIconButton> {
       height: widget.size,
       decoration: BoxDecoration(
         color: _hovering
-            ? t.surfaceVariant
+            ? (widget.danger ? t.errorSoft : t.surfaceVariant)
             : (widget.bordered ? t.background : AppColors.transparent),
         borderRadius: AppMetrics.br6,
         border: widget.bordered ? Border.all(color: t.borderStrong) : null,

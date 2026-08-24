@@ -102,3 +102,6 @@ backup_tauri/node_modules/
 backup_tauri/.pnpm-store/
 backup_tauri/dist/
 backup_tauri/src-tauri/target/
+
+# golden 测试失败转储
+test/**/failures/

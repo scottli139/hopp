@@ -42,6 +42,9 @@ class AppDivider extends StatelessWidget {
     }
     return SizedBox(
       height: height,
+      // 水平分隔线必须撑满可用宽度：无子节点的 DecoratedBox 在宽松
+      // 约束下宽度为 0（非 stretch 的 Column 里整条线不渲染）
+      width: double.infinity,
       child: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: color)),

@@ -1445,7 +1445,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     WidgetRef ref,
     HttpRequest request,
   ) {
-    final theme = Theme.of(context);
+    final t = context.appTheme;
 
     return Scrollbar(
       controller: _settingsScrollController,
@@ -1478,8 +1478,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 Container(
                   padding: const EdgeInsets.all(AppMetrics.space12),
                   decoration: BoxDecoration(
-                    color:
-                        context.appTheme.surfaceVariant.withValues(alpha: 0.5),
+                    color: t.surfaceVariant.withValues(alpha: 0.5),
                     borderRadius: AppMetrics.br6,
                   ),
                   child: Row(
@@ -1487,14 +1486,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       Icon(
                         Icons.info_outline,
                         size: 16,
-                        color: theme.colorScheme.outline,
+                        color: t.textTertiary,
                       ),
                       const SizedBox(width: AppMetrics.space8),
                       Expanded(
                         child: Text(
                           'Disable this option to allow self-signed certificates or bypass certificate errors for testing purposes.',
                           style: AppTextStyles.tiny11.copyWith(
-                            color: theme.colorScheme.outline,
+                            color: t.textTertiary,
                           ),
                         ),
                       ),
@@ -1566,7 +1565,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     required String title,
     required List<Widget> children,
   }) {
-    final theme = Theme.of(context);
+    final t = context.appTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1575,16 +1574,16 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           title,
           style: AppTextStyles.tiny11.copyWith(
             fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurfaceVariant,
+            color: t.textTertiary,
           ),
         ),
         const SizedBox(height: AppMetrics.space12),
         Container(
           padding: const EdgeInsets.all(AppMetrics.space16),
           decoration: BoxDecoration(
-            color: context.appTheme.surface,
+            color: t.surface,
             border: Border.all(
-              color: context.appTheme.border.withValues(alpha: 0.5),
+              color: t.border.withValues(alpha: 0.5),
             ),
             borderRadius: AppMetrics.br6,
           ),
@@ -1605,7 +1604,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    final theme = Theme.of(context);
+    final t = context.appTheme;
 
     return Row(
       children: [
@@ -1623,27 +1622,13 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               Text(
                 subtitle,
                 style: AppTextStyles.tiny11.copyWith(
-                  color: theme.colorScheme.outline,
+                  color: t.textTertiary,
                 ),
               ),
             ],
           ),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppSwitch(value: value, onChanged: onChanged),
-            const SizedBox(width: 8),
-            // Status text
-            Text(
-              value ? 'ON' : 'OFF',
-              style: AppTextStyles.caption12.copyWith(
-                color: value ? AppColors.brand : context.appTheme.textTertiary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+        AppSwitch(value: value, onChanged: onChanged),
       ],
     );
   }
@@ -1654,7 +1639,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     required String title,
     required String subtitle,
   }) {
-    final theme = Theme.of(context);
+    final t = context.appTheme;
 
     return Row(
       children: [
@@ -1666,14 +1651,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 title,
                 style: AppTextStyles.caption12.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.outline,
+                  color: t.textTertiary,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
                 style: AppTextStyles.tiny11.copyWith(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.6),
+                  color: t.textTertiary.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -1682,7 +1667,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         Icon(
           Icons.lock_outline,
           size: 16,
-          color: theme.colorScheme.outline.withValues(alpha: 0.5),
+          color: t.textTertiary.withValues(alpha: 0.5),
         ),
       ],
     );
@@ -1698,7 +1683,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     required int max,
     required ValueChanged<int> onChanged,
   }) {
-    final theme = Theme.of(context);
+    final t = context.appTheme;
 
     return Row(
       children: [
@@ -1716,7 +1701,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               Text(
                 subtitle,
                 style: AppTextStyles.tiny11.copyWith(
-                  color: theme.colorScheme.outline,
+                  color: t.textTertiary,
                 ),
               ),
             ],
@@ -1726,7 +1711,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         // Number input with +/- buttons
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: theme.colorScheme.outlineVariant),
+            border: Border.all(color: t.border),
             borderRadius: AppMetrics.br4,
           ),
           child: Row(
@@ -1743,8 +1728,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     Icons.remove,
                     size: 16,
                     color: value > min
-                        ? context.appTheme.textPrimary
-                        : theme.colorScheme.outline.withValues(alpha: 0.3),
+                        ? t.textPrimary
+                        : t.textTertiary.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -1755,8 +1740,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   border: Border(
-                    left: BorderSide(color: theme.colorScheme.outlineVariant),
-                    right: BorderSide(color: theme.colorScheme.outlineVariant),
+                    left: BorderSide(color: t.border),
+                    right: BorderSide(color: t.border),
                   ),
                 ),
                 child: Text(
@@ -1777,8 +1762,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                     Icons.add,
                     size: 16,
                     color: value < max
-                        ? context.appTheme.textPrimary
-                        : theme.colorScheme.outline.withValues(alpha: 0.3),
+                        ? t.textPrimary
+                        : t.textTertiary.withValues(alpha: 0.3),
                   ),
                 ),
               ),

@@ -98,17 +98,11 @@
 
 ## 已知问题
 
+> 本表只保留未修复问题；已修复/已排除的不再留存，追溯见 [CHANGELOG.md](./CHANGELOG.md) 与 GitHub Issues。
+
 | 问题 | 优先级 | 状态 |
 |------|--------|------|
 | 行号与内容滚动不同步 | P2 | 待修（CodeEditor 组件；TI-03 已修复，`scroll_response target=body` 可自动化验证，见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md)） |
-| ~~Settings Tab 缺滚动条指示，空间不足内容被裁切（UI-01）~~ | ~~P2~~ | ✅ 已修复（2026-08-21）：Settings 页加 `Scrollbar(thumbVisibility: true)` |
-| ~~响应区空状态/工具条溢出 BOTTOM OVERFLOWED（UI-02）~~ | ~~P2~~ | ✅ 已修复（2026-08-21）：三处空态外包 `SingleChildScrollView` 收缩保护 |
-| ~~布局重建把请求编辑器 Tab 重置回 Params（UI-03）~~ | ~~P2~~ | ✅ 已修复（2026-08-21）：分栏应用改为幂等 + `requestEditorTabIndexProvider` 持久化索引 |
-| ~~auto header 判定硬编码 key 集合，手填同名 header 会被误标（UI-04）~~ | ~~P3~~ | ✅ 已修复（2026-08-21）：`HttpRequestInfo` 新增 `autoHeaderKeys`，构建 request info 时按来源标记（HttpService/ui_test_mode 两条路径），response_viewer 按集合判定；附带修复长 key + auto 徽章溢出问题 |
-| ~~导出对话框主按钮疑似缺失/文字重叠~~ | ~~P1~~ | ✅ 已复核排除（2026-08-20，RepaintBoundary 截图 + 像素级复核）：Export 按钮存在，未选 Collection 时为禁用态（低对比度导致 OCR 漏识别）；"Select Collection" 显示完整，"lect Collection" 系 OCR 误读 |
-| ~~测试日志噪音~~ | ~~P2~~ | ✅ 已修复（2026-08-20）：`_AllLogFilter` 在 `flutter test` 环境（进程环境变量 `FLUTTER_TEST=true`）下只输出 warning 及以上级别，trace/debug/info 不再刷屏；单个测试文件输出 120 行 → 10 行。注意编译期 `bool.fromEnvironment('FLUTTER_TEST')` 在 Flutter 3.27.4 下为 false，必须用 `Platform.environment` 检测 |
-
-> 已修复并移除：删除 Collection 子目录处理问题（Issue #3，2026-03-19 已修复）。
 
 ---
 
@@ -121,10 +115,5 @@
 | TD-1 | 后代集合遍历逻辑重复 | `collection_provider.dart` 的 `collectDescendants` 与 `postman_import_service.dart` 的 `_collectAllChildIds` 是同一段「按 parentId 递归收集子孙」逻辑 | 抽成公共工具函数，两处复用 | P2 | 下次改动集合层级 / 导入导出逻辑时 |
 | TD-2 | URL 查询参数解析重复 | `utils/url_params_sync.dart` 已提供 parse/build/sync，但 `http_service.dart`、`postman_mapper.dart`、`curl_import_service.dart` 各自重写 | 统一走 `url_params_sync.dart` | P2 | 下次改动 URL 处理相关代码时 |
 | TD-3 | Timing 的 TCP/TLS/TTFB 为估算值 | `http_service.dart` 用硬编码 `30/20/45` 及 `totalMs ~/ 3` 填充 | 改为真实测量，测不到就标记为未测量（null），避免误导 | P2 | 实现真实计时或重做 Timing Tab 时 |
-| ~~TD-4~~ | ~~UI 测试指令存在死指令/不可靠指令~~ | ~~`set_window_size`、`trigger_curl_import_dialog` 无监听者；`scroll_response` 只驱动 Certificate 控制器；`switch_request_tab` / `expand_raw_content_type_dropdown` one-shot 不可靠（详见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md) TI-01～04）~~ | ~~补齐监听、修正滚动目标、指令改幂等~~ | ~~P2~~ | ✅ 已修复（2026-08-21）：窗口走 `com.example.hopp/window` 原生通道；curl 对话框补监听；`scroll_response` 支持 body/certificate 目标并回读 before/after；Tab 切换带时间戳幂等；新增 `dismiss_dialog` 指令 |
-| TD-5 | 版本号多处硬编码 | ✅ App 侧已修复（2026-08-22，v0.8.8）：`package_info_plus` 动态读取 + `app_version_test` 守护与 pubspec 同步（Issue #13）；残余：`site/` 两个静态页的 version 徽章需发布时手动改（2026-08-25 已对齐 v0.10.0） | 发布流程中加入 site/ 徽章同步步骤（或脚本化） | P3 | 每次发布 |
+| TD-5 | site/ 版本徽章手动同步 | App 侧版本号已改为动态读取（v0.8.8，Issue #13）；残余：`site/` 两个静态页的 version 徽章需发布时手动改（2026-08-25 已对齐 v0.10.0） | 发布流程中加入 site/ 徽章同步步骤（或脚本化） | P3 | 每次发布 |
 | TD-6 | test-mode `tap_at` 疑似干扰 Tab 状态 | F8 截图审计（2026-08-25）：Params 页对 fx 按钮 `tap_at(745,118)`（47 个 hitTargets）后页面异常跳回 Pre-request tab；功能本身由 widget test 覆盖且正常 | 排查 `tap_at` 的命中分发与 `_tabController`/持久化 index 的互相影响 | P3 | 下次扩展 test-mode 指针指令时 |
-
----
-
-<p align="center">Built with ❤️ by AI · Powered by Kimi</p>

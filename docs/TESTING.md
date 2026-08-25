@@ -849,6 +849,12 @@ group('Counter', () {
 });
 ```
 
+### 4. 测试环境日志降噪
+
+`lib/utils/app_logger.dart` 的 `_AllLogFilter` 在 `flutter test` 环境（进程环境变量 `FLUTTER_TEST=true`）下只输出 warning 及以上级别，避免 trace/debug/info 刷屏。
+
+> 注意：编译期 `bool.fromEnvironment('FLUTTER_TEST')` 在 Flutter 3.27.4 下为 false，必须用 `Platform.environment` 检测。
+
 ---
 
 ## 参考资源

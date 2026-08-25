@@ -964,7 +964,3 @@ lib/
   "delay": 500
 }
 ```
-
----
-
-<p align="center">Built with ❤️ by AI · Powered by Kimi</p>

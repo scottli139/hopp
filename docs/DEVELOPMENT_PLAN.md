@@ -89,25 +89,6 @@
 
 ---
 
-## 🐛 已知问题修复记录
-
-| Issue | 问题描述 | 状态 | 修复时间 |
-|-------|----------|------|----------|
-| #1 | 4XX/5XX 响应不显示服务端返回内容 | ✅ 已修复 | 2026-03-17 |
-| #2 | Certificate 显示假数据 | ✅ 已修复 | 2026-03-17 |
-| #3 | 删除 Collection 子目录处理问题 | ✅ 已修复 | 2026-03-19 |
-| #5 | Hive 数据库兼容性修复 | ✅ 已修复 | 2026-03-17 |
-| #6 | 初次使用缺少创建入口 | ✅ 已修复 | 2026-03-19 |
-| #7 | Import/Export/Delete 对话框 UI 规范 | ✅ 已修复 | 2026-03-18 |
-| #9 | Request Settings UI 样式问题 | ✅ 已修复 | 2026-03-17 |
-| #10 | Postman 导入 Raw Content Type 识别错误 | ✅ 已修复 | 2026-03-17 |
-| #11 | URL 查询参数与 Params Tab 双向联动 | ✅ 已实现 | 2026-03-18 |
-| #8 | About 页链接点击无效，无法跳转浏览器 | ✅ 已修复 | 2026-08-21 |
-| #14 | Add Folder 对话框样式不符合规范 | ✅ 已修复 | 2026-08-21 |
-| #16 | New Collection 对话框不符合 UI/UX 规范 | ✅ 已修复 | 2026-08-21 |
-
----
-
 ## 🔗 参考链接
 
 - [产品需求规格说明书](./PRD.md)
@@ -121,7 +102,3 @@
 - [Riverpod 文档](https://riverpod.dev/)
 - [Material Design 3](https://m3.material.io/)
 - [GitHub 项目](https://github.com/scottli139/hopp)
-
----
-
-<p align="center">Built with ❤️ by AI · Powered by Kimi</p>

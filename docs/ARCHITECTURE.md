@@ -755,7 +755,3 @@ abstract class ThemeExtension {
 - [Riverpod Documentation](https://riverpod.dev/)
 - [Dio Documentation](https://github.com/cfug/dio)
 - [Hive Documentation](https://docs.hivedb.dev/)
-
----
-
-<p align="center">Built with ❤️ by AI · Powered by Kimi</p>

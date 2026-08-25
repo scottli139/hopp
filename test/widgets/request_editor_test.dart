@@ -478,8 +478,7 @@ void main() {
         expect(find.text('Basic Auth'), findsOneWidget);
         expect(find.text('API Key'), findsOneWidget);
         // 默认 Inherit：无继承来源时的兜底提示
-        expect(find.text('继承链上未找到认证配置，发送时不附加认证信息。'),
-            findsOneWidget);
+        expect(find.text('继承链上未找到认证配置，发送时不附加认证信息。'), findsOneWidget);
       });
 
       testWidgets('should show bearer token field when Bearer selected',
@@ -598,7 +597,8 @@ void main() {
     });
 
     group('Variable fx menu (F8.3)', () {
-      testWidgets('should show fx icon on value cell with variable and open menu',
+      testWidgets(
+          'should show fx icon on value cell with variable and open menu',
           (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',

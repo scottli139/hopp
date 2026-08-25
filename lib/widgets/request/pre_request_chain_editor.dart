@@ -119,8 +119,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                   label: '试运行',
                   icon: Icons.play_arrow,
                   size: AppButtonSize.small,
-                  onPressed:
-                      widget.chain.isEmpty ? null : widget.onTestRun,
+                  onPressed: widget.chain.isEmpty ? null : widget.onTestRun,
                 ),
               ],
             ],
@@ -130,8 +129,8 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
           // 步骤列表
           if (widget.chain.isEmpty)
             _buildEmptyState(context)
-            else
-              _buildStepList(context),
+          else
+            _buildStepList(context),
 
           // 运行策略
           _buildPolicyBar(context),
@@ -259,7 +258,8 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                     const SizedBox(width: AppMetrics.space8),
                     Tooltip(
                       message: '引用的请求已被删除',
-                      child: Icon(Icons.error_outline, size: 14, color: t.error),
+                      child:
+                          Icon(Icons.error_outline, size: 14, color: t.error),
                     ),
                   ],
                   const Spacer(),
@@ -400,8 +400,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
             ),
           ),
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppMetrics.space4),
+            padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space4),
             child: Icon(Icons.arrow_forward, size: 12, color: t.textTertiary),
           ),
           // 目标变量
@@ -520,8 +519,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
   }
 
   Widget _buildRunResult(BuildContext context) {
-    final result =
-        ref.watch(preRequestRunResultsProvider)[widget.ownerId];
+    final result = ref.watch(preRequestRunResultsProvider)[widget.ownerId];
     if (result == null) return const SizedBox.shrink();
 
     final t = context.appTheme;
@@ -539,8 +537,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
         children: [
           Container(
             height: 34,
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppMetrics.space12),
+            padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space12),
             decoration: BoxDecoration(
               color: t.surface,
               border: Border(bottom: BorderSide(color: t.border)),
@@ -561,9 +558,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                   color: succeeded ? t.success : t.error,
                 ),
                 Text(
-                  succeeded
-                      ? ' 全部步骤成功'
-                      : ' ${result.firstError ?? "有步骤失败"}',
+                  succeeded ? ' 全部步骤成功' : ' ${result.firstError ?? "有步骤失败"}',
                   style: AppTextStyles.tiny11.copyWith(
                     color: succeeded ? t.success : t.error,
                   ),
@@ -581,8 +576,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                 if (result.produced.isEmpty && succeeded)
                   Text(
                     '未产出变量（检查提取规则）',
-                    style:
-                        AppTextStyles.tiny11.copyWith(color: t.textTertiary),
+                    style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
                   ),
               ],
             ),
@@ -607,7 +601,9 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
           Row(
             children: [
               Icon(
-                error == null ? Icons.check_circle_outline : Icons.error_outline,
+                error == null
+                    ? Icons.check_circle_outline
+                    : Icons.error_outline,
                 size: 13,
                 color: error == null ? t.success : t.error,
               ),

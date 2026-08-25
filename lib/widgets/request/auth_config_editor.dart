@@ -235,8 +235,7 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
               const SizedBox(width: AppMetrics.space8),
               Expanded(
                 child: Text(
-                  widget.inheritedSummary ??
-                      '继承链上未找到认证配置，发送时不附加认证信息。',
+                  widget.inheritedSummary ?? '继承链上未找到认证配置，发送时不附加认证信息。',
                   style: AppTextStyles.caption12.copyWith(
                     color: t.textSecondary,
                     height: 1.5,

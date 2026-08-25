@@ -35,8 +35,7 @@ class CollectionAdapter extends TypeAdapter<Collection> {
       auth: fields[8] as AuthConfig? ?? const AuthConfig(),
 
       // 预请求链（v4 新增，可能缺失；缺省为空）
-      preRequestChain:
-          (fields[9] as List?)?.cast<PreRequestStep>() ?? const [],
+      preRequestChain: (fields[9] as List?)?.cast<PreRequestStep>() ?? const [],
       preRequestRetryOn401: fields[10] as bool? ?? false,
     );
   }

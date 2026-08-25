@@ -50,13 +50,13 @@ class VariableFxMenu extends ConsumerWidget {
       elevation: AppPopupMenu.menuElevation,
       color: AppPopupMenu.menuColor(theme),
       icon: Icon(Icons.functions, size: 14, color: t.textTertiary),
-      onSelected: (value) =>
-          _onMenuSelected(context, ref, value),
+      onSelected: (value) => _onMenuSelected(context, ref, value),
       itemBuilder: (context) => _buildItems(context, ref),
     );
   }
 
-  List<PopupMenuEntry<String>> _buildItems(BuildContext context, WidgetRef ref) {
+  List<PopupMenuEntry<String>> _buildItems(
+      BuildContext context, WidgetRef ref) {
     final t = context.appTheme;
     final theme = Theme.of(context);
     final items = <PopupMenuEntry<String>>[];
@@ -140,9 +140,8 @@ class VariableFxMenu extends ConsumerWidget {
 
     // secret 变量脱敏显示基础值
     final isSecret = !base.startsWith('\$') && _isSecretVariable(base, ref);
-    final baseDisplay = value == null
-        ? '（未定义）'
-        : (isSecret ? '••••••••' : _truncate(value));
+    final baseDisplay =
+        value == null ? '（未定义）' : (isSecret ? '••••••••' : _truncate(value));
 
     entries.add(_previewRow(
       context,
@@ -268,10 +267,11 @@ class VariableFxMenu extends ConsumerWidget {
   void _insertSnippet(String snippet) {
     final text = controller.text;
     final selection = controller.selection;
-    final offset =
-        (selection.isValid && selection.baseOffset >= 0 && selection.baseOffset <= text.length)
-            ? selection.baseOffset
-            : text.length;
+    final offset = (selection.isValid &&
+            selection.baseOffset >= 0 &&
+            selection.baseOffset <= text.length)
+        ? selection.baseOffset
+        : text.length;
     controller.value = TextEditingValue(
       text: text.substring(0, offset) + snippet + text.substring(offset),
       selection: TextSelection.collapsed(offset: offset + snippet.length),

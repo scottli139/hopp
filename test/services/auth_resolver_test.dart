@@ -246,8 +246,7 @@ void main() {
         apiKeyValue: '{{key}}',
       );
 
-      final result =
-          AuthResolver.apply(request, auth, {'key': 'k1'}, resolver);
+      final result = AuthResolver.apply(request, auth, {'key': 'k1'}, resolver);
 
       expect(result.headers.single.key, equals('X-API-Key'));
       expect(result.headers.single.value, equals('k1'));

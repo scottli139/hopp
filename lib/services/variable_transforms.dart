@@ -21,7 +21,12 @@ class VariableTransforms {
   VariableTransforms._();
 
   /// 无参函数名清单（供 UI 函数菜单使用）
-  static const List<String> noArgFunctions = ['md5', 'sha1', 'sha256', 'base64'];
+  static const List<String> noArgFunctions = [
+    'md5',
+    'sha1',
+    'sha256',
+    'base64'
+  ];
 
   /// 带参函数签名（供 UI 函数菜单 / 参数表单使用）
   static const List<String> parameterizedSignatures = [
@@ -90,9 +95,13 @@ class VariableTransforms {
     try {
       switch (name) {
         case 'md5':
-          return args.isEmpty ? _hex(md5.convert(utf8.encode(value)).bytes) : null;
+          return args.isEmpty
+              ? _hex(md5.convert(utf8.encode(value)).bytes)
+              : null;
         case 'sha1':
-          return args.isEmpty ? _hex(sha1.convert(utf8.encode(value)).bytes) : null;
+          return args.isEmpty
+              ? _hex(sha1.convert(utf8.encode(value)).bytes)
+              : null;
         case 'sha256':
           return args.isEmpty
               ? _hex(sha256.convert(utf8.encode(value)).bytes)

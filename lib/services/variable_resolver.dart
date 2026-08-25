@@ -85,7 +85,8 @@ class VariableResolver {
   List<String> extractVariables(String input) {
     final names = <String>[];
     for (final match in scanExpressions(input)) {
-      final segments = VariableTransforms.splitPipeline(match.expression.trim());
+      final segments =
+          VariableTransforms.splitPipeline(match.expression.trim());
       final base = segments.first;
       if (base.isNotEmpty && !names.contains(base)) {
         names.add(base);
@@ -147,7 +148,8 @@ class VariableResolver {
   }
 
   /// 解析单条表达式（基础变量 + 可选转换管道），失败返回 null
-  String? _resolveExpression(String rawExpression, Map<String, String> variables) {
+  String? _resolveExpression(
+      String rawExpression, Map<String, String> variables) {
     final segments = VariableTransforms.splitPipeline(rawExpression.trim());
     final base = segments.first;
     if (base.isEmpty) return null;

@@ -89,8 +89,8 @@ class RequestResponseNotifier extends StateNotifier<Map<String, HttpResponse>> {
         final retryVariables = _ref.read(resolvedVariablesProvider);
         var retryRequest = resolver.resolveRequest(request, retryVariables);
         if (auth != null) {
-          retryRequest = AuthResolver.apply(
-              retryRequest, auth, retryVariables, resolver);
+          retryRequest =
+              AuthResolver.apply(retryRequest, auth, retryVariables, resolver);
         }
         response = await _httpService.sendRequest(retryRequest);
       }

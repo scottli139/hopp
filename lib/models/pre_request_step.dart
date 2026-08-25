@@ -28,7 +28,8 @@ class ExtractionRule with _$ExtractionRule {
     @HiveField(0) required String id,
 
     /// 提取来源
-    @HiveField(1) @Default(ExtractionSourceType.bodyJsonPath)
+    @HiveField(1)
+    @Default(ExtractionSourceType.bodyJsonPath)
     ExtractionSourceType source,
 
     /// JSONPath 子集 / Header 名 / 正则表达式
@@ -36,7 +37,6 @@ class ExtractionRule with _$ExtractionRule {
 
     /// 目标变量名（写入本地作用域，如 `token`）
     @HiveField(3) @Default('') String targetVariable,
-
     @HiveField(4) @Default(true) bool enabled,
   }) = _ExtractionRule;
 
@@ -59,7 +59,6 @@ class PreRequestStep with _$PreRequestStep {
 
     /// 引用的已保存请求 ID（`HttpRequest.id`）
     @HiveField(1) @Default('') String requestId,
-
     @HiveField(2) @Default(true) bool enabled,
 
     /// 提取规则列表

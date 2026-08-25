@@ -174,8 +174,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     ref.listen(uiTestRequestTabProvider, (previous, current) {
       if (current != null && current != previous) {
         final tab = current['tab'] as String?;
-        final index = ['params', 'headers', 'body', 'auth', 'prerequest', 'settings']
-            .indexOf(tab ?? '');
+        final index = [
+          'params',
+          'headers',
+          'body',
+          'auth',
+          'prerequest',
+          'settings'
+        ].indexOf(tab ?? '');
         if (index != -1 && _tabController.index != index) {
           _tabController.animateTo(index);
           AppLogger.info(
@@ -1472,8 +1478,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       final source = AuthResolver.inheritedFrom(request, collectionsById);
       if (source != null) {
         if (source.auth.type == AuthType.none) {
-          inheritedSummary =
-              '继承自集合「${source.name}」：No Auth，发送时不附加认证信息。';
+          inheritedSummary = '继承自集合「${source.name}」：No Auth，发送时不附加认证信息。';
         } else {
           inheritedSummary =
               '当前继承自集合「${source.name}」：${_authTypeLabel(source.auth.type)}。修改请到集合设置。';

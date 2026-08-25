@@ -154,14 +154,11 @@ class StorageService {
     final cipher =
         _encryptionKey == null ? null : HiveAesCipher(_encryptionKey!);
     try {
-      _collectionsBox = await Hive.openBox<Collection>(
-          _collectionsBoxName,
+      _collectionsBox = await Hive.openBox<Collection>(_collectionsBoxName,
           encryptionCipher: cipher);
-      _requestsBox = await Hive.openBox<HttpRequest>(
-          _requestsBoxName,
+      _requestsBox = await Hive.openBox<HttpRequest>(_requestsBoxName,
           encryptionCipher: cipher);
-      _environmentsBox = await Hive.openBox<Environment>(
-          _environmentsBoxName,
+      _environmentsBox = await Hive.openBox<Environment>(_environmentsBoxName,
           encryptionCipher: cipher);
       _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
     } catch (e, stack) {

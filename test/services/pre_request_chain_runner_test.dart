@@ -19,8 +19,7 @@ void main() {
           body: body,
           statusCode: 200,
           headers: [
-            KeyValuePair.empty()
-                .copyWith(key: 'X-Request-Id', value: 'req-42'),
+            KeyValuePair.empty().copyWith(key: 'X-Request-Id', value: 'req-42'),
           ],
         );
 
@@ -62,10 +61,10 @@ void main() {
       test('路径不存在 / 非 JSON / 非法语法返回 null', () {
         expect(ResponseExtractor.extract(response, rule(r'$.data.missing')),
             isNull);
-        expect(ResponseExtractor.extract(jsonResponse('not json'), rule(r'$.a')),
+        expect(
+            ResponseExtractor.extract(jsonResponse('not json'), rule(r'$.a')),
             isNull);
-        expect(ResponseExtractor.extract(response, rule('data.token')),
-            isNull);
+        expect(ResponseExtractor.extract(response, rule('data.token')), isNull);
         expect(ResponseExtractor.extract(response, rule(r'$.data["token"]')),
             isNull);
       });
@@ -119,8 +118,8 @@ void main() {
       test('不匹配 / 非法正则返回 null', () {
         expect(ResponseExtractor.extract(jsonResponse('xyz'), rule(r'\d+')),
             isNull);
-        expect(ResponseExtractor.extract(jsonResponse('xyz'), rule('([')),
-            isNull);
+        expect(
+            ResponseExtractor.extract(jsonResponse('xyz'), rule('([')), isNull);
       });
     });
   });
@@ -257,9 +256,12 @@ void main() {
         name: 'Refresh',
         method: HttpMethod.post,
         url: 'https://api.example.com/refresh',
-        headers: [KeyValuePair.empty().copyWith(key: 'X-Token', value: '{{token}}')],
+        headers: [
+          KeyValuePair.empty().copyWith(key: 'X-Token', value: '{{token}}')
+        ],
       );
-      when(storage.getRequest('login-req')).thenAnswer((_) async => loginRequest);
+      when(storage.getRequest('login-req'))
+          .thenAnswer((_) async => loginRequest);
       when(storage.getRequest('refresh-req')).thenAnswer((_) async => second);
       when(httpService.sendRequest(any)).thenAnswer(
         (_) async => HttpResponse(
@@ -286,7 +288,8 @@ void main() {
       final authedLogin = loginRequest.copyWith(
         auth: const AuthConfig(type: AuthType.bearer, token: 'static-tk'),
       );
-      when(storage.getRequest('login-req')).thenAnswer((_) async => authedLogin);
+      when(storage.getRequest('login-req'))
+          .thenAnswer((_) async => authedLogin);
       when(httpService.sendRequest(any)).thenAnswer(
         (_) async =>
             HttpResponse(statusCode: 200, body: '{"data":{"token":"tk-1"}}'),

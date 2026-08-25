@@ -42,7 +42,8 @@ class VariableHighlightController extends TextEditingController {
       if (match.start > cursor) {
         spans.add(TextSpan(text: value.substring(cursor, match.start)));
       }
-      spans.addAll(_buildExpressionSpans(match.expression, baseStyle, pipeStyle));
+      spans.addAll(
+          _buildExpressionSpans(match.expression, baseStyle, pipeStyle));
       cursor = match.end;
     }
     if (cursor < value.length) {

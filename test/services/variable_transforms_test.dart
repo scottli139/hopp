@@ -62,9 +62,9 @@ void main() {
 
   group('hmac', () {
     test('hmac(sha256, key) 输出 hex', () {
-      final expected =
-          Hmac(sha256, utf8.encode('key1')).convert(utf8.encode('body'))
-              .toString();
+      final expected = Hmac(sha256, utf8.encode('key1'))
+          .convert(utf8.encode('body'))
+          .toString();
       expect(apply('body', 'hmac(sha256, key1)'), expected);
     });
 
@@ -131,7 +131,8 @@ void main() {
 
     test('链式管道：{{text | sha1 | base64}}', () {
       final sha1Hex = sha1.convert(utf8.encode('x')).toString();
-      final result = resolver.resolve('{{text | sha1 | base64}}', {'text': 'x'});
+      final result =
+          resolver.resolve('{{text | sha1 | base64}}', {'text': 'x'});
       expect(result, base64Encode(utf8.encode(sha1Hex)));
     });
 
@@ -200,7 +201,8 @@ void main() {
 
     test('findUnresolved 报告参数中未定义的嵌套变量', () {
       expect(
-        resolver.findUnresolved('{{body | hmac(sha256, {{secret}})}}', {'body': 'b'}),
+        resolver.findUnresolved(
+            '{{body | hmac(sha256, {{secret}})}}', {'body': 'b'}),
         ['secret'],
       );
     });

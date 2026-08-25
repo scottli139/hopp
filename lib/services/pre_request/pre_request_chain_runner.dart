@@ -1,6 +1,5 @@
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
-import '../../models/http_response.dart';
 import '../../models/pre_request_step.dart';
 import '../auth_resolver.dart';
 import '../http_service.dart';

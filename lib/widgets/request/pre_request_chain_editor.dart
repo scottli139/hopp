@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../models/http_request.dart';
 import '../../models/pre_request_step.dart';
 import '../../providers/providers.dart';
 import '../../services/pre_request/pre_request_chain_runner.dart';

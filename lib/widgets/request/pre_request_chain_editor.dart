@@ -395,7 +395,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                 ExtractionSourceType.bodyRegex => r'token=(\w+)',
               },
               onSubmitted: (_) => commitRule(),
-              onChanged: (_) {},
+              onChanged: (_) => commitRule(),
             ),
           ),
           Padding(
@@ -411,7 +411,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
               borderless: true,
               hintText: 'token',
               onSubmitted: (_) => commitRule(),
-              onChanged: (_) {},
+              onChanged: (_) => commitRule(),
             ),
           ),
           AppIconButton(

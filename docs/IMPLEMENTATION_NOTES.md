@@ -10,7 +10,11 @@
 - [请求设置 (Request Settings)](#请求设置-request-settings)
 - [Postman 导入/导出](#postman-导入导出)
 - [cURL 导入](#curl-导入)
+- [URL 参数双向联动 (Issue #11)](#url-参数双向联动-issue-11)
+- [Collection 扁平化存储重构 (Issue #3)](#collection-扁平化存储重构-issue-3)
+- [空状态入口指引 (Issue #6)](#空状态入口指引-issue-6)
 - [响应优化 (OptimizedResponseViewer)](#响应优化-optimizedresponseviewer)
+- [预请求链与变量转换 (M8.2 / v0.10.0)](#预请求链与变量转换-m82-f8--v0100-2026-08-25)
 - [环境变量系统 (M8.1)](#环境变量系统-m81)
 - [测试与自动化](#测试与自动化)
 - [Mock 服务器](#mock-服务器)
@@ -728,6 +732,54 @@ group('CurlParser', () {
   });
 });
 ```
+
+---
+
+## URL 参数双向联动 (Issue #11)
+
+**状态**: ✅ 已完成 (2026-03-18，v0.6.3)
+
+**功能概述**:
+- URL 输入 `?key=value` → 自动解析到 Params Tab
+- Params Tab 修改 → 自动更新 URL
+- 使用标志位防止循环更新
+- 36 个单元测试覆盖
+
+实现见 `lib/utils/url_params_sync.dart`。
+
+> 技术债：`http_service.dart` / `postman_mapper.dart` / `curl_import_service.dart` 仍各自解析 URL 查询参数，待统一走 `url_params_sync.dart`（见 [BACKLOG](./BACKLOG.md) TD-2）。
+
+---
+
+## Collection 扁平化存储重构 (Issue #3)
+
+**状态**: ✅ 已完成 (2026-03-19，v0.6.5/v0.6.6)
+
+**问题**: 双重存储结构（`children` 嵌套与 `parentId` 并存）导致级联删除和层级显示问题。
+
+**解决方案**: 统一使用扁平化存储结构，只使用 `parentId` 建立层级关系。
+
+**核心改动**:
+- `children` 字段保留但标记为废弃（向后兼容）
+- `deleteCollection`: 通过 `parentId` 查询递归删除子集合
+- `rootCollectionsProvider`: 返回根级集合
+
+> 技术债：子孙递归收集逻辑在 `collection_provider.dart` 与 `postman_import_service.dart` 重复，见 [BACKLOG](./BACKLOG.md) TD-1。
+
+---
+
+## 空状态入口指引 (Issue #6)
+
+**状态**: ✅ 已完成 (2026-03-19，v0.6.7)
+
+**问题**: 初次使用缺少明显的创建 Request/Collection 入口。
+
+**解决方案**:
+- Sidebar 空状态添加 "Create Collection" 按钮
+- 主区域空状态添加 "Create Request" 按钮
+- Sidebar Header 添加可见的 "+" 按钮
+
+> 后续演进：空态已统一为 `AppEmptyState` 组件（v0.8.8 设计系统 P4），替换响应区/侧栏/编辑区全部手写空态。
 
 ---
 

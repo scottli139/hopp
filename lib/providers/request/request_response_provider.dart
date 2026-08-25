@@ -116,8 +116,9 @@ class RequestResponseNotifier extends StateNotifier<Map<String, HttpResponse>> {
     List<PreRequestStep> chain,
     Map<String, String> baseVariables,
     Map<String, Collection> collectionsById,
-    VariableResolver resolver,
-  ) async {
+    VariableResolver resolver, {
+    bool dryRun = false,
+  }) async {
     final runner = PreRequestChainRunner(
       httpService: _httpService,
       storageService: _ref.read(storageServiceProvider),
@@ -127,6 +128,7 @@ class RequestResponseNotifier extends StateNotifier<Map<String, HttpResponse>> {
       chain: chain,
       variables: baseVariables,
       collectionsById: collectionsById,
+      label: dryRun ? 'dry-run' : 'send',
     );
 
     // 链产出并入本地作用域（不污染环境）
@@ -153,6 +155,7 @@ class RequestResponseNotifier extends StateNotifier<Map<String, HttpResponse>> {
       _ref.read(resolvedVariablesProvider),
       _ref.read(collectionsByIdProvider),
       _ref.read(variableResolverProvider),
+      dryRun: true,
     );
   }
 

@@ -523,7 +523,7 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `set_url` | 设置 URL |
 | `send_request` | 发送请求 |
 | `switch_response_tab` | 切换响应 Tab (request/body/headers/cookies/timing/certificate) |
-| `switch_request_tab` | 切换请求 Tab (params/headers/body/auth/settings) |
+| `switch_request_tab` | 切换请求 Tab (params/headers/body/auth/prerequest/settings) |
 | `get_response_info` | 获取响应信息 |
 | `rename_request` | 重命名请求 |
 | `set_body_type` | 设置 Body 类型 (none/raw/form-data/x-www-form-urlencoded/binary/graphql) |
@@ -546,6 +546,8 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `get_global_variables` | 获取全局变量 |
 | `resolve_text` | 解析文本中的 {{variable}}（验证替换引擎与动态变量） |
 | `get_resolved_request` | 获取活动请求应用变量替换后的结果 |
+| `create_saved_request` | 创建已保存请求直接入指定 Collection（供预请求链引用，F8.2 测试钩子） |
+| `set_pre_request_chain` | 设置请求的预请求链（步骤+提取规则+401 重跑，Tab/已保存请求均可，F8.2 测试钩子） |
 | `trigger_environment_dialog` | 打开环境管理对话框 |
 | `open_design_gallery` | 打开 Design Gallery 页（全 token/组件双主题展示） |
 | `full_test` | 完整测试流程 |

@@ -1,6 +1,7 @@
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../models/pre_request_step.dart';
+import '../../utils/app_logger.dart';
 import '../auth_resolver.dart';
 import '../http_service.dart';
 import '../storage_service.dart';
@@ -105,22 +106,35 @@ class PreRequestChainRunner {
   /// [variables] 为当前作用域（本地 > 环境 > 全局 合并前的底表）；
   /// 步骤产出的变量会并入后续步骤的解析作用域。
   /// 某步失败（请求未找到 / 网络错误）即中断，后续步骤不再执行。
+  ///
+  /// [label] 区分触发来源（`send` / `dry-run`），仅用于日志。
+  ///
+  /// 日志只记录变量名与状态码，不落任何变量值 / 响应体（含密码、token）。
   Future<ChainRunResult> run({
     required List<PreRequestStep> chain,
     required Map<String, String> variables,
     required Map<String, Collection> collectionsById,
+    String label = 'send',
   }) async {
     final stepResults = <ChainStepResult>[];
     final produced = <String, String>{};
 
-    for (final step in chain) {
+    AppLogger.info('[PreRequestChain] Start ($label): ${chain.length} step(s), '
+        '${chain.where((s) => s.enabled).length} enabled');
+
+    for (var i = 0; i < chain.length; i++) {
+      final step = chain[i];
+      final stepTag = 'Step ${i + 1}';
       if (!step.enabled) {
+        AppLogger.debug('[PreRequestChain] $stepTag skipped (disabled)');
         stepResults.add(ChainStepResult(step: step));
         continue;
       }
 
       final request = await _storage.getRequest(step.requestId);
       if (request == null) {
+        AppLogger.warning('[PreRequestChain] $stepTag failed: 引用的请求不存在 '
+            '(${step.requestId})，可能已被删除');
         stepResults.add(ChainStepResult(
           step: step,
           error: '引用的请求不存在（${step.requestId}），可能已被删除',
@@ -130,14 +144,25 @@ class PreRequestChainRunner {
 
       // 变量解析（链产出并入作用域）+ 应用被引用请求自身的 Auth
       final scope = {...variables, ...produced};
+      final unresolved = _resolver.findUnresolvedInRequest(request, scope);
+      if (unresolved.isNotEmpty) {
+        // 未解析的占位符会原样发出（如密码变量缺失），这里给出定位线索
+        AppLogger.warning('[PreRequestChain] $stepTag (${request.name}): '
+            'unresolved variables: ${unresolved.join(', ')}');
+      }
       var resolved = _resolver.resolveRequest(request, scope);
       final auth = AuthResolver.resolveEffective(request, collectionsById);
       if (auth != null) {
         resolved = AuthResolver.apply(resolved, auth, scope, _resolver);
       }
 
+      AppLogger.info('[PreRequestChain] $stepTag (${request.name}): '
+          '${resolved.method.value} ${resolved.url}');
       final response = await _httpService.sendRequest(resolved);
       if (response.error != null) {
+        AppLogger.warning(
+            '[PreRequestChain] $stepTag (${request.name}) failed: '
+            '${response.error}');
         stepResults.add(ChainStepResult(
           step: step,
           request: request,
@@ -161,6 +186,15 @@ class PreRequestChainRunner {
       }
       produced.addAll(extracted);
 
+      AppLogger.info('[PreRequestChain] $stepTag (${request.name}) '
+          'status ${response.statusCode}, '
+          'extracted: ${extracted.isEmpty ? '(none)' : extracted.keys.join(', ')}');
+      for (final rule in missing) {
+        AppLogger.warning('[PreRequestChain] $stepTag (${request.name}): '
+            'extraction missed — ${rule.source.name} "${rule.path}" '
+            '→ ${rule.targetVariable}');
+      }
+
       stepResults.add(ChainStepResult(
         step: step,
         request: request,
@@ -170,6 +204,8 @@ class PreRequestChainRunner {
       ));
     }
 
+    AppLogger.info('[PreRequestChain] Done ($label): '
+        '${produced.isEmpty ? 'no variables produced' : 'produced ${produced.keys.join(', ')}'}');
     return ChainRunResult(steps: stepResults, produced: produced);
   }
 }

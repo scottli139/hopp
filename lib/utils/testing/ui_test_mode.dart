@@ -18,6 +18,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import 'test_helpers.dart';
 
@@ -34,6 +35,7 @@ import '../../models/http_method.dart';
 import '../../models/http_request_info.dart';
 import '../../models/key_value_pair.dart';
 import '../../models/http_response.dart';
+import '../../models/pre_request_step.dart';
 import '../../models/timing_info.dart';
 
 /// UI 测试模式管理器
@@ -452,6 +454,27 @@ class UITestModeManager {
       case 'set_theme_mode':
         final mode = params['mode'] as String;
         return await _setThemeMode(mode);
+
+      case 'create_saved_request':
+        final collectionId = params['collection_id'] as String;
+        final name = params['name'] as String;
+        final method = params['method'] as String? ?? 'GET';
+        final url = params['url'] as String? ?? '';
+        final body = params['body'] as String?;
+        final bodyType = params['body_type'] as String? ?? 'json';
+        final headers = (params['headers'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            <Map<String, dynamic>>[];
+        return await _createSavedRequest(
+            collectionId, name, method, url, body, bodyType, headers);
+
+      case 'set_pre_request_chain':
+        final requestId = params['request_id'] as String?;
+        final steps =
+            (params['steps'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ??
+                <Map<String, dynamic>>[];
+        final retryOn401 = params['retry_on_401'] as bool?;
+        return await _setPreRequestChain(requestId, steps, retryOn401);
 
       default:
         throw Exception('未知指令: $action');
@@ -2924,6 +2947,115 @@ class UITestModeManager {
     }
 
     return {'collection_count': 0, 'tree': []};
+  }
+
+  /// 创建已保存请求（直接落入指定 Collection，供预请求链引用，F8.2 测试钩子）
+  Future<Map<String, dynamic>> _createSavedRequest(
+    String collectionId,
+    String name,
+    String method,
+    String url,
+    String? body,
+    String bodyType,
+    List<Map<String, dynamic>> headers,
+  ) async {
+    final httpMethod = HttpMethod.values.firstWhere(
+      (m) => m.value == method.toUpperCase(),
+      orElse: () => throw Exception('不支持的 HTTP 方法: $method'),
+    );
+
+    final request = HttpRequest.empty().copyWith(
+      name: name,
+      method: httpMethod,
+      url: extractBaseUrl(url),
+      params: parseQueryParamsFromUrl(url),
+      headers: [
+        for (final h in headers)
+          KeyValuePair.empty().copyWith(
+            key: h['key'] as String? ?? '',
+            value: h['value'] as String? ?? '',
+            enabled: h['enabled'] as bool? ?? true,
+          ),
+      ],
+      body: body ?? '',
+      bodyType: bodyType,
+    );
+
+    await _ref!
+        .read(collectionProvider.notifier)
+        .addRequestToCollection(collectionId, request);
+
+    return {
+      'created': true,
+      'request_id': request.id,
+      'name': name,
+      'collection_id': collectionId,
+    };
+  }
+
+  /// 设置请求的预请求链（F8.2 测试钩子）
+  ///
+  /// 目标请求由 request_id 指定（已保存请求或打开的 Tab），缺省取活动 Tab。
+  /// 已保存请求直接持久化；打开的 Tab 同步更新 Tab 状态。
+  Future<Map<String, dynamic>> _setPreRequestChain(
+    String? requestId,
+    List<Map<String, dynamic>> steps,
+    bool? retryOn401,
+  ) async {
+    final chain = [
+      for (final s in steps)
+        PreRequestStep(
+          id: const Uuid().v4(),
+          requestId: s['request_id'] as String? ?? '',
+          enabled: s['enabled'] as bool? ?? true,
+          extractions: [
+            for (final e in (s['extractions'] as List<dynamic>?)
+                    ?.cast<Map<String, dynamic>>() ??
+                <Map<String, dynamic>>[])
+              ExtractionRule(
+                id: const Uuid().v4(),
+                source: ExtractionSourceType.values.firstWhere(
+                  (t) => t.name == (e['source'] as String? ?? 'bodyJsonPath'),
+                  orElse: () => ExtractionSourceType.bodyJsonPath,
+                ),
+                path: e['path'] as String? ?? '',
+                targetVariable: e['target_variable'] as String? ?? '',
+                enabled: e['enabled'] as bool? ?? true,
+              ),
+          ],
+        ),
+    ];
+
+    final targetId = requestId ?? _ref!.read(activeTabIdProvider);
+    if (targetId == null) {
+      throw Exception('没有指定请求 ID，且没有活动的请求 Tab');
+    }
+
+    final tab = _ref!.read(requestTabProvider.notifier).getTab(targetId);
+    final saved = tab == null ? _findRequestInCollections(targetId) : null;
+    final request = tab?.request ?? saved;
+    if (request == null) {
+      throw Exception('未找到请求: $targetId');
+    }
+
+    final updated = request.copyWith(
+      preRequestChain: chain,
+      preRequestRetryOn401: retryOn401 ?? request.preRequestRetryOn401,
+    );
+
+    if (tab != null) {
+      _ref!.read(requestTabProvider.notifier).updateRequest(targetId, updated);
+    }
+    if (saved != null) {
+      await _ref!.read(collectionProvider.notifier).saveRequest(updated);
+    }
+
+    return {
+      'request_id': targetId,
+      'step_count': chain.length,
+      'retry_on_401': updated.preRequestRetryOn401,
+      'persisted': saved != null,
+    };
   }
 }
 

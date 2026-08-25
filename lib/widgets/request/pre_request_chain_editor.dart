@@ -434,35 +434,17 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
 
   Widget _buildAddRuleRow(
       BuildContext context, int stepIndex, PreRequestStep step) {
-    final t = context.appTheme;
-    return InkWell(
-      borderRadius: AppMetrics.br6,
-      onTap: () {
+    return AppButton.secondary(
+      label: '添加提取规则',
+      icon: Icons.add,
+      size: AppButtonSize.small,
+      onPressed: () {
         final rules = [
           ...step.extractions,
           ExtractionRule(id: const Uuid().v4()),
         ];
         _updateStep(stepIndex, step.copyWith(extractions: rules));
       },
-      child: Container(
-        height: 28,
-        padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space8),
-        decoration: BoxDecoration(
-          borderRadius: AppMetrics.br6,
-          border: Border.all(color: t.borderStrong),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.add, size: 13, color: t.textTertiary),
-            const SizedBox(width: AppMetrics.space4),
-            Text(
-              '添加提取规则',
-              style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

@@ -244,6 +244,55 @@ void main() {
         expect(find.text('test'), findsOneWidget);
       });
 
+      testWidgets('KV 行输入即提交：不回车也生效，重建后输入不被清空', (tester) async {
+        final request = HttpRequest.empty().copyWith(
+          id: 'req1',
+          name: 'Test Request',
+          method: HttpMethod.get,
+          url: 'https://api.example.com/users',
+          params: [
+            KeyValuePair.empty()
+                .copyWith(key: 'page', value: '1', enabled: true),
+          ],
+        );
+
+        final container = createContainer(
+          tabs: [
+            RequestTab(
+              id: 'req1',
+              request: request,
+            ),
+          ],
+          activeTabId: 'req1',
+        );
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        // Params tab 默认选中，定位首行 key/value 输入框
+        final keyField = find.widgetWithText(TextField, 'page');
+        final valueField = find.widgetWithText(TextField, '1');
+        expect(keyField, findsOneWidget);
+        expect(valueField, findsOneWidget);
+
+        // 只输入，不按回车（模拟直接点 Send 的场景）
+        await tester.enterText(keyField, 'pageNo');
+        await tester.pump();
+        await tester.enterText(valueField, '42');
+        await tester.pump();
+
+        // provider 已即时更新
+        final updated = container.read(activeTabProvider)!.request;
+        expect(updated.params.single.key, 'pageNo');
+        expect(updated.params.single.value, '42');
+
+        // 触发整树重建（同 Send 引发的状态刷新路径），输入不被回写清空
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+        expect(find.widgetWithText(TextField, 'pageNo'), findsOneWidget);
+        expect(find.widgetWithText(TextField, '42'), findsOneWidget);
+      });
+
       testWidgets('should show checkbox for param enabled state',
           (tester) async {
         final request = HttpRequest.empty().copyWith(

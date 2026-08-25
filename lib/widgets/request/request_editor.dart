@@ -731,6 +731,18 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     final headerDescription = _commonHeaders[item.key];
     final isCommonHeader = headerDescription != null;
 
+    // 提交当前行到 provider（controller 为唯一实时输入源）。
+    // 输入即提交：仅靠回车提交时，直接点 Send 或任意重建都会
+    // 触发上方同步回写，把未提交的输入抹掉。
+    void commitRow() {
+      final newItems = [...items];
+      newItems[index] = item.copyWith(
+        key: keyController.text,
+        value: valueController.text,
+      );
+      _updateRequest(ref, updateFn(newItems));
+    }
+
     return Container(
       height: 36,
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -774,31 +786,16 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       ? context.appTheme.textPrimary
                       : context.appTheme.textPrimary,
                 ),
-                onChanged: showAutocomplete
-                    ? (value) {
-                        // 只显示自动完成，不更新 provider
-                        _showAutocompleteOverlay(context, keyLayerLink,
-                            keyFocusNode, index, value, items, updateFn, ref);
-                      }
-                    : null,
-                onSubmitted: (_) {
-                  // 回车时更新 provider（从 controller 读取最新值）
-                  final newItems = [...items];
-                  newItems[index] = item.copyWith(
-                    key: keyController.text,
-                    value: valueController.text,
-                  );
-                  _updateRequest(ref, updateFn(newItems));
+                onChanged: (value) {
+                  commitRow();
+                  if (showAutocomplete) {
+                    // 自动完成只读输入，不另行提交
+                    _showAutocompleteOverlay(context, keyLayerLink,
+                        keyFocusNode, index, value, items, updateFn, ref);
+                  }
                 },
-                onEditingComplete: () {
-                  // 编辑完成时更新 provider（从 controller 读取最新值）
-                  final newItems = [...items];
-                  newItems[index] = item.copyWith(
-                    key: keyController.text,
-                    value: valueController.text,
-                  );
-                  _updateRequest(ref, updateFn(newItems));
-                },
+                onSubmitted: (_) => commitRow(),
+                onEditingComplete: commitRow,
               ),
             ),
           ),
@@ -843,39 +840,16 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                         ? theme.colorScheme.outline
                         : context.appTheme.textPrimary,
                   ),
-                  onSubmitted: (_) {
-                    // 回车时更新 provider（从 controller 读取最新值）
-                    final newItems = [...items];
-                    newItems[index] = item.copyWith(
-                      key: keyController.text,
-                      value: valueController.text,
-                    );
-                    _updateRequest(ref, updateFn(newItems));
-                  },
-                  onEditingComplete: () {
-                    // 编辑完成时更新 provider（从 controller 读取最新值）
-                    final newItems = [...items];
-                    newItems[index] = item.copyWith(
-                      key: keyController.text,
-                      value: valueController.text,
-                    );
-                    _updateRequest(ref, updateFn(newItems));
-                  },
+                  onChanged: (_) => commitRow(),
+                  onSubmitted: (_) => commitRow(),
+                  onEditingComplete: commitRow,
                 ),
                 if (valueController.text.contains('{{'))
                   Padding(
                     padding: const EdgeInsets.only(right: 4),
                     child: VariableFxMenu(
                       controller: valueController,
-                      onInserted: () {
-                        // 函数片段插入后立即同步 provider（等同回车提交）
-                        final newItems = [...items];
-                        newItems[index] = item.copyWith(
-                          key: keyController.text,
-                          value: valueController.text,
-                        );
-                        _updateRequest(ref, updateFn(newItems));
-                      },
+                      onInserted: commitRow,
                     ),
                   ),
               ],

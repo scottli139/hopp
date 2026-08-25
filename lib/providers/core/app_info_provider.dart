@@ -7,7 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 /// 正常运行时版本号由 package_info_plus 从应用包信息读取
 /// （见 [appVersionProvider]），此常量仅在该读取失败（如单元测试
 /// 环境）时使用。
-const kFallbackAppVersion = '0.9.2';
+const kFallbackAppVersion = '0.10.0';
 
 /// 应用版本号 Provider（Issue #13）。
 ///

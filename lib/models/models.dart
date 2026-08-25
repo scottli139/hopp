@@ -1,4 +1,5 @@
 export 'app_settings.dart';
+export 'auth_config.dart';
 export 'certificate_info.dart';
 export 'collection.dart';
 export 'environment.dart';
@@ -6,5 +7,6 @@ export 'http_method.dart';
 export 'http_request.dart';
 export 'http_response.dart';
 export 'key_value_pair.dart';
+export 'pre_request_step.dart';
 export 'request_tab.dart';
 export 'timing_info.dart';

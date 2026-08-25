@@ -157,12 +157,20 @@ final activeEnvironmentProvider = Provider<Environment?>((ref) {
   );
 });
 
-/// 合并后的变量表：全局变量 + 激活环境变量（环境变量覆盖同名全局变量）
+/// 本地（会话级）变量表（F8.2）
+///
+/// 预请求链等运行时产出写入此处：不持久化、不污染环境；
+/// 优先级最高（本地 > 环境 > 全局）。
+final localVariablesProvider = StateProvider<Map<String, String>>((ref) => {});
+
+/// 合并后的变量表：本地 > 激活环境 > 全局（就近原则）
 final resolvedVariablesProvider = Provider<Map<String, String>>((ref) {
   final globals = ref.watch(globalVariablesProvider);
   final activeEnv = ref.watch(activeEnvironmentProvider);
+  final locals = ref.watch(localVariablesProvider);
   return VariableResolver.buildScope(
-      globals: globals, activeEnvironment: activeEnv);
+      globals: globals, activeEnvironment: activeEnv)
+    ..addAll(locals);
 });
 
 /// 变量替换引擎

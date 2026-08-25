@@ -19,7 +19,10 @@ class DatabaseConsts {
   /// 版本历史：
   /// - v1: 初始版本，包含基础模型 (HttpRequest 字段 0-10)
   /// - v2: 添加 validateCertificates 字段到 HttpRequest，添加更多字段到 AppSettings
-  static const int currentDbVersion = 2;
+  /// - v3: HttpRequest 添加 auth 字段（索引 14），Collection 添加 auth 字段（索引 8）—— F8.1 认证配置
+  /// - v4: HttpRequest 添加 preRequestChain/preRequestRetryOn401（索引 15/16），
+  ///       Collection 添加 preRequestChain/preRequestRetryOn401（索引 9/10）—— F8.2 预请求链
+  static const int currentDbVersion = 4;
 
   /// SharedPreferences 中存储数据库版本的 key
   static const String dbVersionKey = 'hopp_db_version';

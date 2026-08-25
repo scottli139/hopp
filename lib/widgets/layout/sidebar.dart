@@ -17,6 +17,7 @@ import '../../utils/testing/ui_test_mode.dart';
 import '../../widgets/import/curl_import_dialog.dart';
 import '../../widgets/import_export/export_dialog.dart';
 import '../../widgets/import_export/import_dialog.dart';
+import '../collection/collection_settings_dialog.dart';
 import '../common/app_badge.dart';
 import '../common/app_button.dart';
 import '../common/app_dialog.dart';
@@ -943,6 +944,12 @@ class _SidebarState extends ConsumerState<Sidebar> {
             ),
             AppPopupMenu.iconItem(
               theme: theme,
+              value: 'settings',
+              icon: Icons.settings_outlined,
+              label: 'Settings',
+            ),
+            AppPopupMenu.iconItem(
+              theme: theme,
               value: 'rename',
               icon: Icons.edit_outlined,
               label: 'Rename',
@@ -984,6 +991,11 @@ class _SidebarState extends ConsumerState<Sidebar> {
                 AppLogger.info(
                     '[Sidebar] Exporting collection: ${collection.name}');
                 showExportDialog(context, collectionId: collection.id);
+                break;
+              case 'settings':
+                AppLogger.info(
+                    '[Sidebar] Opening collection settings: ${collection.name}');
+                CollectionSettingsDialog.show(context, collection);
                 break;
               case 'delete':
                 _showDeleteConfirmation(context, collection);

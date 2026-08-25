@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hopp · F8 预请求链与变量转换 · UI 原型</title>
+<style>
+/* ============================================================
+   Tokens — 与 lib/theme/ 及 environment_manager_preview.html 一致
+   ============================================================ */
+:root {
+  --brand: #6366F1; --brand-hover: #4F46E5; --brand-soft: #EEF2FF; --brand-text: #6366F1;
+  --bg: #FFFFFF; --surface: #F8FAFC; --surface-2: #F1F5F9;
+  --border: #E2E8F0; --border-strong: #CBD5E1;
+  --text-1: #0F172A; --text-2: #475569; --text-3: #94A3B8;
+  --success: #10B981; --success-soft: #ECFDF5;
+  --warning: #F59E0B; --warning-soft: #FFFBEB;
+  --error: #EF4444; --error-soft: #FEF2F2;
+  --info: #0EA5E9; --info-soft: #F0F9FF;
+  --shadow-md: 0 4px 12px rgba(15,23,42,.10), 0 1px 3px rgba(15,23,42,.06);
+  --shadow-lg: 0 12px 40px rgba(15,23,42,.16), 0 2px 8px rgba(15,23,42,.08);
+  --r-s: 4px; --r-m: 6px; --r-l: 8px;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: Menlo, 'JetBrains Mono', Consolas, monospace;
+}
+[data-theme="dark"] {
+  --brand: #818CF8; --brand-hover: #6366F1; --brand-soft: rgba(129,140,248,.14); --brand-text: #818CF8;
+  --bg: #0F172A; --surface: #1E293B; --surface-2: #334155;
+  --border: #2B3A55; --border-strong: #475569;
+  --text-1: #F1F5F9; --text-2: #94A3B8; --text-3: #64748B;
+  --success-soft: rgba(16,185,129,.14);
+  --warning-soft: rgba(245,158,11,.14);
+  --error-soft: rgba(239,68,68,.14);
+  --info-soft: rgba(14,165,233,.14);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.3);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-ui); background: #E9EDF3; color: #0F172A; padding: 40px 48px 96px; }
+h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.sub { color: #64748B; font-size: 13px; margin-bottom: 28px; }
+.sub code, .changes code, h2 code { font-family: var(--font-mono); font-size: 11px; background: #F1F5F9; border-radius: 3px; padding: 1px 5px; color: #475569; }
+h2 { font-size: 14px; font-weight: 600; margin: 40px 0 4px; }
+h2 .fid { color: #6366F1; font-family: var(--font-mono); font-size: 12px; margin-right: 6px; }
+.h2-sub { font-size: 12px; color: #64748B; margin-bottom: 14px; }
+
+/* 设计决策清单 */
+.changes { background: #FFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 18px 22px; font-size: 13px; line-height: 1.9; color: #334155; }
+.changes b { color: #0F172A; }
+.changes .n { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; background: #EEF2FF; color: #6366F1; font-size: 11px; font-weight: 700; align-items: center; justify-content: center; margin-right: 8px; }
+
+/* 画板 */
+.board { border-radius: 12px; padding: 40px; display: flex; justify-content: center; background: #D8DEE8; margin-top: 14px; }
+.board[data-theme="dark"] { background: #070B14; }
+
+/* ============================================================
+   App 窗口（模拟请求编辑区）
+   ============================================================ */
+.win {
+  width: 980px; display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text-1);
+  border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg);
+  overflow: hidden; font-size: 13px;
+}
+.win-head {
+  height: 40px; flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+  padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.win-head .doc-tab {
+  height: 26px; padding: 0 12px; display: inline-flex; align-items: center; gap: 7px;
+  border-radius: var(--r-m); background: var(--bg); border: 1px solid var(--border);
+  font-size: 12px; font-weight: 500; color: var(--text-1);
+}
+.win-head .doc-tab .m { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--success); }
+
+/* URL 栏 */
+.urlbar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.method-pill {
+  height: 30px; padding: 0 10px; display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--border); border-radius: var(--r-m); background: var(--bg);
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--success); cursor: pointer;
+}
+.url-input {
+  flex: 1; height: 30px; display: flex; align-items: center; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: var(--r-m); background: var(--bg);
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-1); overflow: hidden; white-space: nowrap;
+}
+.url-input .v { color: var(--brand-text); background: var(--brand-soft); border-radius: 3px; padding: 0 3px; }
+.send-btn {
+  height: 30px; padding: 0 18px; border: none; border-radius: var(--r-m);
+  background: var(--brand); color: #FFF; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font-ui);
+}
+
+/* Tab 栏 */
+.tabs { display: flex; align-items: center; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--border); height: 36px; }
+.tab-i {
+  height: 36px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500; color: var(--text-2); cursor: pointer; position: relative;
+}
+.tab-i:hover { color: var(--text-1); }
+.tab-i.active { color: var(--brand-text); font-weight: 600; }
+.tab-i.active::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; border-radius: 1px; background: var(--brand); }
+.tab-i .cnt { font-size: 10px; font-weight: 700; background: var(--surface-2); color: var(--text-2); border-radius: 8px; padding: 1px 6px; }
+.tab-i.active .cnt { background: var(--brand-soft); color: var(--brand-text); }
+.tab-i .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warning); }
+.tab-i .new-badge { font-size: 9px; font-weight: 700; letter-spacing: .04em; background: var(--info-soft); color: var(--info); border-radius: 3px; padding: 1px 4px; }
+
+.pane { min-height: 0; display: flex; }
+
+/* ---------- 通用控件 ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 14px; font-size: 13px; font-weight: 500; font-family: var(--font-ui);
+  border: 1px solid transparent; border-radius: var(--r-m); cursor: pointer; white-space: nowrap;
+}
+.btn-s { height: 28px; padding: 0 12px; font-size: 12px; }
+.btn-primary { background: var(--brand); color: #FFF; }
+.btn-ghost { background: transparent; color: var(--text-2); border-color: var(--border-strong); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text-1); }
+.btn-soft { background: var(--brand-soft); color: var(--brand-text); }
+
+.icon-btn {
+  width: 26px; height: 26px; flex-shrink: 0; border-radius: var(--r-m); border: none; background: transparent;
+  color: var(--text-3); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text-1); }
+.icon-btn.danger:hover { background: var(--error-soft); color: var(--error); }
+
+/* 开关 */
+.sw { width: 30px; height: 17px; border-radius: 9px; background: var(--border-strong); position: relative; cursor: pointer; flex-shrink: 0; }
+.sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #FFF; transition: left .15s; }
+.sw.on { background: var(--brand); }
+.sw.on::after { left: 15px; }
+
+/* 表单 */
+.f-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.f-label { width: 92px; flex-shrink: 0; padding-top: 7px; font-size: 12px; font-weight: 500; color: var(--text-2); }
+.f-input {
+  height: 30px; width: 100%; padding: 0 10px; display: flex; align-items: center;
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-1);
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-m);
+}
+.f-input .ph { color: var(--text-3); font-family: var(--font-ui); }
+.f-input .v { color: var(--brand-text); background: var(--brand-soft); border-radius: 3px; padding: 0 3px; }
+.f-input.secret { justify-content: space-between; }
+.f-input.secret .dots { letter-spacing: 2px; }
+.f-hint { font-size: 11px; color: var(--text-3); margin-top: 5px; line-height: 1.5; }
+.f-hint code { font-family: var(--font-mono); font-size: 10px; background: var(--surface-2); border-radius: 3px; padding: 1px 4px; }
+.f-eye { color: var(--text-3); font-size: 12px; cursor: pointer; }
+
+/* ============================================================
+   A. Auth Tab（F8.1）
+   ============================================================ */
+.auth-side { width: 200px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 8px; }
+.side-label { font-size: 10px; font-weight: 700; letter-spacing: .07em; color: var(--text-3); padding: 0 10px; margin-bottom: 6px; }
+.auth-item {
+  display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; width: 100%;
+  border-radius: var(--r-m); font-size: 13px; font-weight: 500; color: var(--text-1);
+  cursor: pointer; border: none; background: transparent; text-align: left; font-family: var(--font-ui);
+}
+.auth-item:hover { background: var(--surface-2); }
+.auth-item.selected { background: var(--brand-soft); color: var(--brand-text); }
+.auth-item .ei { width: 15px; text-align: center; flex-shrink: 0; color: var(--text-3); font-size: 13px; }
+.auth-item.selected .ei { color: var(--brand-text); }
+.auth-item .inh { margin-left: auto; font-size: 10px; color: var(--text-3); }
+
+.auth-main { flex: 1; padding: 20px 24px; min-width: 0; }
+.auth-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.auth-desc { font-size: 12px; color: var(--text-3); margin-bottom: 18px; }
+.auth-desc code { font-family: var(--font-mono); font-size: 11px; background: var(--surface-2); border-radius: 3px; padding: 1px 5px; }
+
+.inherit-note {
+  display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; margin-bottom: 16px;
+  background: var(--info-soft); border-radius: var(--r-m); font-size: 12px; color: var(--text-2); line-height: 1.6;
+}
+.inherit-note .ic { color: var(--info); flex-shrink: 0; }
+.inherit-note code { font-family: var(--font-mono); font-size: 11px; background: var(--bg); border-radius: 3px; padding: 0 4px; }
+
+/* ============================================================
+   B. 转换管道（F8.3）
+   ============================================================ */
+.kv { flex: 1; padding: 8px 16px 16px; }
+.kv-head, .kv-row { display: grid; grid-template-columns: 24px 1fr 1.6fr 26px; align-items: center; column-gap: 8px; }
+.kv-head { height: 26px; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); border-bottom: 1px solid var(--border); }
+.kv-row { height: 36px; border-bottom: 1px solid var(--border); position: relative; }
+.kv-cell {
+  height: 28px; display: flex; align-items: center; padding: 0 8px; gap: 4px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-1);
+  border: 1px solid transparent; border-radius: var(--r-m); overflow: hidden; white-space: nowrap;
+}
+.kv-cell:hover { border-color: var(--border); }
+.checkbox { width: 14px; height: 14px; border-radius: 4px; margin: 0 auto; border: 1.5px solid var(--border-strong); background: var(--bg); display: flex; align-items: center; justify-content: center; color: #FFF; font-size: 9px; }
+.checkbox.on { background: var(--brand); border-color: var(--brand); }
+
+/* 变量 chip：管道段内联可见 */
+.var-chip { display: inline-flex; align-items: stretch; border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+.var-chip .nm { background: var(--brand-soft); color: var(--brand-text); padding: 0 4px; }
+.var-chip .fn { background: var(--warning-soft); color: var(--warning); padding: 0 4px; border-left: 1px dashed var(--warning); font-weight: 600; }
+.var-chip .fn.plain { border-left-style: solid; }
+
+/* 悬停解析预览 popover（固定展示） */
+.pipe-pop {
+  position: absolute; top: 34px; left: 33%; z-index: 6; width: 380px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-l); box-shadow: var(--shadow-lg);
+  padding: 12px 14px; font-size: 12px;
+}
+.pipe-pop .pp-title { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); margin-bottom: 8px; }
+.pp-step { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-family: var(--font-mono); font-size: 11px; }
+.pp-step .tag { flex-shrink: 0; width: 62px; font-family: var(--font-ui); font-size: 10px; font-weight: 600; color: var(--text-3); }
+.pp-step .val { color: var(--text-1); background: var(--surface-2); border-radius: 3px; padding: 2px 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-step .val.masked { letter-spacing: 1px; }
+.pp-arrow { margin: 2px 0 6px 70px; color: var(--text-3); font-size: 10px; }
+.pp-foot { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.pp-foot .warn { color: var(--warning); font-size: 11px; display: flex; align-items: center; gap: 5px; }
+
+/* 函数插入菜单（固定展示） */
+.fn-menu {
+  position: absolute; top: 34px; right: 16px; z-index: 6; width: 300px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-l); box-shadow: var(--shadow-lg);
+  padding: 6px; font-size: 12px;
+}
+.fn-menu .fm-search { height: 28px; display: flex; align-items: center; padding: 0 8px; margin-bottom: 4px; background: var(--surface); border-radius: var(--r-m); color: var(--text-3); font-size: 12px; }
+.fn-cat { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); padding: 8px 8px 3px; }
+.fn-item { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 8px; border-radius: var(--r-m); cursor: pointer; }
+.fn-item:hover, .fn-item.hover { background: var(--surface-2); }
+.fn-item .sig { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--text-1); }
+.fn-item .ds { margin-left: auto; font-size: 11px; color: var(--text-3); }
+
+/* 带参函数的参数小表单（固定展示，依附 fn-menu 下方） */
+.fn-params {
+  position: absolute; top: 240px; right: 40px; z-index: 7; width: 320px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-l); box-shadow: var(--shadow-lg);
+  padding: 12px 14px; font-size: 12px;
+}
+.fn-params .fp-title { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-1); margin-bottom: 10px; }
+.fn-params .f-row { margin-bottom: 8px; align-items: center; }
+.fn-params .f-label { width: 56px; padding-top: 0; font-size: 11px; }
+.fn-params .fp-btns { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+
+/* ============================================================
+   C. 前置链编辑器（F8.2）
+   ============================================================ */
+.chain { flex: 1; padding: 14px 20px 18px; overflow: hidden; }
+.chain-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.chain-title { font-size: 13px; font-weight: 600; }
+.chain-sub { font-size: 11px; color: var(--text-3); }
+.chain-sub code { font-family: var(--font-mono); font-size: 10px; background: var(--surface-2); border-radius: 3px; padding: 1px 4px; }
+.chain-head .sp { flex: 1; }
+
+.step {
+  border: 1px solid var(--border); border-radius: var(--r-l); background: var(--bg);
+  margin-bottom: 0; overflow: hidden;
+}
+.step.off { opacity: .55; }
+.step-head { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 10px 0 6px; }
+.drag { color: var(--text-3); cursor: grab; font-size: 12px; padding: 0 4px; }
+.step-idx { width: 20px; height: 20px; border-radius: 50%; background: var(--surface-2); color: var(--text-2); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.step-req {
+  height: 26px; padding: 0 8px; display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--border); border-radius: var(--r-m); background: var(--surface);
+  font-size: 12px; cursor: pointer; max-width: 320px;
+}
+.step-req .m { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: #F59E0B; }
+.step-req .nm { font-weight: 500; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.step-req .path { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.step-req .caret { color: var(--text-3); font-size: 9px; }
+.step-head .sp { flex: 1; }
+.step-status { font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.step-status.ok { color: var(--success); }
+.step-status.stale { color: var(--text-3); }
+
+.step-body { border-top: 1px solid var(--border); padding: 10px 14px 12px; background: var(--surface); }
+.ext-label { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); margin-bottom: 6px; }
+.ext-head, .ext-row { display: grid; grid-template-columns: 24px 92px 1fr 20px 150px 26px; align-items: center; column-gap: 8px; }
+.ext-head { height: 22px; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); }
+.ext-row { height: 32px; }
+.ext-cell {
+  height: 26px; display: flex; align-items: center; padding: 0 8px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-1);
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-m);
+  overflow: hidden; white-space: nowrap;
+}
+.ext-cell .v { color: var(--brand-text); }
+.src-pill {
+  height: 24px; padding: 0 8px; display: inline-flex; align-items: center; gap: 4px; width: fit-content;
+  border-radius: var(--r-s); font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  background: var(--info-soft); color: var(--info); cursor: pointer;
+}
+.ext-arrow { text-align: center; color: var(--text-3); font-size: 11px; }
+.ext-add {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; margin-top: 8px;
+  border: 1px dashed var(--border-strong); border-radius: var(--r-m);
+  background: transparent; color: var(--text-3); font-size: 11px; font-weight: 500; cursor: pointer; font-family: var(--font-ui);
+}
+.ext-add:hover { border-color: var(--brand); color: var(--brand-text); background: var(--brand-soft); }
+
+/* 步骤间连接符 */
+.step-link { display: flex; align-items: center; gap: 8px; padding: 6px 0 6px 26px; color: var(--text-3); font-size: 10px; }
+.step-link .line { width: 1px; height: 14px; background: var(--border-strong); margin-left: 9px; }
+.step-link .txt { font-family: var(--font-mono); }
+.step-link .txt .v { color: var(--brand-text); }
+
+/* 运行策略条 */
+.policy {
+  display: flex; align-items: center; gap: 16px; margin-top: 12px; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: var(--r-l); background: var(--surface); font-size: 12px;
+}
+.policy .p-item { display: flex; align-items: center; gap: 7px; color: var(--text-2); }
+.policy .p-item b { color: var(--text-1); font-weight: 600; }
+.policy .sp { flex: 1; }
+.scope-note { font-size: 11px; color: var(--text-3); display: flex; align-items: center; gap: 5px; }
+.scope-note code { font-family: var(--font-mono); font-size: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* 试运行面板 */
+.testrun { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--r-l); overflow: hidden; }
+.tr-head { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; }
+.tr-head .ok { color: var(--success); font-size: 11px; font-weight: 500; }
+.tr-head .sp { flex: 1; }
+.tr-body { padding: 10px 14px; }
+.tr-row { display: flex; align-items: center; gap: 10px; height: 28px; font-family: var(--font-mono); font-size: 11px; }
+.tr-row .k { color: var(--brand-text); font-weight: 600; }
+.tr-row .val { color: var(--text-1); background: var(--surface-2); border-radius: 3px; padding: 2px 6px; }
+.tr-row .val.masked { letter-spacing: 1px; }
+.tr-row .from { margin-left: auto; font-family: var(--font-ui); font-size: 10px; color: var(--text-3); }
+
+/* ============================================================
+   D. 集合级配置
+   ============================================================ */
+.col-win { width: 720px; }
+.col-pane { display: flex; }
+.col-tabs { width: 168px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); padding: 12px 8px; }
+.col-main { flex: 1; padding: 18px 22px; }
+.inherit-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 12px; color: var(--text-2); }
+.chain-mini { border: 1px solid var(--border); border-radius: var(--r-l); padding: 10px 12px; background: var(--surface); }
+.chain-mini .cm-row { display: flex; align-items: center; gap: 8px; height: 30px; font-size: 12px; }
+.chain-mini .cm-row .m { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: #F59E0B; }
+.chain-mini .cm-row .nm { font-weight: 500; }
+.chain-mini .cm-row .inh-tag { margin-left: auto; font-size: 10px; color: var(--info); background: var(--info-soft); border-radius: 3px; padding: 1px 6px; }
+
+/* 批注标记 */
+.anno { position: relative; }
+.anno::after {
+  content: attr(data-anno); position: absolute; top: -7px; right: -7px; z-index: 8;
+  min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px;
+  background: #EC4899; color: #FFF; font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.legend { margin-top: 10px; font-size: 11px; color: #64748B; }
+.legend .pk { display: inline-flex; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; background: #EC4899; color: #FFF; font-size: 9px; font-weight: 700; align-items: center; justify-content: center; margin: 0 2px 0 10px; }
+</style>
+</head>
+<body>
+
+<h1>F8 预请求链与变量转换 · UI 原型（M8.2）</h1>
+<div class="sub">范围：F8.1 认证配置 → F8.3 变量转换（全量算法含 aes/hmac）→ F8.2 预请求链（请求级 + 集合级 + 401 自动重跑 + 敏感变量加密存储）。静态原型，hover / 弹层态以固定展示 + 批注呈现。落地顺序见 <code>docs/DEVELOPMENT_PLAN.md</code> v0.8.0 M8.2。</div>
+
+<div class="changes">
+  <div><span class="n">1</span><b>Auth Tab 填实（F8.1）</b>：现为「Coming soon」占位，改为左类型列表 + 右表单。类型：<code>Inherit</code>（继承集合，默认）/ <code>No Auth</code> / <code>Bearer Token</code> / <code>Basic Auth</code> / <code>API Key</code>。secret 字段复用环境管理器的 eye 脱敏。</div>
+  <div><span class="n">2</span><b>转换管道可见化（F8.3）</b>：<code>{{password | sha1}}</code> 在字段里渲染成分段 chip（变量名 = brand 色、管道函数 = warning 色虚线分隔），一眼看清「谁在起作用」；hover 弹出解析预览，逐段显示原始值 → 各步转换 → 最终发送值；<code>|</code> 触发函数插入菜单，带参函数（<code>aes</code>/<code>hmac</code>）弹参数小表单。</div>
+  <div><span class="n">3</span><b>前置链编辑器（F8.2）</b>：请求编辑器新增第 6 个 tab「Pre-request」。每个步骤 = 从 collection 选一个已保存请求 + 提取规则表（Body JSONPath / Header / 正则 → 目标变量）；步骤可排序、可停用；产出变量写入<code>本地</code>作用域，不污染环境。</div>
+  <div><span class="n">4</span><b>运行策略与试运行</b>：底部策略条——token 过期「手动重跑」/「401 自动重跑」开关；「试运行」面板就地执行前置链，展示产出的变量与脱敏值，不用真的发目标请求。</div>
+  <div><span class="n">5</span><b>集合级前置链与 Auth 继承</b>：Collection 设置页新增「Auth &amp; Pre-request」，集合配一次，其下请求默认 <code>Inherit</code>；请求级可覆盖。</div>
+  <div><span class="n">6</span><b>敏感变量加密存储</b>：UI 脱敏（圆点 + eye）已随环境管理器落地，本期补存储层加密（Hive 中 secret 值加密落盘），原型界面上以锁图标标识。</div>
+</div>
+
+<!-- ============================================================
+     A. Auth Tab（F8.1）浅色
+     ============================================================ -->
+<h2><span class="fid">F8.1</span>A · Auth Tab — Bearer Token（浅色）</h2>
+<div class="h2-sub">选中 Bearer 时的表单态；左侧列表默认落在 Inherit（继承集合配置）。</div>
+<div class="board">
+  <div class="win">
+    <div class="win-head"><span class="doc-tab"><span class="m">GET</span>获取用户列表</span></div>
+    <div class="urlbar">
+      <span class="method-pill">GET ▾</span>
+      <span class="url-input">https://api.example.com/v1/users?page=1</span>
+      <button class="send-btn">Send</button>
+    </div>
+    <div class="tabs">
+      <span class="tab-i">Params <span class="cnt">2</span></span>
+      <span class="tab-i">Headers <span class="cnt">1</span></span>
+      <span class="tab-i">Body</span>
+      <span class="tab-i active">Auth</span>
+      <span class="tab-i anno" data-anno="1">Pre-request <span class="dot"></span></span>
+      <span class="tab-i">Settings</span>
+    </div>
+    <div class="pane">
+      <div class="auth-side">
+        <div class="side-label">AUTH TYPE</div>
+        <button class="auth-item"><span class="ei">↩</span>Inherit<span class="inh">集合</span></button>
+        <button class="auth-item"><span class="ei">⊘</span>No Auth</button>
+        <button class="auth-item selected"><span class="ei">◈</span>Bearer Token</button>
+        <button class="auth-item"><span class="ei">⚿</span>Basic Auth</button>
+        <button class="auth-item"><span class="ei">⚷</span>API Key</button>
+      </div>
+      <div class="auth-main">
+        <div class="auth-title">Bearer Token</div>
+        <div class="auth-desc">发送时自动附加 <code>Authorization: Bearer &lt;token&gt;</code>，无需手动维护 Headers 里的同名项。</div>
+        <div class="f-row">
+          <div class="f-label">Token</div>
+          <div style="flex:1">
+            <div class="f-input"><span><span class="v">{{token}}</span></span></div>
+            <div class="f-hint anno" data-anno="2">支持变量与转换管道，如 <code>{{token}}</code> 来自前置链；Headers 中手动填的 Authorization 会被本配置覆盖并给出提示。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     A2. Auth Tab — Basic Auth + API Key 简稿
+     ============================================================ -->
+<h2><span class="fid">F8.1</span>A2 · Basic Auth / API Key / Inherit 形态</h2>
+<div class="h2-sub">三个小稿并列：Basic 的账密字段（secret 脱敏）、API Key 的 key 位置选择、Inherit 的说明态。</div>
+<div class="board">
+  <div class="win" style="width:300px; margin-right:16px;">
+    <div class="auth-main" style="padding:16px 18px;">
+      <div class="auth-title">Basic Auth</div>
+      <div class="auth-desc">自动附加 <code>Authorization: Basic base64(user:pass)</code></div>
+      <div class="f-row"><div class="f-label">Username</div><div style="flex:1"><div class="f-input"><span><span class="v">{{username}}</span></span></div></div></div>
+      <div class="f-row"><div class="f-label">Password</div><div style="flex:1">
+        <div class="f-input secret"><span class="dots">••••••••••</span><span class="f-eye">👁</span></div>
+        <div class="f-hint">secret 字段默认脱敏，点击 eye 临时显示。</div>
+      </div></div>
+    </div>
+  </div>
+  <div class="win" style="width:300px; margin-right:16px;">
+    <div class="auth-main" style="padding:16px 18px;">
+      <div class="auth-title">API Key</div>
+      <div class="auth-desc">自定义 key 注入 Header 或 Query。</div>
+      <div class="f-row"><div class="f-label">Key</div><div style="flex:1"><div class="f-input">X-API-Key</div></div></div>
+      <div class="f-row"><div class="f-label">Value</div><div style="flex:1"><div class="f-input"><span><span class="v">{{api_key}}</span></span></div></div></div>
+      <div class="f-row"><div class="f-label">Add to</div><div style="flex:1"><div class="f-input">Header ▾</div>
+        <div class="f-hint">可选 <code>Header</code> / <code>Query Params</code>。</div></div></div>
+    </div>
+  </div>
+  <div class="win" style="width:300px;">
+    <div class="auth-main" style="padding:16px 18px;">
+      <div class="auth-title">Inherit</div>
+      <div class="auth-desc">跟随所属集合的 Auth 配置。</div>
+      <div class="inherit-note"><span class="ic">ⓘ</span><span>当前继承自集合 <code>用户服务</code>：<b>Bearer Token</b>（<code>{{token}}</code>）。修改请到集合设置页。</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     B. 转换管道（F8.3）
+     ============================================================ -->
+<h2><span class="fid">F8.3</span>B · 转换管道 — Body 编辑器内的 chip 渲染 + 悬停解析预览</h2>
+<div class="h2-sub">以 login 请求 Body 为例：密码经 sha1 后发送。chip 分段着色；悬停 popover 逐段显示解析过程（固定展示态）。</div>
+<div class="board">
+  <div class="win">
+    <div class="win-head"><span class="doc-tab"><span class="m" style="color:#F59E0B">POST</span>登录</span></div>
+    <div class="urlbar">
+      <span class="method-pill" style="color:#F59E0B">POST ▾</span>
+      <span class="url-input">{{host}}/v1/auth/login</span>
+      <button class="send-btn">Send</button>
+    </div>
+    <div class="tabs">
+      <span class="tab-i">Params</span>
+      <span class="tab-i">Headers <span class="cnt">1</span></span>
+      <span class="tab-i active">Body <span class="dot"></span></span>
+      <span class="tab-i">Auth</span>
+      <span class="tab-i">Pre-request</span>
+      <span class="tab-i">Settings</span>
+    </div>
+    <div class="kv" style="position:relative; min-height:300px;">
+      <div class="kv-head" style="grid-template-columns:1fr;"><div>RAW JSON</div></div>
+      <div style="font-family:var(--font-mono); font-size:12px; line-height:2; padding:10px 4px;">
+        <div>{</div>
+        <div>&nbsp;&nbsp;"username": "<span class="var-chip"><span class="nm">{{username}}</span></span>",</div>
+        <div class="anno" data-anno="3" style="display:inline-block;">&nbsp;&nbsp;"password": "<span class="var-chip"><span class="nm">{{password}}</span><span class="fn">| sha1</span></span>",</div>
+        <div>&nbsp;&nbsp;"sign": "<span class="var-chip"><span class="nm">{{$timestamp}}</span><span class="fn">| md5</span></span>"</div>
+        <div>}</div>
+      </div>
+
+      <!-- 悬停解析预览 popover（固定展示） -->
+      <div class="pipe-pop" style="top:108px; left:220px;">
+        <div class="pp-title">RESOLVED PREVIEW · 发送前实际值</div>
+        <div class="pp-step"><span class="tag">变量</span><span class="val masked">password = •••••••••• <span style="color:var(--text-3)">(secret 脱敏)</span></span></div>
+        <div class="pp-arrow">↓ sha1</div>
+        <div class="pp-step"><span class="tag">转换后</span><span class="val">5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8</span></div>
+        <div class="pp-foot">
+          <span class="warn">⚠ 当前环境未激活，解析自「全局」作用域</span>
+          <button class="btn btn-s btn-soft">+ 转换函数</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2><span class="fid">F8.3</span>B2 · 函数插入菜单 + 带参函数（aes / hmac）参数表单</h2>
+<div class="h2-sub">在变量后输入 <code>|</code> 触发函数菜单；选择带参函数时弹参数小表单，参数同样支持变量引用。</div>
+<div class="board">
+  <div class="win" style="min-height:340px;">
+    <div class="kv" style="position:relative; min-height:500px;">
+      <div class="kv-head" style="grid-template-columns:24px 1fr 1.6fr 26px;"><div></div><div>KEY</div><div>VALUE</div><div></div></div>
+      <div class="kv-row">
+        <span class="checkbox on">✓</span>
+        <div class="kv-cell">sign</div>
+        <div class="kv-cell"><span class="var-chip"><span class="nm">{{body}}</span><span class="fn plain">| hmac(sha256, {{app_secret}})</span></span><span style="color:var(--text-3)">|</span></div>
+        <span class="icon-btn">✕</span>
+      </div>
+      <div class="kv-row">
+        <span class="checkbox on">✓</span>
+        <div class="kv-cell">t</div>
+        <div class="kv-cell"><span class="var-chip"><span class="nm">{{$timestamp}}</span></span></div>
+        <span class="icon-btn">✕</span>
+      </div>
+
+      <!-- 函数插入菜单（固定展示）：定位在触发单元格下方 -->
+      <div class="fn-menu anno" data-anno="4" style="top:64px; left:30%; right:auto;">
+        <div class="fm-search">⌕ 输入函数名…</div>
+        <div class="fn-cat">哈希</div>
+        <div class="fn-item"><span class="sig">md5</span><span class="ds">MD5 摘要</span></div>
+        <div class="fn-item"><span class="sig">sha1</span><span class="ds">SHA-1 摘要 · 登录密码常用</span></div>
+        <div class="fn-item"><span class="sig">sha256</span><span class="ds">SHA-256 摘要</span></div>
+        <div class="fn-cat">编码</div>
+        <div class="fn-item"><span class="sig">base64</span><span class="ds">Base64 编码</span></div>
+        <div class="fn-cat">加密 / 签名（带参数）</div>
+        <div class="fn-item hover"><span class="sig">aes(mode, key, iv)</span><span class="ds">AES 加密 · cbc/ecb</span></div>
+        <div class="fn-item"><span class="sig">hmac(algo, key)</span><span class="ds">HMAC 签名</span></div>
+      </div>
+
+      <!-- 带参函数参数小表单（固定展示）：菜单右侧联动弹出 -->
+      <div class="fn-params anno" data-anno="5" style="position:absolute; top:190px; left:630px; right:auto;">
+        <div class="fp-title">aes(mode, key, iv)</div>
+        <div class="f-row"><div class="f-label">mode</div><div style="flex:1"><div class="f-input" style="height:26px;">cbc ▾</div></div></div>
+        <div class="f-row"><div class="f-label">key</div><div style="flex:1"><div class="f-input" style="height:26px;"><span class="v">{{aes_key}}</span></div></div></div>
+        <div class="f-row"><div class="f-label">iv</div><div style="flex:1"><div class="f-input" style="height:26px;"><span class="v">{{aes_iv}}</span></div></div></div>
+        <div class="fp-btns">
+          <button class="btn btn-s btn-ghost">取消</button>
+          <button class="btn btn-s btn-primary">插入</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="legend">批注：<span class="pk">3</span>chip 分段着色：变量名 brand 色、管道函数 warning 色虚线分隔<span class="pk">4</span>输入 <code style="font-family:var(--font-mono); background:#F1F5F9; border-radius:3px; padding:0 4px;">|</code> 触发菜单，分类列出内置函数<span class="pk">5</span>带参函数的参数表单，参数值支持变量引用</div>
+
+<!-- ============================================================
+     C. 前置链编辑器（F8.2）
+     ============================================================ -->
+<h2><span class="fid">F8.2</span>C · Pre-request Tab — 前置链编辑器（浅色）</h2>
+<div class="h2-sub">步骤 = 集合中的已保存请求 + 提取规则；产出变量写入本地作用域；底部为运行策略与试运行面板。</div>
+<div class="board">
+  <div class="win">
+    <div class="win-head"><span class="doc-tab"><span class="m">GET</span>获取用户列表</span></div>
+    <div class="urlbar">
+      <span class="method-pill">GET ▾</span>
+      <span class="url-input">{{host}}/v1/users?page=1</span>
+      <button class="send-btn">Send</button>
+    </div>
+    <div class="tabs">
+      <span class="tab-i">Params <span class="cnt">2</span></span>
+      <span class="tab-i">Headers</span>
+      <span class="tab-i">Body</span>
+      <span class="tab-i">Auth</span>
+      <span class="tab-i active">Pre-request <span class="cnt">1</span></span>
+      <span class="tab-i">Settings</span>
+    </div>
+    <div class="chain">
+      <div class="chain-head">
+        <div>
+          <div class="chain-title">前置链 <span style="color:var(--text-3); font-weight:400; font-size:11px;">发送本请求前依次执行</span></div>
+          <div class="chain-sub">步骤产出的变量写入 <code>本地</code> 作用域，仅本次会话有效，不污染环境</div>
+        </div>
+        <div class="sp"></div>
+        <button class="btn btn-s btn-ghost anno" data-anno="6">+ 添加步骤</button>
+        <button class="btn btn-s btn-soft">▶ 试运行</button>
+      </div>
+
+      <!-- 步骤 1 -->
+      <div class="step">
+        <div class="step-head">
+          <span class="drag">⠿</span>
+          <span class="step-idx">1</span>
+          <span class="step-req anno" data-anno="7">
+            <span class="m">POST</span><span class="nm">登录</span>
+            <span class="path">用户服务 / {{host}}/v1/auth/login</span>
+            <span class="caret">▾</span>
+          </span>
+          <div class="sp"></div>
+          <span class="step-status ok">● 上次运行成功 · 5 分钟前</span>
+          <span class="icon-btn" title="立即重跑">↻</span>
+          <span class="sw on"></span>
+          <span class="icon-btn danger">✕</span>
+        </div>
+        <div class="step-body">
+          <div class="ext-label">EXTRACT · 从响应提取变量</div>
+          <div class="ext-head"><div></div><div>SOURCE</div><div>PATH / PATTERN</div><div></div><div>TARGET VARIABLE</div><div></div></div>
+          <div class="ext-row">
+            <span class="checkbox on">✓</span>
+            <span class="src-pill">Body · JSONPath ▾</span>
+            <div class="ext-cell">$.data.token</div>
+            <span class="ext-arrow">→</span>
+            <div class="ext-cell"><span class="v">{{token}}</span></div>
+            <span class="icon-btn danger">✕</span>
+          </div>
+          <div class="ext-row">
+            <span class="checkbox on">✓</span>
+            <span class="src-pill">Body · JSONPath ▾</span>
+            <div class="ext-cell">$.data.expires_in</div>
+            <span class="ext-arrow">→</span>
+            <div class="ext-cell"><span class="v">{{token_expires_in}}</span></div>
+            <span class="icon-btn danger">✕</span>
+          </div>
+          <button class="ext-add">+ 添加提取规则</button>
+        </div>
+      </div>
+
+      <!-- 连接符 -->
+      <div class="step-link">
+        <span class="line"></span>
+        <span class="txt anno" data-anno="8">然后发送目标请求，<span class="v">{{token}}</span> 已就绪</span>
+      </div>
+
+      <!-- 运行策略 -->
+      <div class="policy">
+        <span class="p-item"><b>过期策略</b></span>
+        <span class="p-item"><span class="sw"></span> 收到 <b>401</b> 时自动重跑前置链</span>
+        <span class="p-item" style="color:var(--text-3)">关闭 = 手动重跑（步骤右侧 ↻）</span>
+        <div class="sp"></div>
+        <span class="scope-note">⛁ 变量作用域：<code>本地</code></span>
+      </div>
+
+      <!-- 试运行面板 -->
+      <div class="testrun anno" data-anno="9">
+        <div class="tr-head">
+          ▶ 试运行结果 <span class="ok">✓ 1/1 步骤成功 · 耗时 238ms</span>
+          <div class="sp"></div>
+          <span class="icon-btn">✕</span>
+        </div>
+        <div class="tr-body">
+          <div class="tr-row"><span class="k">{{token}}</span><span class="val">eyJhbGciOiJIUzI1NiIsInR5cCI6…</span><span class="from">来自 步骤1 · $.data.token</span></div>
+          <div class="tr-row"><span class="k">{{token_expires_in}}</span><span class="val">7200</span><span class="from">来自 步骤1 · $.data.expires_in</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="legend">批注：<span class="pk">6</span>从 collection 选已保存请求作为前置步骤，可排序（⠿ 拖拽）、停用、删除<span class="pk">7</span>步骤显示来源集合与 URL 摘要<span class="pk">8</span>链式：多步骤时依次串联（login → 拿 refresh_token → 目标请求）<span class="pk">9</span>试运行不发目标请求，仅跑前置链并展示产出变量</div>
+
+<!-- ============================================================
+     C2. 前置链编辑器 — 暗色
+     ============================================================ -->
+<h2><span class="fid">F8.2</span>C2 · Pre-request Tab — 暗色</h2>
+<div class="h2-sub">同上结构，暗色 token 校验（其余区块 token 同源，不再重复出暗色稿）。</div>
+<div class="board" data-theme="dark">
+  <div class="win">
+    <div class="win-head"><span class="doc-tab"><span class="m">GET</span>获取用户列表</span></div>
+    <div class="tabs">
+      <span class="tab-i">Params</span>
+      <span class="tab-i">Headers</span>
+      <span class="tab-i">Body</span>
+      <span class="tab-i">Auth</span>
+      <span class="tab-i active">Pre-request <span class="cnt">2</span></span>
+      <span class="tab-i">Settings</span>
+    </div>
+    <div class="chain">
+      <div class="chain-head">
+        <div class="chain-title">前置链 <span style="color:var(--text-3); font-weight:400; font-size:11px;">2 个步骤 · 链式执行</span></div>
+        <div class="sp"></div>
+        <button class="btn btn-s btn-ghost">+ 添加步骤</button>
+        <button class="btn btn-s btn-soft">▶ 试运行</button>
+      </div>
+
+      <div class="step">
+        <div class="step-head">
+          <span class="drag">⠿</span>
+          <span class="step-idx">1</span>
+          <span class="step-req"><span class="m">POST</span><span class="nm">登录</span><span class="path">用户服务 / {{host}}/v1/auth/login</span><span class="caret">▾</span></span>
+          <div class="sp"></div>
+          <span class="step-status ok">● 成功 · 5 分钟前</span>
+          <span class="icon-btn">↻</span>
+          <span class="sw on"></span>
+          <span class="icon-btn danger">✕</span>
+        </div>
+        <div class="step-body">
+          <div class="ext-label">EXTRACT · 从响应提取变量</div>
+          <div class="ext-row">
+            <span class="checkbox on">✓</span>
+            <span class="src-pill">Body · JSONPath ▾</span>
+            <div class="ext-cell">$.data.token</div>
+            <span class="ext-arrow">→</span>
+            <div class="ext-cell"><span class="v">{{token}}</span></div>
+            <span class="icon-btn danger">✕</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-link"><span class="line"></span><span class="txt"><span class="v">{{token}}</span> → 下一步请求体</span></div>
+
+      <!-- 步骤 2（停用态） -->
+      <div class="step off">
+        <div class="step-head">
+          <span class="drag">⠿</span>
+          <span class="step-idx">2</span>
+          <span class="step-req"><span class="m">POST</span><span class="nm">刷新令牌</span><span class="path">用户服务 / {{host}}/v1/auth/refresh</span><span class="caret">▾</span></span>
+          <div class="sp"></div>
+          <span class="step-status stale">○ 已停用</span>
+          <span class="icon-btn">↻</span>
+          <span class="sw"></span>
+          <span class="icon-btn danger">✕</span>
+        </div>
+      </div>
+
+      <div class="policy">
+        <span class="p-item"><b>过期策略</b></span>
+        <span class="p-item"><span class="sw on"></span> 收到 <b>401</b> 时自动重跑前置链</span>
+        <div class="sp"></div>
+        <span class="scope-note">⛁ 变量作用域：<code>本地</code></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     D. 集合级配置（Auth & Pre-request 继承）
+     ============================================================ -->
+<h2><span class="fid">F8.2</span>D · 集合设置 — Auth &amp; Pre-request（请求默认继承）</h2>
+<div class="h2-sub">Collection 右键「设置」进入；此处配置的 Auth 与前置链被集合下所有请求继承，请求级可覆盖。</div>
+<div class="board">
+  <div class="win col-win">
+    <div class="win-head"><span class="doc-tab">🗂 用户服务 · 设置</span></div>
+    <div class="col-pane">
+      <div class="col-tabs">
+        <div class="side-label">COLLECTION</div>
+        <button class="auth-item"><span class="ei">ⓘ</span>General</button>
+        <button class="auth-item selected"><span class="ei">⚿</span>Auth &amp; Pre-req</button>
+        <button class="auth-item"><span class="ei">✎</span>Variables</button>
+      </div>
+      <div class="col-main">
+        <div class="auth-title" style="margin-bottom:14px;">Auth（集合默认）</div>
+        <div class="f-row">
+          <div class="f-label">Type</div>
+          <div style="flex:1"><div class="f-input">Bearer Token ▾</div></div>
+        </div>
+        <div class="f-row">
+          <div class="f-label">Token</div>
+          <div style="flex:1"><div class="f-input"><span><span class="v">{{token}}</span></span></div></div>
+        </div>
+
+        <div class="auth-title" style="margin:22px 0 10px;">Pre-request chain（集合默认）</div>
+        <div class="chain-mini anno" data-anno="10">
+          <div class="cm-row"><span class="step-idx">1</span><span class="m">POST</span><span class="nm">登录</span><span style="color:var(--text-3); font-family:var(--font-mono); font-size:10px;">$.data.token → {{token}}</span><span class="inh-tag">被 12 个请求继承</span></div>
+        </div>
+        <div class="f-hint" style="margin-top:10px;">请求级 Auth 选择 <code>Inherit</code>、未配置自身前置链时，自动使用以上配置；请求级一旦配置即覆盖集合默认。</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="legend">批注：<span class="pk">10</span>集合级前置链与请求级同一套编辑器，此处为摘要展示，点击进编辑</div>
+
+</body>
+</html>

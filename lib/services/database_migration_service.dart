@@ -82,6 +82,12 @@ class DatabaseMigrationService with LogMixin {
       case 2:
         await _migrateToV2();
         break;
+      case 3:
+        await _migrateToV3();
+        break;
+      case 4:
+        await _migrateToV4();
+        break;
       // 未来版本在这里添加 case
       default:
         logWarning('Unknown migration version: $version');
@@ -108,6 +114,32 @@ class DatabaseMigrationService with LogMixin {
 
     // 记录迁移时间戳
     await _recordMigration(2);
+  }
+
+  /// 迁移到 v3
+  ///
+  /// v3 变更（F8.1 认证配置）：
+  /// - HttpRequest 添加 auth 字段（字段索引 14，null = 继承集合）
+  /// - Collection 添加 auth 字段（字段索引 8，null = 未配置）
+  ///
+  /// 与 v2 相同：字段默认值由自定义适配器在读时补齐，这里只记录日志。
+  Future<void> _migrateToV3() async {
+    logInfo('Migrating to v3: Adding auth config field support (F8.1)');
+
+    await _recordMigration(3);
+  }
+
+  /// 迁移到 v4
+  ///
+  /// v4 变更（F8.2 预请求链）：
+  /// - HttpRequest 添加 preRequestChain / preRequestRetryOn401（索引 15/16）
+  /// - Collection 添加 preRequestChain / preRequestRetryOn401（索引 9/10）
+  ///
+  /// 字段默认值仍由自定义适配器在读时补齐，这里只记录日志。
+  Future<void> _migrateToV4() async {
+    logInfo('Migrating to v4: Adding pre-request chain field support (F8.2)');
+
+    await _recordMigration(4);
   }
 
   /// 记录迁移历史

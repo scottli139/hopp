@@ -318,6 +318,13 @@ final flattenedCollectionsProvider = Provider<List<Collection>>((ref) {
   );
 });
 
+/// Provider that indexes all collections by id
+/// 用于 Auth 继承链解析（F8.1）、预请求链集合级配置（F8.2）等按 id 查找的场景
+final collectionsByIdProvider = Provider<Map<String, Collection>>((ref) {
+  final collections = ref.watch(flattenedCollectionsProvider);
+  return {for (final c in collections) c.id: c};
+});
+
 /// Provider that returns root-level collections only (those with null parentId)
 final rootCollectionsProvider = Provider<List<Collection>>((ref) {
   final collectionsAsync = ref.watch(collectionProvider);

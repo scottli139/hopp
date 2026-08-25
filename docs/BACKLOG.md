@@ -122,7 +122,8 @@
 | TD-2 | URL 查询参数解析重复 | `utils/url_params_sync.dart` 已提供 parse/build/sync，但 `http_service.dart`、`postman_mapper.dart`、`curl_import_service.dart` 各自重写 | 统一走 `url_params_sync.dart` | P2 | 下次改动 URL 处理相关代码时 |
 | TD-3 | Timing 的 TCP/TLS/TTFB 为估算值 | `http_service.dart` 用硬编码 `30/20/45` 及 `totalMs ~/ 3` 填充 | 改为真实测量，测不到就标记为未测量（null），避免误导 | P2 | 实现真实计时或重做 Timing Tab 时 |
 | ~~TD-4~~ | ~~UI 测试指令存在死指令/不可靠指令~~ | ~~`set_window_size`、`trigger_curl_import_dialog` 无监听者；`scroll_response` 只驱动 Certificate 控制器；`switch_request_tab` / `expand_raw_content_type_dropdown` one-shot 不可靠（详见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md) TI-01～04）~~ | ~~补齐监听、修正滚动目标、指令改幂等~~ | ~~P2~~ | ✅ 已修复（2026-08-21）：窗口走 `com.example.hopp/window` 原生通道；curl 对话框补监听；`scroll_response` 支持 body/certificate 目标并回读 before/after；Tab 切换带时间戳幂等；新增 `dismiss_dialog` 指令 |
-| TD-5 | 版本号多处硬编码 | ✅ App 侧已修复（2026-08-22，v0.8.8）：`package_info_plus` 动态读取 + `app_version_test` 守护与 pubspec 同步（Issue #13）；残余：`site/` 两个静态页的 version 徽章需发布时手动改（2026-08-24 已对齐 v0.9.2） | 发布流程中加入 site/ 徽章同步步骤（或脚本化） | P3 | 每次发布 |
+| TD-5 | 版本号多处硬编码 | ✅ App 侧已修复（2026-08-22，v0.8.8）：`package_info_plus` 动态读取 + `app_version_test` 守护与 pubspec 同步（Issue #13）；残余：`site/` 两个静态页的 version 徽章需发布时手动改（2026-08-25 已对齐 v0.10.0） | 发布流程中加入 site/ 徽章同步步骤（或脚本化） | P3 | 每次发布 |
+| TD-6 | test-mode `tap_at` 疑似干扰 Tab 状态 | F8 截图审计（2026-08-25）：Params 页对 fx 按钮 `tap_at(745,118)`（47 个 hitTargets）后页面异常跳回 Pre-request tab；功能本身由 widget test 覆盖且正常 | 排查 `tap_at` 的命中分发与 `_tabController`/持久化 index 的互相影响 | P3 | 下次扩展 test-mode 指针指令时 |
 
 ---
 

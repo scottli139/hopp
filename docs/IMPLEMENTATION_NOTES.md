@@ -751,12 +751,39 @@ group('CurlParser', () {
 
 ---
 
+## 预请求链与变量转换 (M8.2, F8 / v0.10.0, 2026-08-25)
+
+> UI 原型先行：`docs/design/f8_prerequest_chain_preview.html`。需求与验收见 PRD F8。
+
+### 数据模型（Hive typeId 14-18，db v4）
+
+- `AuthConfig`(14) + `AuthType`(15)：挂在 `HttpRequest.auth`(字段 14) 与 `Collection.auth`(字段 8)。**inherit 是显式枚举值而非 null**——规避 freezed copyWith 无法置空可空字段的限制，也让 UI 的 Inherit 项直接映射。
+- `PreRequestStep`(16) / `ExtractionRule`(17) / `ExtractionSourceType`(18)：挂在 `HttpRequest.preRequestChain`(15) / `preRequestRetryOn401`(16) 与 `Collection`(9/10)。
+- 旧数据兼容走手写 adapter 读时补默认值（HttpRequestAdapter/CollectionAdapter），迁移函数只记日志（惯例同 v2/v3）。
+
+### 发送链路挂载点
+
+全部发送入口汇聚于 `RequestResponseNotifier.sendRequest`，顺序：**预请求链 → 变量解析（含本地作用域）→ Auth 应用 → 发送 →（401 且开启时）重跑链重发一次**。链失败则不发目标请求，错误呈现在响应区。
+
+- 继承解析：请求级非空优先，否则沿 parentId 向上；Auth 的 none 显式阻断继承；链与 401 开关作为整体按层继承。
+- 本地作用域：`localVariablesProvider`（StateProvider，会话级不持久化），`resolvedVariablesProvider` 合并顺序 本地 > 环境 > 全局。
+- 被引用请求自身的链不递归执行（深度 1 防循环），其 Auth 正常生效。
+
+### 变量转换管道（F8.3）
+
+- `VariableResolver` 的占位符匹配从正则换成手写扫描器 `scanExpressions`，支持参数内嵌套一层 `{{var}}`（`hmac(sha256, {{app_secret}})`）；`extractVariables`/`findUnresolved` 取基础变量名并下钻参数。
+- `VariableTransforms`：`splitPipeline` 按顶层 `|` 切分（括号内不切）；无参 md5/sha1/sha256/base64（crypto 包），带参 aes(cbc/ecb, key, iv[, base64|hex]) / hmac(md5|sha1|sha256, key)；AES key 须 UTF-8 后 16/24/32 字节；任何一步失败整体返回 null，原文保留以便 UI 标记。
+- UI：URL 栏与 KV 单元格用 `VariableHighlightController` 分段着色（变量 brand / 管道 warning）；值单元格 fx 菜单合并「解析预览 + 函数插入」，带参函数弹参数小表单。
+
+### 敏感数据落盘加密（F8.4）
+
+`BoxEncryption`：应用级 32 字节 AES key（base64 存 Hive 目录 `.secure_key`），collections/requests/environments 三个数据 box 用 `HiveAesCipher`；存量明文 box 启动时一次性迁移（读出→删除→加密重建→写回，SharedPreferences flag 幂等）。防御边界：防直接翻看 Hive 文件，不防整机能被访问的攻击者（keychain 级方案留作后续）。
+
 ## 环境变量系统 (M8.1)
 
 > 定位（2026-08-20 决策）：「可复用 + AI 变量注入的基础」，不是 Postman parity。AI 生成的请求引用 `{{baseUrl}}` / `{{token}}`。
 
 ### 数据模型
-
 `lib/models/environment.dart`（Hive typeId：Environment=11 / EnvironmentVariable=12 / VariableType=13）：
 
 ```dart

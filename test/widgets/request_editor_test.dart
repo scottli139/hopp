@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hopp/models/auth_config.dart';
 import 'package:hopp/models/http_method.dart';
 import 'package:hopp/models/http_request.dart';
 import 'package:hopp/models/key_value_pair.dart';
+import 'package:hopp/models/pre_request_step.dart';
 import 'package:hopp/models/request_tab.dart';
 import 'package:hopp/providers/providers.dart';
 import 'package:hopp/widgets/common/app_controls.dart';
@@ -444,7 +446,7 @@ void main() {
     });
 
     group('Auth tab', () {
-      testWidgets('should show coming soon message in Auth tab',
+      testWidgets('should show auth type list and inherit hint by default',
           (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',
@@ -469,9 +471,197 @@ void main() {
         await tester.tap(find.text('Auth'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Authentication'), findsOneWidget);
-        // Lock icon is shown in both the tab and the empty state
-        expect(find.byIcon(Icons.lock_outline), findsWidgets);
+        // 类型列表（Inherit 同时是表单标题，故 2 处）
+        expect(find.text('Inherit'), findsNWidgets(2));
+        expect(find.text('No Auth'), findsOneWidget);
+        expect(find.text('Bearer Token'), findsOneWidget);
+        expect(find.text('Basic Auth'), findsOneWidget);
+        expect(find.text('API Key'), findsOneWidget);
+        // 默认 Inherit：无继承来源时的兜底提示
+        expect(find.text('继承链上未找到认证配置，发送时不附加认证信息。'),
+            findsOneWidget);
+      });
+
+      testWidgets('should show bearer token field when Bearer selected',
+          (tester) async {
+        final request = HttpRequest.empty().copyWith(
+          id: 'req1',
+          name: 'Test Request',
+          method: HttpMethod.get,
+          auth: const AuthConfig(type: AuthType.bearer, token: '{{token}}'),
+        );
+
+        final container = createContainer(
+          tabs: [
+            RequestTab(
+              id: 'req1',
+              request: request,
+            ),
+          ],
+          activeTabId: 'req1',
+        );
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Auth'));
+        await tester.pumpAndSettle();
+
+        // 表单区标题 + Token 标签 + 覆盖说明
+        expect(find.text('Token'), findsOneWidget);
+        expect(
+          find.textContaining('Authorization: Bearer <token>'),
+          findsOneWidget,
+        );
+      });
+    });
+
+    group('Pre-request tab', () {
+      testWidgets('should show empty chain state by default', (tester) async {
+        final request = HttpRequest.empty().copyWith(
+          id: 'req1',
+          name: 'Test Request',
+        );
+
+        final container = createContainer(
+          tabs: [RequestTab(id: 'req1', request: request)],
+          activeTabId: 'req1',
+        );
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Pre-request'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('前置链'), findsOneWidget);
+        expect(find.text('暂无前置步骤'), findsOneWidget);
+        expect(find.text('添加步骤'), findsOneWidget);
+        expect(find.text('过期策略'), findsOneWidget);
+      });
+
+      testWidgets('should add step and show step card', (tester) async {
+        final request = HttpRequest.empty().copyWith(
+          id: 'req1',
+          name: 'Test Request',
+        );
+
+        final container = createContainer(
+          tabs: [RequestTab(id: 'req1', request: request)],
+          activeTabId: 'req1',
+        );
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Pre-request'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('添加步骤'));
+        await tester.pumpAndSettle();
+
+        // 步骤卡片：选择器占位 + 提取规则区
+        expect(find.text('选择请求…'), findsOneWidget);
+        expect(find.text('EXTRACT · 从响应提取变量'), findsOneWidget);
+        expect(find.text('添加提取规则'), findsOneWidget);
+
+        // tab 上显示步骤计数
+        expect(find.text('1'), findsWidgets);
+      });
+
+      testWidgets('should add extraction rule to step', (tester) async {
+        final request = HttpRequest.empty().copyWith(
+          id: 'req1',
+          name: 'Test Request',
+          preRequestChain: [
+            PreRequestStep(id: 's1', requestId: 'login-req'),
+          ],
+        );
+
+        final container = createContainer(
+          tabs: [RequestTab(id: 'req1', request: request)],
+          activeTabId: 'req1',
+        );
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Pre-request'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('添加提取规则'));
+        await tester.pumpAndSettle();
+
+        // 规则行：来源选择器 + 目标变量输入
+        expect(find.text('Body · JSONPath'), findsOneWidget);
+      });
+    });
+
+    group('Variable fx menu (F8.3)', () {
+      testWidgets('should show fx icon on value cell with variable and open menu',
+          (tester) async {
+        final request = HttpRequest.empty().copyWith(
+          id: 'req1',
+          name: 'Test Request',
+          params: [
+            KeyValuePair.empty()
+                .copyWith(key: 'sign', value: '{{password | sha1}}'),
+          ],
+        );
+
+        final container = createContainer(
+          tabs: [RequestTab(id: 'req1', request: request)],
+          activeTabId: 'req1',
+        );
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        // fx 图标出现在含 {{var}} 的值单元格右端
+        final fxIcon = find.byIcon(Icons.functions);
+        expect(fxIcon, findsOneWidget);
+
+        await tester.tap(fxIcon);
+        await tester.pumpAndSettle();
+
+        // 菜单：解析预览区 + 函数插入区
+        expect(find.text('RESOLVED PREVIEW'), findsOneWidget);
+        expect(find.text('INSERT TRANSFORM'), findsOneWidget);
+        // 无参与带参函数条目
+        expect(find.text('md5'), findsWidgets);
+        expect(find.text('hmac(algo, key)'), findsOneWidget);
+        expect(find.text('aes(mode, key, iv)'), findsOneWidget);
+      });
+
+      testWidgets('should insert no-arg transform at cursor', (tester) async {
+        final request = HttpRequest.empty().copyWith(
+          id: 'req1',
+          name: 'Test Request',
+          params: [
+            KeyValuePair.empty().copyWith(key: 'token', value: '{{token}}'),
+          ],
+        );
+
+        final container = createContainer(
+          tabs: [RequestTab(id: 'req1', request: request)],
+          activeTabId: 'req1',
+        );
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.functions));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('md5').last);
+        await tester.pumpAndSettle();
+
+        // 插入后值被同步到 provider
+        final updated = container
+            .read(requestTabProvider)
+            .firstWhere((t) => t.id == 'req1')
+            .request;
+        expect(updated.params.first.value, contains('| md5'));
       });
     });
 

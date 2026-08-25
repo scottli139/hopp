@@ -1,7 +1,9 @@
 import 'package:hive/hive.dart';
 
+import '../auth_config.dart';
 import '../collection.dart';
 import '../http_request.dart';
+import '../pre_request_step.dart';
 
 /// 自定义 Collection 适配器（向后兼容）
 ///
@@ -28,13 +30,21 @@ class CollectionAdapter extends TypeAdapter<Collection> {
       requests: (fields[5] as List?)?.cast<HttpRequest>() ?? const [],
       sortOrder: fields[6] as int? ?? 0,
       isExpanded: fields[7] as bool? ?? false,
+
+      // Auth 配置（v3 新增，可能缺失；缺省为 inherit）
+      auth: fields[8] as AuthConfig? ?? const AuthConfig(),
+
+      // 预请求链（v4 新增，可能缺失；缺省为空）
+      preRequestChain:
+          (fields[9] as List?)?.cast<PreRequestStep>() ?? const [],
+      preRequestRetryOn401: fields[10] as bool? ?? false,
     );
   }
 
   @override
   void write(BinaryWriter writer, Collection obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +60,13 @@ class CollectionAdapter extends TypeAdapter<Collection> {
       ..writeByte(6)
       ..write(obj.sortOrder)
       ..writeByte(7)
-      ..write(obj.isExpanded);
+      ..write(obj.isExpanded)
+      ..writeByte(8)
+      ..write(obj.auth)
+      ..writeByte(9)
+      ..write(obj.preRequestChain)
+      ..writeByte(10)
+      ..write(obj.preRequestRetryOn401);
   }
 
   @override

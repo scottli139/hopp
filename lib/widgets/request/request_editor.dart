@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/auth_config.dart';
 import '../../models/http_method.dart';
 import '../../models/http_request.dart';
 import '../../models/key_value_pair.dart';
 import '../../providers/providers.dart';
+import '../../services/auth_resolver.dart';
 import '../../utils/app_logger.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_metrics.dart';
@@ -21,6 +23,10 @@ import '../common/app_controls.dart';
 import '../common/app_popup_menu.dart';
 import '../common/app_tabs.dart';
 import '../common/code_editor.dart';
+import '../common/variable_highlight_controller.dart';
+import 'auth_config_editor.dart';
+import 'pre_request_chain_editor.dart';
+import 'variable_fx_menu.dart';
 
 class RequestEditor extends ConsumerStatefulWidget {
   const RequestEditor({super.key});
@@ -32,7 +38,7 @@ class RequestEditor extends ConsumerStatefulWidget {
 class _RequestEditorState extends ConsumerState<RequestEditor>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _urlController = _UrlEditingController();
+  final _urlController = VariableHighlightController();
   final _nameController = TextEditingController();
   final _urlFocusNode = FocusNode();
   final _methodMenuController = MenuController();
@@ -68,9 +74,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   final Map<int, LayerLink> _keyLayerLinks = {};
   OverlayEntry? _autocompleteOverlay;
 
-  // Key-Value 输入框的 Controller 缓存
+  // Key-Value 输入框的 Controller 缓存（value 列带 {{var}} 管道高亮）
   final Map<int, TextEditingController> _keyControllers = {};
-  final Map<int, TextEditingController> _valueControllers = {};
+  final Map<int, VariableHighlightController> _valueControllers = {};
 
   // 防抖定时器
   Timer? _updateTimer;
@@ -79,17 +85,20 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   void initState() {
     super.initState();
     // 恢复上次选中的编辑器 Tab，避免布局重建后被重置回 Params
-    final savedIndex = ref.read(requestEditorTabIndexProvider).clamp(0, 4);
+    final savedIndex = ref.read(requestEditorTabIndexProvider).clamp(0, 5);
     _tabController =
-        TabController(length: 5, vsync: this, initialIndex: savedIndex);
+        TabController(length: 6, vsync: this, initialIndex: savedIndex);
     _tabController.addListener(_persistTabIndex);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // 刷新 URL 高亮的主题色（主题切换时重建会重新取色）
+    // 刷新 URL / KV 高亮的主题色（主题切换时重建会重新取色）
     _urlController.appTheme = context.appTheme;
+    for (final controller in _valueControllers.values) {
+      controller.appTheme = context.appTheme;
+    }
   }
 
   /// 将当前编辑器 Tab 索引持久化到 provider（动画结束后才写入）
@@ -165,7 +174,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     ref.listen(uiTestRequestTabProvider, (previous, current) {
       if (current != null && current != previous) {
         final tab = current['tab'] as String?;
-        final index = ['params', 'headers', 'body', 'auth', 'settings']
+        final index = ['params', 'headers', 'body', 'auth', 'prerequest', 'settings']
             .indexOf(tab ?? '');
         if (index != -1 && _tabController.index != index) {
           _tabController.animateTo(index);
@@ -210,7 +219,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               _buildParamsTab(context, ref, activeTab.request),
               _buildHeadersTab(context, ref, activeTab.request),
               _buildBodyTab(context, ref, activeTab.request),
-              _buildAuthTab(context),
+              _buildAuthTab(context, ref, activeTab.request),
+              _buildPreRequestTab(context, ref, activeTab.request),
               _buildSettingsTab(context, ref, activeTab.request),
             ],
           ),
@@ -462,6 +472,13 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               dot: hasBodyContent,
             ),
             const AppTabItem(icon: Icons.lock_outline, label: 'Auth'),
+            AppTabItem(
+              icon: Icons.account_tree_outlined,
+              label: 'Pre-request',
+              count: request.preRequestChain.isNotEmpty
+                  ? request.preRequestChain.length
+                  : null,
+            ),
             const AppTabItem(icon: Icons.settings_outlined, label: 'Settings'),
           ],
           selectedIndex: _tabController.index,
@@ -687,7 +704,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     );
     final valueController = _valueControllers.putIfAbsent(
       index,
-      () => TextEditingController(text: item.value),
+      () => VariableHighlightController()
+        ..text = item.value
+        ..appTheme = context.appTheme,
     );
 
     // 如果 item 的值变化了，更新 controller
@@ -791,44 +810,69 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               ),
             ),
           const SizedBox(width: 4),
-          // Value input
+          // Value input（含 {{var}} 时右端挂 fx 菜单：解析预览 + 函数插入）
           Expanded(
             flex: 3,
-            child: TextField(
-              controller: valueController,
-              decoration: InputDecoration(
-                hintText: _getValueHint(item.key),
-                isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                border: InputBorder.none,
-                hintStyle: AppTextStyles.caption12.copyWith(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.5),
+            child: Stack(
+              alignment: Alignment.centerRight,
+              children: [
+                TextField(
+                  controller: valueController,
+                  decoration: InputDecoration(
+                    hintText: _getValueHint(item.key),
+                    isDense: true,
+                    contentPadding: EdgeInsets.only(
+                      left: 8,
+                      right: valueController.text.contains('{{') ? 26 : 8,
+                      top: 8,
+                      bottom: 8,
+                    ),
+                    border: InputBorder.none,
+                    hintStyle: AppTextStyles.caption12.copyWith(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  style: AppTextStyles.caption12.copyWith(
+                    color: _isCalculatedValue(item.key)
+                        ? theme.colorScheme.outline
+                        : context.appTheme.textPrimary,
+                  ),
+                  onSubmitted: (_) {
+                    // 回车时更新 provider（从 controller 读取最新值）
+                    final newItems = [...items];
+                    newItems[index] = item.copyWith(
+                      key: keyController.text,
+                      value: valueController.text,
+                    );
+                    _updateRequest(ref, updateFn(newItems));
+                  },
+                  onEditingComplete: () {
+                    // 编辑完成时更新 provider（从 controller 读取最新值）
+                    final newItems = [...items];
+                    newItems[index] = item.copyWith(
+                      key: keyController.text,
+                      value: valueController.text,
+                    );
+                    _updateRequest(ref, updateFn(newItems));
+                  },
                 ),
-              ),
-              style: AppTextStyles.caption12.copyWith(
-                color: _isCalculatedValue(item.key)
-                    ? theme.colorScheme.outline
-                    : context.appTheme.textPrimary,
-              ),
-              onSubmitted: (_) {
-                // 回车时更新 provider（从 controller 读取最新值）
-                final newItems = [...items];
-                newItems[index] = item.copyWith(
-                  key: keyController.text,
-                  value: valueController.text,
-                );
-                _updateRequest(ref, updateFn(newItems));
-              },
-              onEditingComplete: () {
-                // 编辑完成时更新 provider（从 controller 读取最新值）
-                final newItems = [...items];
-                newItems[index] = item.copyWith(
-                  key: keyController.text,
-                  value: valueController.text,
-                );
-                _updateRequest(ref, updateFn(newItems));
-              },
+                if (valueController.text.contains('{{'))
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: VariableFxMenu(
+                      controller: valueController,
+                      onInserted: () {
+                        // 函数片段插入后立即同步 provider（等同回车提交）
+                        final newItems = [...items];
+                        newItems[index] = item.copyWith(
+                          key: keyController.text,
+                          value: valueController.text,
+                        );
+                        _updateRequest(ref, updateFn(newItems));
+                      },
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(width: 12),
@@ -1412,30 +1456,82 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     }
   }
 
-  Widget _buildAuthTab(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.lock_outline,
-            size: 48,
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Authentication',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Coming soon...',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-          ),
-        ],
-      ),
+  /// 构建 Auth Tab（F8.1 认证配置）
+  ///
+  /// 请求级配置，支持 Inherit（继承集合）/ No Auth / Bearer / Basic /
+  /// API Key；Inherit 态展示继承链解析结果。
+  Widget _buildAuthTab(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    final collectionsById = ref.watch(collectionsByIdProvider);
+
+    String? inheritedSummary;
+    if (request.auth.type == AuthType.inherit) {
+      final source = AuthResolver.inheritedFrom(request, collectionsById);
+      if (source != null) {
+        if (source.auth.type == AuthType.none) {
+          inheritedSummary =
+              '继承自集合「${source.name}」：No Auth，发送时不附加认证信息。';
+        } else {
+          inheritedSummary =
+              '当前继承自集合「${source.name}」：${_authTypeLabel(source.auth.type)}。修改请到集合设置。';
+        }
+      }
+    }
+
+    return AuthConfigEditor(
+      auth: request.auth,
+      allowInherit: true,
+      inheritedSummary: inheritedSummary,
+      onChanged: (auth) {
+        _updateRequest(ref, request.copyWith(auth: auth));
+      },
+    );
+  }
+
+  /// Auth 类型的展示名（与 AuthConfigEditor 类型列表一致）
+  static String _authTypeLabel(AuthType type) {
+    switch (type) {
+      case AuthType.inherit:
+        return 'Inherit';
+      case AuthType.none:
+        return 'No Auth';
+      case AuthType.bearer:
+        return 'Bearer Token';
+      case AuthType.basic:
+        return 'Basic Auth';
+      case AuthType.apiKey:
+        return 'API Key';
+    }
+  }
+
+  /// 构建 Pre-request Tab（F8.2 预请求链）
+  ///
+  /// 步骤引用集合中已保存请求；链为空 = 未配置（发送时继承集合默认链）。
+  /// 试运行就地执行链，不发目标请求。
+  Widget _buildPreRequestTab(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    return PreRequestChainEditor(
+      chain: request.preRequestChain,
+      retryOn401: request.preRequestRetryOn401,
+      ownerId: request.id,
+      excludeRequestId: request.id,
+      onChainChanged: (chain) {
+        _updateRequest(ref, request.copyWith(preRequestChain: chain));
+      },
+      onRetryChanged: (v) {
+        _updateRequest(ref, request.copyWith(preRequestRetryOn401: v));
+      },
+      onTestRun: () {
+        ref
+            .read(requestResponseProvider.notifier)
+            .testRunPreRequestChain(request.id, request.preRequestChain);
+      },
     );
   }
 
@@ -1852,47 +1948,6 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
   KeyValuePair _createEmptyKeyValue() {
     return KeyValuePair.empty();
-  }
-}
-
-/// URL 输入框专用控制器：把 `{{variable}}` 片段高亮为品牌色文字 +
-/// brandSoft 底色（设计规范：变量 brand-soft 高亮）。
-///
-/// [appTheme] 在 State.didChangeDependencies 中刷新，主题切换后
-/// 下一次重建即使用新颜色。
-class _UrlEditingController extends TextEditingController {
-  AppThemeData appTheme = AppThemeData.light;
-
-  static final RegExp _variablePattern = RegExp(r'\{\{[^{}]*\}\}');
-
-  @override
-  TextSpan buildTextSpan({
-    required BuildContext context,
-    TextStyle? style,
-    required bool withComposing,
-  }) {
-    final value = text;
-    if (!value.contains('{{')) {
-      return TextSpan(style: style, text: value);
-    }
-
-    final highlightStyle = style?.copyWith(
-      color: appTheme.brand,
-      backgroundColor: appTheme.brandSoft,
-    );
-    final spans = <TextSpan>[];
-    var start = 0;
-    for (final match in _variablePattern.allMatches(value)) {
-      if (match.start > start) {
-        spans.add(TextSpan(text: value.substring(start, match.start)));
-      }
-      spans.add(TextSpan(text: match.group(0), style: highlightStyle));
-      start = match.end;
-    }
-    if (start < value.length) {
-      spans.add(TextSpan(text: value.substring(start)));
-    }
-    return TextSpan(style: style, children: spans);
   }
 }
 

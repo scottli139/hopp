@@ -1,7 +1,9 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hive/hive.dart';
 
+import 'auth_config.dart';
 import 'http_request.dart';
+import 'pre_request_step.dart';
 
 part 'collection.freezed.dart';
 part 'collection.g.dart';
@@ -29,6 +31,16 @@ class Collection with _$Collection {
     @HiveField(5) @Default([]) List<HttpRequest> requests,
     @HiveField(6) @Default(0) int sortOrder,
     @HiveField(7) @Default(false) bool isExpanded,
+
+    /// 集合级默认 Auth 配置（F8.1；type = inherit 时继续向上查找，
+    /// 根集合的 inherit 等同于无认证）
+    @HiveField(8) @Default(AuthConfig()) AuthConfig auth,
+
+    /// 集合级默认预请求链（F8.2；被集合下请求继承，请求级非空时覆盖）
+    @HiveField(9) @Default([]) List<PreRequestStep> preRequestChain,
+
+    /// 收到 401 时自动重跑前置链（F8.2；随链一起按层继承）
+    @HiveField(10) @Default(false) bool preRequestRetryOn401,
   }) = _Collection;
 
   factory Collection.fromJson(Map<String, dynamic> json) =>

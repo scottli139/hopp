@@ -1,8 +1,10 @@
 import 'package:hive/hive.dart';
 
+import '../auth_config.dart';
 import '../http_method.dart';
 import '../http_request.dart';
 import '../key_value_pair.dart';
+import '../pre_request_step.dart';
 
 /// 自定义 HttpRequest 适配器（向后兼容）
 ///
@@ -44,13 +46,21 @@ class HttpRequestAdapter extends TypeAdapter<HttpRequest> {
       validateCertificates: fields[11] == null ? true : fields[11] as bool,
       followRedirects: fields[12] == null ? true : fields[12] as bool,
       maxRedirects: fields[13] == null ? 10 : fields[13] as int,
+
+      // Auth 配置（v3 新增，可能缺失；缺省为 inherit）
+      auth: fields[14] as AuthConfig? ?? const AuthConfig(),
+
+      // 预请求链（v4 新增，可能缺失；缺省为空 = 继承集合链）
+      preRequestChain:
+          (fields[15] as List?)?.cast<PreRequestStep>() ?? const [],
+      preRequestRetryOn401: fields[16] as bool? ?? false,
     );
   }
 
   @override
   void write(BinaryWriter writer, HttpRequest obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(17)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -78,7 +88,13 @@ class HttpRequestAdapter extends TypeAdapter<HttpRequest> {
       ..writeByte(12)
       ..write(obj.followRedirects)
       ..writeByte(13)
-      ..write(obj.maxRedirects);
+      ..write(obj.maxRedirects)
+      ..writeByte(14)
+      ..write(obj.auth)
+      ..writeByte(15)
+      ..write(obj.preRequestChain)
+      ..writeByte(16)
+      ..write(obj.preRequestRetryOn401);
   }
 
   @override

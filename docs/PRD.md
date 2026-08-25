@@ -624,20 +624,25 @@
 
 ---
 
-### 八、预请求链与变量转换 📋 计划（核心楔子）
+### 八、预请求链与变量转换 ✅ 已实现（核心楔子，v0.10.0）
 
 > **国内痛点**: 测试某些系统需先登录拿 token；登录密码常需 sha1/aes 等加密后发送。Postman 靠 pre-request 脚本解决，门槛高。
 >
 > **Hopp 方案**: 用声明式积木替代脚本 —— 认证配置 + 预请求链 + 变量转换。
+>
+> **实现（2026-08-25）**: UI 原型 `docs/design/f8_prerequest_chain_preview.html`；模型 `AuthConfig`/`PreRequestStep`/`ExtractionRule`；发送链路挂载于 `request_response_provider.dart`；服务层 `auth_resolver.dart` / `variable_transforms.dart` / `pre_request/`。
 
 #### F8.1 认证（Auth）配置
 
+请求 Auth tab + 集合设置对话框配置，请求级优先、集合级沿 parentId 链继承（Inherit/No Auth 显式阻断）。
+
 | 类型 | 说明 | 状态 |
 |------|------|------|
-| No Auth | 无认证 | ✅ |
-| Bearer Token | `Authorization: Bearer {{token}}` | ⏳ |
-| Basic Auth | `Authorization: Basic base64(user:pass)` | ⏳ |
-| API Key | Header / Query 中的自定义 key | ⏳ |
+| No Auth | 无认证（阻断继承） | ✅ |
+| Inherit | 继承就近集合配置 | ✅ |
+| Bearer Token | `Authorization: Bearer {{token}}` | ✅ |
+| Basic Auth | `Authorization: Basic base64(user:pass)` | ✅ |
+| API Key | Header / Query 中的自定义 key | ✅ |
 
 #### F8.2 预请求链（登录 → token）
 
@@ -645,43 +650,47 @@
 
 ```text
 1. 发送 login 请求（用户名 + 密码，密码经变量转换加密）
-2. 从响应中提取 token：JSONPath（如 $.data.token）/ 正则 / Header
-3. 写入变量：{{token}}
+2. 从响应中提取 token：JSONPath 子集（如 $.data.token）/ 正则 / Header
+3. 写入变量：{{token}}（本地作用域）
 4. 目标请求的 Header 自动带上 Authorization: Bearer {{token}}
 ```
 
-- 支持链式：login → 拿 token → 再调一个接口拿 refresh_token → 目标请求
-- token 过期策略：手动重跑 / 按响应码 401 自动重跑前置链（可选）
-- 变量作用域：前置链产出的变量默认写入「本地」，不污染环境
+- 支持链式：login → 拿 token → 再调一个接口拿 refresh_token → 目标请求 ✅
+- token 过期策略：手动重发 / 按响应码 401 自动重跑前置链（策略条开关）✅
+- 变量作用域：前置链产出的变量写入「本地」（会话级 `localVariablesProvider`），不污染环境 ✅
+- 试运行：就地执行链查看产出变量，不发目标请求 ✅
+- 被引用请求自身的链不递归执行（深度 1，防循环）；其 Auth 配置正常生效
+- 集合级默认链：集合设置 → Pre-request，请求级非空时覆盖
 
 #### F8.3 变量转换（哈希 / 加密 / 签名）
 
 在 URL/Header/Body 中引用变量时，支持声明式转换管道（替换 JS 脚本）：
 
 ```text
-{{password | sha1}}           # SHA-1，登录密码加密
-{{password | md5}}            # MD5
-{{password | sha256}}         # SHA-256
-{{text | aes(cbc, key, iv)}}  # AES 加密
-{{text | base64}}             # Base64 编码
-{{timestamp | md5}}           # 动态签名
-{{value | hmac(sha256, key)}} # HMAC 签名
+{{password | sha1}}                     # SHA-1，登录密码加密
+{{password | md5}}                      # MD5
+{{password | sha256}}                   # SHA-256
+{{text | aes(cbc, key, iv, hex)}}       # AES 加密（cbc/ecb，默认 base64，可选 hex）
+{{text | base64}}                       # Base64 编码
+{{$timestampMs | md5}}                  # 动态签名
+{{body | hmac(sha256, {{app_secret}})}} # HMAC 签名（参数支持变量引用）
 ```
 
-内置动态变量：`{{$timestamp}}`、`{{$randomUUID}}`、`{{$randomInt}}`、`{{$guid}}`。
+内置动态变量：`{{$timestamp}}`、`{{$timestampMs}}`、`{{$isoTimestamp}}`、`{{$randomUUID}}`、`{{$randomInt}}`。
 
 **设计原则**:
-- 不引入 JS 沙箱；算法内置（纯 Dart 实现 SHA/AES/HMAC）
-- 转换是显式声明的，用户看得见每一步做了什么（避免脚本黑盒）
+- 不引入 JS 沙箱；算法内置（crypto / encrypt 包，底层纯 Dart pointycastle）
+- 转换是显式声明的：URL 栏与 KV 单元格分段着色（变量名 brand 色、管道函数 warning 色），fx 菜单可逐步预览解析结果
 - 复杂签名若超出内置函数，再考虑 Tier 1 本地 AI 生成 + 轻量表达式
+- AES key 须为 UTF-8 后 16/24/32 字节；JSONPath 为子集语法（点路径 + `[n]` 下标）
 
 #### F8.4 验收标准
 
-- [ ] 配置 login 前置请求后，目标请求自动携带 token
-- [ ] 密码可经 sha1 / aes 加密后发送
-- [ ] 从 JSON / Header 响应中提取变量
-- [ ] 转换管道清晰可见、可编辑、可保存
-- [ ] 敏感变量（password/secret）加密存储、界面脱敏显示
+- [x] 配置 login 前置请求后，目标请求自动携带 token
+- [x] 密码可经 sha1 / aes 加密后发送
+- [x] 从 JSON / Header 响应中提取变量
+- [x] 转换管道清晰可见、可编辑、可保存（分段着色 + fx 预览/插入，配置随请求/集合持久化）
+- [x] 敏感变量（password/secret）加密存储（Hive 数据 box AES 加密，应用级 key）、界面脱敏显示
 
 ---
 

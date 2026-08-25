@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,12 +8,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/adapters/adapters.dart'
     show HttpRequestAdapter, AppSettingsAdapter, CollectionAdapter;
 import '../models/app_settings.dart' hide AppSettingsAdapter;
+import '../models/auth_config.dart';
 import '../models/collection.dart' hide CollectionAdapter;
 import '../models/environment.dart';
 import '../models/http_method.dart';
 import '../models/http_request.dart' hide HttpRequestAdapter;
 import '../models/key_value_pair.dart';
+import '../models/pre_request_step.dart';
 import '../utils/app_logger.dart';
+import 'box_encryption.dart';
 import 'database_migration_service.dart';
 
 /// 存储服务
@@ -36,6 +41,16 @@ class StorageService {
   Box<Environment>? _environmentsBox;
   Box<dynamic>? _settingsBox;
   SharedPreferences? _prefs;
+
+  /// 数据 box 加密 key（F8.4）；null 表示加密不可用（极端情况下降级明文）
+  List<int>? _encryptionKey;
+
+  /// 加密迁移完成标记（SharedPreferences）
+  static const String _boxesEncryptedFlagKey = 'hive_boxes_encrypted_v1';
+
+  /// 需要加密的数据 box（settings 不含敏感信息，不加密）
+  List<String> get _dataBoxNames =>
+      [_collectionsBoxName, _requestsBoxName, _environmentsBoxName];
 
   /// 初始化存储服务
   ///
@@ -62,7 +77,24 @@ class StorageService {
     // 4. 注册适配器（使用自定义向后兼容适配器）
     _registerAdapters();
 
-    // 5. 打开 boxes
+    // 5. 加载/创建数据加密 key，并对存量明文 box 做一次性迁移（F8.4）
+    try {
+      _encryptionKey =
+          await BoxEncryption.loadOrCreateKey(Directory('${appDir.path}/hopp'));
+      if (_prefs?.getBool(_boxesEncryptedFlagKey) != true) {
+        for (final boxName in _dataBoxNames) {
+          await BoxEncryption.migrateToEncrypted(
+              boxName: boxName, key: _encryptionKey!);
+        }
+        await _prefs?.setBool(_boxesEncryptedFlagKey, true);
+      }
+    } catch (e, stack) {
+      // key 不可用（如目录只读）：降级为明文，不阻塞启动
+      AppLogger.error('[StorageService] Encryption setup failed', e, stack);
+      _encryptionKey = null;
+    }
+
+    // 6. 打开 boxes
     await _openBoxes();
 
     AppLogger.info('[StorageService] Initialized successfully');
@@ -105,15 +137,32 @@ class StorageService {
     Hive.registerAdapter(EnvironmentVariableAdapter());
     Hive.registerAdapter(EnvironmentAdapter());
 
+    // 认证配置模型适配器（F8.1 新模型，使用生成适配器）
+    Hive.registerAdapter(AuthTypeAdapter());
+    Hive.registerAdapter(AuthConfigAdapter());
+
+    // 预请求链模型适配器（F8.2 新模型，使用生成适配器）
+    Hive.registerAdapter(ExtractionSourceTypeAdapter());
+    Hive.registerAdapter(ExtractionRuleAdapter());
+    Hive.registerAdapter(PreRequestStepAdapter());
+
     AppLogger.debug('[StorageService] Hive adapters registered');
   }
 
-  /// 打开 Hive boxes
+  /// 打开 Hive boxes（数据 box 携带加密 cipher，见 F8.4）
   Future<void> _openBoxes() async {
+    final cipher =
+        _encryptionKey == null ? null : HiveAesCipher(_encryptionKey!);
     try {
-      _collectionsBox = await Hive.openBox<Collection>(_collectionsBoxName);
-      _requestsBox = await Hive.openBox<HttpRequest>(_requestsBoxName);
-      _environmentsBox = await Hive.openBox<Environment>(_environmentsBoxName);
+      _collectionsBox = await Hive.openBox<Collection>(
+          _collectionsBoxName,
+          encryptionCipher: cipher);
+      _requestsBox = await Hive.openBox<HttpRequest>(
+          _requestsBoxName,
+          encryptionCipher: cipher);
+      _environmentsBox = await Hive.openBox<Environment>(
+          _environmentsBoxName,
+          encryptionCipher: cipher);
       _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
     } catch (e, stack) {
       AppLogger.error('[StorageService] Failed to open boxes', e, stack);
@@ -133,9 +182,14 @@ class StorageService {
       await Hive.deleteBoxFromDisk(_environmentsBoxName);
       await Hive.deleteBoxFromDisk(_settingsBoxName);
 
-      _collectionsBox = await Hive.openBox<Collection>(_collectionsBoxName);
-      _requestsBox = await Hive.openBox<HttpRequest>(_requestsBoxName);
-      _environmentsBox = await Hive.openBox<Environment>(_environmentsBoxName);
+      final cipher =
+          _encryptionKey == null ? null : HiveAesCipher(_encryptionKey!);
+      _collectionsBox = await Hive.openBox<Collection>(_collectionsBoxName,
+          encryptionCipher: cipher);
+      _requestsBox = await Hive.openBox<HttpRequest>(_requestsBoxName,
+          encryptionCipher: cipher);
+      _environmentsBox = await Hive.openBox<Environment>(_environmentsBoxName,
+          encryptionCipher: cipher);
       _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
 
       AppLogger.info('[StorageService] Boxes recovered successfully');

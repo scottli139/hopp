@@ -1,4 +1,5 @@
 export 'app_settings.dart';
+export 'assertion_rule.dart';
 export 'auth_config.dart';
 export 'certificate_info.dart';
 export 'collection.dart';

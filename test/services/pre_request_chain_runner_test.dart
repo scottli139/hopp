@@ -9,6 +9,7 @@ import 'package:hopp/models/pre_request_step.dart';
 import 'package:hopp/services/pre_request/pre_request_chain_runner.dart';
 import 'package:hopp/services/pre_request/response_extractor.dart';
 import 'package:hopp/services/variable_resolver.dart';
+import 'package:logger/logger.dart';
 import 'package:mockito/mockito.dart';
 
 import '../mocks/service_mocks.mocks.dart';
@@ -218,8 +219,10 @@ void main() {
       storage = MockStorageService();
       runner = PreRequestChainRunner(
         httpService: httpService,
-        storageService: storage,
+        requestLookup: (id) => storage.getRequest(id),
         resolver: VariableResolver(),
+        // 静默日志，避免 PrettyPrinter 刷屏测试输出
+        logger: Logger(level: Level.off),
       );
     });
 

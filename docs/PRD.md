@@ -469,16 +469,60 @@
 >
 > - 预请求的「动态签名 / 加密 / 拿 token」能力，改由 **F8 预请求链 + 变量转换** 承担（声明式，零门槛）。
 > - 测试能力降级为：轻量断言子集 + AI 生成断言 + 导出给 CLI/CI 跑。
-> - F4.1 / F4.2 / F4.4 排期 M8.4；F4.3 批量运行在其后视需求排期。
+> - F4.1 / F4.4 排期 M8.4；F4.2 随最小 AI 客户端排期 M8.5（2026-08-28 调整）；F4.3 批量运行在其后视需求排期。
 
 | ID | 功能 | 状态 | 需求描述 | 验收标准 |
 |----|------|------|----------|----------|
-| F4.1 | 响应断言（轻量） | ⏳ | 状态码 / Header / Body / JSONPath 断言 | 无需写代码，UI 配置断言规则 |
-| F4.2 | 断言生成（AI） | ⏳ | 由 AI 根据响应样本生成断言 | 一键生成、可编辑、可保存 |
+| F4.1 | 响应断言（轻量） | ✅ | 状态码 / Header / Body / JSONPath / 响应时间断言 | 无需写代码，UI 配置断言规则（M8.4 / v0.12.0，2026-08-28） |
+| F4.2 | 断言生成（AI） | ⏳ → M8.5 | 由 AI 根据响应样本生成断言 | 一键生成、可编辑、可保存 |
 | F4.3 | 批量运行 | ⏳ | 集合级别批量执行 + 断言 | 顺序/并行，导出 CSV/HTML 报告 |
-| F4.4 | CLI / CI 导出 | ⏳ | 将集合 + 断言导出为可运行脚本 | 在 CI 中 `hopp run collection.json` |
+| F4.4 | CLI / CI 导出 | ✅ | 将集合 + 断言导出为可运行脚本 | 在 CI 中 `hopp run collection.hopp.json`（M8.4 / v0.12.0，2026-08-28） |
 
 > 原 F4.2 Pre-request Script / F4.3 Test Script（JS 沙箱）已 **取消**，能力并入 F8。
+
+#### F4 详案：M8.4 轻量断言 + CLI/CI（2026-08-28 澄清确认）
+
+**范围**
+
+| 项 | 决策 |
+|----|------|
+| 本期 | F4.1 轻量断言（规则模型 + 求值引擎 + 结果 UI）+ F4.4 CLI/CI 导出与运行器 |
+| 挪出 | F4.2 AI 生成断言 → M8.5（依赖 F9.3 单一 OpenAI 兼容客户端，与本地模型能力一起落地，避免 M8.4 提前背负设置页/密钥存储/隐私门基础设施） |
+| 不在本期 | F4.3 应用内批量运行与 CSV/HTML 报告；Postman `pm.test` 脚本导入/导出；Newman 兼容导出（违背无 JS 决策，且断言/预请求链无法表达）；集合级默认断言 |
+
+**F4.1 断言规则模型**（声明式，零代码；每条规则四要素 + 启用开关）
+
+| 要素 | 取值 |
+|------|------|
+| 目标 | Status code / Header（指定名）/ Body 文本 / JSONPath / Response time |
+| 操作符 | equals · not equals · contains · not contains · exists · not exists · regex · `>` `<` `>=` `<=`（按目标类型过滤可用集） |
+| 期望值 | 字符串，支持 `{{var}}` 插值（复用变量解析器） |
+| 启用开关 | 单条可禁用而不删除 |
+
+- 存储：**请求级**（`HttpRequest` 新增字段，Hive 追加 field，存量数据兼容）；JSONPath 用成熟纯 Dart 包（`json_path`），不自写
+- 结果 UI：响应区新增 **Tests** 页签——逐条 pass/fail + 实际值 vs 期望值，失败高亮；响应摘要栏 `n/m passed` 徽标；每次 Send 后自动求值，不阻断请求流程
+
+**F4.4 CLI/CI**
+
+| 项 | 决策 |
+|----|------|
+| 形态 | repo 内 `cli/` Dart 子包，共享 `lib/models` + `lib/services` 纯 Dart 部分（HTTP/变量/预请求链/断言求值），不依赖 Flutter |
+| 导出格式 | 原生 hopp 格式（全保真：断言、预请求链、Auth、变量转换），在现有 Export 对话框加格式选项（Postman v2.1 / Hopp CLI），不单列菜单入口；Postman 导出保持原样不掺断言 |
+| 运行 | `hopp run collection.hopp.json --env env.json`：顺序执行请求，跑预请求链 + `{{var}}` + 断言，任一断言失败 exit code 非零 |
+| 报告 | 终端表格 + `--reporter json\|junit` 输出文件（JUnit XML 可直接接入 GitHub Actions / GitLab CI） |
+| 密钥 | `isSecret` 变量导出时置空；CLI 侧用 `--env-var KEY=VALUE` 或进程环境变量注入 |
+| 分发 | 先 `dart pub global activate --source path`；release 页附三平台 CLI 二进制（CI 加 `dart compile exe`） |
+
+**实施顺序**：F4.1（模型 + 求值引擎 + UI）→ F4.4（导出 + CLI，复用求值引擎）；每步独立可发布。
+
+**验收标准**
+
+- [x] 五类目标 + 操作符按表可配，期望值 `{{var}}` 生效，单条启停生效
+- [x] Tests 页签逐条展示 pass/fail 与实际值，摘要徽标准确，求值不阻断发送
+- [x] 断言随请求持久化，重启不丢；存量数据无迁移问题（Hive 追加 field 17，手写 adapter 兼容）
+- [x] Export for CLI 导出全保真 JSON（含断言/预请求链/Auth，secret 置空）
+- [x] `hopp run` 顺序执行并通过 exit code 反映断言结果；`--reporter junit` 产出可被 CI 识别的 XML
+- [x] 求值引擎为纯 Dart，GUI 与 CLI 共用同一套结果
 
 ### 五、UI/UX 功能
 

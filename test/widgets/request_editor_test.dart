@@ -110,6 +110,44 @@ void main() {
         expect(find.text('Send'), findsOneWidget);
       });
 
+      testWidgets('should sync URL bar when model changes externally',
+          (tester) async {
+        final request = HttpRequest.empty().copyWith(
+          id: 'req1',
+          name: 'Test Request',
+          url: 'https://api.example.com/users',
+          method: HttpMethod.get,
+        );
+
+        final container = createContainer(
+          tabs: [
+            RequestTab(
+              id: 'req1',
+              request: request,
+            ),
+          ],
+          activeTabId: 'req1',
+        );
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+        expect(find.text('https://api.example.com/users'), findsOneWidget);
+
+        // 同一 Tab 下模型被外部更新（test-mode set_url / 导入等），
+        // URL 栏不得显示过期值
+        container.read(requestTabProvider.notifier).updateRequest(
+              'req1',
+              request.copyWith(url: 'http://127.0.0.1:8931/devices'),
+            );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('http://127.0.0.1:8931/devices'),
+          findsOneWidget,
+        );
+        expect(find.text('https://api.example.com/users'), findsNothing);
+      });
+
       testWidgets('should render all tabs', (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',

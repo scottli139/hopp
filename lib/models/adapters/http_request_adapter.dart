@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 
+import '../assertion_rule.dart';
 import '../auth_config.dart';
 import '../http_method.dart';
 import '../http_request.dart';
@@ -54,13 +55,16 @@ class HttpRequestAdapter extends TypeAdapter<HttpRequest> {
       preRequestChain:
           (fields[15] as List?)?.cast<PreRequestStep>() ?? const [],
       preRequestRetryOn401: fields[16] as bool? ?? false,
+
+      // 断言规则（v5 新增，可能缺失；缺省为空）
+      assertions: (fields[17] as List?)?.cast<AssertionRule>() ?? const [],
     );
   }
 
   @override
   void write(BinaryWriter writer, HttpRequest obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(18)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -94,7 +98,9 @@ class HttpRequestAdapter extends TypeAdapter<HttpRequest> {
       ..writeByte(15)
       ..write(obj.preRequestChain)
       ..writeByte(16)
-      ..write(obj.preRequestRetryOn401);
+      ..write(obj.preRequestRetryOn401)
+      ..writeByte(17)
+      ..write(obj.assertions);
   }
 
   @override

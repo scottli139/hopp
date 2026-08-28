@@ -1,12 +1,15 @@
+import 'package:logger/logger.dart';
+
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../models/pre_request_step.dart';
-import '../../utils/app_logger.dart';
 import '../auth_resolver.dart';
 import '../http_service.dart';
-import '../storage_service.dart';
 import '../variable_resolver.dart';
 import 'response_extractor.dart';
+
+/// 按 ID 查找已保存请求（由调用方注入，通常为 `StorageService.getRequest`）
+typedef RequestLookup = Future<HttpRequest?> Function(String id);
 
 /// 单步执行结果
 class ChainStepResult {
@@ -64,18 +67,24 @@ class ChainRunResult {
 /// 产出的变量并入作用域供后续步骤与目标请求使用（本地作用域，不污染环境）。
 ///
 /// 被引用请求自身的预请求链不会递归执行（深度固定为 1，防循环）。
+///
+/// 纯 Dart 实现：请求查找经 [RequestLookup] 注入、日志经 `package:logger`
+/// 注入，不依赖 Flutter / 存储实现，供 GUI 与 CLI 共用。
 class PreRequestChainRunner {
   PreRequestChainRunner({
     required HttpService httpService,
-    required StorageService storageService,
+    required RequestLookup requestLookup,
     required VariableResolver resolver,
+    Logger? logger,
   })  : _httpService = httpService,
-        _storage = storageService,
-        _resolver = resolver;
+        _requestLookup = requestLookup,
+        _resolver = resolver,
+        _logger = logger ?? Logger();
 
   final HttpService _httpService;
-  final StorageService _storage;
+  final RequestLookup _requestLookup;
   final VariableResolver _resolver;
+  final Logger _logger;
 
   /// 解析生效的链与 401 重跑策略（请求级非空时优先，否则沿集合链向上）。
   ///
@@ -119,21 +128,21 @@ class PreRequestChainRunner {
     final stepResults = <ChainStepResult>[];
     final produced = <String, String>{};
 
-    AppLogger.info('[PreRequestChain] Start ($label): ${chain.length} step(s), '
+    _logger.i('[PreRequestChain] Start ($label): ${chain.length} step(s), '
         '${chain.where((s) => s.enabled).length} enabled');
 
     for (var i = 0; i < chain.length; i++) {
       final step = chain[i];
       final stepTag = 'Step ${i + 1}';
       if (!step.enabled) {
-        AppLogger.debug('[PreRequestChain] $stepTag skipped (disabled)');
+        _logger.d('[PreRequestChain] $stepTag skipped (disabled)');
         stepResults.add(ChainStepResult(step: step));
         continue;
       }
 
-      final request = await _storage.getRequest(step.requestId);
+      final request = await _requestLookup(step.requestId);
       if (request == null) {
-        AppLogger.warning('[PreRequestChain] $stepTag failed: 引用的请求不存在 '
+        _logger.w('[PreRequestChain] $stepTag failed: 引用的请求不存在 '
             '(${step.requestId})，可能已被删除');
         stepResults.add(ChainStepResult(
           step: step,
@@ -147,7 +156,7 @@ class PreRequestChainRunner {
       final unresolved = _resolver.findUnresolvedInRequest(request, scope);
       if (unresolved.isNotEmpty) {
         // 未解析的占位符会原样发出（如密码变量缺失），这里给出定位线索
-        AppLogger.warning('[PreRequestChain] $stepTag (${request.name}): '
+        _logger.w('[PreRequestChain] $stepTag (${request.name}): '
             'unresolved variables: ${unresolved.join(', ')}');
       }
       var resolved = _resolver.resolveRequest(request, scope);
@@ -156,12 +165,11 @@ class PreRequestChainRunner {
         resolved = AuthResolver.apply(resolved, auth, scope, _resolver);
       }
 
-      AppLogger.info('[PreRequestChain] $stepTag (${request.name}): '
+      _logger.i('[PreRequestChain] $stepTag (${request.name}): '
           '${resolved.method.value} ${resolved.url}');
       final response = await _httpService.sendRequest(resolved);
       if (response.error != null) {
-        AppLogger.warning(
-            '[PreRequestChain] $stepTag (${request.name}) failed: '
+        _logger.w('[PreRequestChain] $stepTag (${request.name}) failed: '
             '${response.error}');
         stepResults.add(ChainStepResult(
           step: step,
@@ -186,11 +194,11 @@ class PreRequestChainRunner {
       }
       produced.addAll(extracted);
 
-      AppLogger.info('[PreRequestChain] $stepTag (${request.name}) '
+      _logger.i('[PreRequestChain] $stepTag (${request.name}) '
           'status ${response.statusCode}, '
           'extracted: ${extracted.isEmpty ? '(none)' : extracted.keys.join(', ')}');
       for (final rule in missing) {
-        AppLogger.warning('[PreRequestChain] $stepTag (${request.name}): '
+        _logger.w('[PreRequestChain] $stepTag (${request.name}): '
             'extraction missed — ${rule.source.name} "${rule.path}" '
             '→ ${rule.targetVariable}');
       }
@@ -204,7 +212,7 @@ class PreRequestChainRunner {
       ));
     }
 
-    AppLogger.info('[PreRequestChain] Done ($label): '
+    _logger.i('[PreRequestChain] Done ($label): '
         '${produced.isEmpty ? 'no variables produced' : 'produced ${produced.keys.join(', ')}'}');
     return ChainRunResult(steps: stepResults, produced: produced);
   }

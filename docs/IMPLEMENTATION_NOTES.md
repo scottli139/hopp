@@ -16,6 +16,7 @@
 - [响应优化 (OptimizedResponseViewer)](#响应优化-optimizedresponseviewer)
 - [预请求链与变量转换 (M8.2 / v0.10.0)](#预请求链与变量转换-m82-f8--v0100-2026-08-25)
 - [OpenAPI/Swagger 导入 (M8.3 / F9.4)](#openapiswagger-导入-m83--f94--v0110-2026-08-28)
+- [轻量断言 + CLI/CI (M8.4 / F4.1 + F4.4)](#轻量断言--cli-ci-m84--f41--f44--v0120-2026-08-28)
 - [环境变量系统 (M8.1)](#环境变量系统-m81)
 - [测试与自动化](#测试与自动化)
 - [Mock 服务器](#mock-服务器)
@@ -866,6 +867,42 @@ lib/widgets/import_export/openapi_import_panel.dart       # 对话框内五态�
 - fixtures：`test/fixtures/openapi/`（petstore3.json / petstore3_min.yaml / swagger2_petstore.json）。
 - 单测 68（parser/mapper/service，MockStorageService 复用 test/mocks）+ widget 4（面板五态）= 72 新增。
 - 实机审计：test-mode 驱动四屏亮/暗截图目检（2026-08-28）。
+
+---
+
+## 轻量断言 + CLI/CI (M8.4 / F4.1 + F4.4 / v0.12.0, 2026-08-28)
+
+> 需求与验收：[PRD](./PRD.md) F4 详案（F4.2 AI 生成断言按 2026-08-28 澄清挪 M8.5）；原型：[docs/design/assertions_preview.html](./design/assertions_preview.html)。
+
+### 分层结构
+
+```text
+lib/models/assertion_rule.dart                      # AssertionRule + AssertionTarget/AssertionOperator（Hive typeId 19-21）
+lib/services/assertion/assertion_engine.dart        # 纯 Dart 求值引擎（GUI 与 CLI 共用）
+lib/widgets/request/assertion_editor.dart           # 请求编辑器第六页签（AssertionLabels 复用展示名）
+lib/widgets/request/response_viewer.dart            # 响应区 Tests 页签 + meta 栏 n/m passed 徽标
+lib/services/import_export/hopp_export_service.dart # 原生 .hopp.json 导出（纯 Dart，深度 JSON 手工组装）
+cli/hopp.dart + cli/src/                            # hopp run 运行器（app 包内目录，非嵌套 pubspec）
+```
+
+### 关键决策
+
+- **规则模型**：四要素（target/targetArg/operator/expected）+ enabled 启停；操作符按目标过滤（引擎静态 `operatorsByTarget`）；exists/notExists 无期望值；请求级存储（`HttpRequest` HiveField 17，手写 adapter read 用 `(fields[17] as List?)?.cast… ?? const []` 兼容存量）。
+- **求值引擎纯 Dart**：expected/targetArg 先经 `VariableResolver.resolve` 插值；header 名大小写不敏感；JSONPath 用 `json_path` 包（非法表达式/非法 JSON 有明确 failed 分支）；JSON 值归一化（num 与字符串数字互认、bool 转 'true'/'false'）；多匹配取第一个保证确定性。
+- **求值接入**：`sendRequest` 拿到最终响应（含 error）后用发送时同源的合并变量表求值；结果 `assertionResultsProvider` 按 tabId 索引——切请求/标签不串显，重发前清空；error 响应规则自然全 failed。
+- **GUI/CLI 共用闭包**：为让 `dart compile exe` 可行，`PreRequestChainRunner` 的 `StorageService` 依赖改为 `requestLookup` typedef + 可注入 `package:logger`；`certificate_helper` 去 flutter/foundation 化（AppLogger 换 Logger 底）。闭包 = models + http_service + variable_resolver/transforms + auth_resolver + response_extractor + chain_runner + assertion_engine。
+- **原生导出**：`{format:'hopp-cli', version:1, collection(嵌套树), requests(平铺含 parentId/sortOrder/auth/preRequestChain/assertions), environments, globals, activeEnvironmentId}`；**secret 变量值一律 `""`**；freezed toJson 嵌套不递归，深度 JSON 手工组装。
+- **CLI**：`cli/` 是 app 包内源码目录（lib 引用走 `package:hopp/...`），`fvm dart compile exe cli/hopp.dart` 编译分发；`hopp run <file> [--env 名称|外部 env 文件路径] [--env-var K=V]… [--reporter console|json|junit] [--output path] [--timeout ms]`；空值 secret 从进程环境回填；exit 0 全过 / 1 有失败 / 2 用法与文件错误；密钥纪律——输出只含断言 expected/actual/message 与变量名，不落变量值/响应体。
+- **Export 对话框**：FORMAT 区双 radio 卡片（Postman v2.1 / Hopp CLI，选中态品牌边框+brandSoft 底）+ secret 提示条；不单列菜单入口（与 Import 合并同原则）；Hopp CLI 选中隐藏 Postman Format Version。
+- **test-mode**：新增 `set_assertions`（request_id/name 定位 + 规则列表，Tab 与已保存请求双写）；**修复扁平存储下按 Collection 树查找请求恒空**——`_findRequestInCollections`/`_findRequestIdByName` 增加扁平存储（storage.getRequest/getRequests）回退；`switch_request_tab` 增加 `assertions`。
+- **顺带修复（用户关心 bug 同类）**：URL 栏同一 Tab 下模型被外部更新（test-mode `set_url`、导入）后显示过期值——build 时在 URL 栏未聚焦状态下同步 controller（输入即提交保证常态一致），含回归测试。
+
+### 测试
+
+- 新增约 110：模型 11 + 引擎 33 + 导出服务 6 + 导出对话框 4 + CLI（args/env 合并/reporter/HttpServer 集成）18 + widget（断言编辑器 9 + Tests 页签 7 + URL 同步回归 1）。
+- 集成：dart:io HttpServer + login 链 sha1 管道提 token → `{{token}}` 断言，GUI 引擎与 CLI 同一套代码路径。
+- 编译冒烟：`dart compile exe` 通过；fixture 实跑 exit 0/1/2 全符合，console 输出对齐原型画板 C。
+- 实机审计：test-mode 驱动六屏（断言编辑/Tests 结果/Export 对话框 × 亮暗）截图目检通过（2026-08-28）。
 
 ---
 

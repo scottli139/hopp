@@ -468,6 +468,7 @@ class HttpService {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
+      case DioExceptionType.transformTimeout:
         return 'Request timeout: ${error.message}';
       case DioExceptionType.badCertificate:
         return _formatCertificateError(error, validateCertificates);

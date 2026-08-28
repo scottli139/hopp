@@ -11,6 +11,8 @@ class AppTabItem {
     required this.label,
     this.icon,
     this.count,
+    this.countLabel,
+    this.countError = false,
     this.dot = false,
   });
 
@@ -19,6 +21,12 @@ class AppTabItem {
 
   /// 计数徽章（如 Params/Headers 条数）；null 不显示
   final int? count;
+
+  /// 文本计数徽章（如 Tests 的 `3/4`）；非空时优先于 [count] 展示
+  final String? countLabel;
+
+  /// 徽章错误态（errorSoft 底 + error 字，如 Tests 有失败断言）
+  final bool countError;
 
   /// 内容存在标记点（如 Body 有内容）
   final bool dot;
@@ -99,6 +107,8 @@ class _AppTabState extends State<_AppTab> {
 
     final foreground =
         active ? t.brand : (_hovering ? t.textPrimary : t.textSecondary);
+    final badgeLabel = widget.item.countLabel ??
+        (widget.item.count != null ? '${widget.item.count}' : null);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -132,7 +142,7 @@ class _AppTabState extends State<_AppTab> {
                   color: foreground,
                 ),
               ),
-              if (widget.item.count != null)
+              if (badgeLabel != null)
                 Container(
                   margin: const EdgeInsets.only(left: 6),
                   padding: const EdgeInsets.symmetric(
@@ -140,14 +150,18 @@ class _AppTabState extends State<_AppTab> {
                     vertical: 1,
                   ),
                   decoration: BoxDecoration(
-                    color: active ? t.brandSoft : t.surfaceVariant,
+                    color: widget.item.countError
+                        ? t.errorSoft
+                        : (active ? t.brandSoft : t.surfaceVariant),
                     borderRadius: AppMetrics.br8,
                   ),
                   child: Text(
-                    '${widget.item.count}',
+                    badgeLabel,
                     style: AppTextStyles.micro10.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: active ? t.brand : t.textSecondary,
+                      color: widget.item.countError
+                          ? t.error
+                          : (active ? t.brand : t.textSecondary),
                     ),
                   ),
                 ),

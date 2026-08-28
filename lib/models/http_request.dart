@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hive/hive.dart';
 
+import 'assertion_rule.dart';
 import 'auth_config.dart';
 import 'http_method.dart';
 import 'key_value_pair.dart';
@@ -39,6 +40,9 @@ class HttpRequest with _$HttpRequest {
 
     // 收到 401 时自动重跑前置链（F8.2；随链一起按层继承）
     @HiveField(16) @Default(false) bool preRequestRetryOn401,
+
+    // 断言规则（F4.1；空列表 = 未配置）
+    @HiveField(17) @Default([]) List<AssertionRule> assertions,
   }) = _HttpRequest;
 
   factory HttpRequest.fromJson(Map<String, dynamic> json) =>

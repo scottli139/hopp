@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/adapters/adapters.dart'
     show HttpRequestAdapter, AppSettingsAdapter, CollectionAdapter;
 import '../models/app_settings.dart' hide AppSettingsAdapter;
+import '../models/assertion_rule.dart';
 import '../models/auth_config.dart';
 import '../models/collection.dart' hide CollectionAdapter;
 import '../models/environment.dart';
@@ -151,6 +152,12 @@ class StorageService {
     Hive.registerAdapter(ExtractionSourceTypeAdapter());
     Hive.registerAdapter(ExtractionRuleAdapter());
     Hive.registerAdapter(PreRequestStepAdapter());
+
+    // 断言规则模型适配器（F4.1 新模型，使用生成适配器）
+    Hive
+      ..registerAdapter(AssertionTargetAdapter())
+      ..registerAdapter(AssertionOperatorAdapter())
+      ..registerAdapter(AssertionRuleAdapter());
 
     AppLogger.debug('[StorageService] Hive adapters registered');
   }

@@ -1,6 +1,6 @@
-/// Postman Export Dialog
+/// Export Dialog
 ///
-/// Export Hopp Collection to Postman format.
+/// Export Hopp Collection to Postman format or Hopp CLI native format.
 library;
 
 import 'package:file_picker/file_picker.dart';
@@ -11,6 +11,7 @@ import '../../../models/collection.dart';
 import '../../../providers/collection/collection_provider.dart';
 import '../../../providers/import_export/import_export_provider.dart';
 import '../../../services/import_export/postman_schema.dart';
+import '../../../theme/app_colors.dart';
 import '../../../theme/app_metrics.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../theme/app_theme_data.dart';
@@ -30,6 +31,15 @@ Future<void> showExportDialog(
   );
 }
 
+/// 导出格式（F4.4）
+enum _ExportFormat {
+  /// Postman Collection v2.1（不含断言与预请求链）
+  postman,
+
+  /// Hopp CLI 原生格式 .hopp.json（全保真）
+  hoppCli,
+}
+
 /// Export dialog
 class ExportDialog extends ConsumerStatefulWidget {
   final String? initialCollectionId;
@@ -45,6 +55,7 @@ class ExportDialog extends ConsumerStatefulWidget {
 
 class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
   String? _selectedCollectionId;
+  _ExportFormat _format = _ExportFormat.postman;
   PostmanVersion _version = PostmanVersion.v2_1;
   bool _prettyPrint = true;
 
@@ -171,8 +182,8 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
     }
 
     return AppDialog(
-      title: 'Export Postman Collection',
-      width: 440,
+      title: 'Export Collection',
+      width: 480,
       actions: [
         AppButton.ghost(
           label: 'Cancel',
@@ -183,87 +194,279 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
           onPressed: _selectedCollectionId == null ? null : _export,
         ),
       ],
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Collection selection
-          Text(
-            'Select Collection',
-            style: AppTextStyles.tiny11.copyWith(
-              fontWeight: FontWeight.w600,
-              color: t.textSecondary,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Format selection (F4.4)
+            Text(
+              'FORMAT',
+              style: AppTextStyles.micro10.copyWith(color: t.textTertiary),
             ),
-          ),
-          const SizedBox(height: AppMetrics.space4),
-          AppPopupSelect<String>(
-            value: _selectedCollectionId,
-            hint: 'Select Collection',
-            boxed: true,
-            textStyle: AppTextStyles.body13,
-            items: [
-              for (final collection in collections)
-                AppPopupSelectEntry(
-                  value: collection.id,
-                  label: collection.name,
-                ),
-            ],
-            onSelected: (value) {
-              setState(() {
-                _selectedCollectionId = value;
-              });
-            },
-          ),
-          const SizedBox(height: AppMetrics.space16),
+            const SizedBox(height: AppMetrics.space8),
+            _buildFormatOption(
+              context,
+              format: _ExportFormat.postman,
+              title: 'Postman Collection',
+              ext: 'v2.1 .json',
+              description: const TextSpan(
+                text: 'Interchange with Postman / other tools. Assertions and '
+                    'pre-request chains are ',
+                children: [
+                  TextSpan(
+                    text: 'not',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  TextSpan(text: ' included (format cannot express them).'),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppMetrics.space8),
+            _buildFormatOption(
+              context,
+              format: _ExportFormat.hoppCli,
+              title: 'Hopp CLI',
+              ext: '.hopp.json',
+              description: TextSpan(
+                text: 'Full fidelity: assertions, pre-request chains, auth and '
+                    'variable pipelines. Run in CI with ',
+                style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
+                children: [
+                  TextSpan(
+                    text: 'hopp run',
+                    style:
+                        AppTextStyles.code11.copyWith(color: t.textSecondary),
+                  ),
+                  const TextSpan(text: '.'),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppMetrics.space12),
 
-          // Format version
-          Text(
-            'Format Version',
-            style: AppTextStyles.tiny11.copyWith(
-              fontWeight: FontWeight.w600,
-              color: t.textSecondary,
+            // Secret 提示条（F4.4：secret 置空，CI 注入）
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppMetrics.space12,
+                vertical: AppMetrics.space8,
+              ),
+              decoration: BoxDecoration(
+                color: t.infoSoft,
+                borderRadius: AppMetrics.br6,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: Icon(
+                      Icons.info_outline,
+                      size: 14,
+                      color: t.info,
+                    ),
+                  ),
+                  const SizedBox(width: AppMetrics.space8),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        text: 'Secret variable values are exported empty. '
+                            'Inject them in CI with ',
+                        style: AppTextStyles.tiny11.copyWith(
+                          color: t.textSecondary,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: '--env-var KEY=VALUE',
+                            style: AppTextStyles.code11.copyWith(
+                              color: t.textSecondary,
+                            ),
+                          ),
+                          const TextSpan(
+                            text: ' or process environment variables.',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: AppMetrics.space4),
-          AppPopupSelect<PostmanVersion>(
-            value: _version,
-            boxed: true,
-            textStyle: AppTextStyles.body13,
-            items: [
-              for (final version in PostmanVersion.values)
-                AppPopupSelectEntry(
-                  value: version,
-                  label: version.value,
-                ),
-            ],
-            onSelected: (value) {
-              setState(() {
-                _version = value;
-              });
-            },
-          ),
-          const SizedBox(height: AppMetrics.space16),
+            const SizedBox(height: AppMetrics.space16),
 
-          // Prettify output
-          CheckboxListTile(
-            title: Text(
-              'Prettify JSON Output',
-              style: AppTextStyles.body13.copyWith(color: t.textPrimary),
+            // Collection selection
+            Text(
+              'Select Collection',
+              style: AppTextStyles.tiny11.copyWith(
+                fontWeight: FontWeight.w600,
+                color: t.textSecondary,
+              ),
             ),
-            subtitle: Text(
-              'Format with indentation for readability',
-              style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
+            const SizedBox(height: AppMetrics.space4),
+            AppPopupSelect<String>(
+              value: _selectedCollectionId,
+              hint: 'Select Collection',
+              boxed: true,
+              textStyle: AppTextStyles.body13,
+              items: [
+                for (final collection in collections)
+                  AppPopupSelectEntry(
+                    value: collection.id,
+                    label: collection.name,
+                  ),
+              ],
+              onSelected: (value) {
+                setState(() {
+                  _selectedCollectionId = value;
+                });
+              },
             ),
-            value: _prettyPrint,
-            onChanged: (value) {
-              setState(() {
-                _prettyPrint = value ?? true;
-              });
-            },
-            contentPadding: EdgeInsets.zero,
-            dense: true,
+            const SizedBox(height: AppMetrics.space16),
+
+            // Format version (仅 Postman 格式)
+            if (_format == _ExportFormat.postman) ...[
+              Text(
+                'Format Version',
+                style: AppTextStyles.tiny11.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: t.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppMetrics.space4),
+              AppPopupSelect<PostmanVersion>(
+                value: _version,
+                boxed: true,
+                textStyle: AppTextStyles.body13,
+                items: [
+                  for (final version in PostmanVersion.values)
+                    AppPopupSelectEntry(
+                      value: version,
+                      label: version.value,
+                    ),
+                ],
+                onSelected: (value) {
+                  setState(() {
+                    _version = value;
+                  });
+                },
+              ),
+              const SizedBox(height: AppMetrics.space16),
+            ],
+
+            // Prettify output
+            CheckboxListTile(
+              title: Text(
+                'Prettify JSON Output',
+                style: AppTextStyles.body13.copyWith(color: t.textPrimary),
+              ),
+              subtitle: Text(
+                'Format with indentation for readability',
+                style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
+              ),
+              value: _prettyPrint,
+              onChanged: (value) {
+                setState(() {
+                  _prettyPrint = value ?? true;
+                });
+              },
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 格式 radio 卡片（画板 C：选中态品牌色边框 + soft 底）
+  Widget _buildFormatOption(
+    BuildContext context, {
+    required _ExportFormat format,
+    required String title,
+    required String ext,
+    required TextSpan description,
+  }) {
+    final t = context.appTheme;
+    final selected = _format == format;
+
+    return GestureDetector(
+      onTap: () => setState(() => _format = format),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppMetrics.space12,
+          vertical: AppMetrics.space8,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? t.brandSoft : AppColors.transparent,
+          borderRadius: AppMetrics.br8,
+          border: Border.all(
+            color: selected ? t.brand : t.border,
           ),
-        ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: selected ? t.brand : t.borderStrong,
+                    width: 1.5,
+                  ),
+                ),
+                child: selected
+                    ? Center(
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: t.brand,
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(width: AppMetrics.space8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text.rich(
+                    TextSpan(
+                      text: title,
+                      style: AppTextStyles.body13.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: t.textPrimary,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: ' $ext',
+                          style: AppTextStyles.code11.copyWith(
+                            color: t.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppMetrics.space4),
+                  Text.rich(
+                    TextSpan(
+                      style: AppTextStyles.tiny11.copyWith(
+                        color: t.textSecondary,
+                      ),
+                      children: [description],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -271,10 +474,13 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
   Future<void> _export() async {
     if (_selectedCollectionId == null) return;
 
+    final isHoppCli = _format == _ExportFormat.hoppCli;
+
     try {
       // Select save path
       final result = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save Postman Collection',
+        dialogTitle:
+            isHoppCli ? 'Save Hopp CLI Collection' : 'Save Postman Collection',
         fileName: _generateFileName(),
         allowedExtensions: ['json'],
         type: FileType.custom,
@@ -282,11 +488,20 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
 
       if (result != null) {
         logInfo('Exporting to: $result');
-        await ref.read(importExportProvider.notifier).exportCollection(
-              collectionId: _selectedCollectionId!,
-              savePath: result,
-              prettyPrint: _prettyPrint,
-            );
+        final notifier = ref.read(importExportProvider.notifier);
+        if (isHoppCli) {
+          await notifier.exportCollectionForCli(
+            collectionId: _selectedCollectionId!,
+            savePath: result,
+            prettyPrint: _prettyPrint,
+          );
+        } else {
+          await notifier.exportCollection(
+            collectionId: _selectedCollectionId!,
+            savePath: result,
+            prettyPrint: _prettyPrint,
+          );
+        }
       }
     } catch (e, stack) {
       logError('Export error', e, stack);
@@ -302,6 +517,9 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
 
     final sanitized =
         collection.name.replaceAll(RegExp(r'[^\w\s-]'), '_').trim();
+    if (_format == _ExportFormat.hoppCli) {
+      return '$sanitized.hopp.json';
+    }
     final versionSuffix = _version == PostmanVersion.v2_1 ? 'v2.1' : 'v2.0';
     return '${sanitized}_$versionSuffix.postman_collection.json';
   }

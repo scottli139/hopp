@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/assertion_rule.dart';
 import '../../models/certificate_info.dart';
 import '../../models/http_request.dart';
 import '../../models/http_request_info.dart';
@@ -10,6 +11,7 @@ import '../../models/key_value_pair.dart';
 import '../../models/timing_info.dart';
 import '../../providers/request/request_tab_provider.dart';
 import '../../providers/providers.dart';
+import '../../services/assertion/assertion_engine.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_metrics.dart';
 import '../../theme/app_text_styles.dart';
@@ -21,6 +23,7 @@ import '../common/app_divider.dart';
 import '../common/app_empty_state.dart';
 import '../common/app_tabs.dart';
 import '../common/optimized_response_viewer.dart';
+import 'assertion_editor.dart';
 
 // 全局 ScrollController 用于 UI 测试控制滚动
 final _certificateScrollController = ScrollController();
@@ -64,8 +67,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
   /// 根据响应获取 Tab 长度
   int _getTabLength(HttpResponse? response) {
-    if (response == null) return 4; // Body, Headers, Cookies, Request
-    var length = 4; // Base tabs including Request
+    if (response == null) return 5; // Body, Headers, Cookies, Request, Tests
+    var length = 5; // Base tabs including Request and Tests
     if (response.timingInfo != null) length++;
     if (response.certificateInfo != null) length++;
     return length;
@@ -146,6 +149,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   @override
   Widget build(BuildContext context) {
     final response = ref.watch(currentResponseProvider);
+    final activeRequest = ref.watch(activeTabProvider)?.request;
+    final assertionResults = ref.watch(currentAssertionResultsProvider);
 
     // Ensure TabController is synchronized with current response
     _updateTabController(response);
@@ -163,6 +168,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       tabIndexMap['body'] = currentIndex++;
       tabIndexMap['headers'] = currentIndex++;
       tabIndexMap['cookies'] = currentIndex++;
+      tabIndexMap['tests'] = currentIndex++;
       if (response?.timingInfo != null) {
         tabIndexMap['timing'] = currentIndex++;
       }
@@ -192,14 +198,18 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       child: Column(
         children: [
           // Response info bar
-          _buildInfoBar(context, response),
+          _buildInfoBar(context, response, activeRequest, assertionResults),
           // Tabs
           if (_tabController != null)
             AnimatedBuilder(
               animation: _tabController!,
               builder: (context, child) {
                 return AppTabs(
-                  tabs: _buildTabItems(response),
+                  tabs: _buildTabItems(
+                    response,
+                    activeRequest,
+                    assertionResults,
+                  ),
                   selectedIndex: _tabController!.index
                       .clamp(0, _tabController!.length - 1),
                   onChanged: (index) => _tabController!.animateTo(index),
@@ -218,7 +228,12 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     );
   }
 
-  Widget _buildInfoBar(BuildContext context, HttpResponse? response) {
+  Widget _buildInfoBar(
+    BuildContext context,
+    HttpResponse? response,
+    HttpRequest? activeRequest,
+    List<AssertionResult>? assertionResults,
+  ) {
     final appTheme = context.appTheme;
 
     if (response == null) {
@@ -405,6 +420,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               color: appTheme.textSecondary,
             ),
           ),
+          // F4.1：断言通过徽标（全过绿 / 有失败红；无断言配置时不显示）
+          ..._buildAssertionBadge(context, activeRequest, assertionResults),
           const Spacer(),
           // Copy button
           _buildActionButton(
@@ -1420,13 +1437,93 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   /// 构建 Tab 列表
-  List<AppTabItem> _buildTabItems(HttpResponse? response) {
+  /// F4.1：断言结果统计（passed / evaluated；skipped 不计入分母）
+  (int, int)? _assertionSummary(List<AssertionResult>? results) {
+    if (results == null) {
+      return null;
+    }
+    var passed = 0;
+    var evaluated = 0;
+    for (final r in results) {
+      if (r.outcome == AssertionOutcome.skipped) {
+        continue;
+      }
+      evaluated++;
+      if (r.passed) {
+        passed++;
+      }
+    }
+    return evaluated == 0 ? null : (passed, evaluated);
+  }
+
+  /// F4.1：响应 meta 栏的 `n/m passed` 徽标（全过绿 / 有失败红）
+  List<Widget> _buildAssertionBadge(
+    BuildContext context,
+    HttpRequest? request,
+    List<AssertionResult>? results,
+  ) {
+    final t = context.appTheme;
+    final summary = _assertionSummary(results);
+    if (request == null || request.assertions.isEmpty || summary == null) {
+      return const [];
+    }
+    final (passed, evaluated) = summary;
+    final allPassed = passed == evaluated;
+    final color = allPassed ? t.success : t.error;
+
+    return [
+      const SizedBox(width: 14),
+      Container(
+        height: 20,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: allPassed ? t.successSoft : t.errorSoft,
+          borderRadius: AppMetrics.br10,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              allPassed ? Icons.check : Icons.close,
+              size: 12,
+              color: color,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$passed/$evaluated passed',
+              style: AppTextStyles.tiny11.copyWith(
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  List<AppTabItem> _buildTabItems(
+    HttpResponse? response,
+    HttpRequest? activeRequest,
+    List<AssertionResult>? assertionResults,
+  ) {
     final items = <AppTabItem>[
       const AppTabItem(icon: Icons.upload_outlined, label: 'Request'),
       const AppTabItem(icon: Icons.code, label: 'Body'),
       const AppTabItem(icon: Icons.list, label: 'Headers'),
       const AppTabItem(icon: Icons.cookie_outlined, label: 'Cookies'),
     ];
+
+    // F4.1：Tests 页签（有结果时显示 n/m 计数，有失败时红色）
+    final summary = _assertionSummary(assertionResults);
+    items.add(
+      AppTabItem(
+        icon: Icons.fact_check_outlined,
+        label: 'Tests',
+        countLabel: summary != null ? '${summary.$1}/${summary.$2}' : null,
+        countError: summary != null && summary.$1 != summary.$2,
+      ),
+    );
 
     // Timing Tab（固定标签，总耗时在内容区展示，避免标签宽度随响应时间跳动）
     if (response?.timingInfo != null) {
@@ -1451,6 +1548,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       _buildBodyTab(context, response),
       _buildHeadersTab(context, response),
       _buildCookiesTab(context),
+      _buildTestsTab(context, response),
     ];
 
     // Timing Tab Content
@@ -1463,6 +1561,240 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       contents.add(_buildCertificateTab(context, response!.certificateInfo!));
     }
     return contents;
+  }
+
+  // ---------- Tests 页签（F4.1 断言结果） ----------
+
+  Widget _buildTestsTab(BuildContext context, HttpResponse? response) {
+    final t = context.appTheme;
+    final request = ref.watch(activeTabProvider)?.request;
+    final results = ref.watch(currentAssertionResultsProvider);
+
+    // 空态：未配置断言
+    if (request == null || request.assertions.isEmpty) {
+      return Center(
+        child: Text(
+          'No assertions configured — add them in the Assertions tab.',
+          style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
+        ),
+      );
+    }
+
+    // 已配置但本轮还没求值（未发送 / 重新 Send 进行中）
+    if (results == null) {
+      return Center(
+        child: Text(
+          'Not run yet — send the request to evaluate assertions.',
+          style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppMetrics.space16,
+        vertical: AppMetrics.space8,
+      ),
+      itemCount: results.length,
+      itemBuilder: (context, index) => _buildTestRow(context, results[index]),
+    );
+  }
+
+  Widget _buildTestRow(BuildContext context, AssertionResult result) {
+    final t = context.appTheme;
+    final rule = result.rule;
+
+    final (icon, iconBg, iconFg) = switch (result.outcome) {
+      AssertionOutcome.passed => (Icons.check, t.successSoft, t.success),
+      AssertionOutcome.failed => (Icons.close, t.errorSoft, t.error),
+      AssertionOutcome.skipped => (
+          Icons.remove,
+          t.surfaceVariant,
+          t.textTertiary
+        ),
+    };
+    final ruleColor = result.outcome == AssertionOutcome.skipped
+        ? t.textTertiary
+        : t.textPrimary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppMetrics.space4,
+        vertical: AppMetrics.space8 + 1,
+      ),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: t.border)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ✓ / ✗ / – 圆形图标
+          Container(
+            width: 18,
+            height: 18,
+            margin: const EdgeInsets.only(top: 1),
+            decoration: BoxDecoration(
+              color: iconBg,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 12, color: iconFg),
+          ),
+          const SizedBox(width: AppMetrics.space8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 规则描述（代码段样式）
+                _buildRuleDescription(rule, ruleColor),
+                // 失败行就地展开 EXPECTED / ACTUAL
+                if (result.outcome == AssertionOutcome.failed)
+                  _buildFailureDetail(context, result),
+                // 通过的 {{var}} 规则展示插值结果
+                if (result.outcome == AssertionOutcome.passed &&
+                    rule.expected.contains('{{'))
+                  _buildResolvedDetail(context, rule),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 规则描述：target、targetArg、operator、expected 各段代码样式展示
+  Widget _buildRuleDescription(AssertionRule rule, Color color) {
+    final t = context.appTheme;
+
+    WidgetSpan code(String text) {
+      return WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 1),
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+          decoration: BoxDecoration(
+            color: t.surfaceVariant,
+            borderRadius: AppMetrics.br4,
+          ),
+          child: Text(
+            text,
+            style: AppTextStyles.code11.copyWith(color: t.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    final spans = <InlineSpan>[
+      TextSpan(
+        text: '${AssertionLabels.target[rule.target]} ',
+        style: AppTextStyles.caption12.copyWith(color: color),
+      ),
+      if (AssertionEngine.needsTargetArg(rule.target) &&
+          rule.targetArg.isNotEmpty)
+        code(rule.targetArg),
+      code(AssertionLabels.operator[rule.operator]!),
+      if (AssertionEngine.needsExpected(rule.operator) &&
+          rule.expected.isNotEmpty)
+        code(rule.expected),
+      if (!rule.enabled)
+        TextSpan(
+          text: ' · disabled',
+          style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
+        ),
+    ];
+
+    return Text.rich(TextSpan(children: spans));
+  }
+
+  /// 失败行：EXPECTED（绿底） / ACTUAL（红底）
+  Widget _buildFailureDetail(BuildContext context, AssertionResult result) {
+    final t = context.appTheme;
+    final rule = result.rule;
+
+    final expectedDisplay = AssertionEngine.needsExpected(rule.operator)
+        ? rule.expected
+        : switch (rule.target) {
+            AssertionTarget.jsonPath => 'value at ${rule.targetArg}',
+            AssertionTarget.header => 'header "${rule.targetArg}"',
+            _ => 'present',
+          };
+    final actualDisplay = result.actual ?? result.message ?? '—';
+
+    Widget label(String text) {
+      return Text(
+        text,
+        style: AppTextStyles.micro10.copyWith(
+          color: t.textTertiary,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.6,
+        ),
+      );
+    }
+
+    Widget chip(String text, Color bg, Color fg) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: AppMetrics.br4,
+        ),
+        child: Text(
+          text,
+          style: AppTextStyles.code11.copyWith(color: fg),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppMetrics.space4 + 1),
+      child: Wrap(
+        spacing: AppMetrics.space8,
+        runSpacing: AppMetrics.space4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          label('EXPECTED'),
+          chip(expectedDisplay, t.successSoft, t.success),
+          label('ACTUAL'),
+          chip(actualDisplay, t.errorSoft, t.error),
+        ],
+      ),
+    );
+  }
+
+  /// 通过的 {{var}} 规则：展示发送时插值后的结果（灰底）
+  Widget _buildResolvedDetail(BuildContext context, AssertionRule rule) {
+    final t = context.appTheme;
+    final resolver = ref.read(variableResolverProvider);
+    final variables = ref.read(resolvedVariablesProvider);
+    final resolved = resolver.resolve(rule.expected, variables);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppMetrics.space4 + 1),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'RESOLVED',
+            style: AppTextStyles.micro10.copyWith(
+              color: t.textTertiary,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(width: AppMetrics.space8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: t.surfaceVariant,
+              borderRadius: AppMetrics.br4,
+            ),
+            child: Text(
+              '"$resolved"',
+              style: AppTextStyles.code11.copyWith(color: t.textSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildCertificateTab(BuildContext context, CertificateInfo cert) {

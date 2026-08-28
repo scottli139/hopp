@@ -10,7 +10,7 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前阶段** | 战略转向：本地 + 私有 AI（M8 系列进行中：M8.0–M8.3 已完成）；当前版本 v0.11.0 |
+| **当前阶段** | 战略转向：本地 + 私有 AI（M8 系列进行中：M8.0–M8.4 已完成）；当前版本 v0.11.0（v0.12.0 待发布） |
 | **目标版本** | v1.0.0 |
 | **技术栈** | Flutter 3.27.x + Dart 3.6.x + Riverpod |
 | **测试状态** | ✅ **727 通过 / 2 跳过**（2026-08-25 实测） |
@@ -41,8 +41,8 @@
 | M8.1 | 环境变量系统（即原 M6）：多环境 + 全局变量 + `{{var}}` 替换 + 动态变量 | P0 | — | ✅ (2026-08-21)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md#环境变量系统-m81) |
 | M8.2 | 预请求链 + 变量转换（F8.1-F8.4）：登录→token、密码 sha1/aes 加密 | P0 | ≈5 周 | ✅ (2026-08-25，v0.10.0：含集合级继承、401 重跑、试运行、Hive 落盘加密)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「预请求链与变量转换」一节 |
 | M8.3 | Tier 0（F9.4）：OpenAPI/Swagger 导入 → 一键生成请求/collection | P0 | ≈2 周 | ✅ (2026-08-28：3.0/3.1+2.0 转换、JSON+YAML、文件/URL 双源、防脑补映射、勾选预览、结果报告)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「OpenAPI/Swagger 导入」一节 |
-| M8.4 | 轻量断言（F4.1/F4.2/F4.4）：状态/Header/Body/JSONPath + AI 生成 + CLI/CI 导出 | P1 | ≈4 周 | ⏳ |
-| M8.5 | Tier 1（F9）：本地模型（Ollama/LM Studio）解释响应 / 生成断言 / 自然语言建请求 | P1 | ≈2 周 | ⏳ |
+| M8.4 | 轻量断言 + CLI/CI（F4.1/F4.4）：状态/Header/Body/JSONPath/响应时间断言 + `cli/` 运行器与导出 | P1 | ≈4 周 | ✅ (2026-08-28：声明式规则 + Tests 页签 + `.hopp.json` 全保真导出 + `hopp run` exit 0/1/2，F4.2 挪 M8.5)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「轻量断言 + CLI/CI」一节 |
+| M8.5 | Tier 1（F9）：本地模型（Ollama/LM Studio）解释响应 / 生成断言（F4.2）/ 自然语言建请求 | P1 | ≈2 周 | ⏳ |
 | M8.6 | Tier 2（F9）：BYOK 云端，默认关闭 | P2 | ≈1 周 | ⏳ |
 
 **已搁置**：原 v0.8/v0.9 规划中的非差异化功能（Mock 服务器、代理、WebSocket、代码片段生成、Cookie 管理、文件上传下载等）统一由 [BACKLOG.md](./BACKLOG.md) 维护。
@@ -82,6 +82,7 @@
 | v0.9.x | 2026-08-22 ~ 08-24 | 设计系统收尾：输入框渲染修复（v0.9.0）、侧栏主题切换（v0.9.1）、环境管理对话框重设计（v0.9.2）及三处配套修复（v0.9.3–v0.9.5） | ✅ |
 | v0.10.0 | 2026-08-25 | **M8.2 预请求链与变量转换**（F8.1–F8.4：Auth 配置与继承、`{{var \| fn}}` 管道、预请求链/401 重跑/试运行、Hive 落盘加密） | ✅ |
 | v0.11.0 | 2026-08-28 | **M8.3 OpenAPI/Swagger 导入**（F9.4：3.0/3.1+2.0、JSON+YAML、文件/URL 双源、勾选预览、结果报告）、导入入口合并（cURL 页签）、test-mode 数据隔离 | ✅ |
+| v0.12.0 | 2026-08-29 | **M8.4 轻量断言 + CLI/CI**（F4.1/F4.4：声明式断言 + Tests 页签、`.hopp.json` 全保真导出、`hopp run` 运行器；F4.2 AI 生成挪 M8.5）、URL 栏过期值修复 | ✅ |
 | v1.0.0 GA | — | 差异化能力落地（M8.3–M8.6）+ 全平台稳定（macOS/Windows/Linux）+ 应用商店发布 | ⏳ |
 
 ### Backlog（未来规划）

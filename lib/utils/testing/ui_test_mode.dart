@@ -30,6 +30,7 @@ import '../../services/import_export/import_export_exception.dart';
 import '../../services/import_export/openapi/openapi_import_service.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/url_params_sync.dart';
+import '../../models/assertion_rule.dart';
 import '../../models/certificate_info.dart';
 import '../../models/collection.dart';
 import '../../models/environment.dart';
@@ -496,6 +497,18 @@ class UITestModeManager {
         final retryOn401 = params['retry_on_401'] as bool?;
         return await _setPreRequestChain(requestId, steps, retryOn401);
 
+      case 'set_assertions':
+        final requestId = params['request_id'] as String?;
+        final requestName = params['name'] as String?;
+        final assertions = (params['assertions'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            <Map<String, dynamic>>[];
+        return _setAssertions(
+          requestId: requestId,
+          name: requestName,
+          assertions: assertions,
+        );
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -835,6 +848,7 @@ class UITestModeManager {
       'headers',
       'cookies',
       'timing',
+      'tests',
       'certificate',
       'request'
     ];
@@ -1141,7 +1155,7 @@ class UITestModeManager {
       request = activeTab.request;
     } else {
       // 从 Collection 中查找
-      request = _findRequestInCollections(targetId);
+      request = await _findRequestInCollections(targetId);
     }
 
     if (request == null) {
@@ -1184,7 +1198,7 @@ class UITestModeManager {
     if (activeTab != null) {
       request = activeTab.request;
     } else {
-      request = _findRequestInCollections(targetId);
+      request = await _findRequestInCollections(targetId);
     }
 
     if (request == null) {
@@ -1237,7 +1251,7 @@ class UITestModeManager {
     if (activeTab != null) {
       request = activeTab.request;
     } else {
-      request = _findRequestInCollections(editingId);
+      request = await _findRequestInCollections(editingId);
     }
 
     if (request == null) {
@@ -1313,7 +1327,7 @@ class UITestModeManager {
     if (activeTab != null) {
       request = activeTab.request;
     } else {
-      request = _findRequestInCollections(targetId);
+      request = await _findRequestInCollections(targetId);
     }
 
     if (request == null) {
@@ -1414,8 +1428,9 @@ class UITestModeManager {
     };
   }
 
-  /// 在 Collection 中查找请求
-  HttpRequest? _findRequestInCollections(String requestId) {
+  /// 查找请求：先沿 Collection 树找，未命中再回退扁平存储
+  /// （扁平化存储模型下 collection.requests 恒为空，树查找仅为兼容旧数据）
+  Future<HttpRequest?> _findRequestInCollections(String requestId) async {
     final collectionsAsync = _ref!.read(collectionProvider);
 
     if (collectionsAsync case AsyncData(:final value)) {
@@ -1440,10 +1455,13 @@ class UITestModeManager {
         return null;
       }
 
-      return findInCollections(value);
+      final found = findInCollections(value);
+      if (found != null) {
+        return found;
+      }
     }
 
-    return null;
+    return _ref!.read(storageServiceProvider).getRequest(requestId);
   }
 
   /// 获取响应体信息
@@ -1720,6 +1738,7 @@ class UITestModeManager {
       'body',
       'auth',
       'prerequest',
+      'assertions',
       'settings'
     ];
     final tabLower = tab.toLowerCase();
@@ -3201,7 +3220,8 @@ class UITestModeManager {
     }
 
     final tab = _ref!.read(requestTabProvider.notifier).getTab(targetId);
-    final saved = tab == null ? _findRequestInCollections(targetId) : null;
+    final saved =
+        tab == null ? await _findRequestInCollections(targetId) : null;
     final request = tab?.request ?? saved;
     if (request == null) {
       throw Exception('未找到请求: $targetId');
@@ -3225,6 +3245,108 @@ class UITestModeManager {
       'retry_on_401': updated.preRequestRetryOn401,
       'persisted': saved != null,
     };
+  }
+
+  /// 设置请求的断言规则（F4.1 测试钩子）
+  ///
+  /// 目标请求由 request_id 或 name 指定（已保存请求或打开的 Tab），
+  /// 两者都缺省时取活动 Tab。已保存请求直接持久化；打开的 Tab 同步
+  /// 更新 Tab 状态。
+  Future<Map<String, dynamic>> _setAssertions({
+    String? requestId,
+    String? name,
+    required List<Map<String, dynamic>> assertions,
+  }) async {
+    final rules = [
+      for (final a in assertions)
+        AssertionRule(
+          id: const Uuid().v4(),
+          enabled: a['enabled'] as bool? ?? true,
+          target: AssertionTarget.values.firstWhere(
+            (t) => t.name == a['target'],
+            orElse: () => throw Exception('未知断言目标: ${a['target']}（可选: '
+                '${AssertionTarget.values.map((t) => t.name).join('/')}）'),
+          ),
+          targetArg: (a['target_arg'] ?? a['targetArg']) as String? ?? '',
+          operator: AssertionOperator.values.firstWhere(
+            (o) => o.name == a['operator'],
+            orElse: () => throw Exception('未知断言操作符: ${a['operator']}（可选: '
+                '${AssertionOperator.values.map((o) => o.name).join('/')}）'),
+          ),
+          expected: a['expected'] as String? ?? '',
+        ),
+    ];
+
+    var targetId = requestId;
+    if (targetId == null && name != null) {
+      targetId = await _findRequestIdByName(name);
+      if (targetId == null) {
+        throw Exception('未找到请求: $name');
+      }
+    }
+    targetId ??= _ref!.read(activeTabIdProvider);
+    if (targetId == null) {
+      throw Exception('没有指定请求，且没有活动的请求 Tab');
+    }
+
+    final tab = _ref!.read(requestTabProvider.notifier).getTab(targetId);
+    final saved = await _findRequestInCollections(targetId);
+    final request = tab?.request ?? saved;
+    if (request == null) {
+      throw Exception('未找到请求: $targetId');
+    }
+
+    final updated = request.copyWith(assertions: rules);
+
+    if (tab != null) {
+      _ref!.read(requestTabProvider.notifier).updateRequest(targetId, updated);
+    }
+    if (saved != null) {
+      await _ref!.read(collectionProvider.notifier).saveRequest(updated);
+    }
+
+    return {
+      'request_id': targetId,
+      'assertion_count': rules.length,
+      'persisted': saved != null,
+    };
+  }
+
+  /// 按名称查找请求 ID：先沿 Collection 树找，未命中再扫描扁平存储
+  Future<String?> _findRequestIdByName(String name) async {
+    final collectionsAsync = _ref!.read(collectionProvider);
+
+    if (collectionsAsync case AsyncData(:final value)) {
+      String? findInCollections(List<Collection> collections) {
+        for (final collection in collections) {
+          for (final r in collection.requests) {
+            if (r.name == name) {
+              return r.id;
+            }
+          }
+          if (collection.children.isNotEmpty) {
+            final found = findInCollections(collection.children);
+            if (found != null) {
+              return found;
+            }
+          }
+        }
+        return null;
+      }
+
+      final found = findInCollections(value);
+      if (found != null) {
+        return found;
+      }
+    }
+
+    final all = await _ref!.read(storageServiceProvider).getRequests();
+    for (final r in all) {
+      if (r.name == name) {
+        return r.id;
+      }
+    }
+    return null;
   }
 }
 

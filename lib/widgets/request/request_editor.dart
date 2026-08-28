@@ -24,6 +24,7 @@ import '../common/app_popup_menu.dart';
 import '../common/app_tabs.dart';
 import '../common/code_editor.dart';
 import '../common/variable_highlight_controller.dart';
+import 'assertion_editor.dart';
 import 'auth_config_editor.dart';
 import 'pre_request_chain_editor.dart';
 import 'variable_fx_menu.dart';
@@ -85,9 +86,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   void initState() {
     super.initState();
     // 恢复上次选中的编辑器 Tab，避免布局重建后被重置回 Params
-    final savedIndex = ref.read(requestEditorTabIndexProvider).clamp(0, 5);
+    final savedIndex = ref.read(requestEditorTabIndexProvider).clamp(0, 6);
     _tabController =
-        TabController(length: 6, vsync: this, initialIndex: savedIndex);
+        TabController(length: 7, vsync: this, initialIndex: savedIndex);
     _tabController.addListener(_persistTabIndex);
   }
 
@@ -161,6 +162,16 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       );
       _urlController.text = fullUrl;
       _nameController.text = activeTab.request.name;
+    } else if (!_urlFocusNode.hasFocus) {
+      // 同一 Tab 下模型被外部更新（test-mode set_url、导入等）时同步回 URL 栏，
+      // 避免输入框显示过期值（输入即提交保证常态下 controller 与模型一致）
+      final fullUrl = syncParamsToUrl(
+        activeTab.request.url,
+        activeTab.request.params,
+      );
+      if (_urlController.text != fullUrl) {
+        _urlController.text = fullUrl;
+      }
     }
 
     // 监听测试模式的 URL 输入框 focus 指令
@@ -180,6 +191,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           'body',
           'auth',
           'prerequest',
+          'assertions',
           'settings'
         ].indexOf(tab ?? '');
         if (index != -1 && _tabController.index != index) {
@@ -227,6 +239,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               _buildBodyTab(context, ref, activeTab.request),
               _buildAuthTab(context, ref, activeTab.request),
               _buildPreRequestTab(context, ref, activeTab.request),
+              _buildAssertionsTab(context, ref, activeTab.request),
               _buildSettingsTab(context, ref, activeTab.request),
             ],
           ),
@@ -483,6 +496,13 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               label: 'Pre-request',
               count: request.preRequestChain.isNotEmpty
                   ? request.preRequestChain.length
+                  : null,
+            ),
+            AppTabItem(
+              icon: Icons.fact_check_outlined,
+              label: 'Assertions',
+              count: request.assertions.isNotEmpty
+                  ? request.assertions.length
                   : null,
             ),
             const AppTabItem(icon: Icons.settings_outlined, label: 'Settings'),
@@ -1510,6 +1530,23 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         ref
             .read(requestResponseProvider.notifier)
             .testRunPreRequestChain(request.id, request.preRequestChain);
+      },
+    );
+  }
+
+  /// 构建 Assertions Tab（F4.1 断言规则）
+  ///
+  /// 请求级配置，随请求持久化；每次 Send 后由引擎求值，结果在响应区
+  /// Tests 页签展示。
+  Widget _buildAssertionsTab(
+    BuildContext context,
+    WidgetRef ref,
+    HttpRequest request,
+  ) {
+    return AssertionEditor(
+      assertions: request.assertions,
+      onChanged: (assertions) {
+        _updateRequest(ref, request.copyWith(assertions: assertions));
       },
     );
   }

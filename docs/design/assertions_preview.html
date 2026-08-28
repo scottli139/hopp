@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hopp · M8.4 轻量断言 + CLI/CI · UI 原型</title>
+<style>
+/* ============================================================
+   Tokens — 与 lib/theme/ 及 openapi_import_preview.html 一致
+   ============================================================ */
+:root {
+  --brand: #6366F1; --brand-hover: #4F46E5; --brand-soft: #EEF2FF; --brand-text: #6366F1;
+  --bg: #FFFFFF; --surface: #F8FAFC; --surface-2: #F1F5F9;
+  --border: #E2E8F0; --border-strong: #CBD5E1;
+  --text-1: #0F172A; --text-2: #475569; --text-3: #94A3B8;
+  --success: #10B981; --success-soft: #ECFDF5;
+  --warning: #F59E0B; --warning-soft: #FFFBEB;
+  --error: #EF4444; --error-soft: #FEF2F2;
+  --info: #0EA5E9; --info-soft: #F0F9FF;
+  --shadow-md: 0 4px 12px rgba(15,23,42,.10), 0 1px 3px rgba(15,23,42,.06);
+  --shadow-lg: 0 12px 40px rgba(15,23,42,.16), 0 2px 8px rgba(15,23,42,.08);
+  --r-s: 4px; --r-m: 6px; --r-l: 8px;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: Menlo, 'JetBrains Mono', Consolas, monospace;
+}
+[data-theme="dark"] {
+  --brand: #818CF8; --brand-hover: #6366F1; --brand-soft: rgba(129,140,248,.14); --brand-text: #818CF8;
+  --bg: #0F172A; --surface: #1E293B; --surface-2: #334155;
+  --border: #2B3A55; --border-strong: #475569;
+  --text-1: #F1F5F9; --text-2: #94A3B8; --text-3: #64748B;
+  --success-soft: rgba(16,185,129,.14);
+  --warning-soft: rgba(245,158,11,.14);
+  --error-soft: rgba(239,68,68,.14);
+  --info-soft: rgba(14,165,233,.14);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.3);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-ui); background: #E9EDF3; color: #0F172A; padding: 40px 48px 96px; }
+h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.sub { color: #64748B; font-size: 13px; margin-bottom: 28px; }
+.sub code, .changes code, h2 code, .h2-sub code { font-family: var(--font-mono); font-size: 11px; background: #F1F5F9; border-radius: 3px; padding: 1px 5px; color: #475569; }
+h2 { font-size: 14px; font-weight: 600; margin: 40px 0 4px; }
+h2 .fid { color: #6366F1; font-family: var(--font-mono); font-size: 12px; margin-right: 6px; }
+.h2-sub { font-size: 12px; color: #64748B; margin-bottom: 14px; }
+
+/* 设计决策清单 */
+.changes { background: #FFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 18px 22px; font-size: 13px; line-height: 1.9; color: #334155; }
+.changes b { color: #0F172A; }
+.changes .n { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; background: #EEF2FF; color: #6366F1; font-size: 11px; font-weight: 700; align-items: center; justify-content: center; margin-right: 8px; }
+
+/* 画板 */
+.board { border-radius: 12px; padding: 40px; display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; background: #D8DEE8; margin-top: 14px; }
+.board[data-theme="dark"] { background: #070B14; }
+.board-label { width: 100%; font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #64748B; margin-bottom: -18px; }
+.board[data-theme="dark"] .board-label { color: #475569; }
+
+/* ============================================================
+   应用窗口通用（与 f8_prerequest_chain_preview.html 一致）
+   ============================================================ */
+.win {
+  width: 860px; display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text-1);
+  border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg);
+  overflow: hidden; font-size: 13px;
+}
+.urlbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.method-badge {
+  height: 30px; padding: 0 10px; display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--border); border-radius: var(--r-m); background: var(--bg);
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--success); cursor: pointer;
+}
+.url-input {
+  flex: 1; height: 30px; display: flex; align-items: center; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: var(--r-m); background: var(--bg);
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-1); overflow: hidden; white-space: nowrap;
+}
+.url-input .v { color: var(--brand-text); background: var(--brand-soft); border-radius: 3px; padding: 0 3px; }
+.send-btn {
+  height: 30px; padding: 0 18px; border: none; border-radius: var(--r-m);
+  background: var(--brand); color: #FFF; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font-ui);
+}
+
+/* Tab 栏 */
+.tabs { display: flex; align-items: center; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--border); height: 36px; }
+.tab-i {
+  height: 36px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500; color: var(--text-2); cursor: pointer; position: relative;
+}
+.tab-i:hover { color: var(--text-1); }
+.tab-i.active { color: var(--brand-text); font-weight: 600; }
+.tab-i.active::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; border-radius: 1px; background: var(--brand); }
+.tab-i .cnt { font-size: 10px; font-weight: 700; background: var(--surface-2); color: var(--text-2); border-radius: 8px; padding: 1px 6px; }
+.tab-i.active .cnt { background: var(--brand-soft); color: var(--brand-text); }
+.tab-i .cnt.fail { background: var(--error-soft); color: var(--error); }
+
+/* 通用控件 */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 14px; font-size: 13px; font-weight: 500; font-family: var(--font-ui);
+  border: 1px solid transparent; border-radius: var(--r-m); cursor: pointer; white-space: nowrap;
+}
+.btn-s { height: 28px; padding: 0 12px; font-size: 12px; }
+.btn-soft { background: var(--brand-soft); color: var(--brand-text); }
+.icon-btn {
+  width: 26px; height: 26px; flex-shrink: 0; border-radius: var(--r-m); border: none; background: transparent;
+  color: var(--text-3); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text-1); }
+.icon-btn.danger:hover { background: var(--error-soft); color: var(--error); }
+.checkbox { width: 14px; height: 14px; border-radius: 4px; margin: 0 auto; border: 1.5px solid var(--border-strong); background: var(--bg); display: flex; align-items: center; justify-content: center; color: #FFF; font-size: 9px; }
+.checkbox.on { background: var(--brand); border-color: var(--brand); }
+
+/* ============================================================
+   A. Assertions 编辑页签
+   ============================================================ */
+.assert-pane { padding: 12px 16px 16px; }
+.assert-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.assert-title { font-size: 13px; font-weight: 600; }
+.assert-sub { font-size: 11px; color: var(--text-3); }
+.assert-sub code { font-family: var(--font-mono); font-size: 10px; background: var(--surface-2); border-radius: 3px; padding: 1px 4px; }
+.assert-head .sp { flex: 1; }
+
+.a-grid-head, .a-row {
+  display: grid; grid-template-columns: 24px 128px 132px 128px 1fr 26px;
+  align-items: center; column-gap: 8px;
+}
+.a-grid-head { height: 26px; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); border-bottom: 1px solid var(--border); }
+.a-row { height: 38px; border-bottom: 1px solid var(--border); }
+.a-row.off .a-cell, .a-row.off .a-select { opacity: .45; }
+
+.a-select {
+  height: 28px; display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 0 8px;
+  font-size: 12px; font-weight: 500; color: var(--text-1);
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-m); cursor: pointer;
+  overflow: hidden; white-space: nowrap;
+}
+.a-select .caret { color: var(--text-3); font-size: 9px; }
+.a-select.mono { font-family: var(--font-mono); font-size: 11px; }
+.a-cell {
+  height: 28px; display: flex; align-items: center; padding: 0 8px; gap: 4px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-1);
+  border: 1px solid var(--border); border-radius: var(--r-m); background: var(--bg);
+  overflow: hidden; white-space: nowrap;
+}
+.a-cell .ph { color: var(--text-3); font-family: var(--font-ui); font-size: 12px; }
+.a-cell .v { color: var(--brand-text); background: var(--brand-soft); border-radius: 3px; padding: 0 3px; }
+.a-cell.plain { border-color: transparent; background: transparent; }
+
+.a-foot { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.a-hint { font-size: 11px; color: var(--text-3); line-height: 1.5; }
+.a-hint code { font-family: var(--font-mono); font-size: 10px; background: var(--surface-2); border-radius: 3px; padding: 1px 4px; }
+
+/* 目标类型下拉（固定展示，说明按目标过滤操作符） */
+.a-menu {
+  position: relative; width: 300px; margin-top: 14px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-l); box-shadow: var(--shadow-lg);
+  padding: 6px; font-size: 12px;
+}
+.a-menu .am-cat { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); padding: 6px 8px 3px; }
+.a-menu .am-item { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; border-radius: var(--r-m); cursor: pointer; }
+.a-menu .am-item:hover { background: var(--surface-2); }
+.a-menu .am-item .ops { margin-left: auto; font-size: 10px; color: var(--text-3); font-family: var(--font-mono); }
+
+/* ============================================================
+   B. Tests 结果页签
+   ============================================================ */
+.resp-meta {
+  display: flex; align-items: center; gap: 14px; height: 34px; padding: 0 12px;
+  border-bottom: 1px solid var(--border); font-size: 12px;
+}
+.resp-meta .status { font-weight: 700; color: var(--success); font-family: var(--font-mono); font-size: 12px; }
+.resp-meta .meta { color: var(--text-3); font-family: var(--font-mono); font-size: 11px; }
+.pass-badge {
+  display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 8px;
+  border-radius: 10px; font-size: 11px; font-weight: 700;
+}
+.pass-badge.ok { background: var(--success-soft); color: var(--success); }
+.pass-badge.bad { background: var(--error-soft); color: var(--error); }
+
+.test-pane { padding: 10px 16px 16px; }
+.t-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--border); }
+.t-row:last-child { border-bottom: none; }
+.t-ico {
+  width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;
+}
+.t-ico.ok { background: var(--success-soft); color: var(--success); }
+.t-ico.no { background: var(--error-soft); color: var(--error); }
+.t-ico.skip { background: var(--surface-2); color: var(--text-3); }
+.t-main { flex: 1; min-width: 0; }
+.t-rule { font-size: 12px; color: var(--text-1); }
+.t-rule code { font-family: var(--font-mono); font-size: 11px; background: var(--surface-2); border-radius: 3px; padding: 1px 5px; color: var(--text-2); }
+.t-detail { margin-top: 5px; display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; flex-wrap: wrap; }
+.t-detail .lbl { font-family: var(--font-ui); font-size: 10px; font-weight: 600; color: var(--text-3); }
+.t-detail .exp { background: var(--success-soft); color: var(--success); border-radius: 3px; padding: 1px 6px; }
+.t-detail .act { background: var(--error-soft); color: var(--error); border-radius: 3px; padding: 1px 6px; }
+.t-detail .act.okv { background: var(--surface-2); color: var(--text-2); }
+.t-skip-note { font-size: 11px; color: var(--text-3); }
+
+/* ============================================================
+   C. Export 对话框（格式选项）+ 终端
+   ============================================================ */
+.dlg {
+  width: 480px; display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text-1);
+  border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg);
+  overflow: hidden; font-size: 13px;
+}
+.dlg-head {
+  height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.dlg-title { font-size: 13px; font-weight: 600; }
+.dlg-head .sp { flex: 1; }
+.dlg-body { padding: 16px; }
+.dlg-foot {
+  display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+  border-top: 1px solid var(--border); background: var(--surface);
+}
+.dlg-foot .sp { flex: 1; }
+.btn-primary { background: var(--brand); color: #FFF; }
+.btn-ghost { background: transparent; color: var(--text-2); border-color: var(--border-strong); }
+
+.fmt-label { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); margin-bottom: 8px; }
+.fmt-opt {
+  display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; margin-bottom: 8px;
+  border: 1px solid var(--border); border-radius: var(--r-l); cursor: pointer;
+}
+.fmt-opt.sel { border-color: var(--brand); background: var(--brand-soft); }
+.fmt-radio { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; border-radius: 50%; border: 1.5px solid var(--border-strong); background: var(--bg); display: flex; align-items: center; justify-content: center; }
+.fmt-opt.sel .fmt-radio { border-color: var(--brand); }
+.fmt-opt.sel .fmt-radio::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
+.fmt-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.fmt-name .ext { font-family: var(--font-mono); font-size: 11px; font-weight: 500; color: var(--text-3); margin-left: 6px; }
+.fmt-desc { font-size: 11px; color: var(--text-2); margin-top: 3px; line-height: 1.55; }
+.fmt-desc code { font-family: var(--font-mono); font-size: 10px; background: var(--surface-2); border-radius: 3px; padding: 0 4px; }
+.fmt-opt.sel .fmt-desc code { background: var(--bg); }
+.fmt-note {
+  display: flex; gap: 7px; align-items: flex-start; margin-top: 12px; padding: 9px 11px;
+  background: var(--info-soft); border-radius: var(--r-m); font-size: 11px; color: var(--text-2); line-height: 1.6;
+}
+.fmt-note .ic { color: var(--info); flex-shrink: 0; }
+.fmt-note code { font-family: var(--font-mono); font-size: 10px; background: var(--bg); border-radius: 3px; padding: 0 4px; }
+
+.term {
+  width: 640px; background: #0B1020; border: 1px solid #1E293B; border-radius: 10px;
+  box-shadow: var(--shadow-lg); overflow: hidden; font-family: var(--font-mono); font-size: 12px; line-height: 1.75;
+}
+.term-head { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; background: #111832; border-bottom: 1px solid #1E293B; }
+.term-head .d { width: 10px; height: 10px; border-radius: 50%; }
+.term-head .d:nth-child(1) { background: #EF4444; } .term-head .d:nth-child(2) { background: #F59E0B; } .term-head .d:nth-child(3) { background: #10B981; }
+.term-head .tt { margin-left: 8px; font-size: 11px; color: #64748B; font-family: var(--font-ui); }
+.term-body { padding: 14px 16px 16px; color: #CBD5E1; }
+.term-body .cmd { color: #F1F5F9; font-weight: 700; }
+.term-body .cmd .p { color: #818CF8; }
+.term-body .dim { color: #64748B; }
+.term-body .ok { color: #34D399; }
+.term-body .no { color: #F87171; }
+.term-body .warn { color: #FBBF24; }
+.term-body .sum { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #1E293B; }
+</style>
+</head>
+<body>
+
+<h1>M8.4 · 轻量断言 + CLI/CI 导出</h1>
+<div class="sub">F4.1 断言编辑与 Tests 结果 · F4.4 Export for CLI 与 <code>hopp run</code> · 2026-08-28 需求澄清确认（F4.2 AI 生成挪 M8.5）</div>
+
+<div class="changes">
+  <div><span class="n">1</span><b>断言 = 声明式规则</b>：目标（Status / Header / Body / JSONPath / Response time）+ 操作符 + 期望值 + 启用开关，零代码；期望值支持 <code>{{var}}</code> 插值。</div>
+  <div><span class="n">2</span><b>操作符按目标过滤</b>：如 Status code 只有比较类；Header/Body 有 contains/regex；JSONPath 有 exists。右侧菜单标注各目标可用集。</div>
+  <div><span class="n">3</span><b>结果在响应区 Tests 页签</b>：Send 后自动求值、不阻断；摘要栏 <code>n/m passed</code> 徽标（全过绿 / 有失败红）；失败行展开 expected vs actual；禁用行显示 skipped。</div>
+  <div><span class="n">4</span><b>存储请求级</b>：随请求持久化（Hive 追加字段，存量兼容）；不做集合级默认断言（F4.3 批量运行再议）。</div>
+  <div><span class="n">5</span><b>Export for CLI</b>：不单列菜单入口——复用现有 Export 对话框，加格式选项（Postman v2.1 / Hopp CLI <code>.hopp.json</code>），与 Import 合并决策同原则；原生格式全保真（含断言/预请求链/Auth；<code>isSecret</code> 值置空，CLI 用 <code>--env-var</code> 注入）。</div>
+  <div><span class="n">6</span><b>hopp run</b>：<code>cli/</code> Dart 子包复用求值引擎，顺序执行 + 预请求链 + 断言；任一失败 exit 非零；<code>--reporter json|junit</code> 输出 CI 报告。</div>
+</div>
+
+<!-- ============================================================
+     A. Assertions 编辑页签
+     ============================================================ -->
+<h2><span class="fid">A</span>断言编辑 — 请求编辑器第六页签</h2>
+<div class="h2-sub">表格四列 + 启停 + 删除；目标切到 Header 时出现名称列、切到 JSONPath 时出现路径列（同一列复用）；<code>Add assertion</code> 用 soft 按钮（设计规范）。</div>
+
+<div class="board">
+  <div class="board-label">LIGHT</div>
+  <div class="win">
+    <div class="urlbar">
+      <div class="method-badge">GET ▾</div>
+      <div class="url-input"><span class="v">{{baseUrl}}</span>/api/v1/devices/12345</div>
+      <button class="send-btn">Send</button>
+    </div>
+    <div class="tabs">
+      <div class="tab-i">Params</div>
+      <div class="tab-i">Headers</div>
+      <div class="tab-i">Body</div>
+      <div class="tab-i">Auth</div>
+      <div class="tab-i">Pre-request</div>
+      <div class="tab-i active">Assertions <span class="cnt">5</span></div>
+    </div>
+    <div class="assert-pane">
+      <div class="assert-head">
+        <div>
+          <div class="assert-title">Response assertions</div>
+          <div class="assert-sub">Evaluated after every send. Expected values support <code>{{var}}</code>.</div>
+        </div>
+        <div class="sp"></div>
+        <button class="btn btn-soft btn-s">＋ Add assertion</button>
+      </div>
+      <div class="a-grid-head">
+        <span></span><span>TARGET</span><span>NAME / PATH</span><span>OPERATOR</span><span>EXPECTED</span><span></span>
+      </div>
+      <div class="a-row">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">Status code <span class="caret">▾</span></div>
+        <div class="a-cell plain"><span class="ph">—</span></div>
+        <div class="a-select mono">equals <span class="caret">▾</span></div>
+        <div class="a-cell">200</div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-row">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">Header <span class="caret">▾</span></div>
+        <div class="a-cell">Content-Type</div>
+        <div class="a-select mono">contains <span class="caret">▾</span></div>
+        <div class="a-cell">application/json</div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-row">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">JSONPath <span class="caret">▾</span></div>
+        <div class="a-cell">$.data.token</div>
+        <div class="a-select mono">exists <span class="caret">▾</span></div>
+        <div class="a-cell plain"><span class="ph">—</span></div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-row">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">JSONPath <span class="caret">▾</span></div>
+        <div class="a-cell">$.data.deviceSn</div>
+        <div class="a-select mono">equals <span class="caret">▾</span></div>
+        <div class="a-cell"><span class="v">{{deviceSn}}</span></div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-row off">
+        <div class="checkbox"></div>
+        <div class="a-select">Response time <span class="caret">▾</span></div>
+        <div class="a-cell plain"><span class="ph">—</span></div>
+        <div class="a-select mono">&lt; <span class="caret">▾</span></div>
+        <div class="a-cell">800</div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-foot">
+        <div class="a-hint">Operators are filtered by target — e.g. <code>exists</code> needs no expected value; <code>&lt; &gt;</code> apply to Status code / Response time. Response time is in milliseconds.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 目标 → 操作符可用集说明（固定菜单） -->
+  <div class="a-menu">
+    <div class="am-cat">TARGET → AVAILABLE OPERATORS</div>
+    <div class="am-item">Status code <span class="ops">= ≠ &lt; &gt; ≤ ≥</span></div>
+    <div class="am-item">Header <span class="ops">= ≠ contains ¬contains exists ¬exists regex</span></div>
+    <div class="am-item">Body text <span class="ops">contains ¬contains = ≠ regex</span></div>
+    <div class="am-item">JSONPath <span class="ops">exists ¬exists = ≠ contains &lt; &gt; ≤ ≥</span></div>
+    <div class="am-item">Response time <span class="ops">&lt; &gt; ≤ ≥</span></div>
+  </div>
+</div>
+
+<div class="board" data-theme="dark">
+  <div class="board-label">DARK</div>
+  <div class="win">
+    <div class="urlbar">
+      <div class="method-badge">GET ▾</div>
+      <div class="url-input"><span class="v">{{baseUrl}}</span>/api/v1/devices/12345</div>
+      <button class="send-btn">Send</button>
+    </div>
+    <div class="tabs">
+      <div class="tab-i">Params</div>
+      <div class="tab-i">Headers</div>
+      <div class="tab-i">Body</div>
+      <div class="tab-i">Auth</div>
+      <div class="tab-i">Pre-request</div>
+      <div class="tab-i active">Assertions <span class="cnt">5</span></div>
+    </div>
+    <div class="assert-pane">
+      <div class="assert-head">
+        <div>
+          <div class="assert-title">Response assertions</div>
+          <div class="assert-sub">Evaluated after every send. Expected values support <code>{{var}}</code>.</div>
+        </div>
+        <div class="sp"></div>
+        <button class="btn btn-soft btn-s">＋ Add assertion</button>
+      </div>
+      <div class="a-grid-head">
+        <span></span><span>TARGET</span><span>NAME / PATH</span><span>OPERATOR</span><span>EXPECTED</span><span></span>
+      </div>
+      <div class="a-row">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">Status code <span class="caret">▾</span></div>
+        <div class="a-cell plain"><span class="ph">—</span></div>
+        <div class="a-select mono">equals <span class="caret">▾</span></div>
+        <div class="a-cell">200</div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-row">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">Header <span class="caret">▾</span></div>
+        <div class="a-cell">Content-Type</div>
+        <div class="a-select mono">contains <span class="caret">▾</span></div>
+        <div class="a-cell">application/json</div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-row">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">JSONPath <span class="caret">▾</span></div>
+        <div class="a-cell">$.data.token</div>
+        <div class="a-select mono">exists <span class="caret">▾</span></div>
+        <div class="a-cell plain"><span class="ph">—</span></div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-row">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">JSONPath <span class="caret">▾</span></div>
+        <div class="a-cell">$.data.deviceSn</div>
+        <div class="a-select mono">equals <span class="caret">▾</span></div>
+        <div class="a-cell"><span class="v">{{deviceSn}}</span></div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-row off">
+        <div class="checkbox"></div>
+        <div class="a-select">Response time <span class="caret">▾</span></div>
+        <div class="a-cell plain"><span class="ph">—</span></div>
+        <div class="a-select mono">&lt; <span class="caret">▾</span></div>
+        <div class="a-cell">800</div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-foot">
+        <div class="a-hint">Operators are filtered by target — e.g. <code>exists</code> needs no expected value; <code>&lt; &gt;</code> apply to Status code / Response time. Response time is in milliseconds.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     B. Tests 结果页签
+     ============================================================ -->
+<h2><span class="fid">B</span>Tests 结果 — 响应区新页签 + 摘要徽标</h2>
+<div class="h2-sub">每次 Send 后自动求值；页签计数与摘要栏徽标随结果变色；失败行就地展开 expected vs actual；禁用规则列为 skipped 不计入分母。</div>
+
+<div class="board">
+  <div class="board-label">LIGHT</div>
+  <div class="win">
+    <div class="resp-meta">
+      <span class="status">200 OK</span>
+      <span class="meta">245 ms</span>
+      <span class="meta">1.2 KB</span>
+      <span class="pass-badge bad">✗ 3/4 passed</span>
+    </div>
+    <div class="tabs">
+      <div class="tab-i">Body</div>
+      <div class="tab-i">Headers <span class="cnt">9</span></div>
+      <div class="tab-i">Cookies</div>
+      <div class="tab-i">Timing</div>
+      <div class="tab-i active">Tests <span class="cnt fail">3/4</span></div>
+    </div>
+    <div class="test-pane">
+      <div class="t-row">
+        <div class="t-ico ok">✓</div>
+        <div class="t-main">
+          <div class="t-rule">Status code <code>equals</code> <code>200</code></div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-ico ok">✓</div>
+        <div class="t-main">
+          <div class="t-rule">Header <code>Content-Type</code> <code>contains</code> <code>application/json</code></div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-ico no">✗</div>
+        <div class="t-main">
+          <div class="t-rule">JSONPath <code>$.data.token</code> <code>exists</code></div>
+          <div class="t-detail">
+            <span class="lbl">EXPECTED</span><span class="exp">value at $.data.token</span>
+            <span class="lbl">ACTUAL</span><span class="act">path not found</span>
+          </div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-ico ok">✓</div>
+        <div class="t-main">
+          <div class="t-rule">JSONPath <code>$.data.deviceSn</code> <code>equals</code> <code>{{deviceSn}}</code></div>
+          <div class="t-detail">
+            <span class="lbl">RESOLVED</span><span class="act okv">"123456"</span>
+          </div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-ico skip">–</div>
+        <div class="t-main">
+          <div class="t-rule" style="color:var(--text-3)">Response time <code>&lt;</code> <code>800</code> <span class="t-skip-note">· disabled</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="board" data-theme="dark">
+  <div class="board-label">DARK</div>
+  <div class="win">
+    <div class="resp-meta">
+      <span class="status">200 OK</span>
+      <span class="meta">245 ms</span>
+      <span class="meta">1.2 KB</span>
+      <span class="pass-badge bad">✗ 3/4 passed</span>
+    </div>
+    <div class="tabs">
+      <div class="tab-i">Body</div>
+      <div class="tab-i">Headers <span class="cnt">9</span></div>
+      <div class="tab-i">Cookies</div>
+      <div class="tab-i">Timing</div>
+      <div class="tab-i active">Tests <span class="cnt fail">3/4</span></div>
+    </div>
+    <div class="test-pane">
+      <div class="t-row">
+        <div class="t-ico ok">✓</div>
+        <div class="t-main">
+          <div class="t-rule">Status code <code>equals</code> <code>200</code></div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-ico ok">✓</div>
+        <div class="t-main">
+          <div class="t-rule">Header <code>Content-Type</code> <code>contains</code> <code>application/json</code></div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-ico no">✗</div>
+        <div class="t-main">
+          <div class="t-rule">JSONPath <code>$.data.token</code> <code>exists</code></div>
+          <div class="t-detail">
+            <span class="lbl">EXPECTED</span><span class="exp">value at $.data.token</span>
+            <span class="lbl">ACTUAL</span><span class="act">path not found</span>
+          </div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-ico ok">✓</div>
+        <div class="t-main">
+          <div class="t-rule">JSONPath <code>$.data.deviceSn</code> <code>equals</code> <code>{{deviceSn}}</code></div>
+          <div class="t-detail">
+            <span class="lbl">RESOLVED</span><span class="act okv">"123456"</span>
+          </div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-ico skip">–</div>
+        <div class="t-main">
+          <div class="t-rule" style="color:var(--text-3)">Response time <code>&lt;</code> <code>800</code> <span class="t-skip-note">· disabled</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     C. Export for CLI + 终端运行
+     ============================================================ -->
+<h2><span class="fid">C</span>F4.4 — Export 对话框格式选项与 <code>hopp run</code></h2>
+<div class="h2-sub">不单列菜单入口：现有 Export 对话框（侧栏 Export / 集合右键 Export）加格式选项；Hopp CLI 格式全保真、secret 置空；CI 中 <code>hopp run</code> 复用同一求值引擎，失败即 exit 1，<code>--reporter junit</code> 落地报告。</div>
+
+<div class="board">
+  <div class="board-label">LIGHT · EXPORT 对话框</div>
+  <div class="dlg">
+    <div class="dlg-head">
+      <div class="dlg-title">Export — 海神平台</div>
+      <div class="sp"></div>
+      <button class="icon-btn">✕</button>
+    </div>
+    <div class="dlg-body">
+      <div class="fmt-label">FORMAT</div>
+      <div class="fmt-opt">
+        <div class="fmt-radio"></div>
+        <div>
+          <div class="fmt-name">Postman Collection <span class="ext">v2.1 .json</span></div>
+          <div class="fmt-desc">Interchange with Postman / other tools. Assertions and pre-request chains are <b>not</b> included (format cannot express them).</div>
+        </div>
+      </div>
+      <div class="fmt-opt sel">
+        <div class="fmt-radio"></div>
+        <div>
+          <div class="fmt-name">Hopp CLI <span class="ext">.hopp.json</span></div>
+          <div class="fmt-desc">Full fidelity: assertions, pre-request chains, auth and variable pipelines. Run in CI with <code>hopp run</code>.</div>
+        </div>
+      </div>
+      <div class="fmt-note">
+        <span class="ic">ⓘ</span>
+        <span>Secret variable values are exported empty. Inject them in CI with <code>--env-var KEY=VALUE</code> or process environment variables.</span>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <div class="sp"></div>
+      <button class="btn btn-ghost btn-s">Cancel</button>
+      <button class="btn btn-primary btn-s">Export…</button>
+    </div>
+  </div>
+
+  <div class="term">
+    <div class="term-head"><span class="d"></span><span class="d"></span><span class="d"></span><span class="tt">CI — GitHub Actions</span></div>
+    <div class="term-body">
+      <div><span class="cmd">$ hopp run <span class="p">haishen.hopp.json</span> --env <span class="p">staging.env.json</span> --env-var <span class="p">ZHONGMOU_PASSWORD=***</span> --reporter <span class="p">junit</span> --output <span class="p">report.xml</span></span></div>
+      <div>&nbsp;</div>
+      <div><span class="dim">Collection:</span> 海神平台 <span class="dim">· 12 requests · env: staging</span></div>
+      <div>&nbsp;</div>
+      <div><span class="dim">▸ pre-request chain</span> login → <span class="ok">200 OK</span> <span class="dim">(382 ms) · extracted zhongmou_token</span></div>
+      <div><span class="ok">✓</span> GET /api/v1/devices <span class="dim">—</span> <span class="ok">200 OK · 245 ms · 4/4 assertions passed</span></div>
+      <div><span class="ok">✓</span> POST /api/v1/login <span class="dim">—</span> <span class="ok">200 OK · 402 ms · 2/2 assertions passed</span></div>
+      <div><span class="no">✗</span> GET /api/v1/devices/12345 <span class="dim">—</span> <span class="no">200 OK · 251 ms · 3/4 assertions passed</span></div>
+      <div>&nbsp;&nbsp;<span class="no">✗ JSONPath $.data.token exists — expected value, actual: path not found</span></div>
+      <div><span class="dim">… 9 more</span></div>
+      <div class="sum">
+        <div><span class="warn">11 passed · 1 failed</span> <span class="dim">· 41/42 assertions · 6.3 s · report → report.xml</span></div>
+        <div><span class="dim">exit code:</span> <span class="no">1</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="board" data-theme="dark">
+  <div class="board-label">DARK · EXPORT 对话框</div>
+  <div class="dlg">
+    <div class="dlg-head">
+      <div class="dlg-title">Export — 海神平台</div>
+      <div class="sp"></div>
+      <button class="icon-btn">✕</button>
+    </div>
+    <div class="dlg-body">
+      <div class="fmt-label">FORMAT</div>
+      <div class="fmt-opt">
+        <div class="fmt-radio"></div>
+        <div>
+          <div class="fmt-name">Postman Collection <span class="ext">v2.1 .json</span></div>
+          <div class="fmt-desc">Interchange with Postman / other tools. Assertions and pre-request chains are <b>not</b> included (format cannot express them).</div>
+        </div>
+      </div>
+      <div class="fmt-opt sel">
+        <div class="fmt-radio"></div>
+        <div>
+          <div class="fmt-name">Hopp CLI <span class="ext">.hopp.json</span></div>
+          <div class="fmt-desc">Full fidelity: assertions, pre-request chains, auth and variable pipelines. Run in CI with <code>hopp run</code>.</div>
+        </div>
+      </div>
+      <div class="fmt-note">
+        <span class="ic">ⓘ</span>
+        <span>Secret variable values are exported empty. Inject them in CI with <code>--env-var KEY=VALUE</code> or process environment variables.</span>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <div class="sp"></div>
+      <button class="btn btn-ghost btn-s">Cancel</button>
+      <button class="btn btn-primary btn-s">Export…</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

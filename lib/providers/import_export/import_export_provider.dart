@@ -9,6 +9,7 @@ import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../providers/collection/collection_provider.dart';
 import '../../providers/environment/environment_provider.dart';
+import '../../services/import_export/hopp_export_service.dart';
 import '../../services/import_export/import_export_exception.dart';
 import '../../services/import_export/postman_export_service.dart';
 import '../../services/import_export/postman_import_service.dart';
@@ -216,6 +217,52 @@ class ImportExportNotifier extends StateNotifier<ImportExportState>
       logError('Export exception', e);
       state = ImportExportState.error(e.message);
     } catch (e, stack) {
+      logError('Export failed', e, stack);
+      state = ImportExportState.error('导出失败: $e');
+    }
+  }
+
+  /// 导出集合为 Hopp CLI 原生格式（F4.4：全保真，secret 置空）
+  Future<void> exportCollectionForCli({
+    required String collectionId,
+    required String savePath,
+    bool prettyPrint = true,
+  }) async {
+    logInfo('Starting Hopp CLI export: $collectionId to $savePath');
+    state = ImportExportState.loading();
+
+    try {
+      final storage = _ref.read(storageServiceProvider);
+      final collections = await storage.getCollections();
+      Collection? root;
+      for (final c in collections) {
+        if (c.id == collectionId) {
+          root = c;
+          break;
+        }
+      }
+      if (root == null) {
+        throw ExportException(message: 'Collection not found: $collectionId');
+      }
+
+      const service = HoppExportService();
+      await service.exportToFile(
+        root: root,
+        allCollections: collections,
+        allRequests: await storage.getRequests(),
+        environments: await storage.getEnvironments(),
+        globals: await storage.getGlobalVariables(),
+        activeEnvironmentId: await storage.getActiveEnvironmentId(),
+        savePath: savePath,
+        prettyPrint: prettyPrint,
+      );
+
+      logInfo('Hopp CLI export successful: $savePath');
+      state = ImportExportState(exportPath: savePath);
+    } on ExportException catch (e) {
+      logError('Export exception', e);
+      state = ImportExportState.error(e.message);
+    } on Exception catch (e, stack) {
       logError('Export failed', e, stack);
       state = ImportExportState.error('导出失败: $e');
     }

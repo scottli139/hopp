@@ -3,9 +3,12 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:logger/logger.dart';
 
 import '../models/certificate_info.dart';
-import '../utils/app_logger.dart';
+
+/// 证书抓取日志（package:logger，保持纯 Dart 以便 CLI 复用 http_service）
+final Logger _logger = Logger();
 
 /// 从主机获取 SSL/TLS 证书信息
 ///
@@ -17,8 +20,7 @@ Future<CertificateInfo?> fetchCertificateFromHost(
   Duration timeout = const Duration(seconds: 5),
 }) async {
   try {
-    AppLogger.debug(
-        '[CertificateHelper] Fetching certificate from $host:$port');
+    _logger.d('[CertificateHelper] Fetching certificate from $host:$port');
 
     // 使用 SecureSocket 连接以获取证书
     final socket = await SecureSocket.connect(
@@ -27,7 +29,7 @@ Future<CertificateInfo?> fetchCertificateFromHost(
       timeout: timeout,
       // 允许自签名证书，以便能获取更多证书信息
       onBadCertificate: (certificate) {
-        AppLogger.warning(
+        _logger.w(
             '[CertificateHelper] Bad certificate received but continuing: ${certificate.subject}');
         return true;
       },
@@ -37,7 +39,7 @@ Future<CertificateInfo?> fetchCertificateFromHost(
     final cert = socket.peerCertificate;
 
     if (cert == null) {
-      AppLogger.warning('[CertificateHelper] No peer certificate available');
+      _logger.w('[CertificateHelper] No peer certificate available');
       socket.destroy();
       return null;
     }
@@ -48,20 +50,18 @@ Future<CertificateInfo?> fetchCertificateFromHost(
     // 关闭 socket
     socket.destroy();
 
-    AppLogger.info(
-        '[CertificateHelper] Certificate fetched successfully for $host');
+    _logger.i('[CertificateHelper] Certificate fetched successfully for $host');
     return info;
   } on SocketException catch (e) {
-    AppLogger.warning(
-        '[CertificateHelper] Socket error while fetching certificate: $e');
+    _logger
+        .w('[CertificateHelper] Socket error while fetching certificate: $e');
     return null;
   } on TimeoutException catch (e) {
-    AppLogger.warning(
-        '[CertificateHelper] Timeout while fetching certificate: $e');
+    _logger.w('[CertificateHelper] Timeout while fetching certificate: $e');
     return null;
   } catch (e, stack) {
-    AppLogger.error(
-        '[CertificateHelper] Failed to fetch certificate from $host', e, stack);
+    _logger.e('[CertificateHelper] Failed to fetch certificate from $host',
+        error: e, stackTrace: stack);
     return null;
   }
 }
@@ -69,7 +69,7 @@ Future<CertificateInfo?> fetchCertificateFromHost(
 /// 从 X509Certificate 提取证书信息
 CertificateInfo? extractCertificateInfoFromX509(X509Certificate cert) {
   try {
-    AppLogger.debug('[CertificateHelper] Extracting certificate info...');
+    _logger.d('[CertificateHelper] Extracting certificate info...');
 
     // 从 DER 数据计算 SHA-256 指纹
     final sha256Fingerprint = _calculateSha256Fingerprint(cert);
@@ -98,8 +98,8 @@ CertificateInfo? extractCertificateInfoFromX509(X509Certificate cert) {
       chain: _buildCertificateChain(cert),
     );
   } catch (e, stack) {
-    AppLogger.warning(
-        '[CertificateHelper] Failed to extract certificate info', e, stack);
+    _logger.w('[CertificateHelper] Failed to extract certificate info',
+        error: e, stackTrace: stack);
     return null;
   }
 }
@@ -117,7 +117,7 @@ String _calculateSha256Fingerprint(X509Certificate cert) {
           .join(':');
     }
   } catch (e) {
-    AppLogger.warning('[CertificateHelper] Failed to calculate SHA-256: $e');
+    _logger.w('[CertificateHelper] Failed to calculate SHA-256: $e');
   }
 
   // 回退：使用 subject + issuer 计算哈希
@@ -143,7 +143,7 @@ String _extractSerialNumber(X509Certificate cert) {
       if (serial != null) return serial;
     }
   } catch (e) {
-    AppLogger.warning('[CertificateHelper] Failed to parse serial number: $e');
+    _logger.w('[CertificateHelper] Failed to parse serial number: $e');
   }
 
   // 回退：基于 subject 生成伪序列号
@@ -181,7 +181,7 @@ String? _parseSerialNumberFromDer(Uint8List der) {
       }
     }
   } catch (e) {
-    AppLogger.debug('[CertificateHelper] DER parsing failed: $e');
+    _logger.d('[CertificateHelper] DER parsing failed: $e');
   }
   return null;
 }
@@ -264,7 +264,7 @@ _PublicKeyInfo _extractPublicKeyInfo(X509Certificate cert) {
       }
     }
   } catch (e) {
-    AppLogger.debug('[CertificateHelper] Failed to detect public key info: $e');
+    _logger.d('[CertificateHelper] Failed to detect public key info: $e');
   }
 
   // 默认回退
@@ -298,7 +298,7 @@ int? _detectRsaKeyLength(Uint8List der) {
       }
     }
   } catch (e) {
-    AppLogger.debug('[CertificateHelper] Failed to detect RSA key length: $e');
+    _logger.d('[CertificateHelper] Failed to detect RSA key length: $e');
   }
   return 2048; // 默认值
 }
@@ -368,8 +368,7 @@ String _detectSignatureAlgorithm(X509Certificate cert) {
       }
     }
   } catch (e) {
-    AppLogger.debug(
-        '[CertificateHelper] Failed to detect signature algorithm: $e');
+    _logger.d('[CertificateHelper] Failed to detect signature algorithm: $e');
   }
 
   return 'sha256WithRSAEncryption'; // 默认值

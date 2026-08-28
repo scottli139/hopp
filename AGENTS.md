@@ -31,7 +31,7 @@
 |----------|------|
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod + Dio + Hive |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **当前版本** | `0.10.1` |
+| **当前版本** | `0.11.0` |
 
 > 历史参考：项目曾使用 Tauri (React + Rust)，详见 [ARCHIVED_TAURI.md](./docs/ARCHIVED_TAURI.md)。
 
@@ -127,8 +127,8 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 1. ~~状态纠偏 + UX 审计~~（已完成，2026-08-21）
 2. ~~环境变量系统~~（已完成，2026-08-21，M8.1：多环境 + 全局变量 + `{{var}}` 替换 + 动态变量）
 3. ~~预请求链 + 变量转换~~（已完成，2026-08-25，M8.2 / v0.10.0：Auth 配置与继承 + `{{var | fn}}` 管道全量算法 + 预请求链/401 重跑/试运行 + Hive 落盘加密，见 [PRD](./docs/PRD.md) F8）
-4. **Tier 0：OpenAPI/Swagger 导入 → 一键生成请求/collection**（下一个，M8.3）
-5. 轻量断言 + AI 生成 + CLI/CI 导出（决策：降级，不做 JS 沙箱；M8.4）
+4. ~~Tier 0：OpenAPI/Swagger 导入~~（已完成，2026-08-28，M8.3 / v0.11.0：3.0/3.1+2.0、JSON+YAML、文件/URL 双源、防脑补映射、勾选预览 + 结果报告，见 [PRD](./docs/PRD.md) F9.4）
+5. **轻量断言 + AI 生成 + CLI/CI 导出**（下一个，M8.4；决策：降级，不做 JS 沙箱）
 
 ### 已知问题 🐛
 

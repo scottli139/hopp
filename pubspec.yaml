@@ -1,7 +1,7 @@
 name: hopp
 description: "Hopp - A lightweight, cross-platform API testing tool built with Flutter"
 publish_to: 'none'
-version: 0.10.1+1
+version: 0.11.0+1
 
 environment:
   sdk: ^3.6.2
@@ -33,6 +33,8 @@ dependencies:
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
   crypto: ^3.0.3
+  # OpenAPI/Swagger YAML 解析（F9.4 导入）
+  yaml: ^3.1.2
   # AES 加密（F8.3 变量转换管道；底层为纯 Dart 的 pointycastle）
   encrypt: ^5.0.3
   url_launcher: ^6.3.1

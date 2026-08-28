@@ -14,7 +14,6 @@ import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/testing/ui_test_mode.dart';
-import '../../widgets/import/curl_import_dialog.dart';
 import '../../widgets/import_export/export_dialog.dart';
 import '../../widgets/import_export/import_dialog.dart';
 import '../collection/collection_settings_dialog.dart';
@@ -66,7 +65,15 @@ class _SidebarState extends ConsumerState<Sidebar> {
     // Listen to UI test dialog triggers
     ref.listen<int?>(uiTestImportDialogProvider, (previous, current) {
       if (current != null && current != previous) {
-        _showImportDialog(context);
+        // test-mode 可指定目标页签（读后复位，避免串味到手动菜单入口）
+        final tab = ref.read(uiTestImportDialogTabProvider);
+        ref.read(uiTestImportDialogTabProvider.notifier).state = null;
+        final format = tab == 'curl'
+            ? ImportFormat.curl
+            : tab == 'openapi'
+                ? ImportFormat.openApi
+                : ImportFormat.postman;
+        _showImportDialog(context, initialFormat: format);
       }
     });
 
@@ -125,13 +132,6 @@ class _SidebarState extends ConsumerState<Sidebar> {
     ref.listen<int?>(uiTestEnvironmentDialogProvider, (previous, current) {
       if (current != null && current != previous) {
         showEnvironmentManagerDialog(context);
-      }
-    });
-
-    // Listen to cURL import dialog trigger
-    ref.listen<int?>(uiTestCurlImportDialogProvider, (previous, current) {
-      if (current != null && current != previous) {
-        _showCurlImportDialog(context);
       }
     });
 
@@ -1143,9 +1143,6 @@ class _SidebarState extends ConsumerState<Sidebar> {
           case 'import':
             _showImportDialog(context);
             break;
-          case 'import_curl':
-            _showCurlImportDialog(context);
-            break;
         }
       },
       itemBuilder: (context) => [
@@ -1160,13 +1157,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
           theme: theme,
           value: 'import',
           icon: Icons.download,
-          label: 'Import Postman',
-        ),
-        AppPopupMenu.iconItem(
-          theme: theme,
-          value: 'import_curl',
-          icon: Icons.terminal,
-          label: 'Import from cURL',
+          label: 'Import…',
         ),
         AppPopupMenu.iconItem(
           theme: theme,
@@ -1186,13 +1177,11 @@ class _SidebarState extends ConsumerState<Sidebar> {
   }
 
   /// Show import dialog
-  void _showImportDialog(BuildContext context) {
-    showImportDialog(context);
-  }
-
-  /// Show cURL import dialog
-  void _showCurlImportDialog(BuildContext context) {
-    showCurlImportDialog(context);
+  void _showImportDialog(
+    BuildContext context, {
+    ImportFormat initialFormat = ImportFormat.postman,
+  }) {
+    showImportDialog(context, initialFormat: initialFormat);
   }
 
   /// Show export dialog

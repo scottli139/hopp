@@ -729,6 +729,46 @@
 - **元数据-only 日志**：只记端点/模型/耗时/字数，不落请求体、key、响应文本本体
 - **防脑补硬约束**：生成请求/断言时，字段、参数、取值只允许来自 spec 或用户输入，缺失即缺失，禁止脑补
 
+#### F9.4 Tier 0：OpenAPI/Swagger 导入（M8.3，2026-08-28 澄清确认）
+
+**范围**
+
+| 项 | 决策 |
+|----|------|
+| 规格版本 | OpenAPI 3.0.x / 3.1 + Swagger 2.0（解析层内部统一转 3.0 模型，映射只写一套） |
+| 格式 | JSON + YAML（`yaml` 包 + 自写轻量 3.0 子集模型，不引重型解析框架） |
+| 来源 | 本地文件（对话框选择，`.json/.yaml/.yml`；拖放为既有残桩，见 BACKLOG 已知问题）+ URL 拉取（可配一组自定义请求头，覆盖私有 spec 常见的 token/basic；不做重定向链/Cookie） |
+| 不在本期 | cURL 生成（F1.10）拆独立任务；spec 变更同步（重导入 = 新建或走冲突策略，不保持联动） |
+
+**映射规则**（防脑补：所有取值必须来自 spec，无来源即留空）
+
+| spec 元素 | Hopp 生成物 |
+|-----------|-------------|
+| `info.title` | Collection 名 |
+| `tags` | 子集合（扁平化 parentId）；无 tag 的接口平铺根集合 |
+| 请求名 | `summary` → `operationId` → `METHOD /path` |
+| `servers[0].url` | upsert 全局变量 `{{baseUrl}}`（尚无集合变量层，作用域 local>环境>全局；重复导入更新同名变量），请求 URL 写 `{{baseUrl}}/path` |
+| path 参数 `{id}` | `{{id}}`，并在集合变量留空占位 |
+| query/header 参数取值 | `example` → `default` → `enum[0]` → 留空 |
+| requestBody | 优先 `example`/`examples`；否则按 schema 类型生成骨架，导入报告标注「类型占位」 |
+| `securitySchemes` | bearer / basic / apiKey → 集合级 Auth（F8.1），secret 留空由用户填；OAuth2 不自动配置，导入报告提示 |
+
+**交互流程**
+
+1. 导入入口：现有 Import 对话框扩展格式页签（Postman / cURL / OpenAPI；侧栏菜单单入口「Import…」）
+2. 解析后预览：按 tag 分组的接口清单，支持全选 / 按 tag 勾选 / 搜索过滤，确认后落库
+3. 冲突处理：复用 Postman 导入四策略（overwrite / rename / merge / skip）
+4. 导入报告：成功数、类型占位标注、OAuth2 等未自动配置项提示
+
+**验收标准**
+
+- [x] OpenAPI 3.0/3.1（JSON+YAML）与 Swagger 2.0 均可导入生成 collection
+- [x] 文件与 URL 两种来源可用，URL 支持自定义请求头
+- [x] servers / tags / 参数 / body / Auth 按映射表生成，无 spec 来源的值留空不脑补
+- [x] 预览页可勾选与过滤，冲突四策略生效
+- [x] 导入报告列出类型占位与未自动配置项
+- [x] Petstore 等真实 spec fixture 单元测试 + test-mode 导入指令可自动化验证（`import_openapi`）
+
 ---
 
 ## 非功能需求

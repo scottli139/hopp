@@ -515,6 +515,8 @@ grep "测试服务器启动在端口" ~/Library/Containers/.../hopp_*.log
 python3 integration_test/test_client.py --port <PORT> full_test
 ```
 
+> **数据隔离（2026-08-28 起）**：`--test-mode/--ui-test` 启动的实例使用独立数据目录 `~/Library/Containers/com.example.hopp/Data/Documents/hopp_test`（含独立加密 key），与用户真实数据 `Documents/hopp` 完全隔离——Hive 非跨进程安全，并发打开同一目录曾导致数据清零。因此 test-mode 实例看不到用户的集合/环境，自动化需用 `create_collection`/`create_saved_request`/`import_openapi` 等指令自建 fixture。日志目录不变（实例仍可能并发写同日日志，无破坏性）。
+
 ### 可用指令
 
 | 指令 | 说明 |
@@ -548,9 +550,45 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `get_resolved_request` | 获取活动请求应用变量替换后的结果 |
 | `create_saved_request` | 创建已保存请求直接入指定 Collection（供预请求链引用，F8.2 测试钩子） |
 | `set_pre_request_chain` | 设置请求的预请求链（步骤+提取规则+401 重跑，Tab/已保存请求均可，F8.2 测试钩子） |
+| `trigger_import_dialog` | 打开导入对话框（可选 `tab`: `postman`/`curl`/`openapi`，缺省 Postman 页签） |
+| `trigger_curl_import_dialog` | 已合并为 Import 对话框 cURL 页签；指令保留并重定向为 `trigger_import_dialog(tab=curl)` |
+| `import_openapi` | OpenAPI/Swagger 导入全流程（解析→勾选→导入→冲突解决，F9 测试钩子，参数见下文） |
 | `trigger_environment_dialog` | 打开环境管理对话框 |
 | `open_design_gallery` | 打开 Design Gallery 页（全 token/组件双主题展示） |
 | `full_test` | 完整测试流程 |
+
+#### `import_openapi` 参数与返回
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `content` | String | 内联 spec 文本（与 `path` / `url` 三选一） |
+| `path` | String | 相对 CWD 的 spec 文件路径 |
+| `url` | String | 远程 spec URL |
+| `header_name` / `header_value` | String? | 自定义请求头（仅 `url` 来源） |
+| `select` | String / Array | `"all"`（默认，保持解析后全选）/ `"none"` / op id 数组（op id 格式 `"get /pets"`） |
+| `stop_at` | String | `"preview"` 止于解析预览 / `"complete"`（默认）执行导入 |
+| `on_conflict` | String? | `rename` / `overwrite` / `merge` / `skip`；冲突且未给时返回冲突信息不解决 |
+
+返回结构：
+
+- 成功：`{stage, title, specVersion, serverUrl, opCount, tags, selectedCount, report?, conflict?}`；`report` 含 collectionId / collectionName / requestCount / collectionCount / renamed / newName / merged / placeholders（每项 kind/method/path/detail）/ oauthNotices / baseUrl / baseUrlExisted / authDescription；`skip` 解决后 `stage` 为 `idle`
+- 解析 / 导入失败：`{success: false, result: {stage: 'error', error}}`（HTTP 200，业务失败透传）
+
+示例：
+
+```bash
+# 预览 petstore fixture（不导入）
+curl -X POST http://localhost:<PORT>/ \
+  -d '{"action":"import_openapi","params":{"path":"test/fixtures/openapi/petstore3.json","stop_at":"preview"}}'
+
+# 只导入指定 op，同名冲突时重命名
+curl -X POST http://localhost:<PORT>/ \
+  -d '{"action":"import_openapi","params":{"path":"test/fixtures/openapi/petstore3.json","select":["get /pet/findByStatus"],"on_conflict":"rename"}}'
+
+# 打开导入对话框并定位到 OpenAPI 页签
+curl -X POST http://localhost:<PORT>/ \
+  -d '{"action":"trigger_import_dialog","params":{"tab":"openapi"}}'
+```
 
 ### UI 测试脚本列表
 

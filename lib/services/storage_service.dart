@@ -66,7 +66,13 @@ class StorageService {
     // 1. 初始化 Hive 目录
     final appDir = await getApplicationDocumentsDirectory();
     AppLogger.debug('[StorageService] App directory: ${appDir.path}');
-    Hive.init('${appDir.path}/hopp');
+    // test-mode 使用独立数据目录：Hive 非跨进程安全，自动化实例与用户实例
+    // 并发打开同一 box 文件会导致数据被清零（2026-08-28 事故教训）
+    final dataDirName = Platform.executableArguments.contains('--test-mode') ||
+            Platform.executableArguments.contains('--ui-test')
+        ? 'hopp_test'
+        : 'hopp';
+    Hive.init('${appDir.path}/$dataDirName');
 
     // 2. 先初始化 SharedPreferences（用于版本控制）
     _prefs = await SharedPreferences.getInstance();
@@ -79,8 +85,8 @@ class StorageService {
 
     // 5. 加载/创建数据加密 key，并对存量明文 box 做一次性迁移（F8.4）
     try {
-      _encryptionKey =
-          await BoxEncryption.loadOrCreateKey(Directory('${appDir.path}/hopp'));
+      _encryptionKey = await BoxEncryption.loadOrCreateKey(
+          Directory('${appDir.path}/$dataDirName'));
       if (_prefs?.getBool(_boxesEncryptedFlagKey) != true) {
         for (final boxName in _dataBoxNames) {
           await BoxEncryption.migrateToEncrypted(

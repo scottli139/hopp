@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hopp · M8.3 OpenAPI/Swagger 导入 · UI 原型</title>
+<style>
+/* ============================================================
+   Tokens — 与 lib/theme/ 及 f8_prerequest_chain_preview.html 一致
+   ============================================================ */
+:root {
+  --brand: #6366F1; --brand-hover: #4F46E5; --brand-soft: #EEF2FF; --brand-text: #6366F1;
+  --bg: #FFFFFF; --surface: #F8FAFC; --surface-2: #F1F5F9;
+  --border: #E2E8F0; --border-strong: #CBD5E1;
+  --text-1: #0F172A; --text-2: #475569; --text-3: #94A3B8;
+  --success: #10B981; --success-soft: #ECFDF5;
+  --warning: #F59E0B; --warning-soft: #FFFBEB;
+  --error: #EF4444; --error-soft: #FEF2F2;
+  --info: #0EA5E9; --info-soft: #F0F9FF;
+  --shadow-md: 0 4px 12px rgba(15,23,42,.10), 0 1px 3px rgba(15,23,42,.06);
+  --shadow-lg: 0 12px 40px rgba(15,23,42,.16), 0 2px 8px rgba(15,23,42,.08);
+  --r-s: 4px; --r-m: 6px; --r-l: 8px;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: Menlo, 'JetBrains Mono', Consolas, monospace;
+}
+[data-theme="dark"] {
+  --brand: #818CF8; --brand-hover: #6366F1; --brand-soft: rgba(129,140,248,.14); --brand-text: #818CF8;
+  --bg: #0F172A; --surface: #1E293B; --surface-2: #334155;
+  --border: #2B3A55; --border-strong: #475569;
+  --text-1: #F1F5F9; --text-2: #94A3B8; --text-3: #64748B;
+  --success-soft: rgba(16,185,129,.14);
+  --warning-soft: rgba(245,158,11,.14);
+  --error-soft: rgba(239,68,68,.14);
+  --info-soft: rgba(14,165,233,.14);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.3);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-ui); background: #E9EDF3; color: #0F172A; padding: 40px 48px 96px; }
+h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.sub { color: #64748B; font-size: 13px; margin-bottom: 28px; }
+.sub code, .changes code, h2 code, .h2-sub code { font-family: var(--font-mono); font-size: 11px; background: #F1F5F9; border-radius: 3px; padding: 1px 5px; color: #475569; }
+h2 { font-size: 14px; font-weight: 600; margin: 40px 0 4px; }
+h2 .fid { color: #6366F1; font-family: var(--font-mono); font-size: 12px; margin-right: 6px; }
+.h2-sub { font-size: 12px; color: #64748B; margin-bottom: 14px; }
+
+/* 设计决策清单 */
+.changes { background: #FFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 18px 22px; font-size: 13px; line-height: 1.9; color: #334155; }
+.changes b { color: #0F172A; }
+.changes .n { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; background: #EEF2FF; color: #6366F1; font-size: 11px; font-weight: 700; align-items: center; justify-content: center; margin-right: 8px; }
+
+/* 画板 */
+.board { border-radius: 12px; padding: 40px; display: flex; justify-content: center; background: #D8DEE8; margin-top: 14px; }
+.board[data-theme="dark"] { background: #070B14; }
+
+/* ============================================================
+   对话框通用
+   ============================================================ */
+.dlg {
+  width: 600px; display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text-1);
+  border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg);
+  overflow: hidden; font-size: 13px;
+}
+.dlg.wide { width: 720px; }
+.dlg-head {
+  height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.dlg-title { font-size: 13px; font-weight: 600; }
+.dlg-head .sp { flex: 1; }
+.dlg-body { padding: 16px; }
+.dlg-foot {
+  display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+  border-top: 1px solid var(--border); background: var(--surface);
+}
+.dlg-foot .sp { flex: 1; }
+.dlg-foot .stat { font-size: 12px; color: var(--text-2); }
+.dlg-foot .stat b { color: var(--brand-text); font-weight: 700; }
+
+/* 格式页签 */
+.fmt-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.fmt-tab {
+  height: 30px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--border); border-radius: var(--r-m); background: var(--bg);
+  font-size: 12px; font-weight: 500; color: var(--text-2); cursor: pointer;
+}
+.fmt-tab.active { border-color: var(--brand); background: var(--brand-soft); color: var(--brand-text); font-weight: 600; }
+.fmt-tab .ic { font-size: 13px; }
+
+/* 拖放区 */
+.drop {
+  border: 1.5px dashed var(--border-strong); border-radius: var(--r-l);
+  padding: 26px 20px; text-align: center; background: var(--surface);
+}
+.drop .ic { font-size: 22px; color: var(--text-3); margin-bottom: 6px; }
+.drop .t1 { font-size: 13px; font-weight: 500; }
+.drop .t2 { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+.drop .t2 code { font-family: var(--font-mono); font-size: 10px; background: var(--surface-2); border-radius: 3px; padding: 1px 4px; }
+
+/* 分隔线 */
+.or { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: var(--text-3); font-size: 11px; }
+.or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* 表单 */
+.f-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.f-label { width: 76px; flex-shrink: 0; padding-top: 7px; font-size: 12px; font-weight: 500; color: var(--text-2); }
+.f-input {
+  height: 30px; width: 100%; padding: 0 10px; display: flex; align-items: center;
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-1);
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-m);
+}
+.f-input .ph { color: var(--text-3); font-family: var(--font-ui); }
+.f-hint { font-size: 11px; color: var(--text-3); margin-top: 5px; line-height: 1.5; }
+.f-hint code { font-family: var(--font-mono); font-size: 10px; background: var(--surface-2); border-radius: 3px; padding: 1px 4px; }
+
+/* 按钮 */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 14px; font-size: 13px; font-weight: 500; font-family: var(--font-ui);
+  border: 1px solid transparent; border-radius: var(--r-m); cursor: pointer; white-space: nowrap;
+}
+.btn-s { height: 28px; padding: 0 12px; font-size: 12px; }
+.btn-primary { background: var(--brand); color: #FFF; }
+.btn-ghost { background: transparent; color: var(--text-2); border-color: var(--border-strong); }
+.btn-soft { background: var(--brand-soft); color: var(--brand-text); }
+.icon-btn {
+  width: 26px; height: 26px; flex-shrink: 0; border-radius: var(--r-m); border: none; background: transparent;
+  color: var(--text-3); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;
+}
+
+/* ============================================================
+   S2 预览选择
+   ============================================================ */
+.spec-bar {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 12px;
+  background: var(--info-soft); border-radius: var(--r-m); font-size: 12px; color: var(--text-2);
+}
+.spec-bar .ic { color: var(--info); }
+.spec-bar b { color: var(--text-1); }
+.spec-bar code { font-family: var(--font-mono); font-size: 11px; background: var(--bg); border-radius: 3px; padding: 0 4px; }
+
+.pv-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.pv-search {
+  flex: 1; height: 30px; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-m);
+  font-size: 12px; color: var(--text-3);
+}
+.pv-list { border: 1px solid var(--border); border-radius: var(--r-l); overflow: hidden; }
+
+.pv-tag {
+  display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.pv-tag .arrow { color: var(--text-3); font-size: 10px; width: 12px; }
+.pv-tag .cnt { font-size: 10px; font-weight: 700; background: var(--surface-2); color: var(--text-2); border-radius: 8px; padding: 1px 6px; }
+.pv-tag .sel { margin-left: auto; font-size: 11px; font-weight: 400; color: var(--text-3); }
+
+.pv-row {
+  display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px 0 30px;
+  border-bottom: 1px solid var(--border); font-size: 12px; background: var(--bg);
+}
+.pv-row:last-child { border-bottom: none; }
+.pv-row.dim { opacity: .45; }
+.m-pill {
+  width: 46px; flex-shrink: 0; text-align: center; font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  border-radius: 3px; padding: 2px 0;
+}
+.m-get { color: var(--success); background: var(--success-soft); }
+.m-post { color: var(--info); background: var(--info-soft); }
+.m-put { color: var(--warning); background: var(--warning-soft); }
+.m-del { color: var(--error); background: var(--error-soft); }
+.pv-path { font-family: var(--font-mono); font-size: 11px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-path .v { color: var(--brand-text); }
+.pv-name { margin-left: auto; flex-shrink: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-3); font-size: 11px; }
+
+.checkbox { width: 14px; height: 14px; flex-shrink: 0; border-radius: 4px; border: 1.5px solid var(--border-strong); background: var(--bg); display: flex; align-items: center; justify-content: center; color: #FFF; font-size: 9px; }
+.checkbox.on { background: var(--brand); border-color: var(--brand); }
+.checkbox.half { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-text); }
+
+/* ============================================================
+   S3 冲突解决
+   ============================================================ */
+.cf-item {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; margin-bottom: 8px;
+  border: 1px solid var(--border); border-radius: var(--r-m); cursor: pointer;
+}
+.cf-item.selected { border-color: var(--brand); background: var(--brand-soft); }
+.cf-radio { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; border-radius: 50%; border: 1.5px solid var(--border-strong); background: var(--bg); display: flex; align-items: center; justify-content: center; }
+.cf-item.selected .cf-radio { border-color: var(--brand); }
+.cf-item.selected .cf-radio::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
+.cf-item .t { font-size: 13px; font-weight: 500; }
+.cf-item .d { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+.cf-item .d code { font-family: var(--font-mono); font-size: 10px; background: var(--surface-2); border-radius: 3px; padding: 1px 4px; }
+
+/* ============================================================
+   S4 结果报告
+   ============================================================ */
+.rp-stats { display: flex; gap: 10px; margin-bottom: 14px; }
+.rp-card { flex: 1; border: 1px solid var(--border); border-radius: var(--r-m); padding: 12px; text-align: center; }
+.rp-card .num { font-size: 20px; font-weight: 700; }
+.rp-card .num.ok { color: var(--success); }
+.rp-card .num.warn { color: var(--warning); }
+.rp-card .num.info { color: var(--info); }
+.rp-card .lbl { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+.rp-sec { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); margin: 14px 0 6px; }
+.rp-note {
+  display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; margin-bottom: 8px;
+  background: var(--warning-soft); border-radius: var(--r-m); font-size: 12px; color: var(--text-2); line-height: 1.6;
+}
+.rp-note .ic { color: var(--warning); flex-shrink: 0; }
+.rp-note code { font-family: var(--font-mono); font-size: 11px; background: var(--bg); border-radius: 3px; padding: 0 4px; }
+.rp-list { border: 1px solid var(--border); border-radius: var(--r-m); overflow: hidden; }
+.rp-li { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
+.rp-li:last-child { border-bottom: none; }
+.rp-li .tag { flex-shrink: 0; font-size: 10px; font-weight: 600; color: var(--warning); background: var(--warning-soft); border-radius: 3px; padding: 1px 5px; }
+.rp-li .p { font-family: var(--font-mono); font-size: 11px; color: var(--text-2); }
+</style>
+</head>
+<body>
+
+<h1>Hopp · M8.3 OpenAPI/Swagger 导入 · UI 原型</h1>
+<div class="sub">对应 <code>docs/PRD.md</code> F9.4（2026-08-28 澄清确认）· 导入流程四屏：入口 → 预览选择 → 冲突解决 → 结果报告</div>
+
+<div class="changes">
+  <div><span class="n">1</span><b>规格与格式</b>：OpenAPI 3.0.x / 3.1 + Swagger 2.0（解析层内部转 3.0 模型），JSON + YAML。</div>
+  <div><span class="n">2</span><b>双来源</b>：本地文件（拖入/选择）+ URL 拉取，URL 可配一组自定义请求头（私有 spec 的 token/basic）。</div>
+  <div><span class="n">3</span><b>组织方式</b>：<code>info.title</code> → collection 名；<code>tags</code> → 子集合；请求名取 <code>summary → operationId → METHOD /path</code>。</div>
+  <div><span class="n">4</span><b>防脑补取值</b>：<code>servers[0]</code> → <code>{{baseUrl}}</code> 集合变量；path 参数 → <code>{{id}}</code> 空占位；query/header 取值优先级 <code>example → default → enum[0] → 留空</code>；body 无 example 时按 schema 生成骨架并在报告中标注。</div>
+  <div><span class="n">5</span><b>Auth</b>：bearer / basic / apiKey → 集合级 Auth（secret 留空）；OAuth2 不自动配置，报告提示。</div>
+  <div><span class="n">6</span><b>预览后落库</b>：按 tag 分组勾选 + 搜索过滤；冲突复用 Postman 四策略。</div>
+  <div><span class="n">7</span><b>不在本期</b>：cURL 生成（F1.10）拆独立任务；spec 变更不保持联动（重导入 = 新建或走冲突策略）。</div>
+</div>
+
+<!-- ============================================================
+     S1 导入入口
+     ============================================================ -->
+<h2><span class="fid">S1</span>导入入口：格式页签 + 文件 / URL 双来源</h2>
+<div class="h2-sub">现有 Import 对话框扩展格式页签（Postman / cURL / OpenAPI）；OpenAPI 面板上半为拖放区，下半为 URL + 自定义请求头（仅私有 spec 需要时填写）。</div>
+<div class="board">
+  <div class="dlg">
+    <div class="dlg-head">
+      <span class="dlg-title">Import</span>
+      <span class="sp"></span>
+      <button class="icon-btn">✕</button>
+    </div>
+    <div class="dlg-body">
+      <div class="fmt-tabs">
+        <span class="fmt-tab"><span class="ic">📮</span>Postman</span>
+        <span class="fmt-tab"><span class="ic">⌘</span>cURL</span>
+        <span class="fmt-tab active"><span class="ic">⬡</span>OpenAPI / Swagger</span>
+      </div>
+      <div class="drop">
+        <div class="ic">⬆</div>
+        <div class="t1">拖放 spec 文件到此处，或点击选择文件</div>
+        <div class="t2">支持 <code>.json</code> <code>.yaml</code> <code>.yml</code> · OpenAPI 3.0 / 3.1 · Swagger 2.0</div>
+      </div>
+      <div class="or">或从 URL 导入</div>
+      <div class="f-row">
+        <span class="f-label">Spec URL</span>
+        <div style="flex:1">
+          <div class="f-input">https://petstore3.swagger.io/api/v3/openapi.json</div>
+          <div class="f-hint">机器可读地址（<code>openapi.json</code> / <code>swagger.yaml</code>）确定性解析，数据不出机器。</div>
+        </div>
+      </div>
+      <div class="f-row" style="margin-bottom:0">
+        <span class="f-label">请求头</span>
+        <div style="flex:1">
+          <div class="f-input"><span class="ph">Authorization: Bearer &lt;token&gt;（可选，仅私有 spec 需要）</span></div>
+          <div class="f-hint">一组自定义请求头，仅用于本次拉取，不保存。</div>
+        </div>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <span class="sp"></span>
+      <button class="btn btn-ghost">取消</button>
+      <button class="btn btn-primary">解析</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     S2 预览选择
+     ============================================================ -->
+<h2><span class="fid">S2</span>解析预览：按 tag 分组勾选 + 搜索过滤</h2>
+<div class="h2-sub">解析成功后不落库，先出预览：spec 信息条 → 工具栏（搜索 / 全选）→ tag 分组接口清单（path 参数已显示为 <code>{{var}}</code>）→ 底部统计与导入。</div>
+<div class="board" data-theme="dark">
+  <div class="dlg wide">
+    <div class="dlg-head">
+      <span class="dlg-title">导入预览 · OpenAPI</span>
+      <span class="sp"></span>
+      <button class="icon-btn">✕</button>
+    </div>
+    <div class="dlg-body">
+      <div class="spec-bar">
+        <span class="ic">⬡</span>
+        <span><b>Swagger Petstore</b> · OpenAPI 3.0.2 · 3 个 tag · 20 个接口 · 服务器 <code>https://petstore3.swagger.io/api/v3</code> → <code>{{baseUrl}}</code></span>
+      </div>
+      <div class="pv-toolbar">
+        <div class="pv-search">🔍 搜索路径或名称…</div>
+        <button class="btn btn-ghost btn-s">全选</button>
+        <button class="btn btn-ghost btn-s">全不选</button>
+      </div>
+      <div class="pv-list">
+        <div class="pv-tag">
+          <span class="arrow">▾</span><span class="checkbox on">✓</span>pet<span class="cnt">8</span><span class="sel">8/8</span>
+        </div>
+        <div class="pv-row"><span class="checkbox on">✓</span><span class="m-pill m-post">POST</span><span class="pv-path">/pet</span><span class="pv-name">Add a new pet</span></div>
+        <div class="pv-row"><span class="checkbox on">✓</span><span class="m-pill m-put">PUT</span><span class="pv-path">/pet</span><span class="pv-name">Update an existing pet</span></div>
+        <div class="pv-row"><span class="checkbox on">✓</span><span class="m-pill m-get">GET</span><span class="pv-path">/pet/findByStatus?status=<span class="v">{{status}}</span></span><span class="pv-name">Finds Pets by status</span></div>
+        <div class="pv-row"><span class="checkbox on">✓</span><span class="m-pill m-get">GET</span><span class="pv-path">/pet/<span class="v">{{petId}}</span></span><span class="pv-name">Find pet by ID</span></div>
+        <div class="pv-tag">
+          <span class="arrow">▾</span><span class="checkbox half">–</span>store<span class="cnt">4</span><span class="sel">3/4</span>
+        </div>
+        <div class="pv-row"><span class="checkbox on">✓</span><span class="m-pill m-get">GET</span><span class="pv-path">/store/inventory</span><span class="pv-name">Returns pet inventories</span></div>
+        <div class="pv-row"><span class="checkbox on">✓</span><span class="m-pill m-post">POST</span><span class="pv-path">/store/order</span><span class="pv-name">Place an order</span></div>
+        <div class="pv-row"><span class="checkbox on">✓</span><span class="m-pill m-get">GET</span><span class="pv-path">/store/order/<span class="v">{{orderId}}</span></span><span class="pv-name">Find order by ID</span></div>
+        <div class="pv-row dim"><span class="checkbox"></span><span class="m-pill m-del">DEL</span><span class="pv-path">/store/order/<span class="v">{{orderId}}</span></span><span class="pv-name">Delete order</span></div>
+        <div class="pv-tag">
+          <span class="arrow">▸</span><span class="checkbox on">✓</span>user<span class="cnt">8</span><span class="sel">8/8</span>
+        </div>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <span class="stat">已选 <b>19</b> / 20 个接口 · 将创建 1 个集合 + 3 个子集合</span>
+      <span class="sp"></span>
+      <button class="btn btn-ghost">取消</button>
+      <button class="btn btn-primary">导入 19 个接口</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     S3 冲突解决
+     ============================================================ -->
+<h2><span class="fid">S3</span>冲突解决：复用 Postman 导入四策略</h2>
+<div class="h2-sub">同名集合已存在时弹出，选项与 Postman 导入完全一致（overwrite / rename / merge / skip），默认推荐重命名。</div>
+<div class="board">
+  <div class="dlg" style="width:520px">
+    <div class="dlg-head">
+      <span class="dlg-title">集合已存在</span>
+      <span class="sp"></span>
+      <button class="icon-btn">✕</button>
+    </div>
+    <div class="dlg-body">
+      <div style="font-size:12px;color:var(--text-2);margin-bottom:12px">名为 <b style="color:var(--text-1)">「Swagger Petstore」</b> 的集合已存在（含 12 个请求）。请选择处理方式：</div>
+      <div class="cf-item">
+        <span class="cf-radio"></span>
+        <div><div class="t">覆盖现有集合</div><div class="d">删除现有集合及其全部请求，替换为本次导入内容</div></div>
+      </div>
+      <div class="cf-item selected">
+        <span class="cf-radio"></span>
+        <div><div class="t">重命名后导入 <span style="font-size:10px;font-weight:700;color:var(--brand-text);background:var(--bg);border-radius:3px;padding:1px 5px">推荐</span></div><div class="d">保存为 <code>Swagger Petstore (1)</code>，现有集合不受影响</div></div>
+      </div>
+      <div class="cf-item">
+        <span class="cf-radio"></span>
+        <div><div class="t">合并到现有集合</div><div class="d">将 19 个请求追加到现有集合末尾</div></div>
+      </div>
+      <div class="cf-item" style="margin-bottom:0">
+        <span class="cf-radio"></span>
+        <div><div class="t">跳过导入</div><div class="d">不做任何更改</div></div>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <span class="sp"></span>
+      <button class="btn btn-ghost">取消</button>
+      <button class="btn btn-primary">继续导入</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     S4 结果报告
+     ============================================================ -->
+<h2><span class="fid">S4</span>导入结果报告：占位与未自动配置项可见</h2>
+<div class="h2-sub">落库后展示统计 + 两类提示：<b>类型占位</b>（无 example 的 body/参数按 schema 生成骨架，符合防脑补约束）与 <b>未自动配置</b>（OAuth2 等）。</div>
+<div class="board" data-theme="dark">
+  <div class="dlg" style="width:560px">
+    <div class="dlg-head">
+      <span class="dlg-title">导入完成</span>
+      <span class="sp"></span>
+      <button class="icon-btn">✕</button>
+    </div>
+    <div class="dlg-body">
+      <div class="rp-stats">
+        <div class="rp-card"><div class="num ok">19</div><div class="lbl">已导入请求</div></div>
+        <div class="rp-card"><div class="num info">4</div><div class="lbl">集合 / 子集合</div></div>
+        <div class="rp-card"><div class="num warn">6</div><div class="lbl">类型占位</div></div>
+      </div>
+      <div class="rp-note">
+        <span class="ic">⚠</span>
+        <span>检测到 <code>oauth2</code> securityScheme，未自动配置。请到 集合设置 → Auth 手动完成授权流程；<code>api_key</code> 已配置为集合级 Auth，secret 留空待填。</span>
+      </div>
+      <div class="rp-sec">类型占位（取值来自 schema 类型骨架，非 spec 示例）</div>
+      <div class="rp-list">
+        <div class="rp-li"><span class="tag">占位</span><span class="m-pill m-post">POST</span><span class="p">/pet — body 按 Pet schema 生成骨架</span></div>
+        <div class="rp-li"><span class="tag">占位</span><span class="m-pill m-put">PUT</span><span class="p">/pet — body 按 Pet schema 生成骨架</span></div>
+        <div class="rp-li"><span class="tag">占位</span><span class="m-pill m-get">GET</span><span class="p">/pet/{{petId}} — path 变量留空待填</span></div>
+        <div class="rp-li"><span class="tag">占位</span><span class="m-pill m-post">POST</span><span class="p">/store/order — body 按 Order schema 生成骨架</span></div>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <span class="sp"></span>
+      <button class="btn btn-ghost">关闭</button>
+      <button class="btn btn-primary">打开集合</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

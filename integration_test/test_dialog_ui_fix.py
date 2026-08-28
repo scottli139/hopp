@@ -26,7 +26,7 @@ from test_client import HoppTestClient
 def test_import_dialog(client: HoppTestClient):
     """测试 Import 对话框 UI"""
     print("\n" + "="*60)
-    print("📥 测试 Import Postman Data 对话框")
+    print("📥 测试 Import 对话框")
     print("="*60)
     
     # 触发导入对话框
@@ -147,7 +147,7 @@ def run_dialog_ui_tests(port=None):
         print("  - ~/Downloads/hopp_import_dialog_initial.png")
         print("  - ~/Downloads/hopp_export_dialog_initial.png")
         print("\n验证要点:")
-        print("  1. 标题使用英文 (Import Postman Data / Export Postman Collection)")
+        print("  1. 标题使用英文 (Import / Export Postman Collection)")
         print("  2. 标题字号为 16px (Title 样式)")
         print("  3. 正文字号为 14px (Body 样式) 或 13px (Body Small)")
         print("  4. 按钮高度为 36px (Medium 尺寸)")

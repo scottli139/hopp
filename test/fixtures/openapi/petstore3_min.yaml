@@ -1,0 +1,41 @@
+openapi: 3.0.0
+info:
+  title: Mini Petstore YAML
+  version: 0.1.0
+servers:
+  - url: https://api.mini-petstore.test/v1
+paths:
+  /pets:
+    get:
+      tags:
+        - pet
+      summary: List pets
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+    post:
+      tags:
+        - pet
+      summary: Create pet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+            example:
+              name: kitty
+  /pets/{petId}:
+    get:
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer

@@ -15,6 +15,7 @@
 - [空状态入口指引 (Issue #6)](#空状态入口指引-issue-6)
 - [响应优化 (OptimizedResponseViewer)](#响应优化-optimizedresponseviewer)
 - [预请求链与变量转换 (M8.2 / v0.10.0)](#预请求链与变量转换-m82-f8--v0100-2026-08-25)
+- [OpenAPI/Swagger 导入 (M8.3 / F9.4)](#openapiswagger-导入-m83--f94--v0110-2026-08-28)
 - [环境变量系统 (M8.1)](#环境变量系统-m81)
 - [测试与自动化](#测试与自动化)
 - [Mock 服务器](#mock-服务器)
@@ -830,6 +831,43 @@ group('CurlParser', () {
 ### 敏感数据落盘加密（F8.4）
 
 `BoxEncryption`：应用级 32 字节 AES key（base64 存 Hive 目录 `.secure_key`），collections/requests/environments 三个数据 box 用 `HiveAesCipher`；存量明文 box 启动时一次性迁移（读出→删除→加密重建→写回，SharedPreferences flag 幂等）。防御边界：防直接翻看 Hive 文件，不防整机能被访问的攻击者（keychain 级方案留作后续）。
+
+## OpenAPI/Swagger 导入 (M8.3 / F9.4 / v0.11.0, 2026-08-28)
+
+> 需求与验收：[PRD](./PRD.md) F9.4；原型：[docs/design/openapi_import_preview.html](./design/openapi_import_preview.html)。
+
+### 分层结构
+
+```text
+lib/services/import_export/openapi/
+  openapi_spec.dart           # 解析产物模型（plain Dart，不进 Hive）
+  openapi_parser.dart         # JSON/YAML 识别 + 3.0/3.1/2.0 解析 + 本地 $ref
+  openapi_mapper.dart         # spec → (rootCollection, childCollections, allRequests) 三元组
+  openapi_import_service.dart # 文件/URL 来源 + 冲突检测 + 落盘 + baseUrl 全局变量 upsert
+lib/providers/import_export/openapi_import_provider.dart  # 七态状态机
+lib/widgets/import_export/openapi_import_panel.dart       # 对话框内五态面板
+```
+
+### 关键决策
+
+- **2.0 内部转 3.0**：`schemes[0]//host+basePath → servers[0]`、`definitions → components.schemas`（$ref 同步改写）、`in:body → requestBody`、`in:formData → 合成 object schema + x-www-form-urlencoded`、`securityDefinitions.basic/apiKey → http 对应 scheme`。映射层只面对 3.0 模型。
+- **本地 $ref 解析**：仅 `#/...` 文档内引用，visited 集合防循环（环 → `{}`），骨架生成深度上限 6。
+- **防脑补取值**：参数 `example → default → enum[0] → ''`；required 或值非空才 enabled；path 参数恒 enabled 且留空。body 优先 `example/examples[0]`，否则按 schema 类型生成骨架并记入 `placeholders` 报告。
+- **bodyType 沿用项目惯例**：JSON 内容 = `bodyType 'raw' + rawContentType 'json'`（项目无 `'json'` bodyType；取值集合见 postman_mapper 的 `_mapBodyType/_mapRawContentType`），urlencoded = `bodyType 'x-www-form-urlencoded'`。
+- **baseUrl 全局变量**：`servers[0].url` upsert 到全局变量 `{{baseUrl}}`（项目无集合变量层，作用域 local>环境>全局）；重复导入更新同名变量，报告带 `baseUrlExisted`。
+- **Auth**：root `security` 首条目受支持则采用，否则取文档序第一个受支持（bearer/basic/apiKey）；`security: []` 显式空 → 不配置；secret 恒留空；oauth2/openIdConnect 只记入 `oauthNotices` 报告。
+- **冲突复用**：`PostmanImportService.resolveConflict` 四策略格式无关，OpenAPI 侧直接委托，冲突时三元组 + 报告数据随 outcome 暂存，resolve 后原样回传。
+- **URL 来源二次拉取**：`fetchFromUrl` 返回解析后 spec 而非原文，故 URL 来源的 `importSelected()` 直传 `importSpec(url:…)`（导入时重新拉取），文件/内联来源才走 `content:`。
+- **对话框结构**：`ImportDialog` 顶部 AppTabs（Postman | cURL | OpenAPI）+ IndexedStack 三面板常驻（cURL 由独立对话框抽为 `CurlImportPanel` 嵌入，侧栏菜单单入口）；尺寸按页签+阶段动态计算；冲突页零改动复用 `ConflictResolutionContent`。
+- **test-mode**：`import_openapi`（content/path/url 三源 + select/stop_at/on_conflict）驱动全流程；`trigger_import_dialog` 新增 `tab` 参数（经 `uiTestImportDialogTabProvider` 传给 sidebar）。注意：App 沙盒内 `path` 仅容器内可读，自动化建议用 `content` 内联。
+
+### 测试
+
+- fixtures：`test/fixtures/openapi/`（petstore3.json / petstore3_min.yaml / swagger2_petstore.json）。
+- 单测 68（parser/mapper/service，MockStorageService 复用 test/mocks）+ widget 4（面板五态）= 72 新增。
+- 实机审计：test-mode 驱动四屏亮/暗截图目检（2026-08-28）。
+
+---
 
 ## 环境变量系统 (M8.1)
 

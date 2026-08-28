@@ -1,46 +1,77 @@
-/// cURL 导入对话框
+/// cURL 导入面板
 ///
-/// 支持粘贴和编辑 cURL 命令，解析后导入为 Hopp 请求。
+/// 从原独立 CurlImportDialog 抽出的内容区（输入区 + 解析预览区），
+/// 作为 Import 对话框的 cURL 页签常驻挂载。底部按钮由外壳对话框通过
+/// [CurlImportPanel.buildActions] 构建，导入执行经
+/// [CurlImportPanelState.importAndOpen]（外壳以 GlobalKey 取面板 State）。
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../models/http_method.dart';
-import '../../../models/http_request.dart';
-import '../../../providers/collection/collection_provider.dart';
-import '../../../providers/curl/curl_import_provider.dart';
-import '../../../providers/request/request_tab_provider.dart';
-import '../../../theme/app_colors.dart';
-import '../../../theme/app_metrics.dart';
-import '../../../theme/app_text_styles.dart';
-import '../../../theme/app_theme_data.dart';
-import '../../../utils/app_logger.dart';
+import '../../models/http_method.dart';
+import '../../models/http_request.dart';
+import '../../providers/collection/collection_provider.dart';
+import '../../providers/curl/curl_import_provider.dart';
+import '../../providers/request/request_tab_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_metrics.dart';
+import '../../theme/app_text_styles.dart';
+import '../../theme/app_theme_data.dart';
+import '../../utils/app_logger.dart';
 import '../common/app_button.dart';
-import '../common/app_dialog.dart';
 import '../common/app_divider.dart';
 import '../common/app_popup_menu.dart';
 import '../common/app_text_field.dart';
 
-/// 显示 cURL 导入对话框
-Future<void> showCurlImportDialog(BuildContext context) async {
-  return showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => const CurlImportDialog(),
-  );
-}
+/// cURL 导入面板（输入 + 解析预览，不含对话框壳）
+class CurlImportPanel extends ConsumerStatefulWidget {
+  const CurlImportPanel({super.key});
 
-/// cURL 导入对话框
-class CurlImportDialog extends ConsumerStatefulWidget {
-  const CurlImportDialog({super.key});
+  /// 构建底部操作按钮（供外壳对话框复用）
+  ///
+  /// 成功态显示 Import / Import & Send，其余状态只显示 Cancel；
+  /// [onImport] / [onImportAndSend] 由外壳注入（通常转发到
+  /// [CurlImportPanelState.importAndOpen]）。
+  static List<Widget> buildActions({
+    required BuildContext context,
+    required CurlImportState state,
+    required VoidCallback onImport,
+    required VoidCallback onImportAndSend,
+  }) {
+    // 成功状态 - 显示导入按钮
+    if (state.isSuccess && state.request != null) {
+      return [
+        AppButton.ghost(
+          label: 'Cancel',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppButton.secondary(
+          label: 'Import & Send',
+          onPressed: onImportAndSend,
+        ),
+        AppButton.primary(
+          label: 'Import',
+          onPressed: onImport,
+        ),
+      ];
+    }
+
+    // 其他状态 - 只显示取消
+    return [
+      AppButton.ghost(
+        label: 'Cancel',
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+    ];
+  }
 
   @override
-  ConsumerState<CurlImportDialog> createState() => _CurlImportDialogState();
+  ConsumerState<CurlImportPanel> createState() => CurlImportPanelState();
 }
 
-class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
+class CurlImportPanelState extends ConsumerState<CurlImportPanel>
     with LogMixin {
   final _textController = TextEditingController();
   final _nameController = TextEditingController();
@@ -66,29 +97,21 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
   Widget build(BuildContext context) {
     final state = ref.watch(curlImportProvider);
 
-    return AppDialog(
-      title: 'Import from cURL',
-      width: 560,
-      actions: _buildActions(state),
-      child: SizedBox(
-        height: 480,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 输入区域
-            Expanded(
-              flex: 2,
-              child: _buildInputArea(state),
-            ),
-            const SizedBox(height: AppMetrics.space16),
-            // 解析结果预览
-            Expanded(
-              flex: 3,
-              child: _buildPreviewArea(state),
-            ),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 输入区域
+        Expanded(
+          flex: 2,
+          child: _buildInputArea(state),
         ),
-      ),
+        const SizedBox(height: AppMetrics.space16),
+        // 解析结果预览
+        Expanded(
+          flex: 3,
+          child: _buildPreviewArea(state),
+        ),
+      ],
     );
   }
 
@@ -601,35 +624,6 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
     );
   }
 
-  /// 构建操作按钮
-  List<Widget> _buildActions(CurlImportState state) {
-    // 成功状态 - 显示导入按钮
-    if (state.isSuccess && state.request != null) {
-      return [
-        AppButton.ghost(
-          label: 'Cancel',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        AppButton.secondary(
-          label: 'Import & Send',
-          onPressed: () => _importAndOpen(false),
-        ),
-        AppButton.primary(
-          label: 'Import',
-          onPressed: () => _importAndOpen(true),
-        ),
-      ];
-    }
-
-    // 其他状态 - 只显示取消
-    return [
-      AppButton.ghost(
-        label: 'Cancel',
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-    ];
-  }
-
   /// 从剪贴板粘贴
   Future<void> _pasteFromClipboard() async {
     try {
@@ -649,8 +643,8 @@ class _CurlImportDialogState extends ConsumerState<CurlImportDialog>
     await ref.read(curlImportProvider.notifier).parse();
   }
 
-  /// 导入并打开请求
-  void _importAndOpen(bool justImport) {
+  /// 导入并打开请求（由外壳对话框的 actions 经 GlobalKey 调用）
+  void importAndOpen(bool justImport) {
     final state = ref.read(curlImportProvider);
     if (state.request == null) return;
 

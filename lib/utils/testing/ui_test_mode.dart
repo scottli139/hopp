@@ -23,8 +23,11 @@ import 'package:uuid/uuid.dart';
 import 'test_helpers.dart';
 
 import '../../providers/import_export/import_export_provider.dart';
+import '../../providers/import_export/openapi_import_provider.dart';
 import '../../providers/providers.dart';
 import '../../services/curl/curl_import_service.dart';
+import '../../services/import_export/import_export_exception.dart';
+import '../../services/import_export/openapi/openapi_import_service.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/url_params_sync.dart';
 import '../../models/certificate_info.dart';
@@ -109,6 +112,19 @@ class UITestModeManager {
 
       // 执行指令
       final result = await _executeCommand(action, params);
+
+      // 业务失败透传：指令返回 {'success': false, 'result': {...}} 时直接
+      // 作为响应体（不包裹 success:true），用于表达预期内的失败（如
+      // OpenAPI 解析错误）。不含 'result' 键的 {'success': ...} 负载
+      // （如 parse_curl）保持原有包裹行为不变。
+      if (result is Map<String, dynamic> &&
+          result['success'] == false &&
+          result.containsKey('result')) {
+        response.statusCode = io.HttpStatus.ok;
+        response.write(jsonEncode(result));
+        await response.close();
+        return;
+      }
 
       response.statusCode = io.HttpStatus.ok;
       response.write(jsonEncode({
@@ -310,8 +326,12 @@ class UITestModeManager {
         final filePath = params['file_path'] as String;
         return await _importCollection(filePath);
 
+      case 'import_openapi':
+        return await _importOpenApi(params);
+
       case 'trigger_import_dialog':
-        return await _triggerImportDialog();
+        final tab = params['tab'] as String?;
+        return await _triggerImportDialog(tab: tab);
 
       case 'trigger_export_dialog':
         return await _triggerExportDialog();
@@ -2105,12 +2125,164 @@ class UITestModeManager {
   }
 
   /// 触发导入对话框
-  Future<Map<String, dynamic>> _triggerImportDialog() async {
+  ///
+  /// [tab] 指定初始页签（'postman' / 'curl' / 'openapi'），缺省保持 Postman。
+  Future<Map<String, dynamic>> _triggerImportDialog({String? tab}) async {
+    // 先写入目标页签（由 UI 读取后复位，不影响手动菜单入口）
+    _ref!.read(uiTestImportDialogTabProvider.notifier).state = tab;
+
     // 设置状态通知 UI 显示导入对话框
     _ref!.read(uiTestImportDialogProvider.notifier).state =
         DateTime.now().millisecondsSinceEpoch;
 
-    return {'triggered': true};
+    return {'triggered': true, if (tab != null) 'tab': tab};
+  }
+
+  /// OpenAPI/Swagger 导入（F9 测试钩子）
+  ///
+  /// 全流程：reset → 解析（content / path / url 三选一）→ 应用 select →
+  /// （stop_at=preview 时止于预览）→ importSelected → 冲突时按 on_conflict
+  /// 解决。解析 / 导入失败返回 {'success': false, 'result': {...}}，
+  /// 由 _handleRequest 透传。
+  Future<Map<String, dynamic>> _importOpenApi(
+    Map<String, dynamic> params,
+  ) async {
+    final content = params['content'] as String?;
+    final path = params['path'] as String?;
+    final url = params['url'] as String?;
+    final headerName = params['header_name'] as String?;
+    final headerValue = params['header_value'] as String?;
+    final select = params['select'];
+    final stopAt = params['stop_at'] as String? ?? 'complete';
+    final onConflict = params['on_conflict'] as String?;
+
+    if (stopAt != 'preview' && stopAt != 'complete') {
+      throw Exception('stop_at 只支持 "preview" / "complete"');
+    }
+    final sourceCount = [content, path, url].whereType<String>().length;
+    if (sourceCount != 1) {
+      throw Exception('import_openapi 需要 content / path / url 三选一');
+    }
+
+    final notifier = _ref!.read(openApiImportProvider.notifier);
+
+    // 1. 解析（provider 方法为 async，await 后 state 即终态，无需轮询）
+    notifier.reset();
+    if (content != null) {
+      await notifier.parseContent(content, sourceLabel: 'test-mode');
+    } else if (path != null) {
+      await notifier.parseFile(path);
+    } else {
+      await notifier.parseUrl(
+        url!,
+        headerName: headerName,
+        headerValue: headerValue,
+      );
+    }
+
+    var state = _ref!.read(openApiImportProvider);
+    if (state.stage == OpenApiImportStage.error) {
+      return {
+        'success': false,
+        'result': {'stage': 'error', 'error': state.error},
+      };
+    }
+    if (state.stage != OpenApiImportStage.preview) {
+      throw Exception('OpenAPI 解析后状态异常: ${state.stage.name}');
+    }
+
+    // 2. 应用 select（缺省保持解析后的全选状态）
+    if (select is String) {
+      if (select == 'none') {
+        notifier.selectAll(false);
+      } else if (select != 'all') {
+        throw Exception('select 只支持 "all" / "none" / op id 数组');
+      }
+    } else if (select is List) {
+      notifier.selectAll(false);
+      select.cast<String>().forEach(notifier.toggleOp);
+    } else if (select != null) {
+      throw Exception('select 只支持 "all" / "none" / op id 数组');
+    }
+    state = _ref!.read(openApiImportProvider);
+
+    final spec = state.spec;
+    final summary = <String, dynamic>{
+      'stage': state.stage.name,
+      'title': spec?.title,
+      'specVersion': spec?.specVersion,
+      'serverUrl': spec?.serverUrl,
+      'opCount': spec?.operations.length ?? 0,
+      'tags': spec?.tagOrder ?? const <String>[],
+      'selectedCount': state.selectedIds.length,
+    };
+
+    // 3. 止于预览
+    if (stopAt == 'preview') {
+      return summary;
+    }
+
+    // 4. 导入
+    await notifier.importSelected();
+    state = _ref!.read(openApiImportProvider);
+
+    // 5. 冲突：未给 on_conflict 则返回冲突信息不解决
+    if (state.stage == OpenApiImportStage.conflict) {
+      final conflict = <String, dynamic>{
+        'collectionName': state.conflictCollection?.name,
+        'existingId': state.existingId,
+      };
+      if (onConflict == null) {
+        return {...summary, 'stage': 'conflict', 'conflict': conflict};
+      }
+      final resolution = ConflictResolution.values.firstWhere(
+        (r) => r.name == onConflict,
+        orElse: () =>
+            throw Exception('on_conflict 只支持 rename/overwrite/merge/skip'),
+      );
+      await notifier.resolveConflict(resolution);
+      state = _ref!.read(openApiImportProvider);
+    }
+
+    // 6. 终态（skip 解决后 stage 为 idle，无 report）
+    if (state.stage == OpenApiImportStage.error) {
+      return {
+        'success': false,
+        'result': {'stage': 'error', 'error': state.error},
+      };
+    }
+    return {
+      ...summary,
+      'stage': state.stage.name,
+      if (state.report != null)
+        'report': _serializeOpenApiReport(state.report!),
+    };
+  }
+
+  /// 序列化 OpenAPI 导入报告
+  Map<String, dynamic> _serializeOpenApiReport(OpenApiReport report) {
+    return {
+      'collectionId': report.collectionId,
+      'collectionName': report.collectionName,
+      'requestCount': report.requestCount,
+      'collectionCount': report.collectionCount,
+      'renamed': report.renamed,
+      'newName': report.newName,
+      'merged': report.merged,
+      'placeholders': [
+        for (final p in report.placeholders)
+          {
+            'kind': p.kind,
+            'method': p.method,
+            'path': p.path,
+            'detail': p.detail,
+          },
+      ],
+      'oauthNotices': report.oauthNotices,
+      'baseUrl': report.baseUrl,
+      'baseUrlExisted': report.baseUrlExisted,
+      'authDescription': report.authDescription,
+    };
   }
 
   /// 触发导出对话框
@@ -2776,17 +2948,14 @@ class UITestModeManager {
   }
 
   /// 触发 cURL 导入对话框
+  ///
+  /// cURL 导入已合并为 Import 对话框的 cURL 页签；本指令保留（外部脚本
+  /// 在用），重定向为 `_triggerImportDialog(tab: 'curl')`。
   Future<Map<String, dynamic>> _triggerCurlImportDialog() async {
-    AppLogger.info('[UI_TEST] _triggerCurlImportDialog called');
-
-    // 触发对话框显示
-    _ref!.read(uiTestCurlImportDialogProvider.notifier).state =
-        DateTime.now().millisecondsSinceEpoch;
-
-    return {
-      'triggered': true,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    };
+    AppLogger.info(
+      '[UI_TEST] _triggerCurlImportDialog called (redirect -> import dialog curl tab)',
+    );
+    return _triggerImportDialog(tab: 'curl');
   }
 
   /// 验证 URL 与 Params 双向同步功能
@@ -3116,6 +3285,9 @@ final uiTestBeautifyCodeProvider = StateProvider<int?>((ref) => null);
 /// UI 测试 - 导入对话框触发器
 final uiTestImportDialogProvider = StateProvider<int?>((ref) => null);
 
+/// UI 测试 - 导入对话框目标页签（'postman' / 'curl' / 'openapi'，UI 读取后复位为 null）
+final uiTestImportDialogTabProvider = StateProvider<String?>((ref) => null);
+
 /// UI 测试 - 导出对话框触发器
 final uiTestExportDialogProvider = StateProvider<int?>((ref) => null);
 
@@ -3133,9 +3305,6 @@ final uiTestOpenAboutScreenProvider = StateProvider<int?>((ref) => null);
 
 /// UI 测试 - 打开 Design Gallery 页面触发器
 final uiTestDesignGalleryProvider = StateProvider<int?>((ref) => null);
-
-/// UI 测试 - cURL 导入对话框触发器
-final uiTestCurlImportDialogProvider = StateProvider<int?>((ref) => null);
 
 /// UI 测试 - cURL 解析结果
 final uiTestCurlParseResultProvider =

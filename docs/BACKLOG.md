@@ -103,6 +103,7 @@
 | 问题 | 优先级 | 状态 |
 |------|--------|------|
 | 行号与内容滚动不同步 | P2 | 待修（CodeEditor 组件；TI-03 已修复，`scroll_response target=body` 可自动化验证，见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md)） |
+| 导入对话框拖放未实现 | P3 | 待修（Postman/OpenAPI 导入的拖放区均为视觉残桩，实际只能点击选择；实现需引入 desktop_drop 类依赖） |
 
 ---
 
@@ -117,3 +118,4 @@
 | TD-3 | Timing 的 TCP/TLS/TTFB 为估算值 | `http_service.dart` 用硬编码 `30/20/45` 及 `totalMs ~/ 3` 填充 | 改为真实测量，测不到就标记为未测量（null），避免误导 | P2 | 实现真实计时或重做 Timing Tab 时 |
 | TD-5 | site/ 版本徽章手动同步 | App 侧版本号已改为动态读取（v0.8.8，Issue #13）；残余：`site/` 两个静态页的 version 徽章需发布时手动改（2026-08-25 已对齐 v0.10.0） | 发布流程中加入 site/ 徽章同步步骤（或脚本化） | P3 | 每次发布 |
 | TD-6 | test-mode `tap_at` 疑似干扰 Tab 状态 | F8 截图审计（2026-08-25）：Params 页对 fx 按钮 `tap_at(745,118)`（47 个 hitTargets）后页面异常跳回 Pre-request tab；功能本身由 widget test 覆盖且正常 | 排查 `tap_at` 的命中分发与 `_tabController`/持久化 index 的互相影响 | P3 | 下次扩展 test-mode 指针指令时 |
+| TD-7 | 应用无单实例保护 | Hive 非跨进程安全，两个实例并发打开同一数据目录会导致 box 文件清零（2026-08-28 实发事故，test-mode 已通过独立数据目录 `hopp_test` 规避，见 CHANGELOG v0.11.0-test-data-isolation）；普通双开（用户手动启动第二个 release 实例）仍无防护 | 启动时对数据目录加 OS 级文件锁（dart:io File.lock），第二个实例提示退出 | P1 | 下次改动存储初始化时 |

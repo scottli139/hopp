@@ -126,6 +126,9 @@ class GlobalVariablesNotifier extends StateNotifier<List<EnvironmentVariable>> {
     state = await storage.getGlobalVariables();
   }
 
+  /// 从存储重新加载（外部写入后刷新，如 OpenAPI 导入 upsert baseUrl）
+  Future<void> reload() => _load();
+
   Future<void> setVariables(List<EnvironmentVariable> variables) async {
     final storage = _ref.read(storageServiceProvider);
     await storage.saveGlobalVariables(variables);

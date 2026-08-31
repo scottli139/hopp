@@ -49,34 +49,17 @@ Hopp 正在从「又一个 Postman 克隆」转向**本地优先、私有 AI 的
 
 ---
 
-## 📸 场景展示
+## 📸 界面截图
 
-### 发送 HTTP 请求
-```
-┌─────────────────────────────────────────────────────────────┐
-│  📁 Sidebar  │  Request Tab Bar                              │
-│  ┌────────┐ │  ┌─────┐┌─────┐┌─────┐┌─+─┐                  │
-│  │ History│ │  │ GET ││ POST││ 🗙 ││   │                  │
-│  ├────────┤ │  └──┬──┘└─────┘└─────┘└───┘                  │
-│  │ ⭐     │ │     │                                         │
-│  │Favorites│ │  ┌──┴────────────────────────────────────┐   │
-│  ├────────┤ │  │ [GET] https://api.example.com/users │ ▶  │   │
-│  │ 📂     │ │  └────────────────────────────────────────┘   │   │
-│  │Collection│ │  [Params] [Headers] [Body] [Auth]            │   │
-│  └────────┘ │                                             │   │
-│             │  Response: 200 OK | 234ms | 1.2KB           │   │
-│             │  {                                         │   │
-│             │    "id": 1,                                │   │
-│             │    "name": "John Doe"                      │   │
-│             │  }                                         │   │
-└─────────────────────────────────────────────────────────────┘
-```
+**深色 / 浅色主题** —— 请求编辑器（Params、Headers、JSON Body）与响应查看器：
 
-### 管理请求集合
-- 📁 创建文件夹组织请求
-- ⭐ 收藏常用请求
-- 🕐 自动保存请求历史
-- 📤 导入/导出 Collections
+<img src="docs/assets/screenshots/hero-dark.webp" alt="Hopp 深色主题 —— 请求编辑器与响应查看器" width="100%">
+<img src="docs/assets/screenshots/hero-light.webp" alt="Hopp 浅色主题" width="100%">
+
+**耗时分析 · 预请求链 · 轻量断言 · OpenAPI 导入**
+
+<img src="docs/assets/screenshots/timing-dark.webp" alt="响应耗时分解" width="49%"> <img src="docs/assets/screenshots/prerequest-dark.webp" alt="预请求链与变量提取" width="49%">
+<img src="docs/assets/screenshots/assertions-dark.webp" alt="响应断言" width="49%"> <img src="docs/assets/screenshots/import-dialog.webp" alt="OpenAPI / Swagger 导入" width="49%">
 
 ---
 

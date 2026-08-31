@@ -58,6 +58,20 @@ Planned next:
 
 ---
 
+## 📸 Screenshots
+
+**Dark & light themes** — request editor with params, headers, JSON body, and the response viewer.
+
+<img src="docs/assets/screenshots/hero-dark.webp" alt="Hopp dark theme — request editor and response viewer" width="100%">
+<img src="docs/assets/screenshots/hero-light.webp" alt="Hopp light theme" width="100%">
+
+**Timing breakdown · pre-request chain · response assertions · OpenAPI import**
+
+<img src="docs/assets/screenshots/timing-dark.webp" alt="Response timing breakdown" width="49%"> <img src="docs/assets/screenshots/prerequest-dark.webp" alt="Pre-request chain with token extraction" width="49%">
+<img src="docs/assets/screenshots/assertions-dark.webp" alt="Response assertions" width="49%"> <img src="docs/assets/screenshots/import-dialog.webp" alt="OpenAPI / Swagger import dialog" width="49%">
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites

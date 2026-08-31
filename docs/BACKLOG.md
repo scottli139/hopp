@@ -119,3 +119,6 @@
 | TD-5 | site/ 版本徽章手动同步 | App 侧版本号已改为动态读取（v0.8.8，Issue #13）；残余：`site/` 两个静态页的 version 徽章需发布时手动改（2026-08-29 已对齐 v0.12.0） | 发布流程中加入 site/ 徽章同步步骤（或脚本化） | P3 | 每次发布 |
 | TD-6 | test-mode `tap_at` 疑似干扰 Tab 状态 | F8 截图审计（2026-08-25）：Params 页对 fx 按钮 `tap_at(745,118)`（47 个 hitTargets）后页面异常跳回 Pre-request tab；功能本身由 widget test 覆盖且正常 | 排查 `tap_at` 的命中分发与 `_tabController`/持久化 index 的互相影响 | P3 | 下次扩展 test-mode 指针指令时 |
 | TD-7 | 应用无单实例保护 | Hive 非跨进程安全，两个实例并发打开同一数据目录会导致 box 文件清零（2026-08-28 实发事故，test-mode 已通过独立数据目录 `hopp_test` 规避，见 CHANGELOG v0.11.0-test-data-isolation）；普通双开（用户手动启动第二个 release 实例）仍无防护 | 启动时对数据目录加 OS 级文件锁（dart:io File.lock），第二个实例提示退出 | P1 | 下次改动存储初始化时 |
+| TD-8 | test-mode `tap_at` 坐标空间不稳定 | 2026-08-31 营销截图实拍：坐标语义随实例漂移（窗口坐标 vs 视图坐标，标题栏 32px 时同一目标所需偏移在 +18 ~ +50 不等）；侧边栏行距仅约 19px，极易命中相邻行（曾误开请求 Tab 污染截图） | 统一为视图逻辑坐标并在 `_tapAt` 注释中写明；返回值附带命中组件路径便于校准（与 TD-6 分别跟进） | P3 | 下次扩展 test-mode 指针指令时 |
+| TD-9 | test-mode `reset_database` 不清空已打开 Tab | 遗留 Tab 跨 reset 存活，自动化连续运行时出现重复「New Request」Tab 栏，污染截图与 Tab 计数 | `reset_database` 一并关闭所有 Tab（或新增 `close_all_tabs` 指令） | P3 | 下次改动 test-mode 指令时 |
+| TD-10 | 侧边栏树展开后立即截图渲染空白 | `toggleExpanded` 后立刻 `capture_screenshot` 会 transient 渲染空树（ListView 重建期约 1 帧）；当日首次整窗截图还伴随秒级 shader 预热卡顿 | 截图前固定 `wait 800ms+`；或 `capture_screenshot` 内部等待稳定帧再编码 | P3 | 下次优化 test-mode 截图链路时 |

@@ -1,6 +1,7 @@
 # Peekaboo CLI 学习笔记
 
 > 学习日期: 2026-03-11  
+> 实战修订: 2026-08-31（peekaboo 3.0.0-beta3 × Flutter 桌面应用，见 6.4）  
 > 项目地址: https://github.com/steipete/Peekaboo  
 > 文档地址: https://github.com/steipete/Peekaboo/blob/main/docs/cli-command-reference.md
 
@@ -390,6 +391,8 @@ peekaboo run workflow.peekaboo.json --output results.json --no-fail-fast
 
 ## 六、Flutter/macOS 应用测试场景
 
+> ⚠️ **2026-08-31 实测修订**（peekaboo 3.0.0-beta3）：6.1–6.3 的元素定位 / 点击流程适用于**原生 AppKit 应用**；对 Flutter 桌面应用，`see` 只能枚举到窗口 chrome，业务 UI 元素级操作不可用，坐标点击存在窗口焦点坑。实测结论与替代方案见 **6.4**。
+
 ### 6.1 测试 Flutter 应用的具体步骤
 ```bash
 # 1. 启动 Flutter 应用（假设已构建为 macOS 应用）
@@ -443,6 +446,25 @@ peekaboo click "Request Name" --app "hopp" --right
 peekaboo click "Duplicate" --app "hopp"
 ```
 
+### 6.4 Flutter 桌面应用实测结论（2026-08-31，beta3，对象：hopp）
+
+> 以下为当日营销截图任务的实战验证，修正 6.1–6.3 对 Flutter 应用的隐含假设。
+
+| 能力 | 实测结果 |
+|------|----------|
+| `permissions status` | ✅ 秒回准确 |
+| `window list` / `window focus` | ✅ 窗口几何准确、聚焦可靠 |
+| `image --mode screen/window` | ✅ 稳定快速（核对窗口真实几何全靠它） |
+| `see --app` 元素枚举 | ❌ 仅返回窗口 chrome（约 8 个元素：关闭/最小化/全屏按钮等）；Flutter 渲染的 UI 不进 AX 树 |
+| `click "<文本>"` 元素查询 | ❌ 业务元素全部查不到（如 "Petstore API"） |
+| `click --coords` 坐标点击 | ⚠️ 可用但有坑：**不自动激活目标窗口**，点到的是当前最前应用（实测两次落在操作者正在用的微信 / PowerPoint 上）；窗口被遮挡时结果不可预期 |
+
+**分工法则（hopp 项目实证）**
+
+- peekaboo 当「眼睛」：权限检查、窗口管理、整屏 / 整窗截图、菜单栏 / 快捷键、跨应用流程
+- 应用内 UI 驱动交给 test-mode 指令服务器（89 条指令、独立数据目录 `hopp_test`、不碰用户屏幕；已知毛病见 [BACKLOG.md](BACKLOG.md) TD-8/9/10）
+- 若必须用坐标点击：先 `peekaboo window focus --app <app>`，点击时带 `--app` 参数，事后用屏幕截图验证落点
+
 ---
 
 ## 七、关键技巧与最佳实践
@@ -451,6 +473,8 @@ peekaboo click "Duplicate" --app "hopp"
 1. **优先使用元素 ID** (`--on B12`) - 最稳定
 2. **模糊文本匹配** (`click "Send"`) - 易读但可能不唯一
 3. **坐标点击** (`--coords x,y`) - 最后手段，易受分辨率影响
+
+> Flutter 桌面应用例外：元素 ID / 文本匹配均不可用（业务 UI 不进 AX 树），只剩坐标点击一条路且需先聚焦窗口，见 6.4。
 
 ### 7.2 等待策略
 ```bash

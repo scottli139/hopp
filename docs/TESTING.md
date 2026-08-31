@@ -650,7 +650,7 @@ make quick  # 快速测试
 make logs   # 查看日志
 ```
 
-详细使用经验与坑位记录见 [PEEKABOO_CLI_LEARNING.md](./PEEKABOO_CLI_LEARNING.md)。
+详细使用经验与坑位记录见 [PEEKABOO_CLI_LEARNING.md](./PEEKABOO_CLI_LEARNING.md)（Flutter 应用分工：peekaboo 管系统级「看」，应用内 UI 驱动走 test-mode 指令服务器，见该文 6.4）。
 
 ---
 

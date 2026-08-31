@@ -16,7 +16,7 @@
 - [响应优化 (OptimizedResponseViewer)](#响应优化-optimizedresponseviewer)
 - [预请求链与变量转换 (M8.2 / v0.10.0)](#预请求链与变量转换-m82-f8--v0100-2026-08-25)
 - [OpenAPI/Swagger 导入 (M8.3 / F9.4)](#openapiswagger-导入-m83--f94--v0110-2026-08-28)
-- [轻量断言 + CLI/CI (M8.4 / F4.1 + F4.4)](#轻量断言--cli-ci-m84--f41--f44--v0120-2026-08-28)
+- [轻量断言 + CLI/CI (M8.4 / F4.1 + F4.4 / v0.12.0)](#轻量断言--clici-m84--f41--f44--v0120-2026-08-28)
 - [环境变量系统 (M8.1)](#环境变量系统-m81)
 - [测试与自动化](#测试与自动化)
 - [Mock 服务器](#mock-服务器)
@@ -595,8 +595,8 @@ lib/
 │       ├── curl_import_result.dart     # 导入结果模型 (CurlImportResult)
 │       └── curl_import_service.dart    # 导入服务
 └── widgets/
-    └── import/
-        └── curl_import_dialog.dart     # 导入对话框
+    └── import_export/
+        └── curl_import_panel.dart      # 导入面板（M8.3 起：原独立对话框 CurlImportDialog 抽为面板，嵌入 Import 对话框 cURL 页签，见下文）
 ```
 
 ### 解析器实现
@@ -638,8 +638,10 @@ class CurlParser {
 
 ### UI 组件
 
+> M8.3 起实际类为 `CurlImportPanel`（ConsumerStatefulWidget，嵌入 Import 对话框第三页签，actions 经 `buildActions` + GlobalKey 转发）；以下为原 `CurlImportDialog` 时代的结构示意，交互流程不变。
+
 ```dart
-class CurlImportDialog extends ConsumerStatefulWidget {
+class CurlImportPanel extends ConsumerStatefulWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -894,12 +896,12 @@ cli/hopp.dart + cli/src/                            # hopp run 运行器（app �
 - **原生导出**：`{format:'hopp-cli', version:1, collection(嵌套树), requests(平铺含 parentId/sortOrder/auth/preRequestChain/assertions), environments, globals, activeEnvironmentId}`；**secret 变量值一律 `""`**；freezed toJson 嵌套不递归，深度 JSON 手工组装。
 - **CLI**：`cli/` 是 app 包内源码目录（lib 引用走 `package:hopp/...`），`fvm dart compile exe cli/hopp.dart` 编译分发；`hopp run <file> [--env 名称|外部 env 文件路径] [--env-var K=V]… [--reporter console|json|junit] [--output path] [--timeout ms]`；空值 secret 从进程环境回填；exit 0 全过 / 1 有失败 / 2 用法与文件错误；密钥纪律——输出只含断言 expected/actual/message 与变量名，不落变量值/响应体。
 - **Export 对话框**：FORMAT 区双 radio 卡片（Postman v2.1 / Hopp CLI，选中态品牌边框+brandSoft 底）+ secret 提示条；不单列菜单入口（与 Import 合并同原则）；Hopp CLI 选中隐藏 Postman Format Version。
-- **test-mode**：新增 `set_assertions`（request_id/name 定位 + 规则列表，Tab 与已保存请求双写）；**修复扁平存储下按 Collection 树查找请求恒空**——`_findRequestInCollections`/`_findRequestIdByName` 增加扁平存储（storage.getRequest/getRequests）回退；`switch_request_tab` 增加 `assertions`。
+- **test-mode**：新增 `set_assertions`（request_id/name 定位 + 规则列表，Tab 与已保存请求双写）；**修复扁平存储下按 Collection 树查找请求恒空**——`_findRequestInCollections`/`_findRequestIdByName` 增加扁平存储（storage.getRequest/getRequests）回退；`switch_request_tab` 增加 `assertions`、`switch_response_tab` 增加 `tests`。
 - **顺带修复（用户关心 bug 同类）**：URL 栏同一 Tab 下模型被外部更新（test-mode `set_url`、导入）后显示过期值——build 时在 URL 栏未聚焦状态下同步 controller（输入即提交保证常态一致），含回归测试。
 
 ### 测试
 
-- 新增约 110：模型 11 + 引擎 33 + 导出服务 6 + 导出对话框 4 + CLI（args/env 合并/reporter/HttpServer 集成）18 + widget（断言编辑器 9 + Tests 页签 7 + URL 同步回归 1）。
+- 新增约 90：模型 11 + 引擎 33 + 导出服务 6 + 导出对话框 4 + CLI（args/env 合并/reporter/HttpServer 集成）18 + widget（断言编辑器 9 + Tests 页签 7 + URL 同步回归 1）。
 - 集成：dart:io HttpServer + login 链 sha1 管道提 token → `{{token}}` 断言，GUI 引擎与 CLI 同一套代码路径。
 - 编译冒烟：`dart compile exe` 通过；fixture 实跑 exit 0/1/2 全符合，console 输出对齐原型画板 C。
 - 实机审计：test-mode 驱动六屏（断言编辑/Tests 结果/Export 对话框 × 亮暗）截图目检通过（2026-08-28）。
@@ -967,11 +969,13 @@ enum VariableType { string, secret }
 - 环境管理对话框（`lib/widgets/environment/environment_manager_dialog.dart`）：列表 + 变量表格 + secret 掩码
 - Sidebar 顶部环境切换器（`environment_switcher.dart`），持久化激活状态
 - 未定义变量：切换器 + URL 栏警告图标（替代悬停预览/快速编辑）
-- 后续迭代：变量输入框 `{{` 触发自动建议；已解析变量（蓝色）/ 未定义变量（红色）着色；悬停预览与双击快速编辑
+- 后续迭代：变量输入框 `{{` 触发自动建议；悬停预览与双击快速编辑（已解析/未定义变量着色已由 M8.2 交付：`VariableHighlightController`，见「预请求链与变量转换」一节）
 
 ---
 
 ## 测试与自动化
+
+> **状态：❌ 已否决（2026-08-20 PRD 决策）**——不做 Postman 兼容的完整 JS 沙箱 + pre-request/test script。能力由声明式方案替代：预请求动态化走 **F8 预请求链 + 变量转换管道**（M8.2 已交付），测试断言走 **F4.1 声明式断言引擎**（M8.4 已交付），AI 生成断言排期 M8.5（F4.2）。本节仅留作被否决方案的存档参考。
 
 ### 架构设计
 
@@ -1002,6 +1006,8 @@ lib/
 ---
 
 ## Mock 服务器
+
+> **状态：📋 规划（未实现）**——本节为预先设计的方案存档，`lib/services/mock/` 与 `shelf` 依赖均不存在；需求条目见 [BACKLOG](./BACKLOG.md)（F7.4 Mock 服务，暂缓）。
 
 ### 架构设计
 

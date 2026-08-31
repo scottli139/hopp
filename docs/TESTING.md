@@ -8,6 +8,7 @@
 
 - [测试策略](#测试策略)
 - [单元测试](#单元测试)
+- [CLI 测试](#cli-测试)
 - [Widget 测试](#widget-测试)
 - [集成测试](#集成测试)
 - [UI 测试模式](#ui-测试模式)
@@ -34,11 +35,12 @@
 
 | 层级 | 目标覆盖率 | 当前状态 | 测试类型 |
 |-----|-----------|---------|---------|
-| Models | 100% | ✅ 185 个通过 | 单元测试 |
-| Services | 90%+ | ✅ 250 个通过 | 单元测试 + Mock |
+| Models | 100% | ✅ 196 个通过 | 单元测试 |
+| Services | 90%+ | ✅ 357 个通过 | 单元测试 + Mock |
 | Providers | 80%+ | ✅ 114 个通过 | 单元测试 |
-| Widgets | 70%+ | ✅ 135 个通过 / 2 跳过 | Widget 测试 |
+| Widgets | 70%+ | ✅ 165 个通过 / 2 跳过 | Widget 测试 |
 | Utils | 80%+ | ✅ 41 个通过 | 单元测试 |
+| CLI | — | ✅ 18 个通过 | 单元测试 + HttpServer 集成 |
 | 根目录（design_guard / app_version） | — | ✅ 2 个通过 | 静态扫描 + 守护 |
 | Integration | 60%+ | ✅ Peekaboo + UI 测试模式 | 集成测试 |
 
@@ -46,12 +48,12 @@
 
 | 统计项 | 数值 |
 |--------|------|
-| 测试总数 | 729 |
-| 通过 | 727 |
+| 测试总数 | 893 |
+| 通过 | 891 |
 | 失败 | 0 |
 | 跳过 | 2 |
 
-> **注意**: 727 通过 / 2 跳过，无失败（2026-08-25 `fvm flutter test` 实测，M8.2 落地后）。
+> **注意**: 891 通过 / 2 跳过，无失败（2026-08-31 `fvm flutter test` 实测，M8.4 落地后）。跳过项在 `test/widgets/sidebar_test.dart`（2 个）。
 
 ---
 
@@ -244,85 +246,88 @@ void main() {
 
 ---
 
+## CLI 测试
+
+`cli/` 运行器（M8.4 / v0.12.0）测试位于 `test/cli/hopp_cli_test.dart`（18 个：参数解析 / env 合并 / reporter / HttpServer 集成）：
+
+```bash
+# 直接以 Dart 运行
+fvm dart run cli/hopp.dart run <file.hopp.json> \
+  [--env 名称|外部env文件路径] [--env-var K=V]… \
+  [--reporter console|json|junit] [--output path] [--timeout ms]
+
+# 编译单文件二进制（发布形态）
+fvm dart compile exe cli/hopp.dart -o hopp
+```
+
+- exit code：0 = 全部通过，1 = 有断言失败，2 = 用法/文件错误
+- 集成用例：dart:io HttpServer 起本地服务，跑 login 预请求链（密码 sha1 管道）提取 `{{token}}` 再断言——与 GUI 共用同一套求值引擎代码路径
+- 密钥纪律：报告输出只含断言 expected/actual/message 与变量名，不落变量值/响应体
+
+---
+
 ## Widget 测试
 
 ### 1. 基础 Widget 测试
 
 ```dart
-// test/widgets/custom_button_test.dart
+// test/widgets/common/app_segmented_control_test.dart（节选自真实测试）
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hopp/widgets/common/custom_button.dart';
+import 'package:hopp/theme/app_theme.dart';
+import 'package:hopp/theme/app_theme_data.dart';
+import 'package:hopp/widgets/common/app_segmented_control.dart';
 
 void main() {
-  group('CustomButton', () {
-    testWidgets('should render with text', (tester) async {
-      // Arrange
-      const buttonText = 'Click Me';
+  const items = [
+    AppSegmentedItem(value: 'system', icon: Icons.brightness_auto_outlined, tooltip: 'System'),
+    AppSegmentedItem(value: 'light', icon: Icons.light_mode_outlined, tooltip: 'Light'),
+    AppSegmentedItem(value: 'dark', icon: Icons.dark_mode_outlined, tooltip: 'Dark'),
+  ];
 
-      // Act
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CustomButton(
-              text: buttonText,
-              onPressed: null,
-            ),
-          ),
-        ),
-      );
+  Widget wrap(Widget child, {bool dark = false}) {
+    return MaterialApp(
+      theme: dark ? AppTheme.dark() : AppTheme.light(),
+      home: Scaffold(body: Center(child: child)),
+    );
+  }
 
-      // Assert
-      expect(find.text(buttonText), findsOneWidget);
+  group('AppSegmentedControl rendering', () {
+    testWidgets('renders all items at spec size', (tester) async {
+      await tester.pumpWidget(wrap(AppSegmentedControl<String>(
+        items: items,
+        value: 'system',
+        onChanged: (_) {},
+      )));
+
+      expect(find.byType(AppSegmentedControl<String>), findsOneWidget);
+      // 断言规格：容器高 24、选中段 surface 底等（详见真实测试）
     });
 
-    testWidgets('should call onPressed when tapped', (tester) async {
-      // Arrange
-      var wasPressed = false;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CustomButton(
-              text: 'Press',
-              onPressed: () => wasPressed = true,
-            ),
-          ),
-        ),
-      );
+    testWidgets('calls onChanged when segment tapped', (tester) async {
+      String? selected;
+      await tester.pumpWidget(wrap(AppSegmentedControl<String>(
+        items: items,
+        value: 'system',
+        onChanged: (v) => selected = v,
+      )));
 
-      // Act
-      await tester.tap(find.byType(CustomButton));
+      await tester.tap(find.byIcon(Icons.dark_mode_outlined));
       await tester.pump();
 
-      // Assert
-      expect(wasPressed, true);
-    });
-
-    testWidgets('should show loading state', (tester) async {
-      // Arrange & Act
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CustomButton(
-              text: 'Loading',
-              isLoading: true,
-              onPressed: null,
-            ),
-          ),
-        ),
-      );
-
-      // Assert
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(selected, 'dark');
     });
   });
 }
 ```
+> 更多真实组件测试：`test/widgets/common/`（app_text_field_test / app_divider_test / app_segmented_control_test / app_components_golden_test）。
 
 ### 2. 带 Riverpod 的 Widget 测试
 
+> 以下为示意代码（UserProfile 为虚构示例，项目无此文件）；真实 Riverpod widget 测试见 `test/widgets/`（如断言编辑器 / Tests 页签 / 环境对话框，M8.4）。
+
 ```dart
-// test/widgets/user_profile_test.dart
+// 示意：test/widgets/user_profile_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -481,13 +486,13 @@ void main() {
 
 ```bash
 # macOS
-flutter test integration_test/app_test.dart -d macos
+fvm flutter test integration_test/app_test.dart -d macos
 
 # Windows
-flutter test integration_test/app_test.dart -d windows
+fvm flutter test integration_test/app_test.dart -d windows
 
 # Linux
-flutter test integration_test/app_test.dart -d linux
+fvm flutter test integration_test/app_test.dart -d linux
 ```
 
 ---
@@ -524,8 +529,8 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `create_request` | 创建新请求 |
 | `set_url` | 设置 URL |
 | `send_request` | 发送请求 |
-| `switch_response_tab` | 切换响应 Tab (request/body/headers/cookies/timing/certificate) |
-| `switch_request_tab` | 切换请求 Tab (params/headers/body/auth/prerequest/settings) |
+| `switch_response_tab` | 切换响应 Tab (body/headers/cookies/request/tests，有响应时追加 timing/certificate) |
+| `switch_request_tab` | 切换请求 Tab (params/headers/body/auth/prerequest/assertions/settings) |
 | `get_response_info` | 获取响应信息 |
 | `rename_request` | 重命名请求 |
 | `set_body_type` | 设置 Body 类型 (none/raw/form-data/x-www-form-urlencoded/binary/graphql) |
@@ -550,12 +555,18 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `get_resolved_request` | 获取活动请求应用变量替换后的结果 |
 | `create_saved_request` | 创建已保存请求直接入指定 Collection（供预请求链引用，F8.2 测试钩子） |
 | `set_pre_request_chain` | 设置请求的预请求链（步骤+提取规则+401 重跑，Tab/已保存请求均可，F8.2 测试钩子） |
+| `set_assertions` | 设置请求断言规则（request_id/name 定位 + 规则数组，Tab 与已保存请求双写，F4.1 测试钩子） |
+| `scroll_response` | 滚动响应区（`target`: body/certificate，回读滚动结果；已知问题 #4 的自动化验证依赖） |
+| `tap_at` / `scroll_at` | 指针注入点击 / 滚动（坐标命中分发，绕过 widget test 局限） |
+| `set_window_size` | 真实调整窗口尺寸（macOS 原生通道） |
 | `trigger_import_dialog` | 打开导入对话框（可选 `tab`: `postman`/`curl`/`openapi`，缺省 Postman 页签） |
 | `trigger_curl_import_dialog` | 已合并为 Import 对话框 cURL 页签；指令保留并重定向为 `trigger_import_dialog(tab=curl)` |
 | `import_openapi` | OpenAPI/Swagger 导入全流程（解析→勾选→导入→冲突解决，F9 测试钩子，参数见下文） |
 | `trigger_environment_dialog` | 打开环境管理对话框 |
 | `open_design_gallery` | 打开 Design Gallery 页（全 token/组件双主题展示） |
 | `full_test` | 完整测试流程 |
+
+> 本表为常用指令清单；完整指令（89 条，随版本增长）以 `lib/utils/testing/ui_test_mode.dart` 指令分发为准。
 
 #### `import_openapi` 参数与返回
 
@@ -649,7 +660,7 @@ make logs   # 查看日志
 
 ```bash
 # 运行测试并收集覆盖率
-flutter test --coverage
+fvm flutter test --coverage
 
 # 生成 HTML 报告
 genhtml coverage/lcov.info -o coverage/html
@@ -660,14 +671,16 @@ open coverage/html/index.html
 
 ### 覆盖率配置
 
+实际 CI 中的覆盖率上传见 `.github/workflows/ci.yml`（codecov/codecov-action@v4）。以下为配置示意：
+
 ```yaml
-# .github/workflows/test.yml
+# .github/workflows/<your-workflow>.yml（示意）
 - name: Run tests with coverage
   run: |
-    flutter test --coverage
+    fvm flutter test --coverage
     
 - name: Upload coverage
-  uses: codecov/codecov-action@v3
+  uses: codecov/codecov-action@v4
   with:
     files: coverage/lcov.info
 ```
@@ -688,105 +701,19 @@ analyzer:
 
 ## CI/CD 集成
 
-### GitHub Actions 配置
+实际工作流见 `.github/workflows/`（以下为现状摘要，以 workflow 文件为准）：
 
-```yaml
-# .github/workflows/test.yml
-name: Tests
+| 文件 | 触发 | 内容 |
+|------|------|------|
+| `ci.yml` | push main / pull_request | `dart format --set-exit-if-changed` → pub get → build_runner 生成文件存在性检查 → `flutter analyze --no-fatal-infos` → `flutter test` + codecov@v4 上传 → 三平台 release 构建（macOS / windows-2022 / linux） |
+| `pr-check.yml` | pull_request | 轻量检查（analyze `--no-fatal-infos`，与 ci.yml 一致） |
+| 发布 workflow | push `v*` tag | 三平台打包 + `softprops/action-gh-release` 自动上传 zip 附件；macOS 签名 dmg 由维护者本地构建后手动上传 release（见 [GITHUB_SETTINGS](./GITHUB_SETTINGS.md)） |
 
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+关键点：
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.27.x'
-        channel: 'stable'
-    
-    - name: Get dependencies
-      run: flutter pub get
-    
-    - name: Generate code
-      run: dart run build_runner build --delete-conflicting-outputs
-    
-    - name: Run analyzer
-      run: flutter analyze
-    
-    - name: Run tests
-      run: flutter test --coverage
-    
-    - name: Upload coverage
-      uses: codecov/codecov-action@v3
-      with:
-        files: coverage/lcov.info
-        fail_ci_if_error: true
-
-  build-macos:
-    runs-on: macos-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.27.x'
-    
-    - name: Get dependencies
-      run: flutter pub get
-    
-    - name: Build macOS
-      run: flutter build macos --release
-
-  build-windows:
-    runs-on: windows-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.27.x'
-    
-    - name: Get dependencies
-      run: flutter pub get
-    
-    - name: Build Windows
-      run: flutter build windows --release
-
-  build-linux:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
-    
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.27.x'
-    
-    - name: Get dependencies
-      run: flutter pub get
-    
-    - name: Build Linux
-      run: flutter build linux --release
-```
+- Flutter 版本经 env `FLUTTER_VERSION: "3.27.4"` 统一锁定（与 `.fvmrc` 同版本）；Windows 固定 `windows-2022`（windows-latest 已升 VS2026，Flutter 3.27 不支持）
+- analyze 用 `--no-fatal-infos`：info 级存量为基线（约 1400+），0 error / 0 warning 即过，新增 warning 会挂
+- 本地提交前跑 `fvm dart format lib test cli`（pre-push 钩子同样做 format 检查）
 
 ---
 
@@ -796,22 +723,26 @@ jobs:
 
 ```bash
 # 生成 Mock 类
-dart run build_runner build --delete-conflicting-outputs
+fvm dart run build_runner build --delete-conflicting-outputs
 ```
 
 ### 2. 黄金测试 (Golden Tests)
 
+组件 golden 基线位于 `test/widgets/common/app_components_golden_test.dart`（12 组双主题 PNG，存于 `test/widgets/common/goldens/`）：
+
 ```dart
-// test/goldens/home_screen_test.dart
-testWidgets('HomeScreen golden test', (tester) async {
-  await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
-  await tester.pumpAndSettle();
-  
-  await expectLater(
-    find.byType(HomeScreen),
-    matchesGoldenFile('goldens/home_screen.png'),
-  );
-});
+// test/widgets/common/app_components_golden_test.dart（节选：按组件用例表循环生成双主题基线）
+await tester.pumpWidget(wrap(caseWidget, dark: dark));
+await expectLater(
+  find.byType(caseType),
+  matchesGoldenFile('goldens/${name}_${dark ? 'dark' : 'light'}.png'),
+);
+```
+
+更新基线（更新后必须人工目检 PNG，见 AGENTS.md 设计守门条款）：
+
+```bash
+fvm flutter test test/widgets/common/ --update-goldens
 ```
 
 ### 3. 性能测试

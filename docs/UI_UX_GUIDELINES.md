@@ -30,7 +30,7 @@
 
 ### 语义颜色：AppThemeData（随亮/暗主题变化）
 
-`lib/theme/app_theme_data.dart` · `ThemeExtension<AppThemeData>`，20 个字段，通过 `context.appTheme` 访问（未挂载主题时回退 `AppThemeData.light`）。
+`lib/theme/app_theme_data.dart` · `ThemeExtension<AppThemeData>`，19 个 Color 字段，通过 `context.appTheme` 访问（未挂载主题时回退 `AppThemeData.light`）。
 
 | 字段 | 用途 | Light | Dark |
 |------|------|-------|------|
@@ -229,7 +229,7 @@
 
 - 请求 Tab 条（打开的 Tab，request_tabs.dart）：高 32，surface 底。
 - URL 栏：整体高 32（`height32`），白底（background）+ borderStrong 描边，圆角 6。Method 下拉与 URL 输入框 fused 连接（下拉左圆角、输入框右圆角）；URL 文字 code12；Send 用 `AppButton.primary`（高 32），Save 用 bordered `AppIconButton`（dirty 时图标 brand 色）。
-- 编辑器 Tab 条（AppTabs，高 32）：Params（count）/ Headers（count）/ Body（dot）/ Auth / Settings。
+- 编辑器 Tab 条（AppTabs，高 32）：Params（count）/ Headers（count）/ Body（dot）/ Auth / Pre-request（count）/ Assertions / Settings。
 - Key-Value 编辑器（Headers/Params）：
   - 表头行：高 32，surfaceVariant 底，横 padding 12。
   - 数据行：高 36，横 padding 12；Checkbox + Key 输入 + Info 图标（常见 Header 悬停显示说明）+ Value 输入 + 删除按钮，垂直居中。
@@ -240,7 +240,7 @@
 ### 响应区
 
 - 响应信息栏：高 38（`height38`），background 底 + 底部 border，横 padding 12；内容依次 StatusChip（「200 OK」）、耗时、大小等；网络错误态同栏展示（error 配色，可展开至 150px 看全文）。
-- 响应 Tab 条（AppTabs，高 32）：Request / Body / Headers / Cookies，动态追加 Timing（有 timingInfo 时）、Certificate（有 certificateInfo 时）。
+- 响应 Tab 条（AppTabs，高 32）：Request / Body / Headers / Cookies / Tests（Send 后显示 n/m passed 徽标），动态追加 Timing（有 timingInfo 时）、Certificate（有 certificateInfo 时）。
 - Body 空 / Headers 空：AppEmptyState。
 - 大响应体：OptimizedResponseViewer，>50KB（`performanceThreshold = 50000`）进入 Performance 模式（虚拟化 + 初始 500 行 `maxInitialLines`），工具栏提供 Performance / Full / Raw 切换；行号区宽 40、右 padding 8。
 

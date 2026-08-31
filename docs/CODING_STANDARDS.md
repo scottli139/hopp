@@ -245,7 +245,8 @@ lib/
 │       └── about_screen.dart
 ├── utils/                       # 工具类
 │   ├── app_logger.dart          # 日志工具
-│   └── constants.dart           # 应用常量
+│   ├── database_consts.dart     # 数据库常量（schema 版本）
+│   └── url_params_sync.dart     # URL 查询参数同步
 └── l10n/                        # 国际化
     ├── app_en.arb
     └── app_zh.arb
@@ -741,8 +742,8 @@ linter:
 {
   "editor.formatOnSave": true,
   "editor.formatOnType": true,
-  "editor.rulers": [80, 120],
-  "dart.lineLength": 100,
+  "editor.rulers": [80],
+  "dart.lineLength": 80,
   "dart.previewFlutterUiGuides": true,
   "dart.previewFlutterUiGuidesCustomTracking": true,
   "[dart]": {
@@ -757,29 +758,13 @@ linter:
 
 ### 3. Git Hooks
 
+仓库实际机制：`.githooks/pre-push`（经 `git config core.hooksPath .githooks` 启用）在 push 前执行 `dart format --set-exit-if-changed` 检查，格式不符即拒绝；analyze 与 test 由 CI 兜底，不在本地 hook 重复跑。
+
 ```bash
-#!/bin/bash
-# .git/hooks/pre-commit
-
-# 运行 Dart 分析
-echo "Running dart analyze..."
-dart analyze
-
-if [ $? -ne 0 ]; then
-  echo "❌ Dart analysis failed"
-  exit 1
-fi
-
-# 运行测试
-echo "Running tests..."
-flutter test
-
-if [ $? -ne 0 ]; then
-  echo "❌ Tests failed"
-  exit 1
-fi
-
-echo "✅ Pre-commit checks passed"
+# 提交前本地自检（等价 CI 门禁）
+fvm dart format lib test cli --set-exit-if-changed
+fvm flutter analyze          # 0 error / 0 warning 即过
+fvm flutter test             # 全量 891 通过 + 2 跳过
 ```
 
 ---

@@ -1,5 +1,7 @@
 # UX 审计报告（M8.0 状态纠偏 + UX 审计）
 
+> **时点快照（2026-08-21）**：本文是 M8.0 时点的审计记录。其中「请求编辑器 5 个 Tab」「Auth 为占位页」等描述已被后续里程碑改变（现为 7 页签，Auth/Pre-request/Assertions 均已落地，响应区新增 Tests）；各项修复状态以 [CHANGELOG](./CHANGELOG.md) 与 [DEVELOPMENT_PLAN](./DEVELOPMENT_PLAN.md) 为准。未修复项仍列于 [BACKLOG](./BACKLOG.md) 已知问题。
+
 - **日期**：2026-08-20 ～ 2026-08-21
 - **环境**：macOS Debug 构建，Flutter 3.27.4（FVM），窗口 800x600pt（截图 1600x1200 @2x）
 - **方法**：`--test-mode` 启动 app，经 HTTP 指令驱动 UI（切 Tab / 模拟响应 / 触发对话框 / 截图），截图经人工逐张读图复核；并结合源码确认根因

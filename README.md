@@ -31,19 +31,30 @@
 - ⚡ **Optimized Display** - Virtualized rendering for large responses (>50KB)
 - ⌨️ **Keyboard Shortcuts** - Cmd+N, Cmd+Enter, Cmd+S, Cmd+W, etc.
 - 🧪 **UI Test Mode** - Built-in HTTP command server for automated testing
+- 🔐 **Environment Variables** - Multi-environment + globals with `{{var}}` interpolation, dynamic variables, and secret masking
+- 🔗 **Pre-request Chain** - Declarative login → token extraction (no JS sandbox), 401 auto-retry, variable transforms (sha1/aes/hmac…)
+- 📥 **OpenAPI/Swagger Import** - 3.0/3.1 + 2.0, JSON + YAML, from file or URL, with pick-and-preview
+- ✅ **Lightweight Assertions** - Status/Header/Body/JSONPath/response-time rules with a Tests result tab
+- 📤 **CLI Export & Runner** - Full-fidelity `.hopp.json` export + `hopp run` for CI (console/JUnit/JSON reporters)
+- 🔒 **Encrypted Storage** - Hive boxes encrypted at rest (AES), secrets never stored in plaintext
 
 ---
 
 ## 🧭 Direction
 
-Hopp is moving from "another Postman clone" to a **local-first, private AI workbench**:
+Hopp is moving from "another Postman clone" to a **local-first, private AI workbench**. Delivered so far:
 
-- **Environment variables** — reusable `{{var}}` with scopes (global > environment > local)
-- **Pre-request chain + variable transforms** — login → token, password sha1/aes encryption, declarative (no JS sandbox)
-- **Three-tier AI** — Tier 0 deterministic (OpenAPI/Swagger file or URL import), Tier 1 local model (Ollama/LM Studio), Tier 2 BYOK cloud (opt-in)
-- **Lightweight assertions + CLI** — status/header/body/JSONPath, AI-generated, `hopp run` for CI
+- **Environment variables** ✅ — reusable `{{var}}` with scopes (local > environment > global), dynamic variables, secret masking (v0.8.0)
+- **Pre-request chain + variable transforms** ✅ — login → token, password sha1/aes encryption, declarative (no JS sandbox) (v0.10.0)
+- **Tier 0 deterministic import** ✅ — OpenAPI/Swagger file or URL import with pick-and-preview (v0.11.0)
+- **Lightweight assertions + CLI** ✅ — status/header/body/JSONPath rules with Tests tab, `.hopp.json` export, `hopp run` for CI (v0.12.0)
 
-> Status: planned — see [PRD](docs/PRD.md) and [FEATURE_UI_DESIGN](docs/FEATURE_UI_DESIGN.md).
+Planned next:
+
+- **Tier 1 local model** (M8.5) — Ollama / LM Studio: explain responses, AI-generated assertions, natural-language request building
+- **Tier 2 BYOK cloud** (M8.6) — opt-in cloud providers with a first-send privacy gate
+
+> See [PRD](docs/PRD.md) and [FEATURE_UI_DESIGN](docs/FEATURE_UI_DESIGN.md).
 
 ---
 
@@ -104,10 +115,12 @@ fvm flutter build linux --release
 
 ```
 hopp/
+├── cli/                 # hopp run CLI runner (Dart, shares lib/ pure-Dart core)
 ├── lib/
 │   ├── models/          # Data models (Freezed + Hive)
 │   ├── providers/       # Riverpod state management
-│   ├── services/        # HTTP & Storage services
+│   ├── services/        # HTTP & Storage services (assertions, pre-request chain, import/export)
+│   ├── theme/           # Design system tokens (single source of truth)
 │   ├── widgets/         # UI components
 │   ├── screens/         # App screens
 │   ├── utils/           # Utilities
@@ -115,7 +128,7 @@ hopp/
 ├── macos/               # macOS platform code
 ├── windows/             # Windows platform code
 ├── linux/               # Linux platform code
-├── test/                # Unit tests
+├── test/                # Unit, widget, and CLI tests
 └── docs/                # Documentation
 ```
 

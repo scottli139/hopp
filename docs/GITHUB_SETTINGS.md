@@ -18,12 +18,15 @@
 🐰 Hopp - A lightweight, cross-platform API testing tool and open-source alternative to Postman.
 
 Built with ❤️ using Flutter 3.27.x + Dart + Riverpod. 
-🤖 100% AI-developed by Kimi Code CLI & Kimi 2.5 Model
+🤖 100% AI-developed by Kimi Code CLI (Kimi K3 & DeepSeek V4 Pro)
 
 Features:
 • 🚀 Lightweight & Fast - Native performance with Flutter
 • 💻 Cross-platform (macOS, Windows, Linux)
-• 🔧 Full-featured (HTTP/HTTPS, Collections, Environments)
+• 🔧 Full-featured (HTTP/HTTPS, Collections, Environments, Pre-request chain)
+• 🔐 Environment variables with {{var}} interpolation & secret masking
+• ✅ Lightweight assertions + hopp run CLI for CI
+• 📥 OpenAPI/Swagger import (3.x + 2.0, file or URL)
 • 🌍 Multi-language (English & 简体中文)
 • 📊 Collections management with nested folders
 • 🎨 Material Design 3 with Dark/Light theme support
@@ -35,7 +38,7 @@ Features:
 🐰 Hopp - 轻量级跨平台 API 测试工具，Postman 的开源替代品。
 
 使用 Flutter 3.27.x + Dart + Riverpod 构建。
-🤖 100% AI 开发：由 Kimi Code CLI 和 Kimi 2.5 Model 共同开发
+🤖 100% AI 开发：由 Kimi Code CLI（Kimi K3 & DeepSeek V4 Pro）开发
 ```
 
 ---
@@ -158,6 +161,7 @@ ai-developed, open-source
 ### 设置 Release 标签
 - 发布版本时使用语义化版本号：v0.1.0, v0.2.0 等
 - 添加详细的 Release Notes
+- 推送 `v*` tag 自动触发 CI 三平台构建，并经 `softprops/action-gh-release` 上传 zip 附件；macOS 签名 dmg 由维护者本地构建后手动上传到对应 release（见 TESTING.md CI/CD 一节）
 
 ---
 

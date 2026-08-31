@@ -296,7 +296,7 @@
 | 选项 | 默认值 | 说明 |
 |------|--------|------|
 | 格式版本 | v2.1 | v2.1 或 v2.0 |
-| 包含环境变量 | 否 | 是否同时导出关联的环境 |
+| 包含环境变量 | 否 | 是否同时导出关联的环境（**未实现**：`ExportOptions.includeEnvironment` 存在但未接线，见 F3.7） |
 | 美化输出 | 是 | JSON 是否格式化缩进 |
 | 文件名 | `{collection_name}.postman_collection.json` | 默认文件名 |
 
@@ -439,7 +439,7 @@
 - [x] 支持选择格式版本 (v2.1/v2.0)
 - [x] 支持美化/压缩 JSON 输出
 - [x] 导出包含完整的请求信息
-- [x] 导出环境变量（可选）
+- [ ] 导出环境变量（可选）——**未实现**：`ExportOptions.includeEnvironment` 存在但未接线，导出入口也无该选项；待实现后转 ✅（与 F3.7 联动）
 - [x] 导出成功后显示文件保存路径
 
 ---
@@ -463,13 +463,13 @@
 
 ---
 
-### 四、测试与断言功能 📋 计划（决策：降级，不做完整 JS 沙箱）
+### 四、测试与断言功能 🔄 部分完成（F4.1/F4.4 ✅ v0.12.0；F4.2 ⏳ M8.5）
 
 > **决策（2026-08-20）**: 不做 Postman 兼容的完整 JS 沙箱 + pre-request/test script。AI 时代「写断言脚本」正是 LLM 的强项。
 >
 > - 预请求的「动态签名 / 加密 / 拿 token」能力，改由 **F8 预请求链 + 变量转换** 承担（声明式，零门槛）。
 > - 测试能力降级为：轻量断言子集 + AI 生成断言 + 导出给 CLI/CI 跑。
-> - F4.1 / F4.4 排期 M8.4；F4.2 随最小 AI 客户端排期 M8.5（2026-08-28 调整）；F4.3 批量运行在其后视需求排期。
+> - F4.1 / F4.4 已由 M8.4 交付（v0.12.0，2026-08-28）；F4.2 随最小 AI 客户端排期 M8.5（2026-08-28 调整）；F4.3 批量运行在其后视需求排期。
 
 | ID | 功能 | 状态 | 需求描述 | 验收标准 |
 |----|------|------|----------|----------|
@@ -506,12 +506,12 @@
 
 | 项 | 决策 |
 |----|------|
-| 形态 | repo 内 `cli/` Dart 子包，共享 `lib/models` + `lib/services` 纯 Dart 部分（HTTP/变量/预请求链/断言求值），不依赖 Flutter |
-| 导出格式 | 原生 hopp 格式（全保真：断言、预请求链、Auth、变量转换），在现有 Export 对话框加格式选项（Postman v2.1 / Hopp CLI），不单列菜单入口；Postman 导出保持原样不掺断言 |
-| 运行 | `hopp run collection.hopp.json --env env.json`：顺序执行请求，跑预请求链 + `{{var}}` + 断言，任一断言失败 exit code 非零 |
-| 报告 | 终端表格 + `--reporter json\|junit` 输出文件（JUnit XML 可直接接入 GitHub Actions / GitLab CI） |
+| 形态 | repo 内 `cli/` 目录（app 包内，非独立 pub 包），import `lib/` 纯 Dart 部分（HTTP/变量/预请求链/断言求值），不依赖 Flutter；`fvm dart compile exe cli/hopp.dart` 可编译单文件二进制 |
+| 导出格式 | 原生 `.hopp.json`（全保真：断言、预请求链、Auth、变量转换），在现有 Export 对话框加 FORMAT 选项（Postman v2.1 / Hopp CLI），不单列菜单入口；Postman 导出保持原样不掺断言 |
+| 运行 | `hopp run <file> [--env 环境名\|外部 env 文件路径] [--env-var K=V]… [--timeout <ms>]`：DFS 顺序执行请求，跑预请求链 + `{{var}}` 管道 + 断言；exit 0=全过 / 1=有失败 / 2=用法错误 |
+| 报告 | `--reporter console（默认）\|json\|junit` + `--output path` 输出文件（JUnit XML 可直接接入 GitHub Actions / GitLab CI） |
 | 密钥 | `isSecret` 变量导出时置空；CLI 侧用 `--env-var KEY=VALUE` 或进程环境变量注入 |
-| 分发 | 先 `dart pub global activate --source path`；release 页附三平台 CLI 二进制（CI 加 `dart compile exe`） |
+| 分发 | 已交付：`fvm dart run cli/hopp.dart run <file>` 本地跑、`dart compile exe` 编译分发；「release 页附三平台 CLI 二进制（CI 加 `dart compile exe`）」**未落地**（CI 暂无 CLI 构建步骤，见 [GITHUB_SETTINGS](./GITHUB_SETTINGS.md)） |
 
 **实施顺序**：F4.1（模型 + 求值引擎 + UI）→ F4.4（导出 + CLI，复用求值引擎）；每步独立可发布。
 
@@ -744,7 +744,7 @@
 
 | 层 | 模型 | 能力 | 隐私 |
 |----|------|------|------|
-| Tier 0 | 无模型 | OpenAPI/Swagger **文件或 URL** 导入生成请求/collection；请求 ↔ cURL/代码 | 零，纯确定性 |
+| Tier 0 | 无模型 | OpenAPI/Swagger **文件或 URL** 导入生成请求/collection（F9.4 ✅）；cURL **导入**（F2.6 ✅）；cURL/代码**生成**见 F1.10/F7.6（未实现） | 零，纯确定性 |
 | Tier 1 | 本地模型（Ollama / LM Studio，localhost OpenAI 兼容） | 解释响应 / 错误；生成断言；自然语言建请求；**读取 API 文档网页生成请求**；历史语义搜索 | 零，数据不出机器 |
 | Tier 2 | BYOK 云端（OpenAI / Anthropic / DeepSeek 等） | 同上但更强，用户自填 key | 显式选择后才外发 |
 
@@ -773,7 +773,7 @@
 - **元数据-only 日志**：只记端点/模型/耗时/字数，不落请求体、key、响应文本本体
 - **防脑补硬约束**：生成请求/断言时，字段、参数、取值只允许来自 spec 或用户输入，缺失即缺失，禁止脑补
 
-#### F9.4 Tier 0：OpenAPI/Swagger 导入（M8.3，2026-08-28 澄清确认）
+#### F9.4 Tier 0：OpenAPI/Swagger 导入（M8.3 / v0.11.0，2026-08-28 澄清确认）
 
 **范围**
 

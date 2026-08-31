@@ -52,15 +52,16 @@
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      Domain Layer                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   Models    │  │  Services   │  │   Repositories      │  │
-│  │  (Freezed)  │  │  (Business) │  │   (Data Access)     │  │
-│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
-└─────────┼────────────────┼────────────────────┼─────────────┘
-          │                │                    │
-          └────────────────┴────────────────────┘
-                           │
-                           ▼
+│  ┌─────────────────────────┐  ┌─────────────────────────┐   │
+│  │        Models           │  │        Services         │   │
+│  │       (Freezed)         │  │   (Business Logic)      │   │
+│  │                         │  │   直接访问 Hive / 网络   │   │
+│  └───────────┬─────────────┘  └────────────┬────────────┘   │
+└──────────────┼─────────────────────────────┼────────────────┘
+               │                             │
+               └─────────────────────────────┘
+                            │
+                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      Data Layer                              │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
@@ -69,6 +70,7 @@
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
+> 注：无独立 Repository 层——Service 直接访问 Hive/Dio，保持简单。
 
 ---
 
@@ -101,7 +103,7 @@
 
 ### 核心依赖
 
-> 版本以 `pubspec.yaml` 为准（2026-08-21 核对）。
+> 版本以 `pubspec.yaml` 为准（2026-08-31 核对）。
 
 | 包名 | 版本 | 用途 |
 |-----|------|------|
@@ -110,16 +112,26 @@
 | dio | ^5.8.0+1 | HTTP 客户端 |
 | hive / hive_flutter | ^2.2.3 / ^1.1.0 | NoSQL 存储 |
 | shared_preferences | ^2.5.2 | 配置存储 |
+| path_provider / path | ^2.1.5 / ^1.9.0 | 路径工具 |
+| logger | ^2.5.0 | 日志（CLI 闭包共用） |
+| intl | ^0.19.0 | 国际化 |
 | freezed_annotation | ^2.4.4 | 不可变类注解 |
+| json_annotation | ^4.9.0 | JSON 序列化注解 |
+| crypto | ^3.0.3 | 证书指纹 + 变量转换摘要（sha1/md5/sha256/hmac） |
+| encrypt | ^5.0.3 | AES 加密（M8.2：变量转换 + Hive 落盘加密） |
+| yaml | ^3.1.2 | OpenAPI YAML 解析（M8.3） |
+| json_path | ^0.7.6 | JSONPath 求值（M8.4 断言引擎，GUI/CLI 共用） |
+| args | ^2.7.0 | CLI 参数解析（M8.4） |
 | multi_split_view | ^3.6.0 | 可拖拽分割面板 |
 | tabbed_view | ^1.22.0 | 标签页容器 |
 | data_table_2 | ^2.5.18 | 数据表格 |
 | flutter_code_editor | ^0.3.2 | 代码高亮 |
 | flutter_svg | ^2.0.17 | SVG 显示 |
+| cupertino_icons | ^1.0.8 | 图标 |
 | file_picker | ^10.3.10 | 文件选择 |
-| uuid | ^4.5.3 | UUID 生成 |
-| crypto | ^3.0.3 | 证书指纹计算 |
+| package_info_plus | ^9.0.1 | 版本号动态读取（Issue #13） |
 | url_launcher | ^6.3.1 | 外部链接跳转（About 页，Issue #8） |
+| uuid | ^4.5.3 | UUID 生成 |
 
 ### 开发依赖
 
@@ -138,87 +150,79 @@
 ## 项目结构
 
 ```
-lib/
-├── main.dart                    # 应用入口
-├── models/                      # 数据模型 (Freezed + Hive)
-│   ├── http_method.dart         # HTTP 方法枚举
-│   ├── http_request.dart        # HTTP 请求模型
-│   ├── http_response.dart       # HTTP 响应模型 (含 TimingInfo)
-│   ├── http_request_info.dart   # 实际发送的请求信息模型 ✅
-│   ├── key_value_pair.dart      # 键值对模型 (Header/Param)
-│   ├── collection.dart          # Collection 模型
-│   ├── app_settings.dart        # 应用设置模型
-│   ├── request_tab.dart         # 标签页模型
-│   ├── certificate_info.dart    # SSL/TLS 证书信息模型 ✅
-│   ├── timing_info.dart         # 请求时间分析模型 ✅
-│   ├── adapters/                # Hive 向后兼容适配器 ✅
-│   └── models.dart              # 导出文件
-├── providers/                   # 状态管理 (Riverpod)
-│   ├── core/                    # 核心服务 Provider
+hopp/
+├── cli/                                  # hopp run CLI 运行器（M8.4；app 包内目录，非嵌套 pub 包）
+│   ├── hopp.dart                         # 入口（fvm dart compile exe cli/hopp.dart 可编译单文件）
+│   └── src/                              # app / cli_args / runner / report / export_document
+├── lib/
+│   ├── main.dart                         # 应用入口
+│   ├── theme/                            # 设计系统 token（P1–P5 收口后为视觉规范唯一事实来源）
+│   │   ├── app_colors.dart               # 调色板（方法色/状态码色唯一入口）
+│   │   ├── app_theme_data.dart           # 语义色 ThemeExtension（亮暗双套）
+│   │   ├── app_text_styles.dart          # 7 档字号 + code11/code12 等宽
+│   │   ├── app_metrics.dart / app_shadows.dart / app_syntax_colors.dart
+│   │   └── app_theme.dart                # ThemeData 组装
+│   ├── models/                           # 数据模型 (Freezed + Hive)
+│   │   ├── http_request.dart             # 请求模型（Hive typeId 2，field 0-17）
+│   │   ├── http_method.dart              # 方法枚举 (typeId 10)
+│   │   ├── http_response.dart            # 响应模型（Freezed，不直接入 Hive）
+│   │   ├── http_request_info.dart        # 实际发送的请求信息（含 autoHeaderKeys）
+│   │   ├── key_value_pair.dart           # 键值对 (typeId 1)
+│   │   ├── collection.dart               # Collection (typeId 3)
+│   │   ├── app_settings.dart             # 应用设置 (typeId 4)
+│   │   ├── request_tab.dart              # 标签页模型
+│   │   ├── certificate_info.dart / timing_info.dart
+│   │   ├── environment.dart              # 环境变量（M8.1：Environment=11 / Variable=12 / Type=13）
+│   │   ├── auth_config.dart              # 认证配置（M8.2：AuthType=14 / AuthConfig=15）
+│   │   ├── pre_request_step.dart         # 预请求链（M8.2：Step=16 / ExtractionRule=17 / SourceType=18）
+│   │   ├── assertion_rule.dart           # 断言规则（M8.4：Rule=19 / Target=20 / Operator=21）
+│   │   ├── adapters/                     # Hive 手写兼容适配器（field 追加兼容存量）
+│   │   └── models.dart                   # 导出文件
+│   ├── providers/                        # 状态管理 (Riverpod)
+│   │   ├── core/                         # 服务装配 + app_info（版本号动态读取）
+│   │   ├── request/                      # 请求 Tab / 请求-响应 Notifier
+│   │   ├── collection/                   # Collection 树
+│   │   ├── settings/
+│   │   ├── environment/                  # 环境变量（M8.1）
+│   │   ├── import_export/                # 导入导出 + openapi_import_provider（M8.3）
+│   │   ├── curl/                         # cURL 导入
 │   │   └── providers.dart
-│   ├── request/                 # 请求相关 Provider
-│   │   ├── request_tab_provider.dart
-│   │   └── request_response_provider.dart
-│   ├── collection/              # Collection Provider
-│   │   └── collection_provider.dart
-│   ├── settings/                # 设置 Provider
-│   │   └── settings_provider.dart
-│   ├── import_export/           # 导入/导出 Provider ✅
-│   │   └── import_export_provider.dart
-│   ├── curl/                    # cURL 导入 Provider ✅
-│   │   └── curl_import_provider.dart
-│   └── providers.dart           # 导出文件
-├── services/                    # 业务服务
-│   ├── http_service.dart        # HTTP 服务 (Dio 封装)
-│   ├── storage_service.dart     # 存储服务 (Hive)
-│   ├── certificate_helper.dart  # 证书信息解析服务 ✅
-│   ├── shortcut_service.dart    # 快捷键服务 ✅
-│   ├── menu_channel.dart        # macOS 菜单通信 ✅
-│   ├── database_migration_service.dart  # 数据库迁移服务 ✅
-│   └── services.dart            # 导出文件
-├── services/import_export/      # 导入/导出服务 ✅
-│   ├── postman_schema.dart      # Postman JSON Schema 模型
-│   ├── postman_mapper.dart      # 字段映射转换器
-│   ├── postman_import_service.dart   # 导入服务
-│   ├── postman_export_service.dart   # 导出服务
-│   └── import_export_exception.dart  # 自定义异常
-├── services/curl/               # cURL 导入服务 ✅
-│   ├── curl_parser.dart         # cURL 命令解析器
-│   ├── curl_tokenizer.dart      # 词法分析器
-│   ├── curl_import_result.dart  # 导入结果模型
-│   └── curl_import_service.dart # 导入服务
-├── widgets/                     # UI 组件
-│   ├── layout/                  # 布局组件
-│   │   ├── sidebar.dart         # 侧边栏 (Collection 树)
-│   │   └── request_tabs.dart    # 请求标签栏 ✅
-│   ├── request/                 # 请求组件
-│   │   ├── request_editor.dart  # 请求编辑器 (URL/Headers/Body/Settings)
-│   │   └── response_viewer.dart # 响应查看器 (Request/Body/Headers/Cookies/Timing/Certificate)
-│   ├── import_export/           # 导入/导出组件 ✅
-│   │   ├── import_dialog.dart   # 导入对话框
-│   │   ├── export_dialog.dart   # 导出对话框
-│   │   └── conflict_resolution_dialog.dart  # 冲突处理
-│   ├── common/                  # 通用组件 ✅
-│   │   ├── code_editor.dart     # JSON 代码编辑器
-│   │   ├── optimized_response_viewer.dart # 大响应虚拟化组件 ✅
-│   │   └── shortcut_wrapper.dart # 快捷键包装器 ✅
-│   └── widgets.dart             # 导出文件
-├── screens/                     # 页面
-│   ├── main_screen.dart         # 主屏幕
-│   └── about/                   # 关于页面 ✅
-│       └── about_screen.dart
-├── utils/                       # 工具类
-│   ├── app_logger.dart          # 日志工具 (LogMixin)
-│   ├── constants.dart           # 应用常量
-│   ├── url_params_sync.dart     # URL 查询参数同步 ✅
-│   ├── testing/                 # 测试工具 ✅
-│   │   ├── ui_test_mode.dart    # UI 测试模式 (HTTP 指令服务器)
-│   │   └── test_helpers.dart    # 测试辅助函数
-│   └── utils.dart               # 导出文件
-└── l10n/                        # 国际化
-    ├── app_en.arb
-    ├── app_zh.arb
-    └── l10n.dart
+│   ├── services/
+│   │   ├── http_service.dart             # Dio 封装（纯 Dart 可注入，CLI 共用）
+│   │   ├── storage_service.dart          # Hive 初始化 + box 管理（含 AES 落盘）
+│   │   ├── database_migration_service.dart
+│   │   ├── auth_resolver.dart            # Auth 沿 parentId 链继承解析（M8.2）
+│   │   ├── variable_resolver.dart        # {{var}} 解析 + 5 个动态变量（M8.1）
+│   │   ├── variable_transforms.dart      # {{var \| fn}} 转换管道（M8.2）
+│   │   ├── box_encryption.dart           # HiveAesCipher 落盘加密（M8.2）
+│   │   ├── certificate_helper.dart       # 证书解析（去 Flutter 化，CLI 共用）
+│   │   ├── shortcut_service.dart / menu_channel.dart
+│   │   ├── pre_request/                  # 链执行器 + 响应提取器（M8.2）
+│   │   ├── assertion/                    # 断言求值引擎（M8.4，GUI/CLI 共用）
+│   │   ├── curl/                         # tokenizer / parser / service
+│   │   ├── import_export/                # postman_* + hopp_export_service（M8.4 .hopp.json）
+│   │   │   └── openapi/                  # M8.3：parser / mapper / spec / import_service
+│   │   └── services.dart
+│   ├── widgets/
+│   │   ├── common/                       # 设计系统组件：AppButton/AppTextField/AppTabs/AppDialog/
+│   │   │   │                             #   AppPopupSelect/AppSegmentedControl/AppSwitch/AppCard/…
+│   │   ├── layout/                       # sidebar / request_tabs
+│   │   ├── request/                      # request_editor（7 页签）/ response_viewer（含 Tests）
+│   │   │   │                             #   auth_config_editor / pre_request_chain_editor /
+│   │   │   │                             #   assertion_editor / variable_fx_menu
+│   │   ├── import_export/                # import_dialog（Postman/cURL/OpenAPI 三页签，M8.3）
+│   │   │   │                             #   export_dialog（FORMAT 双选项，M8.4）
+│   │   │   │                             #   conflict_resolution_dialog / curl_import_panel / openapi_import_panel
+│   │   ├── environment/                  # environment_manager_dialog / environment_switcher
+│   │   ├── collection/                   # collection_settings_dialog（M8.2）
+│   │   └── widgets.dart
+│   ├── screens/                          # main_screen / about/ / design_gallery/（token 画廊）
+│   ├── utils/
+│   │   ├── app_logger.dart / url_params_sync.dart / database_consts.dart
+│   │   └── testing/                      # ui_test_mode.dart（HTTP 指令服务器）/ test_helpers.dart
+│   └── l10n/
+└── test/                                 # models / services / providers / widgets / utils
+                                          #   cli（M8.4，含 HttpServer 集成）/ fixtures / mocks
 ```
 
 ---
@@ -228,10 +232,12 @@ lib/
 ### 单向数据流
 
 ```
-User Action → Provider → Service → Repository → Data Source
+User Action → Provider → Service → Data Source (Hive / Dio)
                    ↓
               UI Update ← State Change ← AsyncValue
 ```
+
+> Service 直接访问数据层，无独立 Repository 层。
 
 ### 请求发送流程
 
@@ -312,15 +318,37 @@ class UserProfile extends ConsumerWidget {
 ### 存储策略
 
 ```
-┌─────────────────┬─────────────────┬─────────────────┐
-│   SharedPrefs   │      Hive       │     Memory      │
-├─────────────────┼─────────────────┼─────────────────┤
-│ 主题设置        │ Collections     │ HTTP 响应缓存   │
-│ 语言设置        │ Requests        │ 临时计算结果    │
-│ 编辑器配置      │ History         │                 │
-│ API 配置        │ Environments    │                 │
-└─────────────────┴─────────────────┴─────────────────┘
+┌─────────────────┬────────────────────────┬─────────────────┐
+│   SharedPrefs   │         Hive           │     Memory      │
+├─────────────────┼────────────────────────┼─────────────────┤
+│ 主题设置        │ Collections（AES 加密）│ HTTP 响应缓存   │
+│ 语言设置        │ Requests（AES 加密）   │ 临时计算结果    │
+│ 编辑器配置      │ Environments（AES）    │                 │
+│ API 配置        │ Settings               │                 │
+│ 数据库版本      │                        │                 │
+└─────────────────┴────────────────────────┴─────────────────┘
 ```
+
+> Hive 共 4 个 box（无 History box）：`collections` / `requests` / `environments` 三个 box 自 M8.2 起经 `HiveAesCipher` 落盘 AES 加密（应用级 32 字节 key 以 base64 存数据目录 `.secure_key`，见「安全考虑」）。
+
+### Schema 版本与 typeId 分配
+
+- **数据库版本**：`DatabaseConsts.currentDbVersion = 4`（v4 由 M8.2 引入：追加 Auth/预请求链字段 + 三 box 启用 AES，存量明文 box 自动一次性迁移）。
+- **typeId 分配**（全部位于 `lib/models/`，以 `@HiveType` 注解为准）：
+
+| typeId | 模型 | 引入 |
+|--------|------|------|
+| 1 | KeyValuePair | M1 |
+| 2 | HttpRequest（field 0-17） | M1，field 11-13 为 M4，14-16 为 M8.2，17 为 M8.4 |
+| 3 | Collection | M1 |
+| 4 | AppSettings | M1 |
+| 10 | HttpMethod | M1 |
+| 11-13 | Environment / EnvironmentVariable / VariableType | M8.1 |
+| 14-15 | AuthType / AuthConfig | M8.2 |
+| 16-18 | PreRequestStep / ExtractionRule / ExtractionSourceType | M8.2 |
+| 19-21 | AssertionRule / AssertionTarget / AssertionOperator | M8.4 |
+
+> HttpResponse / RequestTab / CertificateInfo / TimingInfo / HttpRequestInfo 等为 Freezed 模型，不直接入 Hive box。
 
 ### Hive 数据模型
 
@@ -345,9 +373,15 @@ class HttpRequest with _$HttpRequest {
     @HiveField(11) @Default(true) bool validateCertificates,  // SSL 验证开关 ✅
     @HiveField(12) @Default(true) bool followRedirects,       // 跟随重定向 ✅
     @HiveField(13) @Default(10) int maxRedirects,             // 最大重定向次数 ✅
+    @HiveField(14) @Default(AuthConfig()) AuthConfig auth,    // 认证配置（M8.2，沿集合链继承解析）
+    @HiveField(15) @Default([]) List<PreRequestStep> preRequestChain,  // 预请求链（M8.2）
+    @HiveField(16) @Default(false) bool preRequestRetryOn401, // 401 自动重跑（M8.2）
+    @HiveField(17) @Default([]) List<AssertionRule> assertions,  // 断言规则（M8.4）
   }) = _HttpRequest;
 }
 ```
+
+> field 均为追加式扩展，手写兼容适配器对缺 field 的存量数据给默认值，无迁移脚本（见「Schema 版本与 typeId 分配」）。
 
 #### HttpResponse
 
@@ -516,10 +550,10 @@ App
         │       ├── RequestTabs
         │       ├── RequestEditor
         │       │   ├── UrlBar
-        │       │   └── TabBar (Params/Headers/Body/Auth/Settings) ✅
+        │       │   └── TabBar (Params/Headers/Body/Auth/Pre-request/Assertions/Settings) ✅
         │       └── ResponseViewer
         │           ├── InfoBar
-        │           └── TabBar (Request/Body/Headers/Cookies/Timing/Certificate) ✅
+        │           └── TabBar (Body/Headers/Cookies/Request/Tests [+Timing/Certificate]) ✅
         └── StatusBar
 ```
 
@@ -616,7 +650,7 @@ class MainScreen extends StatelessWidget {
 ## 安全考虑
 
 1. **数据安全**
-   - 敏感数据加密存储
+   - 落盘加密（M8.2）：collections/requests/environments 三个 Hive box 经 `HiveAesCipher` AES 加密；应用级 32 字节 key 以 base64 存数据目录 `.secure_key`（`box_encryption.dart`），存量明文 box 首次启动自动一次性迁移
    - 环境变量 / 密码 / token 等 secret 类型加密存储、界面脱敏显示
    - HTTPS 强制使用
 
@@ -642,6 +676,8 @@ Hopp 实现了内置的 UI 测试模式，支持通过 HTTP 指令远程控制�
 
 ### 使用方式
 
+> **数据隔离（M8.3）**：`--test-mode` 实例使用独立数据目录 `Documents/hopp_test`（Hive 目录与加密 key 目录均切换），与用户真实数据完全隔离——自动化再也碰不到真实数据，同时也看不到用户数据，需用指令自建 fixture。
+
 ```bash
 # 1. 以测试模式启动应用
 ./hopp.app/Contents/MacOS/hopp --test-mode
@@ -655,21 +691,26 @@ python3 integration_test/test_client.py --port <PORT> full_test
 
 ### 可用指令
 
+> 以下为常用指令子集（约 30 条），完整指令（80+ 条，随版本增长）以 `lib/utils/testing/ui_test_mode.dart` 指令分发为准。
+
 | 指令 | 说明 |
 |------|------|
-| `create_request` | 创建新请求 |
-| `set_url` | 设置 URL |
+| `create_request` / `save_request` / `rename_request` | 创建 / 保存 / 重命名请求 |
+| `create_collection` / `trigger_add_folder_dialog` / `create_saved_request` | 创建集合 / 文件夹 / 直接落库的已保存请求（供链引用） |
+| `set_url` / `set_method` / `add_header` / `set_body` | 编辑请求 |
+| `set_pre_request_chain` | 设置预请求链步骤 + 提取规则 + 401 重跑（M8.2） |
+| `set_assertions` | 设置断言规则（request_id/name 定位，M8.4） |
 | `send_request` | 发送请求 |
-| `switch_response_tab` | 切换响应 Tab (request/body/headers/cookies/timing/certificate) |
-| `switch_request_tab` | 切换请求 Tab (params/headers/body/auth/settings) |
-| `get_response_info` | 获取响应信息 |
-| `rename_request` | 重命名请求 |
-| `get_timing_info` | 获取时间分析 |
-| `get_request_details` | 获取请求详情 |
-| `get_certificate_info` | 获取证书信息 |
-| `simulate_4xx_response` | 模拟 4XX 错误响应 |
-| `simulate_5xx_response` | 模拟 5XX 错误响应 |
-| `full_test` | 完整测试流程 |
+| `switch_request_tab` | 切换请求 Tab (params/headers/body/auth/prerequest/assertions/settings) |
+| `switch_response_tab` | 切换响应 Tab (body/headers/cookies/request/tests [+timing/certificate]) |
+| `get_response_info` / `get_request_details` / `get_timing_info` / `get_certificate_info` / `get_collection_tree` / `get_active_environment` | 状态回读 |
+| `resolve_text` / `get_resolved_request` | 变量解析验证（M8.1） |
+| `create_environment` / `set_active_environment` | 环境管理（M8.1） |
+| `trigger_import_dialog tab=postman\|curl\|openapi` / `import_openapi` / `trigger_export_dialog` | 导入导出驱动（M8.3/M8.4） |
+| `scroll_response target=body\|certificate` / `scroll_at` / `tap_at` / `set_window_size` | 物理交互与窗口（指针注入，M8.0 起） |
+| `set_theme_mode` / `open_design_gallery` / `capture_screenshot` / `dismiss_dialog` | 主题 / 画廊 / 截图 / 对话框 |
+| `simulate_4xx_response` / `simulate_5xx_response` | 模拟错误响应 |
+| `full_test` | 完整测试流程（test_client.py 客户端复合指令） |
 
 ---
 
@@ -709,7 +750,7 @@ abstract class ThemeExtension {
 │              AI 能力层（可选、显式开启）                  │
 │  Tier 2  BYOK 云端（OpenAI/Anthropic/DeepSeek，默认关闭） │
 │  Tier 1  本地模型（Ollama/LM Studio，localhost OpenAI 兼容）│
-│  Tier 0  无模型（OpenAPI 导入、代码生成，纯确定性）       │
+│  Tier 0  无模型（OpenAPI/Swagger 导入、cURL 导入，纯确定性）│
 └───────────────────────┬─────────────────────────────────┘
                         │ 产出可保存、可复跑
                         ▼
@@ -723,7 +764,7 @@ abstract class ThemeExtension {
 
 **统一客户端与安全（借鉴 Voxmit）**:
 - 单一 OpenAI 兼容客户端：`baseURL + model + key` 可配，`/chat/completions` 协议；Tier 1 指向 `http://localhost:11434/v1`（Ollama），Tier 2 指向云端
-- 密钥走 OS 安全存储（macOS Keychain / Windows Credential Manager / Linux libsecret），日志只落元数据，不落请求体与 key
+- 密钥走 OS 安全存储（macOS Keychain / Windows Credential Manager / Linux libsecret），日志只落元数据，不落请求体与 key（**尚未实现**：现阶段 secret 变量用应用级 `.secure_key` 文件，见「安全考虑」）
 - 优雅降级：AI 有界超时 + 一次重试 + 失败回退；核心「发请求」永不依赖 AI；首次外发前隐私告知门
 - 防脑补：生成请求/断言时，字段只允许来自 spec 或用户输入，禁止新增与补全指代
 
@@ -745,9 +786,9 @@ abstract class ThemeExtension {
 **变量转换引擎**（纯 Dart，无 JS 沙箱）:
 - 解析 `{{value | transform(args)}}` 管道语法
 - 内置：sha1 / md5 / sha256 / base64 / aes / hmac
-- 动态变量：`{{$timestamp}}`、`{{$randomUUID}}`、`{{$randomInt}}`、`{{$guid}}`
+- 动态变量：`{{$timestamp}}`、`{{$timestampMs}}`、`{{$isoTimestamp}}`、`{{$randomUUID}}`、`{{$randomInt}}`
 
-**替换顺序**: 变量解析 → 变量转换 → 变量替换（全局 > 环境 > 本地）
+**替换顺序**: 变量解析 → 变量转换 → 变量替换（本地 > 环境 > 全局，本地作用域为预请求链产出，不污染环境）
 
 ## 参考资源
 

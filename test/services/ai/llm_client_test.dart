@@ -2,10 +2,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopp/services/ai/llm_client.dart';
 import 'package:logger/logger.dart';
+import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
-import '../../mocks/dio.mocks.mocks.dart';
+import 'llm_client_test.mocks.dart';
 
+@GenerateMocks([Dio])
 void main() {
   group('LlmClient', () {
     late MockDio mockDio;

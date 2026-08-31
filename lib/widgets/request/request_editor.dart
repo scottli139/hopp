@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../models/auth_config.dart';
 import '../../models/http_method.dart';
 import '../../models/http_request.dart';
 import '../../models/key_value_pair.dart';
 import '../../providers/providers.dart';
+import '../../services/ai/ai_models.dart';
 import '../../services/auth_resolver.dart';
 import '../../utils/app_logger.dart';
 import '../../theme/app_colors.dart';
@@ -24,6 +26,7 @@ import '../common/app_popup_menu.dart';
 import '../common/app_tabs.dart';
 import '../common/code_editor.dart';
 import '../common/variable_highlight_controller.dart';
+import '../ai/build_request_dialog.dart';
 import 'assertion_editor.dart';
 import 'auth_config_editor.dart';
 import 'pre_request_chain_editor.dart';
@@ -264,6 +267,12 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // F9.5：自然语言建请求（AI）入口，Method 下拉左侧
+          NaturalLanguageRequestButton(
+            currentRequest: request,
+            onApply: (draft) => _applyAiRequestDraft(ref, request, draft),
+          ),
+          const SizedBox(width: AppMetrics.space8),
           // Method dropdown - 统一 32px 高（设计规范）
           Container(
             height: AppMetrics.height32,
@@ -1898,6 +1907,36 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
         return {...set, activeTabId};
       });
     }
+  }
+
+  /// 应用 AI 生成的请求草稿（F9.5 自然语言建请求）。
+  ///
+  /// 仅写入当前 tab（保持编辑器未保存态，不强制落库）；URL 栏由
+  /// build 期的 controller 同步逻辑自动刷新。
+  void _applyAiRequestDraft(
+    WidgetRef ref,
+    HttpRequest request,
+    AiRequestDraft draft,
+  ) {
+    KeyValuePair toKeyValue(AiKeyValueDraft kv) => KeyValuePair(
+          id: const Uuid().v4(),
+          key: kv.key,
+          value: kv.value,
+          enabled: kv.enabled,
+        );
+    _updateRequest(
+      ref,
+      request.copyWith(
+        method: HttpMethod.fromString(draft.method),
+        url: draft.url,
+        params: [for (final kv in draft.params) toKeyValue(kv)],
+        headers: [for (final kv in draft.headers) toKeyValue(kv)],
+        bodyType: draft.bodyType,
+        rawContentType: draft.rawContentType ?? request.rawContentType,
+        body: draft.body ?? '',
+        name: draft.name.isNotEmpty ? draft.name : request.name,
+      ),
+    );
   }
 
   /// Handle save button press - always allow save

@@ -74,6 +74,36 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
       await updateSettings(current.copyWith(followRedirects: follow));
     }
   }
+
+  /// 更新 AI 配置（F9.5：Tier 1 本地模型连接参数）
+  Future<void> updateAiSettings({
+    bool? aiEnabled,
+    String? aiProviderPreset,
+    String? aiBaseUrl,
+    String? aiModel,
+    String? aiApiKey,
+  }) async {
+    final current = state.value;
+    if (current != null) {
+      var settings = current;
+      if (aiEnabled != null) {
+        settings = settings.copyWith(aiEnabled: aiEnabled);
+      }
+      if (aiProviderPreset != null) {
+        settings = settings.copyWith(aiProviderPreset: aiProviderPreset);
+      }
+      if (aiBaseUrl != null) {
+        settings = settings.copyWith(aiBaseUrl: aiBaseUrl);
+      }
+      if (aiModel != null) {
+        settings = settings.copyWith(aiModel: aiModel);
+      }
+      if (aiApiKey != null) {
+        settings = settings.copyWith(aiApiKey: aiApiKey);
+      }
+      await updateSettings(settings);
+    }
+  }
 }
 
 final settingsProvider =

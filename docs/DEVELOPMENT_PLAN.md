@@ -10,7 +10,7 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前阶段** | 战略转向：本地 + 私有 AI（M8 系列进行中：M8.0–M8.4 已完成）；当前版本 v0.12.0（2026-08-29 发布），下一步 M8.5 |
+| **当前阶段** | 战略转向：本地 + 私有 AI（M8 系列进行中：M8.0–M8.5 已完成，M8.5 未发布）；当前版本 v0.12.0（2026-08-29 发布），下一步 M8.6 |
 | **目标版本** | v1.0.0 |
 | **技术栈** | Flutter 3.27.x + Dart 3.6.x + Riverpod |
 | **测试状态** | ✅ **891 通过 / 2 跳过**（2026-08-31 实测） |
@@ -43,10 +43,20 @@
 | M8.2 | 预请求链 + 变量转换（F8.1-F8.4）：登录→token、密码 sha1/aes 加密 | P0 | ≈5 周 | ✅ (2026-08-25，v0.10.0：含集合级继承、401 重跑、试运行、Hive 落盘加密)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「预请求链与变量转换」一节 |
 | M8.3 | Tier 0（F9.4）：OpenAPI/Swagger 导入 → 一键生成请求/collection | P0 | ≈2 周 | ✅ (2026-08-28：3.0/3.1+2.0 转换、JSON+YAML、文件/URL 双源、防脑补映射、勾选预览、结果报告)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「OpenAPI/Swagger 导入」一节 |
 | M8.4 | 轻量断言 + CLI/CI（F4.1/F4.4）：状态/Header/Body/JSONPath/响应时间断言 + `cli/` 运行器与导出 | P1 | ≈4 周 | ✅ (2026-08-28：声明式规则 + Tests 页签 + `.hopp.json` 全保真导出 + `hopp run` exit 0/1/2，F4.2 挪 M8.5)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「轻量断言 + CLI/CI」一节 |
-| M8.5 | Tier 1（F9）：本地模型（Ollama/LM Studio）解释响应 / 生成断言（F4.2）/ 自然语言建请求 | P1 | ≈2 周 | ⏳ |
+| M8.5 | Tier 1（F9.5 + F4.2）：本地模型（Ollama/LM Studio）解释响应 / 生成断言 / 自然语言建请求 + OpenAI 兼容客户端 | P1 | ≈2 周 | ✅ (2026-08-31：Dio 手写 OpenAI 兼容客户端 + 三任务型弹窗 + 防脑补校验（响应样本 8KB 截断）+ mock 接缝 test-mode 指令 ×5；真模型冒烟已补：Ollama + qwen2.5:3b)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「Tier 1 本地模型」一节 |
 | M8.6 | Tier 2（F9）：BYOK 云端，默认关闭 | P2 | ≈1 周 | ⏳ |
 
 **已搁置**：原 v0.8/v0.9 规划中的非差异化功能（Mock 服务器、代理、WebSocket、代码片段生成、Cookie 管理、文件上传下载等）统一由 [BACKLOG.md](./BACKLOG.md) 维护。
+
+**M8.5 明细（✅ 已完成，2026-08-31 澄清并交付）**
+
+需求与验收的唯一权威见 [PRD](./PRD.md) F9.5；UI 原型见 [tier1_ai_preview.html](./design/tier1_ai_preview.html)。关键决策：
+
+- 底座：Dio 手写单一 OpenAI 兼容 chat completions 客户端；预设 Ollama `http://localhost:11434/v1` / LM Studio `http://localhost:1234/v1`；配置存 AppSettings 新字段（keychain 级密钥存储随 M8.6）
+- 非流式 v1（流式输出进 BACKLOG）；连接 5s / 生成 60s 超时；温度 0；元数据-only 日志（端点/模型/耗时/token 数）
+- 三入口：Response info bar「解释响应」、Assertions 页首「AI 生成」、URL 栏 ✨「自然语言建请求」；均为任务型弹窗，不做通用聊天面板
+- 防脑补：AI 产出客户端 schema 硬校验，非法项丢弃并提示可重试；优雅降级，绝不影响发请求主流程
+- 测试：`LlmClient` mock Dio 单测 + 校验器/提示词构建器单测 + test-mode 指令（mock 响应）自动化验证
 
 > 历史注记：v0.7.0 曾规划「环境变量 + JS 测试脚本」并一度标记完成，2026-08-20 纠偏确认实际未实现——环境变量由 M8.1 承接落地，JS 沙箱决策降级为 M8.4 轻量断言（见 [PRD](./PRD.md) F4）。
 

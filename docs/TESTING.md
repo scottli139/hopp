@@ -564,9 +564,26 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `import_openapi` | OpenAPI/Swagger 导入全流程（解析→勾选→导入→冲突解决，F9 测试钩子，参数见下文） |
 | `trigger_environment_dialog` | 打开环境管理对话框 |
 | `open_design_gallery` | 打开 Design Gallery 页（全 token/组件双主题展示） |
+| `set_ai_mock` | 设置 AI canned 响应（`response`: String，mock 接缝，F9.5） |
+| `clear_ai_mock` | 清除 AI canned 响应 |
+| `ai_explain` | AI 解释当前 tab 响应（需先 `send_request` / `simulate_*`，返回 `status`/`result`/`error`） |
+| `ai_generate_assertions` | AI 基于当前 tab 响应生成断言草稿（返回 `status`/`assertions`/`discarded`/`error`） |
+| `ai_build_request` | AI 自然语言建请求（`description`: String 必填，返回 `status`/`draft`/`error`） |
 | `full_test` | 完整测试流程 |
 
-> 本表为常用指令清单；完整指令（89 条，随版本增长）以 `lib/utils/testing/ui_test_mode.dart` 指令分发为准。
+> 本表为常用指令清单；完整指令（97 条，随版本增长）以 `lib/utils/testing/ui_test_mode.dart` 指令分发为准。
+
+#### AI 指令（F9.5）与 mock 接缝
+
+本机无 Ollama / LM Studio 时，AI 全链路自动化走 canned mock：`set_ai_mock` 设置固定响应串后，`llmClientProvider` 返回 `CannedLlmClient`（任何 `chat()` 立即返回该串，不发网络请求）；`clear_ai_mock` 恢复真实客户端。`ai_explain` / `ai_generate_assertions` / `ai_build_request` 内部会自动确保 AI 配置就绪（未启用置 `aiEnabled=true`、模型名为空置 `test-model`），业务失败不抛异常，`errorMessage` 放在返回 Map 的 `error` 键供脚本断言。
+
+| 指令 | 参数 | 返回（`status` 恒为 `idle`/`loading`/`success`/`error`） |
+|------|------|------|
+| `set_ai_mock` | `response`: String | `{'mocked': true}` |
+| `clear_ai_mock` | — | `{'mocked': false}` |
+| `ai_explain` | —（取当前 tab 响应） | `{'status', 'result', 'error'}` |
+| `ai_generate_assertions` | —（取当前 tab 响应） | `{'status', 'assertions': [{'target','targetArg','operator','expected'}], 'discarded', 'error'}` |
+| `ai_build_request` | `description`: String（必填） | `{'status', 'draft': {'name','method','url','params','headers','bodyType','rawContentType','body'}, 'error'}` |
 
 #### `import_openapi` 参数与返回
 

@@ -5,3 +5,4 @@ export 'request/request_response_provider.dart';
 export 'collection/collection_provider.dart';
 export 'environment/environment_provider.dart';
 export 'settings/settings_provider.dart';
+export 'ai/ai_provider.dart';

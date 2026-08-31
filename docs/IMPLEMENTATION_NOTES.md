@@ -17,6 +17,7 @@
 - [预请求链与变量转换 (M8.2 / v0.10.0)](#预请求链与变量转换-m82-f8--v0100-2026-08-25)
 - [OpenAPI/Swagger 导入 (M8.3 / F9.4)](#openapiswagger-导入-m83--f94--v0110-2026-08-28)
 - [轻量断言 + CLI/CI (M8.4 / F4.1 + F4.4 / v0.12.0)](#轻量断言--clici-m84--f41--f44--v0120-2026-08-28)
+- [Tier 1 本地模型 (M8.5 / F9.5 + F4.2 / v0.13.0)](#tier-1-本地模型-m85--f95--f42--v0130-2026-08-31)
 - [环境变量系统 (M8.1)](#环境变量系统-m81)
 - [测试与自动化](#测试与自动化)
 - [Mock 服务器](#mock-服务器)
@@ -905,6 +906,24 @@ cli/hopp.dart + cli/src/                            # hopp run 运行器（app �
 - 集成：dart:io HttpServer + login 链 sha1 管道提 token → `{{token}}` 断言，GUI 引擎与 CLI 同一套代码路径。
 - 编译冒烟：`dart compile exe` 通过；fixture 实跑 exit 0/1/2 全符合，console 输出对齐原型画板 C。
 - 实机审计：test-mode 驱动六屏（断言编辑/Tests 结果/Export 对话框 × 亮暗）截图目检通过（2026-08-28）。
+
+---
+
+## Tier 1 本地模型 (M8.5 / F9.5 + F4.2 / v0.13.0, 2026-08-31)
+
+> 定位：本地 + 私有 AI 的第二层（Tier 1）。三个非流式任务型弹窗（解释响应 / AI 生成断言 / 自然语言建请求），无通用聊天面板；原型先行 docs/design/tier1_ai_preview.html。
+
+- **底座**：`lib/services/ai/llm_client.dart`——单一 OpenAI 兼容 chat completions 客户端（Dio 手写、`Dio` 可注入 mock；baseUrl 末尾斜杠归一；apiKey 非空加 Bearer；自建 Dio 时 connect 5s / send+receive 60s）。错误分层：`LlmConnectionException`（无 response 的 DioException，含「未检测到本地模型服务」文案）/ `LlmHttpException`（statusCode + OpenAI error.message 透传）/ `LlmResponseException`（schema 不符或空 choices）。日志只记端点/模型/耗时/usage token 数，不落请求体、响应文本、key。
+- **配置**：`AppSettings` HiveField 8-12（aiEnabled/aiProviderPreset/aiBaseUrl/aiModel/aiApiKey）；settings box 存 toJson Map、fromJson `?? default` 回退，老数据无需迁移；预设 Ollama `localhost:11434/v1` / LM Studio `localhost:1234/v1`。keychain 级密钥存储随 M8.6（Tier 2）。
+- **防脑补**：`ai_prompts.dart` 断言枚举串由 `AssertionTarget/AssertionOperator.values` 运行时生成、组合矩阵复用 `AssertionEngine.operatorsByTarget`——提示词与校验器天然同源，杜绝两边漂移；`ai_response_parser.dart` 剥 ` ```json ` 围栏解码 → 逐条校验（枚举名 / 矩阵内组合 / targetArg 需求 / expected 仅 String|num 非空 / matches 要求合法正则），非法丢弃计数（断言可部分丢弃，请求草稿整体拒收）。温度恒 0。响应样本统一按 `maxBodyChars=8192` 截断并标注（解释/断言同规则）——实测 240KB body 不截断会撑爆 3B 模型的 4096 context 导致 60s 超时（用户试用发现）。
+- **UI**：`lib/widgets/ai/`——`AiSettingsDialog`（含「检查连接」ping，未检查/成功/失败三态）、`ExplainResponseButton`（Response info bar）、`GenerateAssertionsButton`（Assertions 页首，草稿勾选 + 行编辑 → Uuid id append）、`NaturalLanguageRequestButton`（URL 栏 Method 左侧，输入/结果两态；填入走 `_updateRequest` 保持未保存态，当前请求有实质内容先确认覆盖）。门控统一 `isAiReady()`：未启用/模型空 → SnackBar 引导开设置。文案中文硬编码跟随 widgets 局部惯例（.arb 未接 gen_l10n）。
+- **test-mode mock 接缝**：`uiTestAiMockProvider`（定义在 ai_provider.dart——providers 引入 testing 无先例，而 testing 已 import providers barrel，反向会成环）+ `CannedLlmClient`（任何 chat() 立即返回 canned 串）。指令 `set_ai_mock` / `clear_ai_mock` / `ai_explain` / `ai_generate_assertions` / `ai_build_request`；后三者内置 `_ensureAiConfigReady`（未启用置 true、模型空置 `test-model`），业务失败不抛异常走返回 Map 的 `error` 键，供脚本断言失败路径。
+
+### 测试
+
+- 新增 65：llm_client 12（MockDio：成功/斜杠归一/Authorization 头/连接错误/超时（含响应超时文案分流）/HTTP 错误透传/空 choices）+ parser 19（矩阵全组合/围栏剥离/丢弃计数/草稿拒收）+ prompts 13（8KB 截断 × 解释与断言两路/防脑补文案/枚举同源）+ widget 18（四对话框三态/门控/预设回填/添加 append/填入两路径）+ mock 接缝 3。
+- 全量 959 通过（2 跳过），design_guard 零新增，analyze 无新增 warning。
+- **真模型冒烟（2026-08-31，用户实机试用）**：Ollama 0.33 + qwen2.5:3b（8GB M1；7B 模型 6GB+ 工作集会压垮整机甚至导致系统重启，3B 实测端到端 8.5s）。试用反馈修三坑：①三个对话框三态容器未撑满宽度（正文小岛贴左上，补 `width: double.infinity` ×7）②断言 prompt 漏截断（240KB 响应体 60s 超时，补 8KB 截断）③超时与未连接提示分流（receive/send timeout → 「本地模型响应超时」，connectionError → 「未检测到本地模型服务」）。
 
 ---
 

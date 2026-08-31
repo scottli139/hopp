@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hopp · M8.5 Tier 1 本地 AI 模型 · UI 原型</title>
+<style>
+/* ============================================================
+   Tokens — 与 lib/theme/ 及 assertions_preview.html 一致
+   ============================================================ */
+:root {
+  --brand: #6366F1; --brand-hover: #4F46E5; --brand-soft: #EEF2FF; --brand-text: #6366F1;
+  --bg: #FFFFFF; --surface: #F8FAFC; --surface-2: #F1F5F9;
+  --border: #E2E8F0; --border-strong: #CBD5E1;
+  --text-1: #0F172A; --text-2: #475569; --text-3: #94A3B8;
+  --success: #10B981; --success-soft: #ECFDF5;
+  --warning: #F59E0B; --warning-soft: #FFFBEB;
+  --error: #EF4444; --error-soft: #FEF2F2;
+  --info: #0EA5E9; --info-soft: #F0F9FF;
+  --shadow-md: 0 4px 12px rgba(15,23,42,.10), 0 1px 3px rgba(15,23,42,.06);
+  --shadow-lg: 0 12px 40px rgba(15,23,42,.16), 0 2px 8px rgba(15,23,42,.08);
+  --r-s: 4px; --r-m: 6px; --r-l: 8px;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: Menlo, 'JetBrains Mono', Consolas, monospace;
+}
+[data-theme="dark"] {
+  --brand: #818CF8; --brand-hover: #6366F1; --brand-soft: rgba(129,140,248,.14); --brand-text: #818CF8;
+  --bg: #0F172A; --surface: #1E293B; --surface-2: #334155;
+  --border: #2B3A55; --border-strong: #475569;
+  --text-1: #F1F5F9; --text-2: #94A3B8; --text-3: #64748B;
+  --success-soft: rgba(16,185,129,.14);
+  --warning-soft: rgba(245,158,11,.14);
+  --error-soft: rgba(239,68,68,.14);
+  --info-soft: rgba(14,165,233,.14);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.3);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-ui); background: #E9EDF3; color: #0F172A; padding: 40px 48px 96px; }
+h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.sub { color: #64748B; font-size: 13px; margin-bottom: 28px; }
+.sub code, .changes code, h2 code, .h2-sub code { font-family: var(--font-mono); font-size: 11px; background: #F1F5F9; border-radius: 3px; padding: 1px 5px; color: #475569; }
+h2 { font-size: 14px; font-weight: 600; margin: 40px 0 4px; }
+h2 .fid { color: #6366F1; font-family: var(--font-mono); font-size: 12px; margin-right: 6px; }
+.h2-sub { font-size: 12px; color: #64748B; margin-bottom: 14px; }
+
+/* 设计决策清单 */
+.changes { background: #FFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 18px 22px; font-size: 13px; line-height: 1.9; color: #334155; }
+.changes b { color: #0F172A; }
+.changes .n { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; background: #EEF2FF; color: #6366F1; font-size: 11px; font-weight: 700; align-items: center; justify-content: center; margin-right: 8px; }
+
+/* 画板 */
+.board { border-radius: 12px; padding: 40px; display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; background: #D8DEE8; margin-top: 14px; }
+.board[data-theme="dark"] { background: #070B14; }
+.board-label { width: 100%; font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #64748B; margin-bottom: -18px; }
+.board[data-theme="dark"] .board-label { color: #475569; }
+.slot { display: flex; flex-direction: column; gap: 8px; }
+.cap { font-size: 11px; font-weight: 600; color: #64748B; }
+.board[data-theme="dark"] .cap { color: #475569; }
+
+/* ============================================================
+   应用窗口通用（与 assertions_preview.html 一致）
+   ============================================================ */
+.win {
+  width: 860px; display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text-1);
+  border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg);
+  overflow: hidden; font-size: 13px;
+}
+.win-head {
+  height: 40px; flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+  padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.win-head .doc-tab {
+  height: 26px; padding: 0 12px; display: inline-flex; align-items: center; gap: 7px;
+  border-radius: var(--r-m); background: var(--bg); border: 1px solid var(--border);
+  font-size: 12px; font-weight: 500; color: var(--text-1);
+}
+.win-head .doc-tab .m { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--success); }
+.urlbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.method-badge {
+  height: 30px; padding: 0 10px; display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--border); border-radius: var(--r-m); background: var(--bg);
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--success); cursor: pointer;
+}
+.method-badge.post { color: var(--warning); }
+.url-input {
+  flex: 1; height: 30px; display: flex; align-items: center; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: var(--r-m); background: var(--bg);
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-1); overflow: hidden; white-space: nowrap;
+}
+.url-input .v { color: var(--brand-text); background: var(--brand-soft); border-radius: 3px; padding: 0 3px; }
+.send-btn {
+  height: 30px; padding: 0 18px; border: none; border-radius: var(--r-m);
+  background: var(--brand); color: #FFF; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font-ui);
+}
+
+/* Tab 栏 */
+.tabs { display: flex; align-items: center; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--border); height: 36px; }
+.tab-i {
+  height: 36px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500; color: var(--text-2); cursor: pointer; position: relative;
+}
+.tab-i:hover { color: var(--text-1); }
+.tab-i.active { color: var(--brand-text); font-weight: 600; }
+.tab-i.active::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; border-radius: 1px; background: var(--brand); }
+.tab-i .cnt { font-size: 10px; font-weight: 700; background: var(--surface-2); color: var(--text-2); border-radius: 8px; padding: 1px 6px; }
+.tab-i.active .cnt { background: var(--brand-soft); color: var(--brand-text); }
+
+/* 通用控件 */
+.sp { flex: 1; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 14px; font-size: 13px; font-weight: 500; font-family: var(--font-ui);
+  border: 1px solid transparent; border-radius: var(--r-m); cursor: pointer; white-space: nowrap;
+}
+.btn-s { height: 28px; padding: 0 12px; font-size: 12px; }
+.btn-primary { background: var(--brand); color: #FFF; }
+.btn-ghost { background: transparent; color: var(--text-2); border-color: var(--border-strong); }
+.btn-soft { background: var(--brand-soft); color: var(--brand-text); }
+.icon-btn {
+  width: 26px; height: 26px; flex-shrink: 0; border-radius: var(--r-m); border: none; background: transparent;
+  color: var(--text-3); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text-1); }
+.icon-btn.danger:hover { background: var(--error-soft); color: var(--error); }
+.icon-btn.ai { background: var(--brand-soft); color: var(--brand-text); }
+.icon-btn.lg { width: 30px; height: 30px; }
+.checkbox { width: 14px; height: 14px; border-radius: 4px; margin: 0 auto; border: 1.5px solid var(--border-strong); background: var(--bg); display: flex; align-items: center; justify-content: center; color: #FFF; font-size: 9px; }
+.checkbox.on { background: var(--brand); border-color: var(--brand); }
+
+/* 开关 */
+.sw { width: 30px; height: 17px; border-radius: 9px; background: var(--border-strong); position: relative; cursor: pointer; flex-shrink: 0; }
+.sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #FFF; transition: left .15s; }
+.sw.on { background: var(--brand); }
+.sw.on::after { left: 15px; }
+
+/* 表单（f8 约定：标签 + 输入框 + 提示行） */
+.f-input {
+  height: 30px; width: 100%; padding: 0 10px; display: flex; align-items: center; gap: 4px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-1);
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-m);
+  overflow: hidden; white-space: nowrap;
+}
+.f-input .v { color: var(--brand-text); background: var(--brand-soft); border-radius: 3px; padding: 0 3px; }
+.f-input.secret { justify-content: space-between; }
+.f-input.secret .dots { letter-spacing: 2px; }
+.f-eye { color: var(--text-3); font-size: 12px; cursor: pointer; }
+.f-hint { font-size: 11px; color: var(--text-3); margin-top: 5px; line-height: 1.5; }
+
+/* ============================================================
+   对话框通用（与 assertions_preview.html 的 .dlg 一致）
+   ============================================================ */
+.dlg {
+  width: 480px; display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text-1);
+  border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg);
+  overflow: hidden; font-size: 13px;
+}
+.dlg-w560 { width: 560px; }
+.dlg-w640 { width: 640px; }
+.dlg-head {
+  height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.dlg-title { font-size: 13px; font-weight: 600; }
+.dlg-body { padding: 16px; }
+.dlg-foot {
+  display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+  border-top: 1px solid var(--border); background: var(--surface);
+}
+.d-sub { font-size: 11px; color: var(--text-3); margin-bottom: 14px; }
+
+/* 说明条（info 软底，复用 assertions 的 .fmt-note） */
+.fmt-note {
+  display: flex; gap: 7px; align-items: flex-start; margin-top: 12px; padding: 9px 11px;
+  background: var(--info-soft); border-radius: var(--r-m); font-size: 11px; color: var(--text-2); line-height: 1.6;
+}
+.fmt-note .ic { color: var(--info); flex-shrink: 0; }
+
+/* ============================================================
+   A. AI 设置
+   ============================================================ */
+.set-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.set-row .set-t { font-size: 13px; font-weight: 500; color: var(--text-1); }
+.ai-field { margin-bottom: 13px; }
+.ai-label { font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
+
+/* segmented 三选 */
+.seg { display: flex; gap: 2px; padding: 2px; background: var(--surface-2); border-radius: var(--r-m); }
+.seg-i {
+  flex: 1; height: 26px; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--text-2); border-radius: var(--r-s); cursor: pointer;
+}
+.seg-i.on { background: var(--brand-soft); color: var(--brand-text); font-weight: 600; }
+
+/* 连接状态行 */
+.conn { display: flex; align-items: center; gap: 8px; padding: 9px 11px; border-radius: var(--r-m); font-size: 12px; color: var(--text-2); }
+.conn .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.conn b { color: var(--text-1); font-weight: 600; }
+.conn .btn { margin-left: auto; }
+.conn.ok { background: var(--success-soft); }
+.conn.ok .dot { background: var(--success); }
+.conn.ok b { color: var(--success); }
+.conn.bad { background: var(--warning-soft); }
+.conn.bad .ic { color: var(--warning); flex-shrink: 0; }
+
+/* ============================================================
+   B. 解释响应
+   ============================================================ */
+.ctx { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-3); margin-bottom: 10px; }
+.ctx .m { font-weight: 700; color: var(--warning); }
+.ctx .v { color: var(--brand-text); background: var(--brand-soft); border-radius: 3px; padding: 0 3px; }
+.ai-prose { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-l); padding: 12px 14px; font-size: 12px; line-height: 1.9; color: var(--text-2); max-height: 252px; overflow: hidden; }
+.ai-prose p + p { margin-top: 8px; }
+.ai-prose b { color: var(--text-1); font-weight: 600; }
+.ai-prose code { font-family: var(--font-mono); font-size: 11px; background: var(--surface-2); border-radius: 3px; padding: 0 4px; color: var(--text-1); }
+.ai-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 46px 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-l); color: var(--text-3); font-size: 12px; }
+.spin { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--brand-soft); border-top-color: var(--brand); animation: sp 1s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   C. AI 生成断言（复用 assertions 表格控件）
+   ============================================================ */
+.g-card { border: 1px solid var(--border); border-radius: var(--r-l); padding: 2px 10px 4px; }
+.g-head, .g-row { display: grid; grid-template-columns: 24px 96px 1fr 170px 90px 26px; align-items: center; column-gap: 8px; }
+.g-head { height: 26px; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); border-bottom: 1px solid var(--border); }
+.g-row { min-height: 38px; border-bottom: 1px solid var(--border); padding: 4px 0; }
+.g-row:last-child { border-bottom: none; }
+.g-row.off .a-cell, .g-row.off .a-select { opacity: .45; }
+.op-wrap { display: flex; flex-direction: column; gap: 3px; }
+.fix-badge { display: inline-flex; align-items: center; gap: 4px; width: fit-content; white-space: nowrap; font-size: 10px; font-weight: 600; color: var(--warning); background: var(--warning-soft); border-radius: var(--r-s); padding: 1px 6px; }
+.a-select {
+  height: 28px; display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 0 8px;
+  font-size: 12px; font-weight: 500; color: var(--text-1);
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-m); cursor: pointer;
+  overflow: hidden; white-space: nowrap;
+}
+.a-select .caret { color: var(--text-3); font-size: 9px; }
+.a-select.mono { font-family: var(--font-mono); font-size: 11px; }
+.a-cell {
+  height: 28px; display: flex; align-items: center; padding: 0 8px; gap: 4px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-1);
+  border: 1px solid var(--border); border-radius: var(--r-m); background: var(--bg);
+  overflow: hidden; white-space: nowrap;
+}
+.a-cell .ph { color: var(--text-3); font-family: var(--font-ui); font-size: 12px; }
+.a-cell .v { color: var(--brand-text); background: var(--brand-soft); border-radius: 3px; padding: 0 3px; }
+.a-cell.plain { border-color: transparent; background: transparent; }
+
+/* ============================================================
+   D. 自然语言建请求
+   ============================================================ */
+.ai-textarea { min-height: 104px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-m); background: var(--bg); font-size: 12px; line-height: 1.7; color: var(--text-1); }
+.ai-textarea .ph { color: var(--text-3); }
+.sum-line { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-m); font-family: var(--font-mono); font-size: 12px; color: var(--text-1); }
+.sum-line .m { font-weight: 700; color: var(--warning); }
+.sum-line .v { color: var(--brand-text); background: var(--brand-soft); border-radius: 3px; padding: 0 3px; }
+.pv-label { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); margin: 13px 0 5px; }
+.pv-empty { font-size: 11px; color: var(--text-3); padding: 2px 0; }
+.pv-row { display: grid; grid-template-columns: 150px 1fr; gap: 8px; align-items: center; height: 24px; font-family: var(--font-mono); font-size: 11.5px; }
+.pv-row .k { color: var(--text-2); }
+.pv-row .val { color: var(--text-1); }
+.pv-row .v { color: var(--brand-text); background: var(--brand-soft); border-radius: 3px; padding: 0 3px; }
+.pv-json { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-m); padding: 10px 12px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.75; color: var(--text-1); }
+
+/* ============================================================
+   E. 入口示意（复用 assertions 的页首 / resp-meta）
+   ============================================================ */
+.assert-pane { padding: 12px 16px 16px; }
+.assert-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.assert-title { font-size: 13px; font-weight: 600; }
+.assert-sub { font-size: 11px; color: var(--text-3); }
+.a-grid-head, .a-row {
+  display: grid; grid-template-columns: 24px 128px 132px 128px 1fr 26px;
+  align-items: center; column-gap: 8px;
+}
+.a-grid-head { height: 26px; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--text-3); border-bottom: 1px solid var(--border); }
+.a-row { height: 38px; border-bottom: 1px solid var(--border); }
+.a-row.gh { opacity: .38; }
+.resp-meta {
+  display: flex; align-items: center; gap: 14px; height: 38px; padding: 0 12px;
+  border-bottom: 1px solid var(--border); border-top: 1px solid var(--border); background: var(--surface); font-size: 12px;
+}
+.resp-meta .status { font-weight: 700; color: var(--success); font-family: var(--font-mono); font-size: 12px; }
+.resp-meta .meta { color: var(--text-3); font-family: var(--font-mono); font-size: 11px; }
+.stub { padding: 16px; background: var(--bg); }
+.bar { height: 8px; border-radius: 4px; background: var(--surface-2); margin-bottom: 11px; }
+
+/* 批注（画板内，token 色） */
+.anno { position: relative; }
+.anno::after {
+  content: attr(data-anno); position: absolute; top: -7px; right: -7px; z-index: 8;
+  min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px;
+  background: var(--brand); color: #FFF; font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.legend { margin-top: 10px; font-size: 11px; color: #64748B; }
+.legend .pk { display: inline-flex; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; background: #EC4899; color: #FFF; font-size: 9px; font-weight: 700; align-items: center; justify-content: center; margin: 0 2px 0 10px; }
+</style>
+</head>
+<body>
+
+<h1>M8.5 · Tier 1 本地 AI 模型</h1>
+<div class="sub">F9 本地模型（Ollama / LM Studio）+ F4.2 AI 生成断言 · 三个任务型弹窗 + 一个设置对话框 · 非流式 v1，无通用聊天面板 · 2026-08-31 · 需求与验收见 <code>docs/PRD.md</code> F9 / F4</div>
+
+<div class="changes">
+  <div><span class="n">1</span><b>三个入口，各自触发一个任务弹窗</b>：Response info bar 右侧 ✨ = 解释响应；Assertions 页首「✨ AI 生成」= 生成断言；URL 栏 Method 左侧 ✨ = 自然语言建请求。</div>
+  <div><span class="n">2</span><b>非流式任务型弹窗</b>：v1 不做通用聊天面板；生成期间显示加载进度文案（本地模型可能需要 10–30 秒），结果一次性呈现，可重新生成。</div>
+  <div><span class="n">3</span><b>配置存 AppSettings</b>：启用开关 / Provider 预设 / Base URL / Model / API Key 全局一份；Key 输入框为 Tier 2 云端铺路，本地模型留空即可。</div>
+  <div><span class="n">4</span><b>防脑补 schema 校验</b>：AI 返回的断言先过校验，非法字段就地修正并在该行标注「已修正」；无法修正的条目直接丢弃，不臆造取值。</div>
+  <div><span class="n">5</span><b>AI 相关按钮统一 brand-soft 软按钮 + ✨ 图标</b>：页首用 <code>.btn-soft</code> 文字按钮；URL 栏 / info bar 空间受限处用 ✨ icon-btn 高亮态（brand-soft 底 + brand 图标）。</div>
+</div>
+
+<!-- ============================================================
+     A. AI 设置对话框
+     ============================================================ -->
+<h2><span class="fid">A</span>AI 设置 — Tier 1 本地模型配置</h2>
+<div class="h2-sub">窗口中央模态，宽 480px；左为连接成功态，右为失败态变体。配置存 <code>AppSettings</code>，Key 输入框为 Tier 2 铺路。</div>
+
+<div class="board">
+  <div class="board-label">LIGHT · AI 设置</div>
+  <div class="slot">
+    <div class="cap">连接成功</div>
+    <div class="dlg">
+      <div class="dlg-head">
+        <div class="dlg-title">AI 设置</div>
+        <div class="sp"></div>
+        <button class="icon-btn">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="d-sub">本地模型（Tier 1）· 数据不出机器</div>
+        <div class="set-row">
+          <div class="set-t">启用本地 AI</div>
+          <span class="sw on"></span>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">Provider 预设</div>
+          <div class="seg">
+            <div class="seg-i on">Ollama</div>
+            <div class="seg-i">LM Studio</div>
+            <div class="seg-i">自定义</div>
+          </div>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">Base URL</div>
+          <div class="f-input">http://localhost:11434/v1</div>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">Model</div>
+          <div class="f-input">qwen2.5:7b</div>
+          <div class="f-hint">占位提示：手填，如 llama3.1:8b</div>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">API Key</div>
+          <div class="f-input secret"><span class="dots">••••••</span><span class="f-eye">👁</span></div>
+          <div class="f-hint">本地模型通常无需 Key，留空即可；仅 Tier 2 云端使用</div>
+        </div>
+        <div class="conn ok">
+          <span class="dot"></span>
+          <span>已连接 · Ollama · <b>qwen2.5:7b</b></span>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <div class="sp"></div>
+        <button class="btn btn-ghost">取消</button>
+        <button class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <div class="cap">连接失败 — 未检测到 Ollama</div>
+    <div class="dlg">
+      <div class="dlg-head">
+        <div class="dlg-title">AI 设置</div>
+        <div class="sp"></div>
+        <button class="icon-btn">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="d-sub">本地模型（Tier 1）· 数据不出机器</div>
+        <div class="set-row">
+          <div class="set-t">启用本地 AI</div>
+          <span class="sw on"></span>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">Provider 预设</div>
+          <div class="seg">
+            <div class="seg-i on">Ollama</div>
+            <div class="seg-i">LM Studio</div>
+            <div class="seg-i">自定义</div>
+          </div>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">Base URL</div>
+          <div class="f-input">http://localhost:11434/v1</div>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">Model</div>
+          <div class="f-input">qwen2.5:7b</div>
+          <div class="f-hint">占位提示：手填，如 llama3.1:8b</div>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">API Key</div>
+          <div class="f-input secret"><span class="dots">••••••</span><span class="f-eye">👁</span></div>
+          <div class="f-hint">本地模型通常无需 Key，留空即可；仅 Tier 2 云端使用</div>
+        </div>
+        <div class="conn bad">
+          <span class="ic">⚠</span>
+          <span>未检测到 Ollama（localhost:11434）</span>
+          <button class="btn btn-ghost btn-s">检查连接</button>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <div class="sp"></div>
+        <button class="btn btn-ghost">取消</button>
+        <button class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="board" data-theme="dark">
+  <div class="board-label">DARK · AI 设置</div>
+  <div class="slot">
+    <div class="cap">连接成功</div>
+    <div class="dlg">
+      <div class="dlg-head">
+        <div class="dlg-title">AI 设置</div>
+        <div class="sp"></div>
+        <button class="icon-btn">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="d-sub">本地模型（Tier 1）· 数据不出机器</div>
+        <div class="set-row">
+          <div class="set-t">启用本地 AI</div>
+          <span class="sw on"></span>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">Provider 预设</div>
+          <div class="seg">
+            <div class="seg-i on">Ollama</div>
+            <div class="seg-i">LM Studio</div>
+            <div class="seg-i">自定义</div>
+          </div>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">Base URL</div>
+          <div class="f-input">http://localhost:11434/v1</div>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">Model</div>
+          <div class="f-input">qwen2.5:7b</div>
+          <div class="f-hint">占位提示：手填，如 llama3.1:8b</div>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">API Key</div>
+          <div class="f-input secret"><span class="dots">••••••</span><span class="f-eye">👁</span></div>
+          <div class="f-hint">本地模型通常无需 Key，留空即可；仅 Tier 2 云端使用</div>
+        </div>
+        <div class="conn ok">
+          <span class="dot"></span>
+          <span>已连接 · Ollama · <b>qwen2.5:7b</b></span>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <div class="sp"></div>
+        <button class="btn btn-ghost">取消</button>
+        <button class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <div class="cap">连接失败 — 未检测到 Ollama</div>
+    <div class="dlg">
+      <div class="dlg-head">
+        <div class="dlg-title">AI 设置</div>
+        <div class="sp"></div>
+        <button class="icon-btn">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="d-sub">本地模型（Tier 1）· 数据不出机器</div>
+        <div class="set-row">
+          <div class="set-t">启用本地 AI</div>
+          <span class="sw on"></span>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">Provider 预设</div>
+          <div class="seg">
+            <div class="seg-i on">Ollama</div>
+            <div class="seg-i">LM Studio</div>
+            <div class="seg-i">自定义</div>
+          </div>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">Base URL</div>
+          <div class="f-input">http://localhost:11434/v1</div>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">Model</div>
+          <div class="f-input">qwen2.5:7b</div>
+          <div class="f-hint">占位提示：手填，如 llama3.1:8b</div>
+        </div>
+        <div class="ai-field">
+          <div class="ai-label">API Key</div>
+          <div class="f-input secret"><span class="dots">••••••</span><span class="f-eye">👁</span></div>
+          <div class="f-hint">本地模型通常无需 Key，留空即可；仅 Tier 2 云端使用</div>
+        </div>
+        <div class="conn bad">
+          <span class="ic">⚠</span>
+          <span>未检测到 Ollama（localhost:11434）</span>
+          <button class="btn btn-ghost btn-s">检查连接</button>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <div class="sp"></div>
+        <button class="btn btn-ghost">取消</button>
+        <button class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     B. 解释响应对话框
+     ============================================================ -->
+<h2><span class="fid">B</span>解释响应 — Response info bar ✨ 触发</h2>
+<div class="h2-sub">宽 560px；顶部上下文摘要行（请求 + 状态 + 大小 + 模型）；正文为一次性生成的解释文本；左为结果态，右为加载态变体（非流式，spinner + 进度文案）。</div>
+
+<div class="board">
+  <div class="board-label">LIGHT · 解释响应</div>
+  <div class="slot">
+    <div class="cap">生成结果</div>
+    <div class="dlg dlg-w560">
+      <div class="dlg-head">
+        <div class="dlg-title">解释响应</div>
+        <div class="sp"></div>
+        <button class="icon-btn">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="ctx">
+          <span class="m">POST</span>
+          <span><span class="v">{{baseUrl}}</span>/users · 200 OK · 1.2 KB · qwen2.5:7b</span>
+        </div>
+        <div class="ai-prose">
+          <p>本次请求<b>成功创建了用户</b>：服务器返回 200 OK（该接口用 200 而非 201 表示成功），响应体是一个 JSON 对象，不含 <code>error</code> / <code>code</code> 字段，可以判定写入成功、无业务级错误。</p>
+          <p>字段含义：<b>id</b>（<code>42</code>）是服务端分配的用户唯一标识，后续 <code>GET /users/42</code>、更新等操作都靠它定位资源，建议提取为变量复用；<b>name</b> 与 <b>email</b> 是请求体的回显，与提交值一致，说明服务端按原值保存；<b>createdAt</b>（<code>2026-08-31T06:30:00Z</code>）是 ISO 8601 UTC 时间戳，表示记录创建时间，前端展示时需自行做时区转换。</p>
+          <p>建议的后续动作：为该请求加两条断言——<code>Status code equals 200</code> 与 <code>$.id exists</code>；如果 email 在业务上必须唯一，可再加 <code>$.email equals 提交值</code>。也可以在「AI 生成断言」中一键生成后人工确认。</p>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-ghost">重新生成</button>
+        <button class="btn btn-ghost">复制</button>
+        <div class="sp"></div>
+        <button class="btn btn-primary">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <div class="cap">加载中</div>
+    <div class="dlg dlg-w560">
+      <div class="dlg-head">
+        <div class="dlg-title">解释响应</div>
+        <div class="sp"></div>
+        <button class="icon-btn">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="ctx">
+          <span class="m">POST</span>
+          <span><span class="v">{{baseUrl}}</span>/users · 200 OK · 1.2 KB · qwen2.5:7b</span>
+        </div>
+        <div class="ai-loading">
+          <div class="spin"></div>
+          <div>正在解释…（本地模型可能需要 10–30 秒）</div>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-ghost">重新生成</button>
+        <button class="btn btn-ghost">复制</button>
+        <div class="sp"></div>
+        <button class="btn btn-primary">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="board" data-theme="dark">
+  <div class="board-label">DARK · 解释响应</div>
+  <div class="slot">
+    <div class="cap">生成结果</div>
+    <div class="dlg dlg-w560">
+      <div class="dlg-head">
+        <div class="dlg-title">解释响应</div>
+        <div class="sp"></div>
+        <button class="icon-btn">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="ctx">
+          <span class="m">POST</span>
+          <span><span class="v">{{baseUrl}}</span>/users · 200 OK · 1.2 KB · qwen2.5:7b</span>
+        </div>
+        <div class="ai-prose">
+          <p>本次请求<b>成功创建了用户</b>：服务器返回 200 OK（该接口用 200 而非 201 表示成功），响应体是一个 JSON 对象，不含 <code>error</code> / <code>code</code> 字段，可以判定写入成功、无业务级错误。</p>
+          <p>字段含义：<b>id</b>（<code>42</code>）是服务端分配的用户唯一标识，后续 <code>GET /users/42</code>、更新等操作都靠它定位资源，建议提取为变量复用；<b>name</b> 与 <b>email</b> 是请求体的回显，与提交值一致，说明服务端按原值保存；<b>createdAt</b>（<code>2026-08-31T06:30:00Z</code>）是 ISO 8601 UTC 时间戳，表示记录创建时间，前端展示时需自行做时区转换。</p>
+          <p>建议的后续动作：为该请求加两条断言——<code>Status code equals 200</code> 与 <code>$.id exists</code>；如果 email 在业务上必须唯一，可再加 <code>$.email equals 提交值</code>。也可以在「AI 生成断言」中一键生成后人工确认。</p>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-ghost">重新生成</button>
+        <button class="btn btn-ghost">复制</button>
+        <div class="sp"></div>
+        <button class="btn btn-primary">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <div class="cap">加载中</div>
+    <div class="dlg dlg-w560">
+      <div class="dlg-head">
+        <div class="dlg-title">解释响应</div>
+        <div class="sp"></div>
+        <button class="icon-btn">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="ctx">
+          <span class="m">POST</span>
+          <span><span class="v">{{baseUrl}}</span>/users · 200 OK · 1.2 KB · qwen2.5:7b</span>
+        </div>
+        <div class="ai-loading">
+          <div class="spin"></div>
+          <div>正在解释…（本地模型可能需要 10–30 秒）</div>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-ghost">重新生成</button>
+        <button class="btn btn-ghost">复制</button>
+        <div class="sp"></div>
+        <button class="btn btn-primary">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     C. AI 生成断言对话框
+     ============================================================ -->
+<h2><span class="fid">C</span>AI 生成断言 — Assertions 页首「✨ AI 生成」触发</h2>
+<div class="h2-sub">宽 640px；基于最近一次响应生成，勾选后确认写入；第 2 行带黄色「已修正」小标——AI 原返回的 operator 非法，经 schema 校验后修正为合法值（防脑补，决策 ④）。</div>
+
+<div class="board">
+  <div class="board-label">LIGHT · AI 生成断言</div>
+  <div class="dlg dlg-w640">
+    <div class="dlg-head">
+      <div class="dlg-title">AI 生成断言</div>
+      <div class="sp"></div>
+      <button class="icon-btn">✕</button>
+    </div>
+    <div class="dlg-body">
+      <div class="d-sub">基于最近一次响应生成 · 已选 3/4 条</div>
+      <div class="g-card">
+        <div class="g-head">
+          <span></span><span>TARGET</span><span>PATH</span><span>OPERATOR</span><span>EXPECTED</span><span></span>
+        </div>
+        <div class="g-row">
+          <div class="checkbox on">✓</div>
+          <div class="a-select">Status code <span class="caret">▾</span></div>
+          <div class="a-cell plain"><span class="ph">—</span></div>
+          <div class="a-select mono">equals <span class="caret">▾</span></div>
+          <div class="a-cell">200</div>
+          <button class="icon-btn danger">✕</button>
+        </div>
+        <div class="g-row">
+          <div class="checkbox on">✓</div>
+          <div class="a-select">jsonPath <span class="caret">▾</span></div>
+          <div class="a-cell">$.data.id</div>
+          <div class="op-wrap">
+            <div class="a-select mono">equals <span class="caret">▾</span></div>
+            <span class="fix-badge">⚠ 已修正：operator 原值非法</span>
+          </div>
+          <div class="a-cell">42</div>
+          <button class="icon-btn danger">✕</button>
+        </div>
+        <div class="g-row">
+          <div class="checkbox on">✓</div>
+          <div class="a-select">jsonPath <span class="caret">▾</span></div>
+          <div class="a-cell">$.data.name</div>
+          <div class="a-select mono">exists <span class="caret">▾</span></div>
+          <div class="a-cell plain"><span class="ph">—</span></div>
+          <button class="icon-btn danger">✕</button>
+        </div>
+        <div class="g-row off">
+          <div class="checkbox"></div>
+          <div class="a-select">jsonPath <span class="caret">▾</span></div>
+          <div class="a-cell">$.data.createdAt</div>
+          <div class="a-select mono">contains <span class="caret">▾</span></div>
+          <div class="a-cell">T</div>
+          <button class="icon-btn danger">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn btn-ghost">重新生成</button>
+      <div class="sp"></div>
+      <button class="btn btn-ghost">取消</button>
+      <button class="btn btn-primary">添加 3 条</button>
+    </div>
+  </div>
+</div>
+
+<div class="board" data-theme="dark">
+  <div class="board-label">DARK · AI 生成断言</div>
+  <div class="dlg dlg-w640">
+    <div class="dlg-head">
+      <div class="dlg-title">AI 生成断言</div>
+      <div class="sp"></div>
+      <button class="icon-btn">✕</button>
+    </div>
+    <div class="dlg-body">
+      <div class="d-sub">基于最近一次响应生成 · 已选 3/4 条</div>
+      <div class="g-card">
+        <div class="g-head">
+          <span></span><span>TARGET</span><span>PATH</span><span>OPERATOR</span><span>EXPECTED</span><span></span>
+        </div>
+        <div class="g-row">
+          <div class="checkbox on">✓</div>
+          <div class="a-select">Status code <span class="caret">▾</span></div>
+          <div class="a-cell plain"><span class="ph">—</span></div>
+          <div class="a-select mono">equals <span class="caret">▾</span></div>
+          <div class="a-cell">200</div>
+          <button class="icon-btn danger">✕</button>
+        </div>
+        <div class="g-row">
+          <div class="checkbox on">✓</div>
+          <div class="a-select">jsonPath <span class="caret">▾</span></div>
+          <div class="a-cell">$.data.id</div>
+          <div class="op-wrap">
+            <div class="a-select mono">equals <span class="caret">▾</span></div>
+            <span class="fix-badge">⚠ 已修正：operator 原值非法</span>
+          </div>
+          <div class="a-cell">42</div>
+          <button class="icon-btn danger">✕</button>
+        </div>
+        <div class="g-row">
+          <div class="checkbox on">✓</div>
+          <div class="a-select">jsonPath <span class="caret">▾</span></div>
+          <div class="a-cell">$.data.name</div>
+          <div class="a-select mono">exists <span class="caret">▾</span></div>
+          <div class="a-cell plain"><span class="ph">—</span></div>
+          <button class="icon-btn danger">✕</button>
+        </div>
+        <div class="g-row off">
+          <div class="checkbox"></div>
+          <div class="a-select">jsonPath <span class="caret">▾</span></div>
+          <div class="a-cell">$.data.createdAt</div>
+          <div class="a-select mono">contains <span class="caret">▾</span></div>
+          <div class="a-cell">T</div>
+          <button class="icon-btn danger">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn btn-ghost">重新生成</button>
+      <div class="sp"></div>
+      <button class="btn btn-ghost">取消</button>
+      <button class="btn btn-primary">添加 3 条</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     D. 自然语言建请求对话框
+     ============================================================ -->
+<h2><span class="fid">D</span>自然语言建请求 — URL 栏 Method 左侧 ✨ 触发</h2>
+<div class="h2-sub">宽 560px；左为输入态，右为结果确认态（同一对话框两步）。生成的是草稿：字段取值仅来自描述，确认「填入当前请求」进编辑器后可继续修改。</div>
+
+<div class="board">
+  <div class="board-label">LIGHT · 自然语言建请求</div>
+  <div class="slot">
+    <div class="cap">输入态</div>
+    <div class="dlg dlg-w560">
+      <div class="dlg-head">
+        <div class="dlg-title">自然语言建请求</div>
+        <div class="sp"></div>
+        <button class="icon-btn">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="ai-textarea"><span class="ph">描述你想创建的请求，例如：POST 创建用户，JSON body 含 name 和 email，需要认证</span></div>
+        <div class="fmt-note">
+          <span class="ic">ⓘ</span>
+          <span>生成的是草稿，填入编辑器后可继续修改；字段取值仅来自你的描述</span>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <div class="sp"></div>
+        <button class="btn btn-ghost">取消</button>
+        <button class="btn btn-primary">生成</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <div class="cap">结果确认态</div>
+    <div class="dlg dlg-w560">
+      <div class="dlg-head">
+        <div class="dlg-title">自然语言建请求</div>
+        <div class="sp"></div>
+        <button class="icon-btn">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="sum-line">
+          <span class="m">POST</span>
+          <span><span class="v">{{baseUrl}}</span>/users</span>
+        </div>
+        <div class="pv-label">PARAMS</div>
+        <div class="pv-empty">0 行 · 该请求没有查询参数</div>
+        <div class="pv-label">HEADERS</div>
+        <div class="pv-row"><span class="k">Authorization</span><span class="val">Bearer <span class="v">{{token}}</span></span></div>
+        <div class="pv-row"><span class="k">Content-Type</span><span class="val">application/json</span></div>
+        <div class="pv-label">BODY · JSON</div>
+        <div class="pv-json">
+          <div>{</div>
+          <div>&nbsp;&nbsp;"name": "张三",</div>
+          <div>&nbsp;&nbsp;"email": "zhangsan@example.com"</div>
+          <div>}</div>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-ghost">重新生成</button>
+        <div class="sp"></div>
+        <button class="btn btn-ghost">取消</button>
+        <button class="btn btn-primary">填入当前请求</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="board" data-theme="dark">
+  <div class="board-label">DARK · 自然语言建请求</div>
+  <div class="slot">
+    <div class="cap">输入态</div>
+    <div class="dlg dlg-w560">
+      <div class="dlg-head">
+        <div class="dlg-title">自然语言建请求</div>
+        <div class="sp"></div>
+        <button class="icon-btn">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="ai-textarea"><span class="ph">描述你想创建的请求，例如：POST 创建用户，JSON body 含 name 和 email，需要认证</span></div>
+        <div class="fmt-note">
+          <span class="ic">ⓘ</span>
+          <span>生成的是草稿，填入编辑器后可继续修改；字段取值仅来自你的描述</span>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <div class="sp"></div>
+        <button class="btn btn-ghost">取消</button>
+        <button class="btn btn-primary">生成</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <div class="cap">结果确认态</div>
+    <div class="dlg dlg-w560">
+      <div class="dlg-head">
+        <div class="dlg-title">自然语言建请求</div>
+        <div class="sp"></div>
+        <button class="icon-btn">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="sum-line">
+          <span class="m">POST</span>
+          <span><span class="v">{{baseUrl}}</span>/users</span>
+        </div>
+        <div class="pv-label">PARAMS</div>
+        <div class="pv-empty">0 行 · 该请求没有查询参数</div>
+        <div class="pv-label">HEADERS</div>
+        <div class="pv-row"><span class="k">Authorization</span><span class="val">Bearer <span class="v">{{token}}</span></span></div>
+        <div class="pv-row"><span class="k">Content-Type</span><span class="val">application/json</span></div>
+        <div class="pv-label">BODY · JSON</div>
+        <div class="pv-json">
+          <div>{</div>
+          <div>&nbsp;&nbsp;"name": "张三",</div>
+          <div>&nbsp;&nbsp;"email": "zhangsan@example.com"</div>
+          <div>}</div>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-ghost">重新生成</button>
+        <div class="sp"></div>
+        <button class="btn btn-ghost">取消</button>
+        <button class="btn btn-primary">填入当前请求</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     E. 入口位置示意（完整应用窗口）
+     ============================================================ -->
+<h2><span class="fid">E</span>入口位置 — 三入口同屏示意</h2>
+<div class="h2-sub">完整应用窗口（860px）：批注 ① = Response info bar ✨ 解释响应；② = Assertions 页首「✨ AI 生成」；③ = URL 栏 Method 左侧 ✨ 自然语言建请求。列表与响应体仅示意。</div>
+
+<div class="board">
+  <div class="board-label">LIGHT · 入口示意</div>
+  <div class="win">
+    <div class="win-head"><span class="doc-tab"><span class="m">GET</span>获取用户列表</span></div>
+    <div class="urlbar">
+      <button class="icon-btn ai lg anno" data-anno="3">✨</button>
+      <div class="method-badge">GET ▾</div>
+      <div class="url-input"><span class="v">{{baseUrl}}</span>/api/v1/users?page=1</div>
+      <button class="send-btn">Send</button>
+    </div>
+    <div class="tabs">
+      <div class="tab-i">Params <span class="cnt">2</span></div>
+      <div class="tab-i">Headers <span class="cnt">1</span></div>
+      <div class="tab-i">Body</div>
+      <div class="tab-i">Auth</div>
+      <div class="tab-i">Pre-request</div>
+      <div class="tab-i active">Assertions <span class="cnt">3</span></div>
+    </div>
+    <div class="assert-pane">
+      <div class="assert-head">
+        <div>
+          <div class="assert-title">Assertions</div>
+          <div class="assert-sub">Evaluated after every send · AI 生成结果需确认后才写入</div>
+        </div>
+        <div class="sp"></div>
+        <button class="btn btn-soft btn-s anno" data-anno="2">✨ AI 生成</button>
+        <button class="btn btn-ghost btn-s">＋ Add assertion</button>
+      </div>
+      <div class="a-grid-head">
+        <span></span><span>TARGET</span><span>NAME / PATH</span><span>OPERATOR</span><span>EXPECTED</span><span></span>
+      </div>
+      <div class="a-row">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">Status code <span class="caret">▾</span></div>
+        <div class="a-cell plain"><span class="ph">—</span></div>
+        <div class="a-select mono">equals <span class="caret">▾</span></div>
+        <div class="a-cell">200</div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-row gh">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">Header <span class="caret">▾</span></div>
+        <div class="a-cell">Content-Type</div>
+        <div class="a-select mono">contains <span class="caret">▾</span></div>
+        <div class="a-cell">application/json</div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-row gh">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">jsonPath <span class="caret">▾</span></div>
+        <div class="a-cell">$.data.token</div>
+        <div class="a-select mono">exists <span class="caret">▾</span></div>
+        <div class="a-cell plain"><span class="ph">—</span></div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+    </div>
+    <div class="resp-meta">
+      <span class="status">200 OK</span>
+      <span class="meta">245 ms</span>
+      <span class="meta">1.2 KB</span>
+      <div class="sp"></div>
+      <button class="btn btn-ghost btn-s">Copy</button>
+      <button class="btn btn-ghost btn-s">Save</button>
+      <button class="icon-btn ai anno" data-anno="1" title="解释响应">✨</button>
+    </div>
+    <div class="tabs">
+      <div class="tab-i active">Body</div>
+      <div class="tab-i">Headers <span class="cnt">9</span></div>
+      <div class="tab-i">Cookies</div>
+      <div class="tab-i">Timing</div>
+      <div class="tab-i">Tests <span class="cnt">3/3</span></div>
+    </div>
+    <div class="stub">
+      <div class="bar" style="width:58%"></div>
+      <div class="bar" style="width:84%"></div>
+      <div class="bar" style="width:41%"></div>
+      <div class="bar" style="width:67%"></div>
+    </div>
+  </div>
+</div>
+
+<div class="board" data-theme="dark">
+  <div class="board-label">DARK · 入口示意</div>
+  <div class="win">
+    <div class="win-head"><span class="doc-tab"><span class="m">GET</span>获取用户列表</span></div>
+    <div class="urlbar">
+      <button class="icon-btn ai lg anno" data-anno="3">✨</button>
+      <div class="method-badge">GET ▾</div>
+      <div class="url-input"><span class="v">{{baseUrl}}</span>/api/v1/users?page=1</div>
+      <button class="send-btn">Send</button>
+    </div>
+    <div class="tabs">
+      <div class="tab-i">Params <span class="cnt">2</span></div>
+      <div class="tab-i">Headers <span class="cnt">1</span></div>
+      <div class="tab-i">Body</div>
+      <div class="tab-i">Auth</div>
+      <div class="tab-i">Pre-request</div>
+      <div class="tab-i active">Assertions <span class="cnt">3</span></div>
+    </div>
+    <div class="assert-pane">
+      <div class="assert-head">
+        <div>
+          <div class="assert-title">Assertions</div>
+          <div class="assert-sub">Evaluated after every send · AI 生成结果需确认后才写入</div>
+        </div>
+        <div class="sp"></div>
+        <button class="btn btn-soft btn-s anno" data-anno="2">✨ AI 生成</button>
+        <button class="btn btn-ghost btn-s">＋ Add assertion</button>
+      </div>
+      <div class="a-grid-head">
+        <span></span><span>TARGET</span><span>NAME / PATH</span><span>OPERATOR</span><span>EXPECTED</span><span></span>
+      </div>
+      <div class="a-row">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">Status code <span class="caret">▾</span></div>
+        <div class="a-cell plain"><span class="ph">—</span></div>
+        <div class="a-select mono">equals <span class="caret">▾</span></div>
+        <div class="a-cell">200</div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-row gh">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">Header <span class="caret">▾</span></div>
+        <div class="a-cell">Content-Type</div>
+        <div class="a-select mono">contains <span class="caret">▾</span></div>
+        <div class="a-cell">application/json</div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+      <div class="a-row gh">
+        <div class="checkbox on">✓</div>
+        <div class="a-select">jsonPath <span class="caret">▾</span></div>
+        <div class="a-cell">$.data.token</div>
+        <div class="a-select mono">exists <span class="caret">▾</span></div>
+        <div class="a-cell plain"><span class="ph">—</span></div>
+        <button class="icon-btn danger">✕</button>
+      </div>
+    </div>
+    <div class="resp-meta">
+      <span class="status">200 OK</span>
+      <span class="meta">245 ms</span>
+      <span class="meta">1.2 KB</span>
+      <div class="sp"></div>
+      <button class="btn btn-ghost btn-s">Copy</button>
+      <button class="btn btn-ghost btn-s">Save</button>
+      <button class="icon-btn ai anno" data-anno="1" title="解释响应">✨</button>
+    </div>
+    <div class="tabs">
+      <div class="tab-i active">Body</div>
+      <div class="tab-i">Headers <span class="cnt">9</span></div>
+      <div class="tab-i">Cookies</div>
+      <div class="tab-i">Timing</div>
+      <div class="tab-i">Tests <span class="cnt">3/3</span></div>
+    </div>
+    <div class="stub">
+      <div class="bar" style="width:58%"></div>
+      <div class="bar" style="width:84%"></div>
+      <div class="bar" style="width:41%"></div>
+      <div class="bar" style="width:67%"></div>
+    </div>
+  </div>
+</div>
+<div class="legend">入口批注：<span class="pk">1</span>Response info bar ✨ = 解释响应（对话框 B）<span class="pk">2</span>Assertions 页首「✨ AI 生成」（brand-soft 软按钮，决策 ⑤）= 生成断言（对话框 C）<span class="pk">3</span>URL 栏 Method 左侧 ✨ = 自然语言建请求（对话框 D）；禁用本地 AI 时三入口全部隐藏</div>
+
+</body>
+</html>

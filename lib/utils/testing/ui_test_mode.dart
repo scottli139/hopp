@@ -509,6 +509,23 @@ class UITestModeManager {
           assertions: assertions,
         );
 
+      case 'set_ai_mock':
+        final response = params['response'] as String;
+        return await _setAiMock(response);
+
+      case 'clear_ai_mock':
+        return await _clearAiMock();
+
+      case 'ai_explain':
+        return await _aiExplain();
+
+      case 'ai_generate_assertions':
+        return await _aiGenerateAssertions();
+
+      case 'ai_build_request':
+        final description = params['description'] as String;
+        return await _aiBuildRequest(description);
+
       default:
         throw Exception('未知指令: $action');
     }
@@ -3347,6 +3364,142 @@ class UITestModeManager {
       }
     }
     return null;
+  }
+
+  /// 设置 AI canned 响应（test-mode mock 接缝，F9.5 自动化验证）
+  Future<Map<String, dynamic>> _setAiMock(String response) async {
+    _ref!.read(uiTestAiMockProvider.notifier).state = response;
+
+    return {'mocked': true};
+  }
+
+  /// 清除 AI canned 响应
+  Future<Map<String, dynamic>> _clearAiMock() async {
+    _ref!.read(uiTestAiMockProvider.notifier).state = null;
+
+    return {'mocked': false};
+  }
+
+  /// 确保 AI 配置就绪：未启用则置 aiEnabled=true，模型名为空时置
+  /// test-model（baseUrl 保持默认，mock 下不发起真实连接）
+  Future<void> _ensureAiConfigReady() async {
+    final settings = _ref!.read(settingsProvider).value;
+    if (settings == null) {
+      throw Exception('AI 配置未加载，请稍后重试');
+    }
+    if (!settings.aiEnabled || settings.aiModel.isEmpty) {
+      await _ref!.read(settingsProvider.notifier).updateAiSettings(
+            aiEnabled: true,
+            aiModel: settings.aiModel.isEmpty ? 'test-model' : null,
+          );
+    }
+  }
+
+  /// 读取当前 tab 响应；无响应时抛异常（AI 指令共用前置检查）
+  HttpResponse _requireCurrentResponse(String actionName) {
+    final response = _ref!.read(currentResponseProvider);
+    if (response == null) {
+      throw Exception('没有可$actionName的响应，请先 send_request 或 simulate_*');
+    }
+    return response;
+  }
+
+  /// AI 解释当前 tab 响应（入口等价 Response info bar ✨）
+  ///
+  /// 业务失败（模型未配置 / 调用失败）不抛异常，errorMessage 放进
+  /// 返回 Map 供自动化脚本断言失败路径。
+  Future<Map<String, dynamic>> _aiExplain() async {
+    final response = _requireCurrentResponse('解释');
+    await _ensureAiConfigReady();
+
+    final notifier = _ref!.read(explainProvider.notifier);
+    notifier.reset();
+    await notifier.explain(
+      statusCode: response.statusCode ?? 0,
+      statusText: response.statusText ?? '',
+      body: response.body ?? '',
+    );
+
+    final state = _ref!.read(explainProvider);
+    return {
+      'status': state.status.name,
+      'result': state.result,
+      'error': state.errorMessage,
+    };
+  }
+
+  /// AI 基于当前 tab 响应生成断言草稿（入口等价 Tests 页「AI 生成」）
+  Future<Map<String, dynamic>> _aiGenerateAssertions() async {
+    final response = _requireCurrentResponse('生成断言');
+    final activeTab = _ref!.read(activeTabProvider);
+    await _ensureAiConfigReady();
+
+    final notifier = _ref!.read(generateAssertionsProvider.notifier);
+    notifier.reset();
+    await notifier.generate(
+      method: activeTab?.request.method.value ?? '',
+      url: activeTab?.request.url ?? '',
+      responseBody: response.body,
+    );
+
+    final state = _ref!.read(generateAssertionsProvider);
+    final result = state.result;
+    return {
+      'status': state.status.name,
+      if (result != null)
+        'assertions': [
+          for (final item in result.items)
+            {
+              'target': item.target.name,
+              'targetArg': item.targetArg,
+              'operator': item.operator.name,
+              'expected': item.expected,
+            },
+        ],
+      if (result != null) 'discarded': result.discarded,
+      'error': state.errorMessage,
+    };
+  }
+
+  /// AI 自然语言建请求（入口等价 URL 栏 ✨）
+  Future<Map<String, dynamic>> _aiBuildRequest(String description) async {
+    await _ensureAiConfigReady();
+
+    final notifier = _ref!.read(buildRequestProvider.notifier);
+    notifier.reset();
+    await notifier.build(description: description);
+
+    final state = _ref!.read(buildRequestProvider);
+    final draft = state.result;
+    return {
+      'status': state.status.name,
+      if (draft != null)
+        'draft': {
+          'name': draft.name,
+          'method': draft.method,
+          'url': draft.url,
+          'params': [
+            for (final p in draft.params)
+              {
+                'key': p.key,
+                'value': p.value,
+                'enabled': p.enabled,
+              },
+          ],
+          'headers': [
+            for (final h in draft.headers)
+              {
+                'key': h.key,
+                'value': h.value,
+                'enabled': h.enabled,
+              },
+          ],
+          'bodyType': draft.bodyType,
+          'rawContentType': draft.rawContentType,
+          'body': draft.body,
+        },
+      'error': state.errorMessage,
+    };
   }
 }
 

@@ -11,6 +11,7 @@ import '../common/app_controls.dart';
 import '../common/app_popup_menu.dart';
 import '../common/app_text_field.dart';
 import '../common/variable_highlight_controller.dart';
+import '../ai/generate_assertions_dialog.dart';
 
 /// 断言展示名（编辑页签 / Tests 页签共用，F4.1）
 class AssertionLabels {
@@ -134,6 +135,12 @@ class _AssertionEditorState extends State<AssertionEditor> {
                 ),
               ),
               const SizedBox(width: AppMetrics.space12),
+              // F4.2：AI 生成断言入口（基于最近一次响应，确认后追加）
+              GenerateAssertionsButton(
+                onConfirm: (rules) =>
+                    widget.onChanged([...widget.assertions, ...rules]),
+              ),
+              const SizedBox(width: AppMetrics.space8),
               AppButton.secondary(
                 label: 'Add assertion',
                 icon: Icons.add,

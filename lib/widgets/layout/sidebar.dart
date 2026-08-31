@@ -16,6 +16,8 @@ import '../../utils/app_logger.dart';
 import '../../utils/testing/ui_test_mode.dart';
 import '../../widgets/import_export/export_dialog.dart';
 import '../../widgets/import_export/import_dialog.dart';
+import '../ai/ai_settings_dialog.dart';
+import '../ai/ai_sparkle_button.dart';
 import '../collection/collection_settings_dialog.dart';
 import '../common/app_badge.dart';
 import '../common/app_button.dart';
@@ -204,27 +206,37 @@ class _SidebarState extends ConsumerState<Sidebar> {
       height: AppMetrics.height36,
       padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space8),
       alignment: Alignment.centerLeft,
-      child: AppSegmentedControl<String>(
-        value: themeMode,
-        items: const [
-          AppSegmentedItem(
-            value: 'system',
-            icon: Icons.brightness_auto_outlined,
-            tooltip: 'System theme',
+      child: Row(
+        children: [
+          AppSegmentedControl<String>(
+            value: themeMode,
+            items: const [
+              AppSegmentedItem(
+                value: 'system',
+                icon: Icons.brightness_auto_outlined,
+                tooltip: 'System theme',
+              ),
+              AppSegmentedItem(
+                value: 'light',
+                icon: Icons.light_mode_outlined,
+                tooltip: 'Light theme',
+              ),
+              AppSegmentedItem(
+                value: 'dark',
+                icon: Icons.dark_mode_outlined,
+                tooltip: 'Dark theme',
+              ),
+            ],
+            onChanged: (mode) =>
+                ref.read(settingsProvider.notifier).updateThemeMode(mode),
           ),
-          AppSegmentedItem(
-            value: 'light',
-            icon: Icons.light_mode_outlined,
-            tooltip: 'Light theme',
-          ),
-          AppSegmentedItem(
-            value: 'dark',
-            icon: Icons.dark_mode_outlined,
-            tooltip: 'Dark theme',
+          const Spacer(),
+          // F9.5：AI 设置入口
+          AiSparkleButton(
+            tooltip: 'AI 设置',
+            onPressed: () => openAiSettingsDialog(context),
           ),
         ],
-        onChanged: (mode) =>
-            ref.read(settingsProvider.notifier).updateThemeMode(mode),
       ),
     );
   }

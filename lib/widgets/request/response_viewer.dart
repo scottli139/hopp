@@ -23,6 +23,7 @@ import '../common/app_divider.dart';
 import '../common/app_empty_state.dart';
 import '../common/app_tabs.dart';
 import '../common/optimized_response_viewer.dart';
+import '../ai/explain_response_dialog.dart';
 import 'assertion_editor.dart';
 
 // 全局 ScrollController 用于 UI 测试控制滚动
@@ -440,6 +441,9 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             tooltip: 'Save response',
             onPressed: response.body != null ? () {} : null,
           ),
+          const SizedBox(width: 8),
+          // F9.5：解释响应（AI）入口
+          const ExplainResponseButton(),
         ],
       ),
     );

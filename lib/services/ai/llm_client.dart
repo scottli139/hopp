@@ -14,15 +14,19 @@ sealed class LlmException implements Exception {
 /// 连接失败 / 超时：未检测到本地模型服务
 class LlmConnectionException extends LlmException {
   LlmConnectionException([String? detail])
-      : super(detail == null || detail.isEmpty
-            ? '未检测到本地模型服务，请确认 Ollama / LM Studio 已启动'
-            : '未检测到本地模型服务，请确认 Ollama / LM Studio 已启动（$detail）',);
+      : super(
+          detail == null || detail.isEmpty
+              ? '未检测到本地模型服务，请确认 Ollama / LM Studio 已启动'
+              : '未检测到本地模型服务，请确认 Ollama / LM Studio 已启动（$detail）',
+        );
 
   /// 服务在线但生成超时（首次加载模型 / 机器负载高 / 超大 body）
   LlmConnectionException.timeout([String? detail])
-      : super(detail == null || detail.isEmpty
-            ? '本地模型响应超时：可能是首次加载模型或机器负载较高，请重试'
-            : '本地模型响应超时：可能是首次加载模型或机器负载较高，请重试（$detail）',);
+      : super(
+          detail == null || detail.isEmpty
+              ? '本地模型响应超时：可能是首次加载模型或机器负载较高，请重试'
+              : '本地模型响应超时：可能是首次加载模型或机器负载较高，请重试（$detail）',
+        );
 }
 
 /// HTTP 非 2xx：携带 status 与服务端错误消息
@@ -38,14 +42,13 @@ class LlmHttpException extends LlmException {
 /// 响应 schema 不符 / choices 为空
 class LlmResponseException extends LlmException {
   LlmResponseException([String detail = ''])
-      : super(detail.isEmpty
-            ? '模型服务返回异常，请稍后重试'
-            : '模型服务返回异常：$detail',);
+      : super(
+          detail.isEmpty ? '模型服务返回异常，请稍后重试' : '模型服务返回异常：$detail',
+        );
 }
 
 /// chat completions 消息（OpenAI 兼容格式）
 class LlmMessage {
-
   const LlmMessage.system(String content) : this._('system', content);
   const LlmMessage.user(String content) : this._('user', content);
   const LlmMessage.assistant(String content) : this._('assistant', content);
@@ -78,7 +81,6 @@ class LlmUsage {
 /// 日志只记元数据（端点 / 模型 / 耗时 / token 数），不落 messages 内容、
 /// API key 与响应文本本体。
 class LlmClient {
-
   LlmClient({Dio? dio, Logger? logger})
       : _dio = dio,
         _logger = logger ?? Logger();
@@ -188,11 +190,13 @@ class LlmClient {
 
   /// 自建实例时的默认超时：连接 5s / 生成 60s（F9.5）
   Dio _createDio() {
-    return Dio(BaseOptions(
-      connectTimeout: const Duration(seconds: 5),
-      receiveTimeout: const Duration(seconds: 60),
-      sendTimeout: const Duration(seconds: 60),
-    ),);
+    return Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 60),
+        sendTimeout: const Duration(seconds: 60),
+      ),
+    );
   }
 
   /// 从服务返回的 error 中提取 message（OpenAI 风格：

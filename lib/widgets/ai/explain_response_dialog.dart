@@ -161,8 +161,8 @@ class _ExplainResponseDialogContentState
               size: AppButtonSize.small,
               onPressed: aiState.isSuccess
                   ? () => Clipboard.setData(
-                      ClipboardData(text: aiState.result ?? ''),
-                    )
+                        ClipboardData(text: aiState.result ?? ''),
+                      )
                   : null,
             ),
             const Spacer(),

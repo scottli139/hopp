@@ -224,11 +224,13 @@ class AiResponseParser {
         throw const AiParseException(_parseErrorMessage);
       }
 
-      result.add(AiKeyValueDraft(
-        key: key,
-        value: value as String? ?? '',
-        enabled: enabled as bool? ?? true,
-      ),);
+      result.add(
+        AiKeyValueDraft(
+          key: key,
+          value: value as String? ?? '',
+          enabled: enabled as bool? ?? true,
+        ),
+      );
     }
     return result;
   }

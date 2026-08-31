@@ -77,12 +77,14 @@ void main() {
       expect(result.items.length, equals(input.length));
       expect(
         result.items.first,
-        equals(const AiAssertionDraft(
-          target: AssertionTarget.status,
-          targetArg: '',
-          operator: AssertionOperator.equals,
-          expected: '1',
-        ),),
+        equals(
+          const AiAssertionDraft(
+            target: AssertionTarget.status,
+            targetArg: '',
+            operator: AssertionOperator.equals,
+            expected: '1',
+          ),
+        ),
       );
     });
 
@@ -200,8 +202,10 @@ void main() {
       expect(draft.name, equals('创建用户'));
       expect(draft.method, equals('POST'));
       expect(draft.url, equals('{{baseUrl}}/users'));
-      expect(draft.params.single,
-          equals(const AiKeyValueDraft(key: 'page', value: '1', enabled: true)),);
+      expect(
+        draft.params.single,
+        equals(const AiKeyValueDraft(key: 'page', value: '1', enabled: true)),
+      );
       expect(draft.headers.single.enabled, isTrue); // 缺省 enabled
       expect(draft.bodyType, equals('raw'));
       expect(draft.rawContentType, equals('json'));
@@ -209,15 +213,17 @@ void main() {
     });
 
     test('method 小写归一为大写', () {
-      final draft = AiResponseParser.parseRequestDraft(validDraft()
-        ..['method'] = 'post',);
+      final draft = AiResponseParser.parseRequestDraft(
+        validDraft()..['method'] = 'post',
+      );
       expect(draft.method, equals('POST'));
     });
 
     test('未知 method 抛 AiParseException', () {
       expect(
-        () => AiResponseParser.parseRequestDraft(validDraft()
-          ..['method'] = 'QUERY',),
+        () => AiResponseParser.parseRequestDraft(
+          validDraft()..['method'] = 'QUERY',
+        ),
         throwsA(isA<AiParseException>()),
       );
     });
@@ -231,26 +237,30 @@ void main() {
 
     test('params 元素缺 key 抛 AiParseException', () {
       expect(
-        () => AiResponseParser.parseRequestDraft(validDraft()
-          ..['params'] = [
-            {'value': '1'},
-          ],),
+        () => AiResponseParser.parseRequestDraft(
+          validDraft()
+            ..['params'] = [
+              {'value': '1'},
+            ],
+        ),
         throwsA(isA<AiParseException>()),
       );
     });
 
     test('bodyType 非法抛 AiParseException', () {
       expect(
-        () => AiResponseParser.parseRequestDraft(validDraft()
-          ..['bodyType'] = 'weird',),
+        () => AiResponseParser.parseRequestDraft(
+          validDraft()..['bodyType'] = 'weird',
+        ),
         throwsA(isA<AiParseException>()),
       );
     });
 
     test('raw 时 rawContentType 非法抛 AiParseException', () {
       expect(
-        () => AiResponseParser.parseRequestDraft(validDraft()
-          ..['rawContentType'] = 'yaml',),
+        () => AiResponseParser.parseRequestDraft(
+          validDraft()..['rawContentType'] = 'yaml',
+        ),
         throwsA(isA<AiParseException>()),
       );
     });

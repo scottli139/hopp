@@ -59,8 +59,7 @@ void main() {
     setUp(() {
       mockStorageService = MockStorageService();
       settings = const AppSettings(aiEnabled: true, aiModel: 'qwen2.5:7b');
-      when(mockStorageService.getSettings())
-          .thenAnswer((_) async => settings);
+      when(mockStorageService.getSettings()).thenAnswer((_) async => settings);
       when(mockStorageService.saveSettings(any)).thenAnswer((_) async {});
     });
 
@@ -86,8 +85,7 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('success state shows result text and actions',
-        (tester) async {
+    testWidgets('success state shows result text and actions', (tester) async {
       final container = buildContainer(
         create: FakeExplainNotifier.new,
         currentResponse: response,
@@ -147,8 +145,7 @@ void main() {
     testWidgets('error state shows error message and retry button',
         (tester) async {
       final container = buildContainer(
-        create: (ref) => FakeExplainNotifier(ref)
-          ..errorText = '未检测到本地模型服务',
+        create: (ref) => FakeExplainNotifier(ref)..errorText = '未检测到本地模型服务',
         currentResponse: response,
       );
       addTearDown(container.dispose);
@@ -170,8 +167,7 @@ void main() {
       expect(find.text('重试'), findsOneWidget);
     });
 
-    testWidgets('gate: shows snackbar when AI is not enabled',
-        (tester) async {
+    testWidgets('gate: shows snackbar when AI is not enabled', (tester) async {
       settings = const AppSettings(); // aiEnabled = false, model = ''
       final container = buildContainer(
         create: FakeExplainNotifier.new,

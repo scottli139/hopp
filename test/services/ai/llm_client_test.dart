@@ -32,31 +32,41 @@ void main() {
         };
 
     void stubChat(Map<String, dynamic> data, {int statusCode = 200}) {
-      when(mockDio.request<Map<String, dynamic>>(
-        any,
-        data: anyNamed('data'),
-        options: anyNamed('options'),
-      ),).thenAnswer((_) async => Response<Map<String, dynamic>>(
-            requestOptions: RequestOptions(),
-            statusCode: statusCode,
-            data: data,
-          ),);
+      when(
+        mockDio.request<Map<String, dynamic>>(
+          any,
+          data: anyNamed('data'),
+          options: anyNamed('options'),
+        ),
+      ).thenAnswer(
+        (_) async => Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(),
+          statusCode: statusCode,
+          data: data,
+        ),
+      );
     }
 
     void stubChatError(DioException error) {
-      when(mockDio.request<Map<String, dynamic>>(
-        any,
-        data: anyNamed('data'),
-        options: anyNamed('options'),
-      ),).thenAnswer((_) async => throw error);
+      when(
+        mockDio.request<Map<String, dynamic>>(
+          any,
+          data: anyNamed('data'),
+          options: anyNamed('options'),
+        ),
+      ).thenAnswer((_) async => throw error);
     }
 
     test('成功返回 choices[0].message.content（含 usage 记录不报错）', () async {
-      stubChat(okData(usage: {
-        'prompt_tokens': 12,
-        'completion_tokens': 34,
-        'total_tokens': 46,
-      },),);
+      stubChat(
+        okData(
+          usage: {
+            'prompt_tokens': 12,
+            'completion_tokens': 34,
+            'total_tokens': 46,
+          },
+        ),
+      );
 
       final result = await client.chat(
         baseUrl: 'http://localhost:11434/v1',
@@ -78,13 +88,17 @@ void main() {
         messages: const [LlmMessage.user('hi')],
       );
 
-      final captured = verify(mockDio.request<Map<String, dynamic>>(
-        captureAny,
-        data: anyNamed('data'),
-        options: anyNamed('options'),
-      ),).captured;
-      expect(captured.first,
-          equals('http://localhost:11434/v1/chat/completions'),);
+      final captured = verify(
+        mockDio.request<Map<String, dynamic>>(
+          captureAny,
+          data: anyNamed('data'),
+          options: anyNamed('options'),
+        ),
+      ).captured;
+      expect(
+        captured.first,
+        equals('http://localhost:11434/v1/chat/completions'),
+      );
     });
 
     test('请求体包含 model/messages/temperature=0/stream=false', () async {
@@ -100,19 +114,23 @@ void main() {
         ],
       );
 
-      final captured = verify(mockDio.request<Map<String, dynamic>>(
-        any,
-        data: captureAnyNamed('data'),
-        options: anyNamed('options'),
-      ),).captured;
+      final captured = verify(
+        mockDio.request<Map<String, dynamic>>(
+          any,
+          data: captureAnyNamed('data'),
+          options: anyNamed('options'),
+        ),
+      ).captured;
       final body = captured.first as Map<String, dynamic>;
       expect(body['model'], equals('qwen2.5:7b'));
       expect(body['temperature'], equals(0));
       expect(body['stream'], isFalse);
       final messages = body['messages'] as List<dynamic>;
       expect(messages.length, equals(2));
-      expect(messages.first,
-          equals({'role': 'system', 'content': 'sys'}),);
+      expect(
+        messages.first,
+        equals({'role': 'system', 'content': 'sys'}),
+      );
     });
 
     test('apiKey 为空时不带 Authorization 头', () async {
@@ -125,11 +143,13 @@ void main() {
         messages: const [LlmMessage.user('hi')],
       );
 
-      final captured = verify(mockDio.request<Map<String, dynamic>>(
-        any,
-        data: anyNamed('data'),
-        options: captureAnyNamed('options'),
-      ),).captured;
+      final captured = verify(
+        mockDio.request<Map<String, dynamic>>(
+          any,
+          data: anyNamed('data'),
+          options: captureAnyNamed('options'),
+        ),
+      ).captured;
       final options = captured.first as Options;
       expect(options.headers, isNot(contains('Authorization')));
     });
@@ -144,22 +164,25 @@ void main() {
         messages: const [LlmMessage.user('hi')],
       );
 
-      final captured = verify(mockDio.request<Map<String, dynamic>>(
-        any,
-        data: anyNamed('data'),
-        options: captureAnyNamed('options'),
-      ),).captured;
+      final captured = verify(
+        mockDio.request<Map<String, dynamic>>(
+          any,
+          data: anyNamed('data'),
+          options: captureAnyNamed('options'),
+        ),
+      ).captured;
       final options = captured.first as Options;
       expect(options.headers!['Authorization'], equals('Bearer sk-test'));
     });
 
-    test('connectionError → LlmConnectionException（未检测到本地模型服务）',
-        () async {
-      stubChatError(DioException(
-        requestOptions: RequestOptions(),
-        type: DioExceptionType.connectionError,
-        message: 'SocketException: Connection refused',
-      ),);
+    test('connectionError → LlmConnectionException（未检测到本地模型服务）', () async {
+      stubChatError(
+        DioException(
+          requestOptions: RequestOptions(),
+          type: DioExceptionType.connectionError,
+          message: 'SocketException: Connection refused',
+        ),
+      );
 
       expect(
         () => client.chat(
@@ -168,20 +191,24 @@ void main() {
           apiKey: '',
           messages: const [LlmMessage.user('hi')],
         ),
-        throwsA(isA<LlmConnectionException>().having(
-          (e) => e.message,
-          'message',
-          contains('未检测到本地模型服务'),
-        ),),
+        throwsA(
+          isA<LlmConnectionException>().having(
+            (e) => e.message,
+            'message',
+            contains('未检测到本地模型服务'),
+          ),
+        ),
       );
     });
 
     test('receiveTimeout → LlmConnectionException（响应超时提示）', () async {
-      stubChatError(DioException(
-        requestOptions: RequestOptions(),
-        type: DioExceptionType.receiveTimeout,
-        message: 'Receiving data timeout',
-      ),);
+      stubChatError(
+        DioException(
+          requestOptions: RequestOptions(),
+          type: DioExceptionType.receiveTimeout,
+          message: 'Receiving data timeout',
+        ),
+      );
 
       expect(
         () => client.chat(
@@ -190,27 +217,30 @@ void main() {
           apiKey: '',
           messages: const [LlmMessage.user('hi')],
         ),
-        throwsA(isA<LlmConnectionException>().having(
-          (e) => e.message,
-          'message',
-          contains('响应超时'),
-        ),),
+        throwsA(
+          isA<LlmConnectionException>().having(
+            (e) => e.message,
+            'message',
+            contains('响应超时'),
+          ),
+        ),
       );
     });
 
-    test('400 带 OpenAI 风格 error.message → LlmHttpException 且消息透传',
-        () async {
-      stubChatError(DioException(
-        requestOptions: RequestOptions(),
-        type: DioExceptionType.badResponse,
-        response: Response<Map<String, dynamic>>(
+    test('400 带 OpenAI 风格 error.message → LlmHttpException 且消息透传', () async {
+      stubChatError(
+        DioException(
           requestOptions: RequestOptions(),
-          statusCode: 400,
-          data: {
-            'error': {'message': 'model "m" not found'},
-          },
+          type: DioExceptionType.badResponse,
+          response: Response<Map<String, dynamic>>(
+            requestOptions: RequestOptions(),
+            statusCode: 400,
+            data: {
+              'error': {'message': 'model "m" not found'},
+            },
+          ),
         ),
-      ),);
+      );
 
       expect(
         () => client.chat(
@@ -219,16 +249,23 @@ void main() {
           apiKey: '',
           messages: const [LlmMessage.user('hi')],
         ),
-        throwsA(isA<LlmHttpException>()
-            .having((e) => e.statusCode, 'statusCode', equals(400))
-            .having((e) => e.message, 'message',
-                contains('model "m" not found'),),),
+        throwsA(
+          isA<LlmHttpException>()
+              .having((e) => e.statusCode, 'statusCode', equals(400))
+              .having(
+                (e) => e.message,
+                'message',
+                contains('model "m" not found'),
+              ),
+        ),
       );
     });
 
     test('非 2xx 直接返回（无 DioException）也归并为 LlmHttpException', () async {
       stubChat(
-        {'error': {'message': 'internal boom'}},
+        {
+          'error': {'message': 'internal boom'}
+        },
         statusCode: 500,
       );
 
@@ -239,10 +276,15 @@ void main() {
           apiKey: '',
           messages: const [LlmMessage.user('hi')],
         ),
-        throwsA(isA<LlmHttpException>()
-            .having((e) => e.statusCode, 'statusCode', equals(500))
-            .having(
-                (e) => e.message, 'message', contains('internal boom'),),),
+        throwsA(
+          isA<LlmHttpException>()
+              .having((e) => e.statusCode, 'statusCode', equals(500))
+              .having(
+                (e) => e.message,
+                'message',
+                contains('internal boom'),
+              ),
+        ),
       );
     });
 

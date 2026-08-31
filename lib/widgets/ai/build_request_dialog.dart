@@ -97,7 +97,9 @@ class _BuildRequestDialogContentState
 
   void _generate() {
     _lastDescription = _descCtrl.text.trim();
-    ref.read(buildRequestProvider.notifier).build(description: _lastDescription);
+    ref
+        .read(buildRequestProvider.notifier)
+        .build(description: _lastDescription);
   }
 
   Future<void> _apply(AiRequestDraft draft) async {
@@ -356,8 +358,7 @@ class _BuildRequestDialogContentState
         kvRows(draft.params),
         sectionLabel('HEADERS'),
         kvRows(draft.headers),
-        if (draft.bodyType != 'none' &&
-            (draft.body ?? '').isNotEmpty) ...[
+        if (draft.bodyType != 'none' && (draft.body ?? '').isNotEmpty) ...[
           sectionLabel(bodyLabel),
           Container(
             width: double.infinity,

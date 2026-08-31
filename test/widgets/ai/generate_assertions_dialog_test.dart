@@ -129,8 +129,7 @@ void main() {
       );
     }
 
-    testWidgets('renders generated list and discarded warning',
-        (tester) async {
+    testWidgets('renders generated list and discarded warning', (tester) async {
       final container = buildContainer(currentResponse: response);
       addTearDown(container.dispose);
       await pumpEditor(tester, container);
@@ -171,8 +170,7 @@ void main() {
       expect(find.text('添加 3 条'), findsOneWidget);
     });
 
-    testWidgets('confirm appends selected rules via onChanged',
-        (tester) async {
+    testWidgets('confirm appends selected rules via onChanged', (tester) async {
       final container = buildContainer(currentResponse: response);
       addTearDown(container.dispose);
 
@@ -217,8 +215,7 @@ void main() {
       );
     });
 
-    testWidgets('gate: shows snackbar when no response sample',
-        (tester) async {
+    testWidgets('gate: shows snackbar when no response sample', (tester) async {
       final container = buildContainer(currentResponse: null);
       addTearDown(container.dispose);
       await pumpEditor(tester, container);

@@ -124,8 +124,16 @@ class AiRequestDraft {
       other.body == body;
 
   @override
-  int get hashCode => Object.hash(name, method, url, bodyType, rawContentType,
-      body, Object.hashAll(params), Object.hashAll(headers),);
+  int get hashCode => Object.hash(
+        name,
+        method,
+        url,
+        bodyType,
+        rawContentType,
+        body,
+        Object.hashAll(params),
+        Object.hashAll(headers),
+      );
 
   static bool _listEquals(List<AiKeyValueDraft> a, List<AiKeyValueDraft> b) {
     if (a.length != b.length) return false;

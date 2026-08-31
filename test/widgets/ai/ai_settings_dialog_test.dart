@@ -50,8 +50,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           storageServiceProvider.overrideWithValue(mockStorageService),
-          if (llmClient != null)
-            llmClientProvider.overrideWithValue(llmClient),
+          if (llmClient != null) llmClientProvider.overrideWithValue(llmClient),
         ],
       );
       // 预触发 settings 加载，避免对话框 initState 读到 loading 态
@@ -182,8 +181,7 @@ void main() {
       expect(find.byKey(const Key('ai_settings_dialog')), findsNothing);
     });
 
-    testWidgets('check connection success shows connected row',
-        (tester) async {
+    testWidgets('check connection success shows connected row', (tester) async {
       final container = buildContainer(llmClient: FakeLlmClient());
       addTearDown(container.dispose);
       await openDialog(tester, container);

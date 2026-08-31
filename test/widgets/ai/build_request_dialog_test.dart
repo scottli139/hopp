@@ -48,8 +48,7 @@ void main() {
     setUp(() {
       mockStorageService = MockStorageService();
       settings = const AppSettings(aiEnabled: true, aiModel: 'qwen2.5:7b');
-      when(mockStorageService.getSettings())
-          .thenAnswer((_) async => settings);
+      when(mockStorageService.getSettings()).thenAnswer((_) async => settings);
       when(mockStorageService.saveSettings(any)).thenAnswer((_) async {});
     });
 
@@ -192,8 +191,7 @@ void main() {
       expect(find.byKey(const Key('build_request_dialog')), findsNothing);
     });
 
-    testWidgets('gate: shows snackbar when AI is not enabled',
-        (tester) async {
+    testWidgets('gate: shows snackbar when AI is not enabled', (tester) async {
       settings = const AppSettings(); // aiEnabled = false
       final container = buildContainer();
       addTearDown(container.dispose);

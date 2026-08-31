@@ -108,8 +108,11 @@ void main() {
         expect(system, contains(target.name), reason: 'target ${target.name}');
       }
       for (final operator in AssertionOperator.values) {
-        expect(system, contains(operator.name),
-            reason: 'operator ${operator.name}',);
+        expect(
+          system,
+          contains(operator.name),
+          reason: 'operator ${operator.name}',
+        );
       }
       // 组合矩阵提示
       expect(system, contains('${AssertionTarget.status.name}:'));
@@ -126,7 +129,8 @@ void main() {
     });
 
     test('含只输出严格 JSON 与输出格式说明', () {
-      final system = AiPrompts.buildRequestPrompt(description: 'x').first.content;
+      final system =
+          AiPrompts.buildRequestPrompt(description: 'x').first.content;
       expect(system, contains('只输出严格 JSON'));
       expect(system, contains('"method"'));
       expect(system, contains('"bodyType"'));
@@ -135,7 +139,8 @@ void main() {
     });
 
     test('含防脑补硬约束与 {{var}} 支持', () {
-      final system = AiPrompts.buildRequestPrompt(description: 'x').first.content;
+      final system =
+          AiPrompts.buildRequestPrompt(description: 'x').first.content;
       expect(system, contains('只能来自用户描述'));
       expect(system, contains('缺失'));
       expect(system, contains('禁止脑补'));

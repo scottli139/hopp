@@ -339,8 +339,8 @@ class _AiSettingsDialogState extends ConsumerState<AiSettingsDialog> {
           Container(
             width: 8,
             height: 8,
-            decoration:
-                const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+                color: AppColors.success, shape: BoxShape.circle),
           ),
           const SizedBox(width: AppMetrics.space8),
           Expanded(

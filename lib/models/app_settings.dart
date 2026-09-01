@@ -29,7 +29,7 @@ class AppSettings with _$AppSettings {
     /// 模型名（本地服务为手填，如 'qwen2.5:7b'）
     @HiveField(11) @Default('') String aiModel,
 
-    /// API Key（本地服务留空；Tier 2 用，keychain 存储随 M8.6）
+    /// API Key（本地服务留空；Tier 2 用，keychain 存储随 M8.7）
     @HiveField(12) @Default('') String aiApiKey,
   }) = _AppSettings;
 

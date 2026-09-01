@@ -55,14 +55,14 @@
 
 - fx 菜单新增 INSERT DYNAMIC VARIABLE 区（五个动态变量带说明一键插入），fx 图标 KV 值单元格常驻（不再要求先输入 `{{`）
 - 时间函数复用 F8.3 管道引擎：`date_add([+-]N{s|m|h|d|w})`、`date_floor(hour|day|week|month)`（本地时区）；10 位秒/13 位毫秒自适应，输出同单位；非法 → 保留原文 + UI 标红
-- 响应注解纯渲染层：JSON 数值命中 epoch 范围（2001 起）行尾追加 `→ yyyy-MM-dd HH:mm:ss` 灰色注释；字符串内数字不标注；Copy 原文不变；Raw 不标注；工具栏 ⏱ 开关默认开
-- 测试：新增 37（transforms 18 / epoch_annotation 10 / viewer widget 5 / fx 菜单 widget 4），全量 988 通过（2 跳过）
+- 响应注解纯渲染层：JSON 数值命中 epoch 范围（秒级 2001 年 ~ 当前 +5 年缓冲防 10 位纯数字 id 误判；毫秒级 2001 ~ 9999 年）行尾追加 `→ yyyy-MM-dd HH:mm:ss` 灰色注释；字符串内数字不标注；Copy 原文不变；Raw 不标注；工具栏 ⏱ 开关默认开
+- 测试：新增 39（transforms 18 / epoch_annotation 12 / viewer widget 5 / fx 菜单 widget 4），试用修复再补 6 个回归/渲染不变量测试，全量 995 通过（2 跳过）
 
 **M8.5 明细（✅ 已完成，2026-08-31 澄清并交付）**
 
 需求与验收的唯一权威见 [PRD](./PRD.md) F9.5；UI 原型见 [tier1_ai_preview.html](./design/tier1_ai_preview.html)。关键决策：
 
-- 底座：Dio 手写单一 OpenAI 兼容 chat completions 客户端；预设 Ollama `http://localhost:11434/v1` / LM Studio `http://localhost:1234/v1`；配置存 AppSettings 新字段（keychain 级密钥存储随 M8.6）
+- 底座：Dio 手写单一 OpenAI 兼容 chat completions 客户端；预设 Ollama `http://localhost:11434/v1` / LM Studio `http://localhost:1234/v1`；配置存 AppSettings 新字段（keychain 级密钥存储随 M8.7 / Tier 2）
 - 非流式 v1（流式输出进 BACKLOG）；连接 5s / 生成 60s 超时；温度 0；元数据-only 日志（端点/模型/耗时/token 数）
 - 三入口：Response info bar「解释响应」、Assertions 页首「AI 生成」、URL 栏 ✨「自然语言建请求」；均为任务型弹窗，不做通用聊天面板
 - 防脑补：AI 产出客户端 schema 硬校验，非法项丢弃并提示可重试；优雅降级，绝不影响发请求主流程

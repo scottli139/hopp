@@ -10,7 +10,7 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前阶段** | 战略转向：本地 + 私有 AI（M8 系列进行中：M8.0–M8.6 已完成并发布）；当前版本 v0.14.0（2026-09-01 发布），下一步 M8.7（Tier 2 BYOK） |
+| **当前阶段** | 战略转向：本地 + 私有 AI（M8 系列进行中：M8.0–M8.6 已完成并发布）；当前版本 v0.14.0（2026-09-01 发布）；下一步 M8.7（Tier 2 BYOK）→ M8.8（日常工效补齐）→ v1.0 GA |
 | **目标版本** | v1.0.0 |
 | **技术栈** | Flutter 3.27.x + Dart 3.6.x + Riverpod |
 | **测试状态** | ✅ **995 通过 / 2 跳过**（2026-09-01 实测） |
@@ -40,33 +40,17 @@
 |------|------|--------|------|------|
 | M8.0 | 状态纠偏 + UX 审计 | P0 | — | ✅ (2026-08-21)，审计清单见 [UX_AUDIT_M8.md](./UX_AUDIT_M8.md) |
 | M8.1 | 环境变量系统（即原 M6）：多环境 + 全局变量 + `{{var}}` 替换 + 动态变量 | P0 | — | ✅ (2026-08-21)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md#环境变量系统-m81) |
-| M8.2 | 预请求链 + 变量转换（F8.1-F8.4）：登录→token、密码 sha1/aes 加密 | P0 | ≈5 周 | ✅ (2026-08-25，v0.10.0：含集合级继承、401 重跑、试运行、Hive 落盘加密)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「预请求链与变量转换」一节 |
-| M8.3 | Tier 0（F9.4）：OpenAPI/Swagger 导入 → 一键生成请求/collection | P0 | ≈2 周 | ✅ (2026-08-28：3.0/3.1+2.0 转换、JSON+YAML、文件/URL 双源、防脑补映射、勾选预览、结果报告)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「OpenAPI/Swagger 导入」一节 |
-| M8.4 | 轻量断言 + CLI/CI（F4.1/F4.4）：状态/Header/Body/JSONPath/响应时间断言 + `cli/` 运行器与导出 | P1 | ≈4 周 | ✅ (2026-08-28：声明式规则 + Tests 页签 + `.hopp.json` 全保真导出 + `hopp run` exit 0/1/2，F4.2 挪 M8.5)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「轻量断言 + CLI/CI」一节 |
-| M8.5 | Tier 1（F9.5 + F4.2）：本地模型（Ollama/LM Studio）解释响应 / 生成断言 / 自然语言建请求 + OpenAI 兼容客户端 | P1 | ≈2 周 | ✅ (2026-08-31：Dio 手写 OpenAI 兼容客户端 + 三任务型弹窗 + 防脑补校验（响应样本 8KB 截断）+ mock 接缝 test-mode 指令 ×5；真模型冒烟已补：Ollama + qwen2.5:3b)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「Tier 1 本地模型」一节 |
-| M8.6 | 时间戳工效增强（F8.5）：fx 动态变量直达 + 管道时间函数 date_add/date_floor + 响应 epoch 人性化注解 | P1 | 数日 | ✅ (2026-09-01：fx 常驻 + 动态变量插入区 + 时间函数参数表单 + 响应 JSON epoch 注解（渲染层 only，Copy 不变，工具栏开关）；踩坑：管道段解析正则不含下划线致 date_add 整体失败，已修)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「时间戳工效增强」一节 |
-| M8.7 | Tier 2（F9）：BYOK 云端，默认关闭 | P2 | ≈1 周 | ⏳ |
+| M8.2 | 预请求链 + 变量转换（F8.1-F8.4） | P0 | ≈5 周 | ✅ (2026-08-25，v0.10.0)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「预请求链与变量转换」 |
+| M8.3 | Tier 0（F9.4）：OpenAPI/Swagger 导入 → 一键生成请求/collection | P0 | ≈2 周 | ✅ (2026-08-28，v0.11.0)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「OpenAPI/Swagger 导入」 |
+| M8.4 | 轻量断言 + CLI/CI（F4.1/F4.4） | P1 | ≈4 周 | ✅ (2026-08-28，v0.12.0；F4.2 挪 M8.5)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「轻量断言 + CLI/CI」 |
+| M8.5 | Tier 1（F9.5 + F4.2）：本地模型（Ollama/LM Studio）解释响应 / 生成断言 / 自然语言建请求 | P1 | ≈2 周 | ✅ (2026-08-31，v0.13.0)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「Tier 1 本地模型」 |
+| M8.6 | 时间戳工效增强（F8.5） | P1 | 数日 | ✅ (2026-09-01，v0.14.0)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「时间戳工效增强」 |
+| M8.7 | Tier 2（F9）：BYOK 云端，默认关闭（含 keychain 级密钥存储） | P2 | ≈1 周 | ⏳ |
+| M8.8 | 日常工效补齐：cURL 生成（F1.10）+ 环境导出（F3.7）+ Request Body Beautify（UX-3）+ 响应体搜索（F5.4）+ AI 流式输出（F9.6） | P2 | ≈2 周 | ⏳ |
 
 **已搁置**：原 v0.8/v0.9 规划中的非差异化功能（Mock 服务器、代理、WebSocket、代码片段生成、Cookie 管理、文件上传下载等）统一由 [BACKLOG.md](./BACKLOG.md) 维护。
 
-**M8.6 明细（✅ 已完成，2026-09-01 澄清并交付）**
-
-需求与验收的唯一权威见 [PRD](./PRD.md) F8.5；UI 原型见 [timestamp_ergonomics_preview.html](./design/timestamp_ergonomics_preview.html)。关键决策：
-
-- fx 菜单新增 INSERT DYNAMIC VARIABLE 区（五个动态变量带说明一键插入），fx 图标 KV 值单元格常驻（不再要求先输入 `{{`）
-- 时间函数复用 F8.3 管道引擎：`date_add([+-]N{s|m|h|d|w})`、`date_floor(hour|day|week|month)`（本地时区）；10 位秒/13 位毫秒自适应，输出同单位；非法 → 保留原文 + UI 标红
-- 响应注解纯渲染层：JSON 数值命中 epoch 范围（秒级 2001 年 ~ 当前 +5 年缓冲防 10 位纯数字 id 误判；毫秒级 2001 ~ 9999 年）行尾追加 `→ yyyy-MM-dd HH:mm:ss` 灰色注释；字符串内数字不标注；Copy 原文不变；Raw 不标注；工具栏 ⏱ 开关默认开
-- 测试：新增 39（transforms 18 / epoch_annotation 12 / viewer widget 5 / fx 菜单 widget 4），试用修复再补 6 个回归/渲染不变量测试，全量 995 通过（2 跳过）
-
-**M8.5 明细（✅ 已完成，2026-08-31 澄清并交付）**
-
-需求与验收的唯一权威见 [PRD](./PRD.md) F9.5；UI 原型见 [tier1_ai_preview.html](./design/tier1_ai_preview.html)。关键决策：
-
-- 底座：Dio 手写单一 OpenAI 兼容 chat completions 客户端；预设 Ollama `http://localhost:11434/v1` / LM Studio `http://localhost:1234/v1`；配置存 AppSettings 新字段（keychain 级密钥存储随 M8.7 / Tier 2）
-- 非流式 v1（流式输出进 BACKLOG）；连接 5s / 生成 60s 超时；温度 0；元数据-only 日志（端点/模型/耗时/token 数）
-- 三入口：Response info bar「解释响应」、Assertions 页首「AI 生成」、URL 栏 ✨「自然语言建请求」；均为任务型弹窗，不做通用聊天面板
-- 防脑补：AI 产出客户端 schema 硬校验，非法项丢弃并提示可重试；优雅降级，绝不影响发请求主流程
-- 测试：`LlmClient` mock Dio 单测 + 校验器/提示词构建器单测 + test-mode 指令（mock 响应）自动化验证
+**M8.8 排期决策（2026-09-01）**：全面核对未实现功能后，在 M8.7 之后、v1.0 GA 之前插入一个工效补齐小版本。选型标准 = 高频日常动作 + 对称性补齐（cURL 导入↔生成、响应↔请求格式化、环境导入↔导出）+ 不动架构零风险。评估后维持未排期的：F1.8 Cookie 管理（认证链需要时再启）、F1.9 文件上传、F2.1 请求历史、F4.3 批量运行（CLI 已覆盖 CI 场景）；云端同步/团队协作与本地优先定位冲突，明确不做。
 
 > 历史注记：v0.7.0 曾规划「环境变量 + JS 测试脚本」并一度标记完成，2026-08-20 纠偏确认实际未实现——环境变量由 M8.1 承接落地，JS 沙箱决策降级为 M8.4 轻量断言（见 [PRD](./PRD.md) F4）。
 
@@ -101,12 +85,14 @@
 | v0.7.0 | 2026-04-01 | 版本号提升；站点与 Windows CI 修复（2026-08-20）。原规划的环境变量/JS 测试脚本经 2026-08-20 纠偏后分别由 M8.1 / M8.4 承接 | ✅ |
 | v0.8.x | 2026-08-21 ~ 08-22 | M8.0 UX 审计修复、**M8.1 环境变量系统**（v0.8.0）、设计系统 P1–P5（v0.8.5–v0.8.9） | ✅ |
 | v0.9.x | 2026-08-22 ~ 08-24 | 设计系统收尾：输入框渲染修复（v0.9.0）、侧栏主题切换（v0.9.1）、环境管理对话框重设计（v0.9.2）及三处配套修复（v0.9.3–v0.9.5） | ✅ |
-| v0.10.0 | 2026-08-25 | **M8.2 预请求链与变量转换**（F8.1–F8.4：Auth 配置与继承、`{{var \| fn}}` 管道、预请求链/401 重跑/试运行、Hive 落盘加密） | ✅ |
-| v0.11.0 | 2026-08-28 | **M8.3 OpenAPI/Swagger 导入**（F9.4：3.0/3.1+2.0、JSON+YAML、文件/URL 双源、勾选预览、结果报告）、导入入口合并（cURL 页签）、test-mode 数据隔离 | ✅ |
-| v0.12.0 | 2026-08-29 | **M8.4 轻量断言 + CLI/CI**（F4.1/F4.4：声明式断言 + Tests 页签、`.hopp.json` 全保真导出、`hopp run` 运行器；F4.2 AI 生成挪 M8.5）、URL 栏过期值修复 | ✅ |
-| v0.13.0 | 2026-08-31 | **M8.5 Tier 1 本地模型**（F9.5 + F4.2：Ollama/LM Studio 解释响应 / AI 生成断言 / 自然语言建请求 + OpenAI 兼容客户端）+ 试用修复三坑（对话框宽度 / 断言 prompt 截断 / 超时提示分流） | ✅ |
-| v0.14.0 | 2026-09-01 | **M8.6 时间戳工效增强**（F8.5：fx 动态变量直达、date_add/date_floor 管道时间函数、响应 epoch 人性化注解、Body 变量插入）+ 试用修复四波 | ✅ |
-| v1.0.0 GA | — | 差异化能力落地（M8.3–M8.7）+ 全平台稳定（macOS/Windows/Linux）+ 应用商店发布 | ⏳ |
+| v0.10.0 | 2026-08-25 | **M8.2 预请求链与变量转换**（F8.1–F8.4） | ✅ |
+| v0.11.0 | 2026-08-28 | **M8.3 OpenAPI/Swagger 导入**（F9.4）+ 导入入口合并、test-mode 数据隔离 | ✅ |
+| v0.12.0 | 2026-08-29 | **M8.4 轻量断言 + CLI/CI**（F4.1/F4.4；F4.2 挪 M8.5） | ✅ |
+| v0.13.0 | 2026-08-31 | **M8.5 Tier 1 本地模型**（F9.5 + F4.2）+ 试用修复三坑 | ✅ |
+| v0.14.0 | 2026-09-01 | **M8.6 时间戳工效增强**（F8.5）+ 试用修复四波 | ✅ |
+| v0.15.0（预计） | — | M8.7 Tier 2 BYOK 云端（默认关闭 + keychain 密钥存储 + 首次外发隐私门） | ⏳ |
+| v0.16.0（预计） | — | M8.8 日常工效补齐（F1.10 cURL 生成、F3.7 环境导出、UX-3 Body Beautify、F5.4 响应体搜索、F9.6 流式输出） | ⏳ |
+| v1.0.0 GA | — | 差异化能力落地（M8.3–M8.7）+ 工效补齐（M8.8）+ 全平台稳定（macOS/Windows/Linux）+ 应用商店发布 | ⏳ |
 
 ### Backlog（未来规划）
 

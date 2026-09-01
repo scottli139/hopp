@@ -10,8 +10,7 @@ void main() {
       '  "orderNo": "1564761599000"\n'
       '}';
 
-  String expectedAnnotation() =>
-      EpochAnnotation.format('1564156800000')!;
+  String expectedAnnotation() => EpochAnnotation.format('1564156800000')!;
 
   Widget buildViewer({
     required String content,

@@ -395,7 +395,8 @@ class _TransformParamFormState extends State<_TransformParamForm> {
   String _floorUnit = 'day';
 
   /// date_add offset 语法（与 VariableTransforms._dateAdd 同源）
-  static final _offsetPattern = RegExp(r'^[+-]?\d+[smhdw]$', caseSensitive: false);
+  static final _offsetPattern =
+      RegExp(r'^[+-]?\d+[smhdw]$', caseSensitive: false);
 
   bool get _offsetValid =>
       _offsetPattern.hasMatch(_offsetController.text.trim());
@@ -511,7 +512,9 @@ class _TransformParamFormState extends State<_TransformParamForm> {
         const SizedBox(width: AppMetrics.space8),
         AppButton.primary(
           label: '插入',
-          onPressed: canInsert ? () => Navigator.of(context).pop(buildSnippet()) : null,
+          onPressed: canInsert
+              ? () => Navigator.of(context).pop(buildSnippet())
+              : null,
         ),
       ],
     );

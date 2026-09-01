@@ -32,8 +32,10 @@ void main() {
     test('秒级 near-now 边界：现在 ± 范围内可标注，超 +5 年缓冲拒绝', () {
       final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       expect(EpochAnnotation.format('${nowSec - 100000}'), isNotNull); // 约 1 天前
-      expect(EpochAnnotation.format('${nowSec + 86400 * 300}'), isNotNull); // 约 300 天后
-      expect(EpochAnnotation.format('${nowSec + 86400 * 366 * 10}'), isNull); // 10 年后
+      expect(EpochAnnotation.format('${nowSec + 86400 * 300}'),
+          isNotNull); // 约 300 天后
+      expect(EpochAnnotation.format('${nowSec + 86400 * 366 * 10}'),
+          isNull); // 10 年后
     });
   });
 
@@ -46,8 +48,7 @@ void main() {
     });
 
     test('字符串字面量内的数字不标注（含转义引号）', () {
-      final segments =
-          EpochAnnotation.scanLine(r'"orderNo": "1564761599000",');
+      final segments = EpochAnnotation.scanLine(r'"orderNo": "1564761599000",');
       expect(segments.any((s) => s.isEpoch), isFalse);
       // 原文保留
       expect(

@@ -497,8 +497,7 @@ void main() {
         expect(find.byType(CodeField), findsOneWidget);
       });
 
-      testWidgets('Body 工具条 fx 菜单在光标处插入变量并同步 provider',
-          (tester) async {
+      testWidgets('Body 工具条 fx 菜单在光标处插入变量并同步 provider', (tester) async {
         final request = HttpRequest.empty().copyWith(
           id: 'req1',
           name: 'Test Request',

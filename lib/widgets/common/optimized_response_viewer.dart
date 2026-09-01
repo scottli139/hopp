@@ -573,7 +573,8 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           decoration: BoxDecoration(
             color: index.isEven
                 ? theme.colorScheme.surface
-                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                : theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.3),
           ),
           child: SelectableText.rich(
             TextSpan(children: spans),
@@ -612,9 +613,8 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     }
 
     final isDark = theme.brightness == Brightness.dark;
-    final lineColor = _shouldHighlightLine(line)
-        ? _getJsonLineColor(line, theme)
-        : null;
+    final lineColor =
+        _shouldHighlightLine(line) ? _getJsonLineColor(line, theme) : null;
     final baseStyle = AppTextStyles.code12.copyWith(
       height: 1.5,
       color: lineColor,
@@ -632,7 +632,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       for (final segment in segments)
         if (segment.isEpoch) ...[
           TextSpan(text: segment.text, style: numberStyle),
-          TextSpan(text: '  ${EpochAnnotation.format(segment.text)}', style: annoStyle),
+          TextSpan(
+              text: '  ${EpochAnnotation.format(segment.text)}',
+              style: annoStyle),
         ] else
           TextSpan(text: segment.text, style: baseStyle),
     ];
@@ -725,10 +727,8 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     // 注解仅注入显示文本，原始报文与 Copy 不受影响（F8.5）
     var content = _formatContent();
     if (_isJson && _annotateEpoch) {
-      content = content
-          .split('\n')
-          .map(EpochAnnotation.annotateLine)
-          .join('\n');
+      content =
+          content.split('\n').map(EpochAnnotation.annotateLine).join('\n');
     }
     // 使用 CodeField 提供 JSON 语法高亮
     final controller = CodeController(

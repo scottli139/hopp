@@ -31,7 +31,7 @@
 |----------|------|
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod + Dio + Hive |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **当前版本** | `0.13.0`（v0.14.0 开发中：M8.6 时间戳工效增强已完成待发布） |
+| **当前版本** | `0.14.0` |
 
 > 历史参考：项目曾使用 Tauri (React + Rust)，详见 [ARCHIVED_TAURI.md](./docs/ARCHIVED_TAURI.md)。
 

@@ -36,15 +36,13 @@ void main() {
       return result;
     }
 
-    testWidgets('管道表达式：分段渲染与原文逐字一致（回归：不许多画 }）',
-        (tester) async {
+    testWidgets('管道表达式：分段渲染与原文逐字一致（回归：不许多画 }）', (tester) async {
       const value = '{{\$timestampMs | date_floor(day)}}';
       expect(await renderedText(tester, value), value);
     });
 
     testWidgets('多管道链：分段渲染与原文逐字一致', (tester) async {
-      const value =
-          '{{\$timestampMs | date_floor(day) | date_add(-7d)}}';
+      const value = '{{\$timestampMs | date_floor(day) | date_add(-7d)}}';
       expect(await renderedText(tester, value), value);
     });
 

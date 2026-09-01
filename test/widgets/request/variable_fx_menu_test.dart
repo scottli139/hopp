@@ -119,7 +119,8 @@ void main() {
     testWidgets('非折叠选区被插入片段替换（试用反馈回归）', (tester) async {
       final controller = TextEditingController(text: '{{token}}');
       // 选中末尾的 }}
-      controller.selection = const TextSelection(baseOffset: 7, extentOffset: 9);
+      controller.selection =
+          const TextSelection(baseOffset: 7, extentOffset: 9);
       addTearDown(controller.dispose);
       await tester.pumpWidget(buildMenu(controller));
       await openMenu(tester);

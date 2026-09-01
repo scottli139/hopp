@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hopp · M8.6 时间戳工效增强 · UI 原型</title>
+<style>
+/* ============================================================
+   Tokens — 与 lib/theme/ 及既有原型（tier1_ai 等）一致
+   ============================================================ */
+:root {
+  --brand: #6366F1; --brand-hover: #4F46E5; --brand-soft: #EEF2FF; --brand-text: #6366F1;
+  --bg: #FFFFFF; --surface: #F8FAFC; --surface-2: #F1F5F9;
+  --border: #E2E8F0; --border-strong: #CBD5E1;
+  --text-1: #0F172A; --text-2: #475569; --text-3: #94A3B8;
+  --success: #16A34A; --error: #DC2626; --warning: #D97706;
+  --code-bg: #F1F5F9;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+[data-theme="dark"] {
+  --brand: #818CF8; --brand-hover: #6366F1; --brand-soft: rgba(129,140,248,.14); --brand-text: #818CF8;
+  --bg: #0F172A; --surface: #1E293B; --surface-2: #273549;
+  --border: #334155; --border-strong: #475569;
+  --text-1: #F1F5F9; --text-2: #94A3B8; --text-3: #64748B;
+  --success: #4ADE80; --error: #F87171; --warning: #FBBF24;
+  --code-bg: #1E293B;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "PingFang SC", "Segoe UI", sans-serif;
+  background: var(--bg); color: var(--text-1);
+  padding: 40px 48px 80px; transition: background .2s, color .2s;
+}
+.toggle {
+  position: fixed; top: 20px; right: 24px;
+  padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border-strong);
+  background: var(--surface); color: var(--text-2); font-size: 12px; cursor: pointer;
+}
+h1 { font-size: 22px; margin-bottom: 6px; }
+.sub { color: var(--text-3); font-size: 13px; margin-bottom: 28px; }
+h2 { font-size: 15px; margin: 36px 0 4px; }
+h2 .fid { color: var(--brand); font-family: var(--font-mono); font-size: 12px; margin-right: 6px; }
+.desc { color: var(--text-2); font-size: 13px; margin-bottom: 14px; line-height: 1.7; max-width: 860px; }
+.desc code { font-family: var(--font-mono); font-size: 12px; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+.frame {
+  border: 1px solid var(--border); border-radius: 12px; background: var(--surface);
+  padding: 20px; max-width: 960px;
+}
+.row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.method {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--success);
+  background: rgba(22,163,74,.12); padding: 4px 8px; border-radius: 6px;
+}
+.urlbox {
+  flex: 1; font-family: var(--font-mono); font-size: 12px; color: var(--text-2);
+  background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;
+  overflow-x: auto; white-space: nowrap;
+}
+.var { color: var(--brand-text); font-weight: 600; }
+.send {
+  font-size: 12px; font-weight: 600; color: #fff; background: var(--brand);
+  border: none; padding: 8px 16px; border-radius: 8px; cursor: default;
+}
+table.kv { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.kv th {
+  text-align: left; color: var(--text-3); font-size: 11px; font-weight: 600;
+  padding: 6px 10px; border-bottom: 1px solid var(--border);
+}
+table.kv td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+td.cell { position: relative; }
+.key { font-family: var(--font-mono); color: var(--text-1); }
+.val {
+  font-family: var(--font-mono); color: var(--text-1);
+  background: var(--bg); border: 1px solid var(--border-strong); border-radius: 6px;
+  padding: 6px 30px 6px 10px; min-width: 280px; display: inline-block;
+}
+.fx {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-3);
+  border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; background: var(--surface);
+}
+/* fx 弹菜单 */
+.menu {
+  position: absolute; right: 0; top: calc(100% + 4px); width: 400px; z-index: 10;
+  background: var(--bg); border: 1px solid var(--border-strong); border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(2,6,23,.28); padding: 6px; font-size: 12px;
+}
+.mhead {
+  font-size: 10px; font-weight: 700; letter-spacing: .6px; color: var(--text-3);
+  padding: 6px 10px 4px;
+}
+.mitem { display: flex; justify-content: space-between; gap: 12px; padding: 5px 10px; border-radius: 6px; }
+.mitem:hover { background: var(--surface-2); }
+.mitem .lbl { font-family: var(--font-mono); color: var(--text-1); white-space: nowrap; }
+.mitem .cap { color: var(--text-3); font-size: 11px; text-align: right; }
+.mitem.new .lbl { color: var(--brand-text); }
+.badge {
+  display: inline-block; font-size: 10px; font-weight: 700; color: var(--brand-text);
+  background: var(--brand-soft); border-radius: 4px; padding: 0 5px; margin-left: 6px; vertical-align: 1px;
+}
+.divider { height: 1px; background: var(--border); margin: 4px 6px; }
+/* 响应 JSON 注解 */
+.toolbar {
+  display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px;
+  border-bottom: 1px solid var(--border); color: var(--text-3); font-size: 11px;
+  margin: -20px -20px 12px; border-radius: 12px 12px 0 0; background: var(--surface);
+}
+.tbtn {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-2);
+  border: 1px solid var(--border-strong); border-radius: 6px; padding: 4px 8px; background: var(--bg);
+}
+.tbtn.on { color: var(--brand-text); border-color: var(--brand); background: var(--brand-soft); }
+pre.code {
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.7; color: var(--text-1);
+  background: var(--code-bg); border-radius: 8px; padding: 14px 16px; overflow-x: auto;
+}
+.k { color: var(--brand); font-weight: 600; }
+.s { color: var(--success); }
+.anno { color: var(--text-3); font-style: italic; }
+.anno::before { content: "  "; }
+.notes { margin-top: 36px; max-width: 860px; font-size: 13px; color: var(--text-2); line-height: 1.9; }
+.notes li { margin-left: 20px; }
+.notes code { font-family: var(--font-mono); font-size: 12px; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<button class="toggle" onclick="toggleTheme()">🌓 亮 / 暗</button>
+
+<h1>Hopp · M8.6 时间戳工效增强</h1>
+<div class="sub">F8.5 · 原型先行 · 2026-09-01 · 对应实现：fx 菜单 / variable_transforms / OptimizedResponseViewer</div>
+
+<h2><span class="fid">①</span>fx 菜单：动态变量直达 + 时间函数</h2>
+<div class="desc">值单元格（Params / Headers）fx 图标<b>常驻</b>（不再要求先输入 <code>{{</code>）。菜单分三区：RESOLVED PREVIEW（原有）、<b>INSERT DYNAMIC VARIABLE</b><span class="badge">新增</span>、INSERT TRANSFORM（原函数 + <span class="badge">新增</span> date_add / date_floor）。</div>
+
+<div class="frame">
+  <div class="row">
+    <span class="method">GET</span>
+    <div class="urlbox">http://cloud.hexmeet.com/api/rest/v2.0/conferences?endTime=<span class="var">{{$timestampMs | date_floor(day)}}</span>&amp;startTime=<span class="var">{{$timestampMs | date_floor(day) | date_add(-7d)}}</span></div>
+    <button class="send">Send</button>
+  </div>
+  <table class="kv">
+    <tr><th style="width:28px"></th><th>Key</th><th>Value</th><th>Description</th></tr>
+    <tr>
+      <td>☑</td><td class="key">endTime</td>
+      <td class="cell"><span class="val"><span class="var">{{$timestampMs | date_floor(day)}}</span></span><span class="fx">fx</span></td>
+      <td style="color:var(--text-3)">今天零点</td>
+    </tr>
+    <tr>
+      <td>☑</td><td class="key">startTime</td>
+      <td class="cell">
+        <span class="val"><span class="var">{{$timestampMs | date_floor(day) | date_add(-7d)}}</span></span><span class="fx">fx</span>
+        <!-- 菜单展开态（示意，固定在 startTime 行） -->
+        <div class="menu">
+          <div class="mhead">RESOLVED PREVIEW</div>
+          <div class="mitem"><span class="lbl">{{$timestampMs | date_floor(day) | date_add(-7d)}}</span><span class="cap">1756540800000 ✓</span></div>
+          <div class="mitem"><span class="lbl" style="color:var(--text-3)">↓ date_floor(day)</span><span class="cap">1756608000000</span></div>
+          <div class="mitem"><span class="lbl" style="color:var(--text-3)">↓ date_add(-7d)</span><span class="cap">1756003200000</span></div>
+          <div class="divider"></div>
+          <div class="mhead">INSERT DYNAMIC VARIABLE <span class="badge">新增</span></div>
+          <div class="mitem new"><span class="lbl">$timestampMs</span><span class="cap">当前 Unix 毫秒</span></div>
+          <div class="mitem new"><span class="lbl">$timestamp</span><span class="cap">当前 Unix 秒</span></div>
+          <div class="mitem new"><span class="lbl">$isoTimestamp</span><span class="cap">当前 UTC ISO8601</span></div>
+          <div class="mitem new"><span class="lbl">$randomUUID</span><span class="cap">随机 UUID v4</span></div>
+          <div class="mitem new"><span class="lbl">$randomInt</span><span class="cap">0–1000000 随机整数</span></div>
+          <div class="divider"></div>
+          <div class="mhead">INSERT TRANSFORM</div>
+          <div class="mitem"><span class="lbl">md5 / sha1 / sha256 / base64</span><span class="cap">无参</span></div>
+          <div class="mitem"><span class="lbl">aes(mode, key, iv)</span><span class="cap">参数表单</span></div>
+          <div class="mitem"><span class="lbl">hmac(algo, key)</span><span class="cap">参数表单</span></div>
+          <div class="mitem new"><span class="lbl">date_add(offset)</span><span class="cap">偏移 -7d / +12h / 30m，参数表单</span></div>
+          <div class="mitem new"><span class="lbl">date_floor(unit)</span><span class="cap">取整 hour / day / week / month，参数表单</span></div>
+        </div>
+      </td>
+      <td style="color:var(--text-3)">7 天前零点</td>
+    </tr>
+  </table>
+</div>
+
+<h2><span class="fid">②</span>响应 Body：epoch 人性化注解</h2>
+<div class="desc">JSON 响应中 10/13 位整数命中 epoch 范围（2001–9999）时，行尾追加灰色注释显示<b>本地</b>可读时间；字符串内的数字不标注；工具栏开关控制；Copy 始终复制原始报文，Raw 视图不标注。</div>
+
+<div class="frame">
+  <div class="toolbar">
+    <span>2.4 KB · 24 lines</span>
+    <span style="flex:1"></span>
+    <span class="tbtn on">⏱ 时间戳注释</span>
+    <span class="tbtn">Copy</span>
+  </div>
+  <pre class="code">{
+  <span class="k">"success"</span>: 1,
+  <span class="k">"conferences"</span>: [
+    {
+      <span class="k">"confId"</span>: <span class="s">"9f2c..."</span>,
+      <span class="k">"subject"</span>: <span class="s">"周会"</span>,
+      <span class="k">"startTime"</span>: 1564156800000,<span class="anno">→ 2019-07-26 16:00:00</span>
+      <span class="k">"endTime"</span>: 1564761599000,<span class="anno">→ 2019-08-02 15:59:59</span>
+      <span class="k">"createdAt"</span>: 1561000000,<span class="anno">→ 2019-06-20 07:06:40（秒级）</span>
+      <span class="k">"duration"</span>: 3600,
+      <span class="k">"orderNo"</span>: <span class="s">"1564761599000"</span>,
+      <span class="k">"remark"</span>: null
+    }
+  ]
+}</pre>
+</div>
+
+<div class="notes">
+  <b>设计要点 / 边界</b>
+  <ul>
+    <li><b>失败语义不变</b>：非法 offset / 单位 / 非数字输入 → 管道失败，保留 <code>{{…}}</code> 原文并 UI 标红，不静默发送错误值（沿用 F8.3）。</li>
+    <li><b>单位约定</b>：<code>date_add</code> 单位 <code>s/m/h/d/w</code>（分/时/天/周），必须带单位；<code>date_floor</code> 单位 <code>hour/day/week/month</code>，本地时区（week=本周一零点）。</li>
+    <li><b>秒/毫秒自适应</b>：输入 10 位按秒、13 位按毫秒解析，输出保持同单位。</li>
+    <li><b>注解仅渲染层</b>：性能模式用富文本 span 追加，Full 模式注入 CodeField 显示文本；原始报文、Copy 内容、断言取值一律不受影响；字符串内数字、数组下标等不标注。</li>
+    <li><b>防误判</b>：仅当 Body 判定为 JSON 且数值落在 2001–9999 年才标注；工具栏开关默认开，关闭后完全不参与渲染。</li>
+  </ul>
+</div>
+
+<script>
+function toggleTheme() {
+  const b = document.body;
+  b.dataset.theme = b.dataset.theme === 'dark' ? '' : 'dark';
+}
+document.querySelectorAll('.tbtn').forEach(b => b.addEventListener('click', () => {
+  if (b.textContent.includes('时间戳')) b.classList.toggle('on');
+}));
+</script>
+</body>
+</html>

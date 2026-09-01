@@ -736,6 +736,31 @@
 - [x] 转换管道清晰可见、可编辑、可保存（分段着色 + fx 预览/插入，配置随请求/集合持久化）
 - [x] 敏感变量（password/secret）加密存储（Hive 数据 box AES 加密，应用级 key）、界面脱敏显示
 
+#### F8.5 时间戳工效增强（动态变量直达 + 时间函数 + 响应人性化显示）（M8.6，2026-09-01 澄清确认）
+
+> **痛点（2026-08-31 用户实测）**：调试会议/计费类接口经常要填 13 位毫秒时间戳参数（如查询一周区间 `startTime`/`endTime`），手算易错；响应体里的时间戳数字（`1564761599000`）不可读。
+
+**三部分**：
+
+1. **fx 菜单动态变量直达**：KV 值单元格（Params/Headers）fx 菜单新增 INSERT DYNAMIC VARIABLE 区——`$timestamp` / `$timestampMs` / `$isoTimestamp` / `$randomUUID` / `$randomInt` 一键插入 `{{…}}`（带用途说明）；fx 图标从「输入 `{{` 才出现」改为值单元格常驻可点。
+2. **Body 变量插入（方案 A，2026-09-01 增补）**：raw Body 编辑器顶部工具条内嵌同一 fx 菜单（`CodeEditor` 支持外部传入 `CodeController`/`FocusNode`，Body 按请求缓存持有、插入后回焦）——POST JSON 里 `"createTime": {{$timestampMs}}`（数字字段不带引号）或 `"{{$isoTimestamp}}"` 光标处一键插入；Body 编辑器不做变量高亮（与 CodeController 语法高亮管线冲突，有意不做的部分）。
+2. **时间函数（F8.3 管道扩展，复用同一引擎与 fx 菜单）**：
+   - `date_add(offset)`：相对偏移，`offset = [+-]整数+单位`，单位 `s/m/h/d/w`（秒/分/时/天/周），如 `{{$timestampMs | date_add(-7d)}}`
+   - `date_floor(unit)`：本地时间取整，`unit ∈ hour/day/week/month`（week=本周一零点，month=本月 1 号零点），如 `{{$timestampMs | date_floor(day)}}`
+   - 输入为 10 位（秒）/13 位（毫秒）epoch 整数字符串，输出保持同单位；非整数/越界 → 管道失败保留 `{{…}}` 原文并 UI 标红（沿用 F8.3 失败语义，不静默发送错误值）
+   - 典型场景（查最近一周，与动态变量组合）：
+     - `startTime = {{$timestampMs | date_floor(day) | date_add(-7d)}}`（7 天前零点）
+     - `endTime = {{$timestampMs | date_floor(day)}}`（今天零点）
+3. **响应时间戳人性化显示**：响应 Body 为 JSON 时（Full / Performance 模式），10/13 位整数命中 epoch 合理范围即在行尾追加灰色注释，显示本地可读时间 `→ 2019-08-02 15:59:59`；范围策略——毫秒级（13 位）2001 年 ~ 9999 年，秒级（10 位）2001 年 ~ 当前时间 +5 年缓冲（防 10 位纯数字 id 误判，用户实测反馈）；字符串字面量内的数字不标注；仅渲染层——Copy 按钮仍复制原始报文，Raw 视图不标注；工具栏提供开关。
+
+**验收标准**：
+
+- [x] fx 菜单可见动态变量区，点击即插入 `{{$timestampMs}}` 等；fx 入口无需先输入 `{{`
+- [x] `{{$timestampMs | date_add(-7d)}}`、`{{$timestampMs | date_floor(day)}}` 发送前解析为正确 epoch（fx 菜单逐步预览可见），秒/毫秒输入输出同单位
+- [x] 非法 offset / 单位 / 非数字输入 → 管道失败保留原文 + UI 标红
+- [x] JSON 响应中的 epoch 值显示可读时间注释；字符串内数字不误判；Copy 出原文
+- [x] Body raw 编辑器工具条可插入动态变量/时间函数片段（body 发送前参与 `{{var}}` 解析）
+
 ---
 
 ### 九、AI 助手（三层）📋 计划（核心楔子）

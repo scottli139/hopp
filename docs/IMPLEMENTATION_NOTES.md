@@ -18,6 +18,7 @@
 - [OpenAPI/Swagger 导入 (M8.3 / F9.4)](#openapiswagger-导入-m83--f94--v0110-2026-08-28)
 - [轻量断言 + CLI/CI (M8.4 / F4.1 + F4.4 / v0.12.0)](#轻量断言--clici-m84--f41--f44--v0120-2026-08-28)
 - [Tier 1 本地模型 (M8.5 / F9.5 + F4.2 / v0.13.0)](#tier-1-本地模型-m85--f95--f42--v0130-2026-08-31)
+- [时间戳工效增强 (M8.6 / F8.5 / v0.14.0)](#时间戳工效增强-m86--f85--v0140-2026-09-01)
 - [环境变量系统 (M8.1)](#环境变量系统-m81)
 - [测试与自动化](#测试与自动化)
 - [Mock 服务器](#mock-服务器)
@@ -924,6 +925,20 @@ cli/hopp.dart + cli/src/                            # hopp run 运行器（app �
 - 新增 65：llm_client 12（MockDio：成功/斜杠归一/Authorization 头/连接错误/超时（含响应超时文案分流）/HTTP 错误透传/空 choices）+ parser 19（矩阵全组合/围栏剥离/丢弃计数/草稿拒收）+ prompts 13（8KB 截断 × 解释与断言两路/防脑补文案/枚举同源）+ widget 18（四对话框三态/门控/预设回填/添加 append/填入两路径）+ mock 接缝 3。
 - 全量 959 通过（2 跳过），design_guard 零新增，analyze 无新增 warning。
 - **真模型冒烟（2026-08-31，用户实机试用）**：Ollama 0.33 + qwen2.5:3b（8GB M1；7B 模型 6GB+ 工作集会压垮整机甚至导致系统重启，3B 实测端到端 8.5s）。试用反馈修三坑：①三个对话框三态容器未撑满宽度（正文小岛贴左上，补 `width: double.infinity` ×7）②断言 prompt 漏截断（240KB 响应体 60s 超时，补 8KB 截断）③超时与未连接提示分流（receive/send timeout → 「本地模型响应超时」，connectionError → 「未检测到本地模型服务」）。
+
+---
+
+## 时间戳工效增强 (M8.6 / F8.5 / v0.14.0, 2026-09-01)
+
+> 痛点（用户实测）：调试会议/计费类接口常填 13 位毫秒时间戳参数（一周区间 startTime/endTime），手算易错；响应体里 epoch 数字不可读。原型先行 docs/design/timestamp_ergonomics_preview.html。
+
+- **fx 菜单动态变量直达**（`variable_fx_menu.dart`）：新增 INSERT DYNAMIC VARIABLE 区（五个动态变量带用途说明，一键插入 `{{…}}`，值来自 `VariableResolver.dynamicVariableDescriptions`）；fx 图标从「输入 `{{` 才出现」改为 KV 值单元格常驻（`request_editor.dart` 去掉条件渲染 + 右侧 padding 26 常驻）。
+- **Body 变量插入（方案 A，2026-09-01 增补）**（`request_editor.dart` + `code_editor.dart`）：raw Body 编辑器顶部新增 BODY 工具条，右侧内嵌同一 `VariableFxMenu`（动态变量区 + 转换函数 + 参数表单 + 逐步预览全套复用）；`CodeEditor` 支持外部传入 `CodeController`/`FocusNode`（enum→Mode 映射抽为公开 `codeLanguageMode()`），Body 按 request.id 缓存持有（State dispose 统一释放），插入片段经 controller listener → onChanged 同步 provider，插入后回焦编辑器。Body 不做变量高亮——与 CodeController 语法高亮管线冲突，有意不做的部分。典型用法：POST JSON `"createTime": {{$timestampMs}}`（数字字段不带引号）。
+- **时间函数**（`variable_transforms.dart`）：管道新增 `date_add(offset)`（`[+-]整数+单位`，s/m/h/d/w）与 `date_floor(unit)`（hour/day/week/month，本地时区，week=本周一零点）；10 位秒/13 位毫秒自适应（阈值 1e11，量级无重叠），输出保持同单位；非法 → null 保留原文 + UI 标红（F8.3 失败语义）。**踩坑记**：段解析正则 `[A-Za-z][A-Za-z0-9]*` 不含下划线，下划线函数名（date_add）整体解析失败返回 null——已放宽为 `[A-Za-z0-9_]*`。
+- **响应 epoch 注解**（`utils/epoch_annotation.dart` + `optimized_response_viewer.dart`）：JSON Body 中 10/13 位整数命中 epoch 范围即在行尾追加灰色注释 `→ yyyy-MM-dd HH:mm:ss`（本地时区）。范围策略（用户实测迭代）：秒级（<1e11）2001-09-09 ~ **当前 +5 年缓冲**——10 位纯数字 id（如 3365948418 → 2076 年）超缓冲即拒绝；毫秒级（≥1e11）2001-09-09 ~ 9999-12-31。字符串字面量内数字不标注（逐字符扫描 + 转义引号处理）；仅渲染层——Copy 按钮仍复制原始报文，Raw 视图不标注；工具栏 ⏱ 开关默认开。Performance 模式用 `SelectableText.rich` 分段（epoch 数字 number 语法色 + 注释 tertiary 色），Full 模式注入 CodeField 显示文本。
+- **测试**：新增 37——transforms 时间函数 18（各单位/秒毫秒自适应/非法输入/TZ 无关的 floor 期望值）+ epoch_annotation 10（format/scanLine/annotateLine，含字符串内数字与转义引号）+ viewer widget 5（Full/Performance/Raw/开关/非 JSON）+ fx 菜单 widget 4（动态变量插入/date_floor 表单/date_add 校验）。全量 988 通过（2 跳过），design_guard 零新增，analyze 零 error/warning。
+- **试用修复（2026-09-01 录屏反馈）**：①fx 插入片段对非折叠选区改为**替换**选区（旧实现只按 `baseOffset` 插入、保留选区原字符——选中 `}` 后插入产出 `{{...day)} | date_add(7d)}}` 这类错位畸形文本）；②管道去重——插入点左侧（跳过空白）已是 `|` 时剥掉片段 ` |` 前缀，修手输 `|` 后再插入函数出现 `| |` 双管道。回归测试 2。
+- **渲染修复（2026-09-01 截图反馈，根因）**：`VariableHighlightController._buildExpressionSpans` 基础变量段误拼闭括号（`'{{' + 名 + '}'`），`}}` 统一由末尾段输出才对——界面显示 `{{$timestampMs }| date...` 错位但**真实文本始终正确**（复制即证），录屏里的「畸形文本」其实是渲染假相，用户手动删补括号才造出真错位。新增渲染不变量测试（span 拼接 == 原文逐字，管道/多管道/未闭合全组合）。
 
 ---
 

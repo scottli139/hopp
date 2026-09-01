@@ -77,8 +77,11 @@ class VariableHighlightController extends TextEditingController {
     }
 
     final spans = <TextSpan>[
+      // 基础变量段：只拼 {{ 前缀，不闭括号——}} 统一由末尾段输出
+      //（这里多画一个 } 会让管道段整体显示错位：文本与渲染不一致，
+      // 复制得到正确文本但界面上看到错位的括号，2026-09-01 用户截图发现）
       TextSpan(
-        text: '{{${expression.substring(0, pipeOffsets.first)}}',
+        text: '{{${expression.substring(0, pipeOffsets.first)}',
         style: baseStyle,
       ),
     ];

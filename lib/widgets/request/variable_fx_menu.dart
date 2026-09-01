@@ -80,24 +80,37 @@ class VariableFxMenu extends ConsumerWidget {
       items.add(const PopupMenuDivider(height: 1));
     }
 
+    // ---------- INSERT DYNAMIC VARIABLE ----------
     // ---------- INSERT TRANSFORM ----------
-    items.add(_buildHeader(context, 'INSERT TRANSFORM'));
-    for (final fn in VariableTransforms.noArgFunctions) {
-      items.add(AppPopupMenu.textItem(
-        theme: theme,
-        value: 'fn:$fn',
-        label: fn,
-      ));
-    }
-    items.add(const PopupMenuDivider(height: 1));
-    for (final sig in VariableTransforms.parameterizedSignatures) {
-      final fn = sig.substring(0, sig.indexOf('('));
-      items.add(AppPopupMenu.textItem(
-        theme: theme,
-        value: 'fn-param:$fn',
-        label: sig,
-      ));
-    }
+    items
+      ..add(_buildHeader(context, 'INSERT DYNAMIC VARIABLE'))
+      ..addAll([
+        for (final name in VariableResolver.dynamicVariables)
+          _dynamicVariableItem(
+            context,
+            name,
+            VariableResolver.dynamicVariableDescriptions[name] ?? '',
+          ),
+      ])
+      ..add(const PopupMenuDivider(height: 1))
+      ..add(_buildHeader(context, 'INSERT TRANSFORM'))
+      ..addAll([
+        for (final fn in VariableTransforms.noArgFunctions)
+          AppPopupMenu.textItem(
+            theme: theme,
+            value: 'fn:$fn',
+            label: fn,
+          ),
+      ])
+      ..add(const PopupMenuDivider(height: 1))
+      ..addAll([
+        for (final sig in VariableTransforms.parameterizedSignatures)
+          AppPopupMenu.textItem(
+            theme: theme,
+            value: 'fn-param:${sig.substring(0, sig.indexOf('('))}',
+            label: sig,
+          ),
+      ]);
 
     // 空态提示
     if (expressions.isEmpty) {
@@ -114,6 +127,42 @@ class VariableFxMenu extends ConsumerWidget {
       );
     }
     return items;
+  }
+
+  /// 动态变量插入项：名字（mono）+ 用途说明（右侧弱化）
+  PopupMenuItem<String> _dynamicVariableItem(
+    BuildContext context,
+    String name,
+    String description,
+  ) {
+    final t = context.appTheme;
+    return PopupMenuItem<String>(
+      value: 'dyn:$name',
+      height: 26,
+      padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space12),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              name,
+              style: AppTextStyles.code11.copyWith(color: t.textPrimary),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: AppMetrics.space8),
+          Expanded(
+            flex: 3,
+            child: Text(
+              description,
+              style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 单条表达式的解析预览（基础值 → 逐步转换 → 结果）
@@ -250,7 +299,9 @@ class VariableFxMenu extends ConsumerWidget {
   }
 
   void _onMenuSelected(BuildContext context, WidgetRef ref, String value) {
-    if (value.startsWith('fn:')) {
+    if (value.startsWith('dyn:')) {
+      _insertSnippet('{{${value.substring(4)}}}');
+    } else if (value.startsWith('fn:')) {
       _insertSnippet(' | ${value.substring(3)}');
     } else if (value.startsWith('fn-param:')) {
       final fn = value.substring(9);
@@ -264,26 +315,53 @@ class VariableFxMenu extends ConsumerWidget {
   }
 
   /// 在光标处插入片段（焦点不在 / 无光标时追加到末尾）
+  ///
+  /// 两个边界（试用反馈回归，2026-09-01）：
+  /// - 非折叠选区：按编辑器惯例**替换**选区，而不是只插在选区起点
+  ///   留下原字符（旧实现会产出错位/重复的大括号）
+  /// - 管道去重：插入点左侧（跳过空白）已是 `|` 时，剥掉片段的 ` |`
+  ///   前缀，避免手输 `|` 后再插入函数出现 `| |`
   void _insertSnippet(String snippet) {
     final text = controller.text;
     final selection = controller.selection;
-    final offset = (selection.isValid &&
-            selection.baseOffset >= 0 &&
-            selection.baseOffset <= text.length)
-        ? selection.baseOffset
-        : text.length;
+
+    var start = text.length;
+    var end = text.length;
+    if (selection.isValid &&
+        selection.baseOffset >= 0 &&
+        selection.baseOffset <= text.length) {
+      start = selection.start;
+      end = selection.start == selection.end ? start : selection.end;
+    }
+
+    var effective = snippet;
+    if (start == end) {
+      // 管道去重：左侧跳过空白后是 | → 复用已有管道
+      var left = start - 1;
+      while (left >= 0 && text[left] == ' ') {
+        left--;
+      }
+      if (left >= 0 && text[left] == '|' && snippet.startsWith(' |')) {
+        effective = snippet.substring(2);
+      }
+    }
+
     controller.value = TextEditingValue(
-      text: text.substring(0, offset) + snippet + text.substring(offset),
-      selection: TextSelection.collapsed(offset: offset + snippet.length),
+      text: text.substring(0, start) + effective + text.substring(end),
+      selection: TextSelection.collapsed(offset: start + effective.length),
     );
     onInserted();
   }
 
-  /// 带参函数的参数小表单（aes / hmac）
+  /// 带参函数的参数小表单（aes / hmac / date_add / date_floor）
   Future<void> _showParamDialog(BuildContext context, String fn) async {
+    final signature = VariableTransforms.parameterizedSignatures.firstWhere(
+      (s) => s.startsWith('$fn('),
+      orElse: () => fn,
+    );
     final snippet = await showAppDialog<String>(
       context: context,
-      title: fn == 'aes' ? 'aes(mode, key, iv)' : 'hmac(algo, key)',
+      title: signature,
       width: 380,
       contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       child: _TransformParamForm(fn: fn),
@@ -310,32 +388,138 @@ class _TransformParamForm extends StatefulWidget {
 class _TransformParamFormState extends State<_TransformParamForm> {
   final _keyController = TextEditingController();
   final _ivController = TextEditingController();
+  final _offsetController = TextEditingController();
   String _mode = 'cbc';
   String _algo = 'sha256';
   String _format = 'base64';
+  String _floorUnit = 'day';
+
+  /// date_add offset 语法（与 VariableTransforms._dateAdd 同源）
+  static final _offsetPattern = RegExp(r'^[+-]?\d+[smhdw]$', caseSensitive: false);
+
+  bool get _offsetValid =>
+      _offsetPattern.hasMatch(_offsetController.text.trim());
 
   @override
   void dispose() {
     _keyController.dispose();
     _ivController.dispose();
+    _offsetController.dispose();
     super.dispose();
   }
 
   /// 组装 ` | fn(args)` 片段
   String buildSnippet() {
-    if (widget.fn == 'aes') {
-      final key = _keyController.text.trim();
-      final iv = _ivController.text.trim();
-      final formatSuffix = _format == 'base64' ? '' : ', $_format';
-      return ' | aes($_mode, $key, $iv$formatSuffix)';
+    switch (widget.fn) {
+      case 'date_add':
+        return ' | date_add(${_offsetController.text.trim()})';
+      case 'date_floor':
+        return ' | date_floor($_floorUnit)';
+      case 'aes':
+        final key = _keyController.text.trim();
+        final iv = _ivController.text.trim();
+        final formatSuffix = _format == 'base64' ? '' : ', $_format';
+        return ' | aes($_mode, $key, $iv$formatSuffix)';
+      default:
+        return ' | hmac($_algo, ${_keyController.text.trim()})';
     }
-    return ' | hmac($_algo, ${_keyController.text.trim()})';
   }
 
   @override
   Widget build(BuildContext context) {
-    final t = context.appTheme;
+    switch (widget.fn) {
+      case 'date_add':
+        return _buildDateAddForm(context);
+      case 'date_floor':
+        return _buildDateFloorForm(context);
+      default:
+        return _buildCryptoForm(context);
+    }
+  }
 
+  /// date_add 参数表单：offset 输入 + 语法校验
+  Widget _buildDateAddForm(BuildContext context) {
+    final t = context.appTheme;
+    final offset = _offsetController.text.trim();
+    final showError = offset.isNotEmpty && !_offsetValid;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInputRow(
+          context,
+          label: 'offset',
+          controller: _offsetController,
+          hint: '-7d / +12h / 30m',
+          onChanged: (_) => setState(() {}),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppMetrics.space8),
+          child: Text(
+            showError
+                ? '格式：[+-]整数+单位（s/m/h/d/w），如 -7d'
+                : '单位：s 秒 / m 分 / h 时 / d 天 / w 周；基准为 10 位秒 / 13 位毫秒 epoch。',
+            style: AppTextStyles.tiny11.copyWith(
+              color: showError ? t.error : t.textTertiary,
+            ),
+          ),
+        ),
+        _buildActions(context, canInsert: offset.isNotEmpty && _offsetValid),
+      ],
+    );
+  }
+
+  /// date_floor 参数表单：取整单位选择
+  Widget _buildDateFloorForm(BuildContext context) {
+    final t = context.appTheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSelectRow(
+          context,
+          label: 'unit',
+          value: _floorUnit,
+          entries: const [
+            AppPopupSelectEntry(value: 'hour', label: 'hour · 本小时零点'),
+            AppPopupSelectEntry(value: 'day', label: 'day · 今天零点'),
+            AppPopupSelectEntry(value: 'week', label: 'week · 本周一零点'),
+            AppPopupSelectEntry(value: 'month', label: 'month · 本月 1 号零点'),
+          ],
+          onSelected: (v) => setState(() => _floorUnit = v),
+        ),
+        Text(
+          '本地时区取整；基准为 10 位秒 / 13 位毫秒 epoch，输出同单位。',
+          style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
+        ),
+        const SizedBox(height: AppMetrics.space12),
+        _buildActions(context, canInsert: true),
+      ],
+    );
+  }
+
+  /// 底部按钮行（取消 / 插入）
+  Widget _buildActions(BuildContext context, {required bool canInsert}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        AppButton.ghost(
+          label: '取消',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        const SizedBox(width: AppMetrics.space8),
+        AppButton.primary(
+          label: '插入',
+          onPressed: canInsert ? () => Navigator.of(context).pop(buildSnippet()) : null,
+        ),
+      ],
+    );
+  }
+
+  /// aes / hmac 参数表单（加密类，key 支持 {{var}} 引用）
+  Widget _buildCryptoForm(BuildContext context) {
+    final t = context.appTheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,20 +581,7 @@ class _TransformParamFormState extends State<_TransformParamForm> {
           style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
         ),
         const SizedBox(height: AppMetrics.space12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            AppButton.ghost(
-              label: '取消',
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            const SizedBox(width: AppMetrics.space8),
-            AppButton.primary(
-              label: '插入',
-              onPressed: () => Navigator.of(context).pop(buildSnippet()),
-            ),
-          ],
-        ),
+        _buildActions(context, canInsert: true),
       ],
     );
   }
@@ -420,6 +591,7 @@ class _TransformParamFormState extends State<_TransformParamForm> {
     required String label,
     required TextEditingController controller,
     String? hint,
+    ValueChanged<String>? onChanged,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppMetrics.space8),
@@ -440,6 +612,7 @@ class _TransformParamFormState extends State<_TransformParamForm> {
               controller: controller,
               hintText: hint,
               compact: true,
+              onChanged: onChanged,
             ),
           ),
         ],

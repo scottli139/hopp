@@ -34,6 +34,8 @@ class CodeEditor extends ConsumerStatefulWidget {
     this.maxLines,
     this.expands = false,
     this.showLineNumbers = true,
+    this.controller,
+    this.focusNode,
   });
 
   final String code;
@@ -45,8 +47,31 @@ class CodeEditor extends ConsumerStatefulWidget {
   final bool expands;
   final bool showLineNumbers;
 
+  /// 外部持有的控制器（如 Body 编辑器的 fx 变量插入需要操作光标）。
+  /// 传入后由调用方负责 dispose，[onChanged] 仍会随文本变化回调。
+  final CodeController? controller;
+
+  /// 外部焦点节点（配合外部 controller 做插入后回焦）
+  final FocusNode? focusNode;
+
   @override
   ConsumerState<CodeEditor> createState() => _CodeEditorState();
+}
+
+/// 语言枚举 → highlight Mode 映射（供外部创建 CodeController 时复用）
+Mode? codeLanguageMode(CodeLanguage language) {
+  switch (language) {
+    case CodeLanguage.json:
+      return json;
+    case CodeLanguage.xml:
+      return xml;
+    case CodeLanguage.html:
+      return htmlbars;
+    case CodeLanguage.javascript:
+      return javascript;
+    case CodeLanguage.text:
+      return null;
+  }
 }
 
 class _CodeEditorState extends ConsumerState<CodeEditor> {
@@ -54,14 +79,17 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
   static const double _lineNumberPadding = 8.0;
 
   late CodeController _controller;
+  late final bool _ownsController;
 
   @override
   void initState() {
     super.initState();
-    _controller = CodeController(
-      text: widget.code,
-      language: _getLanguageMode(),
-    );
+    _ownsController = widget.controller == null;
+    _controller = widget.controller ??
+        CodeController(
+          text: widget.code,
+          language: codeLanguageMode(widget.language),
+        );
     _controller.addListener(_onTextChanged);
   }
 
@@ -77,27 +105,15 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
   @override
   void dispose() {
     _controller.removeListener(_onTextChanged);
-    _controller.dispose();
+    // 外部传入的 controller 由调用方持有dispose
+    if (_ownsController) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
   void _onTextChanged() {
     widget.onChanged?.call(_controller.text);
-  }
-
-  Mode? _getLanguageMode() {
-    switch (widget.language) {
-      case CodeLanguage.json:
-        return json;
-      case CodeLanguage.xml:
-        return xml;
-      case CodeLanguage.html:
-        return htmlbars;
-      case CodeLanguage.javascript:
-        return javascript;
-      case CodeLanguage.text:
-        return null;
-    }
   }
 
   @override
@@ -163,6 +179,7 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
         data: _buildCodeTheme(theme),
         child: CodeField(
           controller: _controller,
+          focusNode: widget.focusNode,
           readOnly: widget.readOnly,
           expands: widget.expands,
           minLines: widget.minLines,

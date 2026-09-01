@@ -120,6 +120,74 @@ void main() {
     });
   });
 
+  group('date_add（F8.5）', () {
+    test('毫秒基准按天偏移（-7d）', () {
+      expect(apply('1756608000000', 'date_add(-7d)'), '1756003200000');
+    });
+
+    test('秒基准偏移输出保持秒（+1h）', () {
+      expect(apply('1756608000', 'date_add(1h)'), '1756611600');
+    });
+
+    test('各单位 s/m/h/d/w', () {
+      const base = 1756608000000; // 固定毫秒值，纯算术与时区无关
+      expect(apply('$base', 'date_add(30s)'), '${base + 30000}');
+      expect(apply('$base', 'date_add(30m)'), '${base + 1800000}');
+      expect(apply('$base', 'date_add(12h)'), '${base + 43200000}');
+      expect(apply('$base', 'date_add(+2d)'), '${base + 172800000}');
+      expect(apply('$base', 'date_add(1w)'), '${base + 604800000}');
+    });
+
+    test('非法输入返回 null：缺单位 / 未知单位 / 参数个数 / 非数字基准', () {
+      expect(apply('1756608000000', 'date_add(7)'), isNull);
+      expect(apply('1756608000000', 'date_add(7x)'), isNull);
+      expect(apply('1756608000000', 'date_add()'), isNull);
+      expect(apply('1756608000000', 'date_add(1d, 2d)'), isNull);
+      expect(apply('abc', 'date_add(1d)'), isNull);
+      expect(apply('', 'date_add(1d)'), isNull);
+    });
+  });
+
+  group('date_floor（F8.5）', () {
+    // 期望值用 local DateTime 构造独立计算，两边都是本地午夜 ↔ epoch 换算，
+    // 与测试机时区无关。
+    final base = DateTime(2024, 3, 10, 15, 42, 33, 500);
+    final baseMs = base.millisecondsSinceEpoch.toString();
+    final baseSec = (base.millisecondsSinceEpoch ~/ 1000).toString();
+
+    test('day 取本地今天零点', () {
+      final expected = DateTime(2024, 3, 10).millisecondsSinceEpoch;
+      expect(apply(baseMs, 'date_floor(day)'), '$expected');
+    });
+
+    test('hour 取本小时零点', () {
+      final expected = DateTime(2024, 3, 10, 15).millisecondsSinceEpoch;
+      expect(apply(baseMs, 'date_floor(hour)'), '$expected');
+    });
+
+    test('week 取本周一零点（2024-03-10 周日 → 03-04 周一）', () {
+      final expected = DateTime(2024, 3, 4).millisecondsSinceEpoch;
+      expect(apply(baseMs, 'date_floor(week)'), '$expected');
+    });
+
+    test('month 取本月 1 号零点', () {
+      final expected = DateTime(2024, 3, 1).millisecondsSinceEpoch;
+      expect(apply(baseMs, 'date_floor(month)'), '$expected');
+    });
+
+    test('秒基准输出保持秒', () {
+      final expected = DateTime(2024, 3, 10).millisecondsSinceEpoch ~/ 1000;
+      expect(apply(baseSec, 'date_floor(day)'), '$expected');
+    });
+
+    test('非法单位 / 参数个数 / 非数字基准返回 null', () {
+      expect(apply(baseMs, 'date_floor(year)'), isNull);
+      expect(apply(baseMs, 'date_floor()'), isNull);
+      expect(apply(baseMs, 'date_floor(day, extra)'), isNull);
+      expect(apply('abc', 'date_floor(day)'), isNull);
+    });
+  });
+
   group('解析器集成（resolve 管道）', () {
     test('{{password | sha1}}', () {
       final result = resolver.resolve(

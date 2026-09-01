@@ -31,7 +31,7 @@
 |----------|------|
 | **技术栈** | Flutter 3.27.x + Dart + Riverpod + Dio + Hive |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **当前版本** | `0.12.0` |
+| **当前版本** | `0.13.0`（v0.14.0 开发中：M8.6 时间戳工效增强已完成待发布） |
 
 > 历史参考：项目曾使用 Tauri (React + Rust)，详见 [ARCHIVED_TAURI.md](./docs/ARCHIVED_TAURI.md)。
 
@@ -130,6 +130,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 4. ~~Tier 0：OpenAPI/Swagger 导入~~（已完成，2026-08-28，M8.3 / v0.11.0：3.0/3.1+2.0、JSON+YAML、文件/URL 双源、防脑补映射、勾选预览 + 结果报告，见 [PRD](./docs/PRD.md) F9.4）
 5. ~~**轻量断言 + CLI/CI 导出**~~（已完成，2026-08-28 发布 v0.12.0，M8.4：声明式规则 + Tests 页签 + `.hopp.json` 全保真导出 + `hopp run` 运行器；F4.2 AI 生成挪 M8.5，见 [PRD](./docs/PRD.md) F4 详案）
 6. ~~**Tier 1 本地模型**~~（已完成，2026-08-31，M8.5：Ollama/LM Studio 解释响应 / AI 生成断言 / 自然语言建请求 + OpenAI 兼容客户端，见 [PRD](./docs/PRD.md) F9.5 与 [NOTES](./docs/IMPLEMENTATION_NOTES.md)；真模型冒烟已补：Ollama + qwen2.5:3b）
+7. ~~**时间戳工效增强**~~（已完成，2026-09-01，M8.6 / 待发布 v0.14.0：fx 动态变量直达 + 管道时间函数 date_add/date_floor + 响应 epoch 人性化注解，见 [PRD](./docs/PRD.md) F8.5 与 [NOTES](./docs/IMPLEMENTATION_NOTES.md)）
 
 ### 已知问题 🐛
 

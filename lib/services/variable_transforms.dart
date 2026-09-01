@@ -32,6 +32,8 @@ class VariableTransforms {
   static const List<String> parameterizedSignatures = [
     'aes(mode, key, iv)',
     'hmac(algo, key)',
+    'date_add(offset)',
+    'date_floor(unit)',
   ];
 
   /// 按顶层 `|` 切分表达式管道（括号内的 `|` 不切分）。
@@ -112,6 +114,10 @@ class VariableTransforms {
           return _hmac(value, args);
         case 'aes':
           return _aes(value, args);
+        case 'date_add':
+          return _dateAdd(value, args);
+        case 'date_floor':
+          return _dateFloor(value, args);
         default:
           return null;
       }
@@ -123,7 +129,7 @@ class VariableTransforms {
 
   /// 解析段为 (函数名, 原始参数列表)；语法非法返回 null
   static (String, List<String>)? _parseSegment(String segment) {
-    final match = RegExp(r'^([A-Za-z][A-Za-z0-9]*)\s*(?:\((.*)\))?$')
+    final match = RegExp(r'^([A-Za-z][A-Za-z0-9_]*)\s*(?:\((.*)\))?$')
         .firstMatch(segment.trim());
     if (match == null) return null;
 
@@ -200,4 +206,80 @@ class VariableTransforms {
 
   static String _hex(List<int> bytes) =>
       bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+
+  // ---------------------------------------------------------------
+  // 时间函数（F8.5 / M8.6）
+  // ---------------------------------------------------------------
+
+  /// epoch 秒/毫秒自适应的整数值解析。
+  ///
+  /// 输入为整数字符串；绝对值 < 1e11 视为秒（当前秒级 ≈ 1.7e9），
+  /// 否则视为毫秒（当前毫秒级 ≈ 1.7e12）。返回 (毫秒值, 是否秒级输入)，
+  /// 非整数 / 超出 DateTime 可表示范围返回 null。
+  static (int, bool)? _parseEpoch(String value) {
+    final parsed = int.tryParse(value.trim());
+    if (parsed == null) return null;
+    final isSeconds = parsed.abs() < 100000000000;
+    final millis = isSeconds ? parsed * 1000 : parsed;
+    if (millis.abs() > 8640000000000000) return null; // DateTime 上限 ~±1e16 ms
+    return (millis, isSeconds);
+  }
+
+  static String _formatEpoch(int millis, bool asSeconds) =>
+      asSeconds ? (millis ~/ 1000).toString() : millis.toString();
+
+  /// date_add(offset)：epoch 相对偏移。
+  ///
+  /// offset 语法 `[+-]整数+单位`，单位 s/m/h/d/w（秒/分/时/天/周），
+  /// 如 `-7d`、`+12h`、`30m`。输入 10 位秒 / 13 位毫秒自适应，输出同单位。
+  static String? _dateAdd(String value, List<String> args) {
+    if (args.length != 1) return null;
+    final match = RegExp(r'^([+-]?\d+)(s|m|h|d|w)$')
+        .firstMatch(args[0].trim().toLowerCase());
+    if (match == null) return null;
+    final amount = int.tryParse(match.group(1)!);
+    if (amount == null) return null;
+    const unitMs = {
+      's': 1000,
+      'm': 60000,
+      'h': 3600000,
+      'd': 86400000,
+      'w': 604800000,
+    };
+    final parsed = _parseEpoch(value);
+    if (parsed == null) return null;
+    final (millis, isSeconds) = parsed;
+    final result = millis + amount * unitMs[match.group(2)!]!;
+    if (result.abs() > 8640000000000000) return null;
+    return _formatEpoch(result, isSeconds);
+  }
+
+  /// date_floor(unit)：本地时间取整。
+  ///
+  /// unit ∈ hour/day/week/month：hour=本小时零点、day=今天零点、
+  /// week=本周一零点、month=本月 1 号零点（均为本地时区）。
+  /// 输入输出单位约定同 [_dateAdd]。
+  static String? _dateFloor(String value, List<String> args) {
+    if (args.length != 1) return null;
+    final parsed = _parseEpoch(value);
+    if (parsed == null) return null;
+    final (millis, isSeconds) = parsed;
+
+    final dt = DateTime.fromMillisecondsSinceEpoch(millis);
+    final DateTime floored;
+    switch (args[0].trim().toLowerCase()) {
+      case 'hour':
+        floored = DateTime(dt.year, dt.month, dt.day, dt.hour);
+      case 'day':
+        floored = DateTime(dt.year, dt.month, dt.day);
+      case 'week':
+        final monday = dt.subtract(Duration(days: dt.weekday - 1));
+        floored = DateTime(monday.year, monday.month, monday.day);
+      case 'month':
+        floored = DateTime(dt.year, dt.month, 1);
+      default:
+        return null;
+    }
+    return _formatEpoch(floored.millisecondsSinceEpoch, isSeconds);
+  }
 }

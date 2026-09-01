@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -82,6 +83,10 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   final Map<int, TextEditingController> _keyControllers = {};
   final Map<int, VariableHighlightController> _valueControllers = {};
 
+  // Body raw 编辑器的 Controller/FocusNode 缓存（fx 变量插入需要操作光标）
+  final Map<String, CodeController> _bodyControllers = {};
+  final Map<String, FocusNode> _bodyFocusNodes = {};
+
   // 防抖定时器
   Timer? _updateTimer;
 
@@ -131,6 +136,12 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       controller.dispose();
     }
     for (final controller in _valueControllers.values) {
+      controller.dispose();
+    }
+    for (final node in _bodyFocusNodes.values) {
+      node.dispose();
+    }
+    for (final controller in _bodyControllers.values) {
       controller.dispose();
     }
     _updateTimer?.cancel();
@@ -842,7 +853,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               ),
             ),
           const SizedBox(width: 4),
-          // Value input（含 {{var}} 时右端挂 fx 菜单：解析预览 + 函数插入）
+          // Value input（右端常驻 fx 菜单：动态变量插入 + 解析预览 + 函数插入，F8.5 起无需先输入 {{）
           Expanded(
             flex: 3,
             child: Stack(
@@ -853,9 +864,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   decoration: InputDecoration(
                     hintText: _getValueHint(item.key),
                     isDense: true,
-                    contentPadding: EdgeInsets.only(
+                    contentPadding: const EdgeInsets.only(
                       left: 8,
-                      right: valueController.text.contains('{{') ? 26 : 8,
+                      right: 26,
                       top: 8,
                       bottom: 8,
                     ),
@@ -873,14 +884,13 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                   onSubmitted: (_) => commitRow(),
                   onEditingComplete: commitRow,
                 ),
-                if (valueController.text.contains('{{'))
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: VariableFxMenu(
-                      controller: valueController,
-                      onInserted: commitRow,
-                    ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: VariableFxMenu(
+                    controller: valueController,
+                    onInserted: commitRow,
                   ),
+                ),
               ],
             ),
           ),
@@ -1190,21 +1200,77 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   }
 
   /// 构建 raw 类型的 Body 视图
+  ///
+  /// 顶部带变量辅助工具条（F8.5 方案 A）：fx 菜单在光标处插入
+  /// `{{$timestampMs}}` / 管道函数片段（body 发送前统一做变量替换，
+  /// 见 VariableResolver.resolveRequest）。
   Widget _buildRawBodyView(
     BuildContext context,
     WidgetRef ref,
     HttpRequest request,
   ) {
     final language = _getLanguageForRawContentType(request.rawContentType);
+    final controller = _bodyControllers.putIfAbsent(
+      request.id,
+      () => CodeController(
+        text: request.body,
+        language: codeLanguageMode(language),
+      ),
+    );
+    final focusNode =
+        _bodyFocusNodes.putIfAbsent(request.id, () => FocusNode());
 
-    return CodeEditor(
-      key: ValueKey('code_editor_${request.id}'),
-      code: request.body,
-      language: language,
-      expands: true,
-      onChanged: (value) {
-        _updateRequest(ref, request.copyWith(body: value));
-      },
+    return Column(
+      children: [
+        _buildBodyAssistBar(context, controller, focusNode),
+        Expanded(
+          child: CodeEditor(
+            key: ValueKey('code_editor_${request.id}'),
+            code: request.body,
+            controller: controller,
+            focusNode: focusNode,
+            language: language,
+            expands: true,
+            onChanged: (value) {
+              _updateRequest(ref, request.copyWith(body: value));
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Body 辅助工具条：右侧 fx 菜单（插入后回焦编辑器）
+  Widget _buildBodyAssistBar(
+    BuildContext context,
+    CodeController controller,
+    FocusNode focusNode,
+  ) {
+    final t = context.appTheme;
+    return Container(
+      height: AppMetrics.height32,
+      padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space8),
+      decoration: BoxDecoration(
+        color: t.surfaceVariant,
+        border: Border(bottom: BorderSide(color: t.border)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'BODY',
+            style: AppTextStyles.micro10.copyWith(
+              color: t.textTertiary,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const Spacer(),
+          VariableFxMenu(
+            controller: controller,
+            onInserted: focusNode.requestFocus,
+          ),
+        ],
+      ),
     );
   }
 

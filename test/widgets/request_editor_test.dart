@@ -497,6 +497,48 @@ void main() {
         expect(find.byType(CodeField), findsOneWidget);
       });
 
+      testWidgets('Body 工具条 fx 菜单在光标处插入变量并同步 provider',
+          (tester) async {
+        final request = HttpRequest.empty().copyWith(
+          id: 'req1',
+          name: 'Test Request',
+          method: HttpMethod.post,
+          bodyType: 'raw',
+          rawContentType: 'json',
+          body: '{\n  "createTime": \n}',
+        );
+
+        final container = createContainer(
+          tabs: [
+            RequestTab(id: 'req1', request: request),
+          ],
+          activeTabId: 'req1',
+        );
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Body'));
+        await tester.pumpAndSettle();
+
+        // 工具条 fx 图标（无 params，全文仅 Body 一个 fx 入口）
+        final fxIcon = find.byIcon(Icons.functions);
+        expect(fxIcon, findsOneWidget);
+        await tester.tap(fxIcon);
+        await tester.pumpAndSettle();
+
+        expect(find.text('INSERT DYNAMIC VARIABLE'), findsOneWidget);
+
+        await tester.tap(find.text(r'$timestampMs'));
+        await tester.pumpAndSettle();
+
+        final updated = container
+            .read(requestTabProvider)
+            .firstWhere((t) => t.id == 'req1')
+            .request;
+        expect(updated.body, contains(r'{{$timestampMs}}'));
+      });
+
       testWidgets('should not render body editor when body type is none',
           (tester) async {
         final request = HttpRequest.empty().copyWith(

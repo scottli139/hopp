@@ -26,6 +26,15 @@ class VariableResolver {
     '\$randomInt',
   ];
 
+  /// 动态变量用途说明（供 fx 菜单「INSERT DYNAMIC VARIABLE」区展示，F8.5）
+  static const Map<String, String> dynamicVariableDescriptions = {
+    r'$timestamp': '当前 Unix 时间戳（秒）',
+    r'$timestampMs': '当前 Unix 时间戳（毫秒）',
+    r'$isoTimestamp': '当前 UTC ISO8601 时间',
+    r'$randomUUID': '随机 UUID v4',
+    r'$randomInt': '0–1000000 随机整数',
+  };
+
   /// 一处 `{{...}}` 占位符的扫描结果
   ///
   /// [start] / [end] 为占位符在原文中的起止下标（含 `{{` 与 `}}`），

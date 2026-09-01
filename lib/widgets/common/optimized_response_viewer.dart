@@ -11,6 +11,7 @@ import '../../theme/app_syntax_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/epoch_annotation.dart';
 import 'app_button.dart';
 import 'app_divider.dart';
 
@@ -92,6 +93,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   bool _isJson = false;
   int _displayedLines = 0;
   bool _showAllLines = false;
+
+  /// epoch 时间戳注解开关（F8.5，仅 JSON 生效；仅渲染层，不改原始报文）
+  bool _annotateEpoch = true;
 
   // 滚动控制器
   final ScrollController _scrollController = ScrollController();
@@ -320,6 +324,16 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             ),
           ),
           const Spacer(),
+          // 时间戳注解开关（仅 JSON）
+          if (_isJson)
+            _buildToolbarButton(
+              icon: Icons.schedule,
+              tooltip: _annotateEpoch ? '隐藏时间戳注释' : '显示时间戳注释',
+              onPressed: () => setState(() => _annotateEpoch = !_annotateEpoch),
+              theme: theme,
+              isActive: _annotateEpoch,
+            ),
+          if (_isJson) const SizedBox(width: 8),
           // 显示模式选择（始终显示，方便用户切换）
           _buildModeSelector(theme),
           const SizedBox(width: 8),
@@ -419,6 +433,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     required String tooltip,
     required VoidCallback onPressed,
     required ThemeData theme,
+    bool isActive = false,
   }) {
     return Tooltip(
       message: tooltip,
@@ -433,14 +448,21 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             height: 28,
             decoration: BoxDecoration(
               borderRadius: AppMetrics.br4,
+              color: isActive
+                  ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                  : null,
               border: Border.all(
-                color: context.appTheme.border.withValues(alpha: 0.5),
+                color: isActive
+                    ? theme.colorScheme.primary
+                    : context.appTheme.border.withValues(alpha: 0.5),
               ),
             ),
             child: Icon(
               icon,
               size: 14,
-              color: theme.colorScheme.onSurfaceVariant,
+              color: isActive
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -542,13 +564,32 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
 
   /// 构建单行显示
   Widget _buildLineItem(String line, int index, ThemeData theme) {
+    // JSON 行 + 注解开启时，用富文本分段渲染 epoch 注释
+    if (_isJson && _annotateEpoch) {
+      final spans = _buildAnnotatedSpans(line, theme);
+      if (spans != null) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+          decoration: BoxDecoration(
+            color: index.isEven
+                ? theme.colorScheme.surface
+                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          ),
+          child: SelectableText.rich(
+            TextSpan(children: spans),
+            style: AppTextStyles.code12.copyWith(height: 1.5),
+          ),
+        );
+      }
+    }
+
     // 简单的 JSON 语法高亮（性能模式下轻量级实现）
     final isJsonLine = _isJson && _shouldHighlightLine(line);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       decoration: BoxDecoration(
-        color: index % 2 == 0
+        color: index.isEven
             ? theme.colorScheme.surface
             : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       ),
@@ -558,6 +599,43 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             color: isJsonLine ? _getJsonLineColor(line, theme) : null,
           )),
     );
+  }
+
+  /// epoch 注解富文本分段；无命中返回 null（调用方走原渲染）
+  ///
+  /// 普通文本沿用 [_getJsonLineColor] 的行级颜色；epoch 数字用 number 语法色；
+  /// 注释用 tertiary 弱化色。字符串内数字不会被分段为 epoch。
+  List<InlineSpan>? _buildAnnotatedSpans(String line, ThemeData theme) {
+    final segments = EpochAnnotation.scanLine(line);
+    if (!segments.any((s) => s.isEpoch)) {
+      return null;
+    }
+
+    final isDark = theme.brightness == Brightness.dark;
+    final lineColor = _shouldHighlightLine(line)
+        ? _getJsonLineColor(line, theme)
+        : null;
+    final baseStyle = AppTextStyles.code12.copyWith(
+      height: 1.5,
+      color: lineColor,
+    );
+    final numberStyle = AppTextStyles.code12.copyWith(
+      height: 1.5,
+      color: AppSyntaxColors.getNumber(isDark),
+    );
+    final annoStyle = AppTextStyles.code12.copyWith(
+      height: 1.5,
+      color: context.appTheme.textTertiary,
+    );
+
+    return [
+      for (final segment in segments)
+        if (segment.isEpoch) ...[
+          TextSpan(text: segment.text, style: numberStyle),
+          TextSpan(text: '  ${EpochAnnotation.format(segment.text)}', style: annoStyle),
+        ] else
+          TextSpan(text: segment.text, style: baseStyle),
+    ];
   }
 
   /// 判断是否应该高亮该行（简单的启发式）
@@ -644,12 +722,19 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
 
   /// 完整模式视图（使用 CodeEditor 提供语法高亮）
   Widget _buildFullView(ThemeData theme) {
+    // 注解仅注入显示文本，原始报文与 Copy 不受影响（F8.5）
+    var content = _formatContent();
+    if (_isJson && _annotateEpoch) {
+      content = content
+          .split('\n')
+          .map(EpochAnnotation.annotateLine)
+          .join('\n');
+    }
     // 使用 CodeField 提供 JSON 语法高亮
     final controller = CodeController(
-      text: _formatContent(),
+      text: content,
       language: _isJson ? json : null,
     );
-    final content = _formatContent();
     final lines = content.split('\n');
 
     return widget.showLineNumbers

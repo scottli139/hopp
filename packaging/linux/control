@@ -1,0 +1,11 @@
+Package: hopp
+Version: @VERSION@
+Architecture: @ARCH@
+Maintainer: zhongmou <zhongmou@beeuc.com>
+Depends: libgtk-3-0, libepoxy0, libxkbcommon0
+Section: devel
+Priority: optional
+Homepage: https://github.com/scottli139/hopp
+Description: Local-first API testing workbench
+ Hopp 是一款本地优先、数据不出机器的 API 工作台，基于 Flutter 构建，
+ 支持 collection/环境变量/断言的保存与复跑。

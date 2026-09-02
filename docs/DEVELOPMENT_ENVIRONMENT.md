@@ -437,6 +437,19 @@ FLUTTER_LINUX_RENDERER=software fvm flutter run -d linux
 >
 > 中文字体：社区 ARM64 引擎通常未编译 fontconfig（无 `SkFontMgr_fontconfig`，退回 `SkFontMgr_New_Custom_Directory` 目录扫描，其逐字符回退是空操作），界面中文会显示为方块。应用已在主题层显式声明 CJK 回退链（`lib/theme/app_text_styles.dart` 的 `kAppFontFamilyFallback` / `kAppCodeFontFamilyFallback`，经 `ThemeData(fontFamilyFallback:)` 全局生效），系统装有常见 CJK 字体（Noto Sans CJK / 思源黑体等）即可正常显示，macOS / Windows / x64 Linux 行为不变（同名家族不存在时自动跳过，退回系统回退）。
 
+**5. deb 打包**（ARM64 / x64 通用，架构自动识别）：
+
+```bash
+# 一条命令：release 构建 + 组装 + dpkg-deb，产物在 build/deb/
+FLUTTER=/path/to/flutter ./scripts/build_deb.sh
+
+# 安装 / 卸载
+sudo dpkg -i build/deb/hopp_<version>_arm64.deb
+sudo dpkg -r hopp
+```
+
+安装内容：`/usr/lib/hopp/`（release bundle）、`/usr/bin/hopp`（wrapper，内置 `FLUTTER_LINUX_RENDERER=software`）、`/usr/share/applications/hopp.desktop`（桌面快捷方式，`StartupWMClass` 与 `linux/CMakeLists.txt` 的 `APPLICATION_ID` 一致）、hicolor 图标。打包定义在 `packaging/linux/`（control / desktop / wrapper），脚本内置 intl override 的临时处理。
+
 ---
 
 ## 开发工作流

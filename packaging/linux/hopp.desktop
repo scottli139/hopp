@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Hopp
+Comment=Local-first API testing workbench
+Comment[zh_CN]=本地优先的 API 测试工作台
+Exec=hopp
+Icon=hopp
+Type=Application
+Categories=Development;
+StartupWMClass=io.github.scottli139.hopp
+Keywords=api;http;rest;测试;

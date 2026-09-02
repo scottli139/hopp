@@ -1,0 +1,6 @@
+#!/bin/sh
+# Hopp 启动包装脚本。
+# 部分 ARM64 设备（Mali GPU）缺少桌面 GL 驱动，Flutter 需引擎自带软件渲染器，
+# 否则直接 FATAL 或界面闪烁；软件渲染对本应用无功能损失。
+export FLUTTER_LINUX_RENDERER=software
+exec /usr/lib/hopp/hopp "$@"

@@ -782,8 +782,7 @@ void main() {
       });
 
       test('should use hopp dir when testMode is false', () {
-        expect(
-            StorageService.dataDirNameFor(testMode: false), equals('hopp'));
+        expect(StorageService.dataDirNameFor(testMode: false), equals('hopp'));
       });
     });
   });

@@ -81,7 +81,8 @@ class StorageService {
     // test-mode 使用独立数据目录：Hive 非跨进程安全，自动化实例与用户实例
     // 并发打开同一 box 文件会导致数据被清零（2026-08-28、2026-09-02 两次事故教训）
     final dataDirName = dataDirNameFor(testMode: testMode);
-    AppLogger.debug('[StorageService] App directory: ${appDir.path}/$dataDirName');
+    AppLogger.debug(
+        '[StorageService] App directory: ${appDir.path}/$dataDirName');
     Hive.init('${appDir.path}/$dataDirName');
 
     // 2. 先初始化 SharedPreferences（用于版本控制）

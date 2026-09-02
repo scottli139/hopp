@@ -41,7 +41,14 @@ class TitleBarSync {
   }
 
   static String _hex(Color color) {
-    final rgb = color.toARGB32() & 0xFFFFFF;
-    return '#${rgb.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+    // 用 3.27 引入的 r/g/b 通道（toARGB32 是 3.29+，CI 还在 3.27.4；
+    // .value 在 3.27 已 deprecated 会触发 warning）
+    final r = (color.r * 255).round();
+    final g = (color.g * 255).round();
+    final b = (color.b * 255).round();
+    final hex = '${r.toRadixString(16).padLeft(2, '0')}'
+        '${g.toRadixString(16).padLeft(2, '0')}'
+        '${b.toRadixString(16).padLeft(2, '0')}';
+    return '#${hex.toUpperCase()}';
   }
 }

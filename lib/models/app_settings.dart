@@ -29,8 +29,11 @@ class AppSettings with _$AppSettings {
     /// 模型名（本地服务为手填，如 'qwen2.5:7b'）
     @HiveField(11) @Default('') String aiModel,
 
-    /// API Key（本地服务留空；Tier 2 用，keychain 存储随 M8.7）
+    /// API Key（本地服务留空；Tier 2 用，keychain 存储随 M8.8）
     @HiveField(12) @Default('') String aiApiKey,
+
+    /// 界面文字缩放（F5.7 / M8.7）：1.0 / 1.25 / 1.5，默认 1.0
+    @HiveField(13) @Default(1.0) double uiScale,
   }) = _AppSettings;
 
   factory AppSettings.fromJson(Map<String, dynamic> json) =>

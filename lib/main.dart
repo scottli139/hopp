@@ -26,7 +26,11 @@ void main(List<String> args) async {
 
   // Initialize storage
   final storage = StorageService();
-  await storage.initialize();
+  // test-mode 隔离必须由 main() 显式传入：Flutter Linux release 下
+  // Platform.executableArguments 拿不到 argv（2026-09-02 事故根因）
+  await storage.initialize(
+    testMode: args.contains('--test-mode') || args.contains('--ui-test'),
+  );
 
   // Create ProviderContainer for menu channel
   final container = ProviderContainer(
@@ -85,10 +89,18 @@ class _HoppAppState extends ConsumerState<HoppApp> {
         Locale('en'),
         Locale('zh', 'CN'),
       ],
-      builder: (context, child) => RepaintBoundary(
-        key: appRepaintBoundaryKey,
-        child: child ?? const SizedBox.shrink(),
-      ),
+      builder: (context, child) {
+        // F5.7 界面缩放：全局文字缩放（Linux HiDPI 等系统缩放不生效场景）
+        final uiScale = ref.watch(uiScaleProvider);
+        return MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(uiScale)),
+          child: RepaintBoundary(
+            key: appRepaintBoundaryKey,
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
       home: const ShortcutWrapper(
         child: MainScreen(),
       ),

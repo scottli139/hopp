@@ -139,7 +139,7 @@ flowchart TD
 
 ## 5. 优先级（实现顺序）
 
-> 进度状态见 [DEVELOPMENT_PLAN](./DEVELOPMENT_PLAN.md)；1–5 已完成（M8.5 / v0.13.0，2026-08-31），下一步 M8.7（Tier 2 BYOK）。
+> 进度状态见 [DEVELOPMENT_PLAN](./DEVELOPMENT_PLAN.md)；1–5 已完成（M8.5 / v0.13.0，2026-08-31），下一步 M8.8（Tier 2 BYOK）。
 
 1. 环境变量（M8.1）—— 一切变量能力的地基 ✅
 2. 预请求链 + 变量转换（F8）—— 直击登录/token/加密痛点 ✅

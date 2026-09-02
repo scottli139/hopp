@@ -4,6 +4,7 @@ import 'package:hopp/models/collection.dart';
 import 'package:hopp/models/http_method.dart';
 import 'package:hopp/models/http_request.dart';
 import 'package:hopp/models/key_value_pair.dart';
+import 'package:hopp/services/storage_service.dart';
 
 import 'package:hive/hive.dart';
 import 'package:mockito/annotations.dart';
@@ -771,6 +772,18 @@ void main() {
 
         // Assert
         expect(pair.enabled, isFalse);
+      });
+    });
+
+    group('test-mode data dir isolation (2026-09-02 incident regression)', () {
+      test('should use hopp_test dir when testMode is true', () {
+        expect(StorageService.dataDirNameFor(testMode: true),
+            equals('hopp_test'));
+      });
+
+      test('should use hopp dir when testMode is false', () {
+        expect(
+            StorageService.dataDirNameFor(testMode: false), equals('hopp'));
       });
     });
   });

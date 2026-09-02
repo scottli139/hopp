@@ -374,6 +374,9 @@ class UITestModeManager {
       case 'reset_database':
         return await _resetDatabase();
 
+      case 'close_storage':
+        return await _closeStorage();
+
       case 'simulate_old_data':
         final version = params['version'] as int? ?? 1;
         return await _simulateOldData(version);
@@ -475,6 +478,10 @@ class UITestModeManager {
       case 'set_theme_mode':
         final mode = params['mode'] as String;
         return await _setThemeMode(mode);
+
+      case 'set_ui_scale':
+        final scale = (params['scale'] as num).toDouble();
+        return await _setUiScale(scale);
 
       case 'create_saved_request':
         final collectionId = params['collection_id'] as String;
@@ -767,6 +774,21 @@ class UITestModeManager {
     await _ref!.read(settingsProvider.notifier).updateThemeMode(mode);
 
     return {'theme_mode': mode};
+  }
+
+  /// 设置界面文字缩放（F5.7：1.0 / 1.25 / 1.5）
+  ///
+  /// 通过设置持久化生效，用于 HiDPI 场景紧凑布局的自动化验收。
+  Future<Map<String, dynamic>> _setUiScale(double scale) async {
+    // 注意：double 无 primitive equality，不能用 const Set，只能用 const List
+    const validScales = [1.0, 1.25, 1.5];
+    if (!validScales.contains(scale)) {
+      throw Exception('无效界面缩放: $scale（可选: ${validScales.join('/')}）');
+    }
+
+    await _ref!.read(settingsProvider.notifier).updateUiScale(scale);
+
+    return {'ui_scale': scale};
   }
 
   /// 创建新请求
@@ -2759,6 +2781,17 @@ class UITestModeManager {
     final storage = _ref!.read(storageServiceProvider);
     await storage.resetForTesting();
     return {'reset': true};
+  }
+
+  /// 干净关闭所有 Hive box（2026-09-02 数据恢复辅助）
+  ///
+  /// SIGTERM 杀进程会让 box 文件尾部帧损坏，下次打开时 Hive
+  /// 「Recovering corrupted box」直接清空；自动化若需复制 box 文件
+  /// （如数据恢复），必须先调本指令干净落盘再复制。
+  Future<Map<String, dynamic>> _closeStorage() async {
+    final storage = _ref!.read(storageServiceProvider);
+    await storage.close();
+    return {'closed': true};
   }
 
   /// 模拟旧版本数据

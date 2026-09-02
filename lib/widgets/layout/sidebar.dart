@@ -230,6 +230,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
             onChanged: (mode) =>
                 ref.read(settingsProvider.notifier).updateThemeMode(mode),
           ),
+          const SizedBox(width: AppMetrics.space8),
+          _buildUiScaleMenu(context),
           const Spacer(),
           // F9.5：AI 设置入口
           AiSparkleButton(
@@ -238,6 +240,46 @@ class _SidebarState extends ConsumerState<Sidebar> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 底栏：界面文字缩放（F5.7：100% / 125% / 150%），持久化到 AppSettings
+  Widget _buildUiScaleMenu(BuildContext context) {
+    final theme = Theme.of(context);
+    final uiScale = ref.watch(settingsProvider).valueOrNull?.uiScale ?? 1.0;
+
+    return PopupMenuButton<double>(
+      icon: Icon(Icons.format_size,
+          size: 18, color: context.appTheme.textTertiary),
+      tooltip: '界面缩放',
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      offset: const Offset(0, 28),
+      shape: AppPopupMenu.menuShape(theme),
+      elevation: AppPopupMenu.menuElevation,
+      color: AppPopupMenu.menuColor(theme),
+      onSelected: (scale) =>
+          ref.read(settingsProvider.notifier).updateUiScale(scale),
+      itemBuilder: (context) => [
+        AppPopupMenu.textItem(
+          theme: theme,
+          value: 1.0,
+          label: '100%',
+          selected: uiScale == 1.0,
+        ),
+        AppPopupMenu.textItem(
+          theme: theme,
+          value: 1.25,
+          label: '125%',
+          selected: uiScale == 1.25,
+        ),
+        AppPopupMenu.textItem(
+          theme: theme,
+          value: 1.5,
+          label: '150%',
+          selected: uiScale == 1.5,
+        ),
+      ],
     );
   }
 

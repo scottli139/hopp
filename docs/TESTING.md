@@ -544,6 +544,8 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `beautify_code` | 格式化代码 |
 | `dismiss_dialog` | 关闭顶层对话框（Navigator.maybePop） |
 | `set_theme_mode` | 切换主题模式 (light/dark/system) |
+| `set_ui_scale` | 设置界面文字缩放（`scale`: 1.0/1.25/1.5，F5.7；持久化生效，HiDPI 紧凑布局验收用） |
+| `close_storage` | 干净关闭所有 Hive box（复制 box 文件前必须调用；SIGTERM 直杀会损坏尾部帧导致 Hive 恢复清空，2026-09-02 事故） |
 | `create_environment` | 创建环境（含变量定义，支持 secret/enabled） |
 | `delete_environment` | 删除环境 |
 | `get_environments` | 获取环境列表 |

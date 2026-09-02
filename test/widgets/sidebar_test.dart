@@ -616,5 +616,35 @@ void main() {
         expect(saved.themeMode, 'dark');
       });
     });
+
+    group('ui scale menu (F5.7)', () {
+      testWidgets('should render ui scale button in footer', (tester) async {
+        final container = createContainer();
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.format_size), findsOneWidget);
+      });
+
+      testWidgets('should persist ui scale when menu item is tapped',
+          (tester) async {
+        final container = createContainer();
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.format_size));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('150%'));
+        await tester.pumpAndSettle();
+
+        final saved = verify(mockStorageService.saveSettings(captureAny))
+            .captured
+            .last as AppSettings;
+        expect(saved.uiScale, equals(1.5));
+      });
+    });
   });
 }

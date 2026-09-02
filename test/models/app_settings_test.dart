@@ -371,5 +371,34 @@ void main() {
         expect(devSettings.followRedirects, isTrue);
       });
     });
+
+    group('uiScale (F5.7)', () {
+      test('should default to 1.0', () {
+        expect(const AppSettings().uiScale, equals(1.0));
+        expect(AppSettings.defaults().uiScale, equals(1.0));
+      });
+
+      test('should copyWith uiScale', () {
+        const settings = AppSettings();
+
+        final copied = settings.copyWith(uiScale: 1.5);
+
+        expect(copied.uiScale, equals(1.5));
+      });
+
+      test('should roundtrip uiScale through JSON', () {
+        const settings = AppSettings(uiScale: 1.25);
+
+        final restored = AppSettings.fromJson(settings.toJson());
+
+        expect(restored.uiScale, equals(1.25));
+      });
+
+      test('should default to 1.0 for legacy JSON without uiScale', () {
+        final settings = AppSettings.fromJson({'themeMode': 'dark'});
+
+        expect(settings.uiScale, equals(1.0));
+      });
+    });
   });
 }

@@ -53,6 +53,14 @@ class StorageService {
   List<String> get _dataBoxNames =>
       [_collectionsBoxName, _requestsBoxName, _environmentsBoxName];
 
+  /// 数据目录名选择（test-mode 隔离）。
+  ///
+  /// 纯函数独立可测，作为 2026-09-02 事故的回归守卫：Flutter Linux release
+  /// 下 `Platform.executableArguments` 为空（拿不到 argv），因此隔离判断
+  /// 只认 main() 显式传入的 testMode，不使用该 API。
+  static String dataDirNameFor({required bool testMode}) =>
+      testMode ? 'hopp_test' : 'hopp';
+
   /// 初始化存储服务
   ///
   /// 执行以下步骤：
@@ -61,18 +69,19 @@ class StorageService {
   /// 3. 执行数据库迁移检查
   /// 4. 注册 Hive 适配器（使用自定义向后兼容适配器）
   /// 5. 打开 Hive boxes
-  Future<void> initialize() async {
+  ///
+  /// [testMode] 必须由 main() 根据启动参数显式传入。注意：Flutter Linux
+  /// release 构建下 `Platform.executableArguments` 拿不到 argv（2026-09-02
+  /// 事故根因——隔离失效导致测试实例清空真实数据目录），因此不使用该 API。
+  Future<void> initialize({bool testMode = false}) async {
     AppLogger.info('[StorageService] Initializing...');
 
     // 1. 初始化 Hive 目录
     final appDir = await getApplicationDocumentsDirectory();
-    AppLogger.debug('[StorageService] App directory: ${appDir.path}');
     // test-mode 使用独立数据目录：Hive 非跨进程安全，自动化实例与用户实例
-    // 并发打开同一 box 文件会导致数据被清零（2026-08-28 事故教训）
-    final dataDirName = Platform.executableArguments.contains('--test-mode') ||
-            Platform.executableArguments.contains('--ui-test')
-        ? 'hopp_test'
-        : 'hopp';
+    // 并发打开同一 box 文件会导致数据被清零（2026-08-28、2026-09-02 两次事故教训）
+    final dataDirName = dataDirNameFor(testMode: testMode);
+    AppLogger.debug('[StorageService] App directory: ${appDir.path}/$dataDirName');
     Hive.init('${appDir.path}/$dataDirName');
 
     // 2. 先初始化 SharedPreferences（用于版本控制）

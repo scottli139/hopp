@@ -12,7 +12,7 @@
 
 ### 一、核心请求功能
 
-> F1.10 cURL 生成已排期 M8.8（2026-09-01 决策），见 [DEVELOPMENT_PLAN](./DEVELOPMENT_PLAN.md)。
+> F1.10 cURL 生成已排期 M8.9（2026-09-01 决策），见 [DEVELOPMENT_PLAN](./DEVELOPMENT_PLAN.md)。
 
 | ID | 功能 | 优先级 | 预估工作量 | 说明 |
 |----|------|--------|------------|------|
@@ -33,7 +33,7 @@
 
 ### 三、环境变量功能
 
-> 核心（F3.1-F3.5）已于 2026-08-21 完成（M8.1，见 DEVELOPMENT_PLAN）；F3.6 变量转换已由 F8.3 落地（M8.2 / v0.10.0，2026-08-25）；F3.7 环境导出已排期 M8.8（2026-09-01 决策，含接线 F2.4 的 `includeEnvironment`）。
+> 核心（F3.1-F3.5）已于 2026-08-21 完成（M8.1，见 DEVELOPMENT_PLAN）；F3.6 变量转换已由 F8.3 落地（M8.2 / v0.10.0，2026-08-25）；F3.7 环境导出已排期 M8.9（2026-09-01 决策，含接线 F2.4 的 `includeEnvironment`）。
 
 | ID | 功能 | 优先级 | 预估工作量 | 说明 |
 |----|------|--------|------------|------|
@@ -49,7 +49,7 @@
 
 ### 五、AI 功能（M8.5 澄清时挪后项，见 PRD F9.5 范围表）
 
-> F9.6 流式输出已排期 M8.8（2026-09-01 决策）；此处只保留未排期项。
+> F9.6 流式输出已排期 M8.9（2026-09-01 决策）；此处只保留未排期项。
 
 | ID | 功能 | 优先级 | 预估工作量 | 说明 |
 |----|------|--------|------------|------|
@@ -83,7 +83,7 @@
 
 ## UI/UX 改进
 
-> F5.4 响应体搜索、UX-3 Request Body Beautify 已排期 M8.8（2026-09-01 决策）；此处只保留未排期项。
+> F5.4 响应体搜索、UX-3 Request Body Beautify 已排期 M8.9（2026-09-01 决策）；F5.7 界面缩放已排期 M8.7（2026-09-02 决策）；此处只保留未排期项。
 
 | ID | 功能 | 优先级 | 预估工作量 | 说明 |
 |----|------|--------|------------|------|
@@ -127,7 +127,7 @@
 | TD-3 | Timing 的 TCP/TLS/TTFB 为估算值 | `http_service.dart` 用硬编码 `30/20/45` 及 `totalMs ~/ 3` 填充 | 改为真实测量，测不到就标记为未测量（null），避免误导 | P2 | 实现真实计时或重做 Timing Tab 时 |
 | TD-5 | site/ 版本徽章手动同步 | App 侧版本号已改为动态读取（v0.8.8，Issue #13）；残余：`site/` 两个静态页的 version 徽章需发布时手动改（2026-09-01 已对齐 v0.14.0） | 发布流程中加入 site/ 徽章同步步骤（或脚本化） | P3 | 每次发布 |
 | TD-6 | test-mode `tap_at` 疑似干扰 Tab 状态 | F8 截图审计（2026-08-25）：Params 页对 fx 按钮 `tap_at(745,118)`（47 个 hitTargets）后页面异常跳回 Pre-request tab；功能本身由 widget test 覆盖且正常 | 排查 `tap_at` 的命中分发与 `_tabController`/持久化 index 的互相影响 | P3 | 下次扩展 test-mode 指针指令时 |
-| TD-7 | 应用无单实例保护 | Hive 非跨进程安全，两个实例并发打开同一数据目录会导致 box 文件清零（2026-08-28 实发事故，test-mode 已通过独立数据目录 `hopp_test` 规避，见 CHANGELOG v0.11.0-test-data-isolation）；普通双开（用户手动启动第二个 release 实例）仍无防护 | 启动时对数据目录加 OS 级文件锁（dart:io File.lock），第二个实例提示退出 | P1 | 下次改动存储初始化时 |
+| TD-7 | 应用无单实例保护 | Hive 非跨进程安全，两个实例并发打开同一数据目录会导致 box 文件清零（2026-08-28 实发事故；test-mode 已通过独立数据目录 `hopp_test` 规避，见 CHANGELOG v0.11.0-test-data-isolation）；普通双开（用户手动启动第二个 release 实例）仍无防护。**2026-09-02 二次事故**：Linux release 下 `Platform.executableArguments` 为空导致隔离失效，测试实例打开真实目录并清空 collections/requests/environments（已由 v0.15.0 修复：改由 main() 显式传 `testMode`，见 CHANGELOG v0.15.0-test-mode-isolation-fix）；另发现 SIGTERM 直杀会让 box 尾部帧损坏、Hive 恢复时清空（迁移/复制 box 文件前必须先 `close_storage` 干净落盘） | 启动时对数据目录加 OS 级文件锁（dart:io File.lock），第二个实例提示退出 | P1 | 下次改动存储初始化时 |
 | TD-8 | test-mode `tap_at` 坐标空间不稳定 | 2026-08-31 营销截图实拍：坐标语义随实例漂移（窗口坐标 vs 视图坐标，标题栏 32px 时同一目标所需偏移在 +18 ~ +50 不等）；侧边栏行距仅约 19px，极易命中相邻行（曾误开请求 Tab 污染截图） | 统一为视图逻辑坐标并在 `_tapAt` 注释中写明；返回值附带命中组件路径便于校准（与 TD-6 分别跟进） | P3 | 下次扩展 test-mode 指针指令时 |
 | TD-9 | test-mode `reset_database` 不清空已打开 Tab | 遗留 Tab 跨 reset 存活，自动化连续运行时出现重复「New Request」Tab 栏，污染截图与 Tab 计数 | `reset_database` 一并关闭所有 Tab（或新增 `close_all_tabs` 指令） | P3 | 下次改动 test-mode 指令时 |
 | TD-10 | 侧边栏树展开后立即截图渲染空白 | `toggleExpanded` 后立刻 `capture_screenshot` 会 transient 渲染空树（ListView 重建期约 1 帧）；当日首次整窗截图还伴随秒级 shader 预热卡顿 | 截图前固定 `wait 800ms+`；或 `capture_screenshot` 内部等待稳定帧再编码 | P3 | 下次优化 test-mode 截图链路时 |

@@ -534,6 +534,28 @@
 | F5.4 | 响应体搜索 | ⏸️ | 在响应内容中搜索 | 支持正则，高亮匹配 |
 | F5.5 | 分屏视图 | ✅ | 请求/响应上下布局 | 可拖拽调整分割比例 |
 | F5.6 | 字体缩放 | ⏸️ | 编辑器字体大小调整 | Ctrl+滚轮或设置调整 |
+| F5.7 | 界面缩放 | ✅ | 全局文字缩放（100%/125%/150%），适配 Linux HiDPI 等系统缩放不生效场景（M8.7 / v0.15.0，2026-09-02） | 设置切换即时生效并持久化，150% 下紧凑布局无裁切 |
+
+#### F5.7 界面缩放（全局文字缩放）详细需求
+
+**痛点（2026-09-02 Linux ARM64 实机）**：HiDPI 面板（2160×1440 eDP，EDID 误报 96 DPI）+ Deepin/Wayland 只为 X11 应用设 `Xft.dpi: 144`（1.5×），原生应用均放大，而 Flutter 引擎不读 Xft.dpi、固定按 96 DPI 渲染——文字物理尺寸约为原生应用的一半。
+
+**方案**：
+
+| 项 | 决策 |
+|----|------|
+| 设置项 | `AppSettings.uiScale`（HiveField 13，默认 1.0），档位 100% / 125% / 150% |
+| 实现 | `MaterialApp.builder` 注入 `MediaQuery(textScaler: TextScaler.linear(uiScale))`，全局缩放文字；布局度量（AppMetrics 高度/间距）不动 |
+| 入口 | 侧栏底栏（主题切换旁）弹出菜单，切换即时生效 + Hive 持久化 |
+| 与设计系统关系 | 不新增内联字号、不改 token 定义（守卫 G3 不受影响）；golden 基线在默认 1.0 下不变 |
+| 与 F5.6 关系 | F5.6 是编辑器字号独立设置（`editorFontSize` 字段已存在）；F5.7 是全局界面文字缩放，两者互不影响 |
+| 不在本期 | 布局度量联动缩放；Ctrl+滚轮缩放；自动探测系统 DPI |
+
+**验收标准**：
+
+- [x] 三档切换即时生效，重启后保持
+- [x] 150% 下紧凑布局（KV 行 / 徽章 / 对话框 / 状态栏）无裁切溢出（Linux ARM64 实机验证）
+- [x] design_guard 零新增违规；亮/暗双主题截图审计通过
 
 ### 六、数据与同步功能
 
@@ -845,12 +867,12 @@
 | 项 | 决策 |
 |----|------|
 | 本期做 | 解释响应/错误；AI 生成断言（F4.2）；自然语言建请求；OpenAI 兼容客户端 + 连接配置 |
-| 本期不做 | 读取 API 文档网页生成请求、历史语义搜索（挪 BACKLOG F9.7/F9.8）；Tier 2 BYOK（排期 M8.7；注：原写 M8.6，实际 M8.6 插队为 F8.5 时间戳工效增强）；通用 AI 聊天面板；流式输出（BACKLOG F9.6）；`/v1/models` 模型列表拉取（模型名手填） |
+| 本期不做 | 读取 API 文档网页生成请求、历史语义搜索（挪 BACKLOG F9.7/F9.8）；Tier 2 BYOK（排期 M8.8；注：原写 M8.6，先后被 F8.5 时间戳工效增强（M8.6）、F5.7 界面缩放（M8.7）插队）；通用 AI 聊天面板；流式输出（BACKLOG F9.6）；`/v1/models` 模型列表拉取（模型名手填） |
 
 **底座**（F9.3 本期落地）
 
 - 单一 OpenAI 兼容客户端：Dio 手写 chat completions，`baseURL + model + key` 可配；预设 Ollama `http://localhost:11434/v1`、LM Studio `http://localhost:1234/v1`
-- 配置存 `AppSettings` 新字段（settings box 不加密；baseURL/model 非敏感，API key 输入框为 Tier 2 铺路，keychain 级存储随 M8.7 / Tier 2）
+- 配置存 `AppSettings` 新字段（settings box 不加密；baseURL/model 非敏感，API key 输入框为 Tier 2 铺路，keychain 级存储随 M8.8 / Tier 2）
 - 非流式（v1）；连接超时 5s / 生成超时 60s；温度 0；日志只记端点/模型/耗时/token 数，不落请求体/响应文本/key
 
 **交互**

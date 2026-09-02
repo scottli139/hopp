@@ -54,6 +54,14 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
     }
   }
 
+  /// 更新界面文字缩放（F5.7）
+  Future<void> updateUiScale(double scale) async {
+    final current = state.value;
+    if (current != null) {
+      await updateSettings(current.copyWith(uiScale: scale));
+    }
+  }
+
   Future<void> updateRequestTimeout(int timeoutMs) async {
     final current = state.value;
     if (current != null) {
@@ -143,4 +151,9 @@ final localeProvider = Provider<Locale>((ref) {
     loading: () => const Locale('en'),
     error: (_, __) => const Locale('en'),
   );
+});
+
+/// 界面文字缩放（F5.7）：设置未加载/异常时回退 1.0（不缩放）
+final uiScaleProvider = Provider<double>((ref) {
+  return ref.watch(settingsProvider).valueOrNull?.uiScale ?? 1.0;
 });

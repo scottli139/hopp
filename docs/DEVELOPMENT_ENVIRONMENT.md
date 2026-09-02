@@ -434,6 +434,8 @@ FLUTTER_LINUX_RENDERER=software fvm flutter run -d linux
 ```
 
 > 任务栏图标：Deepin 的 GTK3 补丁会使 `gtk_window_set_icon` 不生效（任务栏显示 X 占位图标）。runner 已内置 X11 手动写 `_NET_WM_ICON`（见 `linux/runner/my_application.cc` 的 `set_window_icon`），各 Linux 发行版通用，无需额外配置。
+>
+> 中文字体：社区 ARM64 引擎通常未编译 fontconfig（无 `SkFontMgr_fontconfig`，退回 `SkFontMgr_New_Custom_Directory` 目录扫描，其逐字符回退是空操作），界面中文会显示为方块。应用已在主题层显式声明 CJK 回退链（`lib/theme/app_text_styles.dart` 的 `kAppFontFamilyFallback` / `kAppCodeFontFamilyFallback`，经 `ThemeData(fontFamilyFallback:)` 全局生效），系统装有常见 CJK 字体（Noto Sans CJK / 思源黑体等）即可正常显示，macOS / Windows / x64 Linux 行为不变（同名家族不存在时自动跳过，退回系统回退）。
 
 ---
 

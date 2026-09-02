@@ -4,6 +4,26 @@ import 'package:flutter/material.dart';
 ///
 /// 业务代码禁止内联 fontSize 字面量（守卫规则 G3），统一从这里取，
 /// 或在其基础上 copyWith（仅限字重 / 颜色等非字号属性）。
+
+/// 全局 CJK 字体回退链：部分 Linux 引擎构建（如无 fontconfig 的社区 ARM64
+/// 版）缺失按字符的系统字体回退，中文会渲染为方块；在主题层显式声明。
+/// 对 macOS / Windows 无影响——列出的家族不存在时自动跳过，退回系统回退。
+const List<String> kAppFontFamilyFallback = [
+  'Noto Sans CJK SC',
+  'Source Han Sans SC',
+  'WenQuanYi Micro Hei',
+  'PingFang SC',
+  'Microsoft YaHei',
+];
+
+/// 等宽场景回退链：优先等宽字体（含 CJK 等宽），再退回通用 CJK 链。
+const List<String> kAppCodeFontFamilyFallback = [
+  'Noto Sans Mono CJK SC',
+  'DejaVu Sans Mono',
+  'Liberation Mono',
+  ...kAppFontFamilyFallback,
+];
+
 class AppTextStyles {
   AppTextStyles._();
 
@@ -56,6 +76,7 @@ class AppTextStyles {
     fontWeight: FontWeight.w400,
     height: 1.45,
     fontFamily: 'Menlo',
+    fontFamilyFallback: kAppCodeFontFamilyFallback,
   );
 
   /// 11 w400 Menlo —— 密集代码场景（KV 行 / 头信息等）
@@ -64,5 +85,6 @@ class AppTextStyles {
     fontWeight: FontWeight.w400,
     height: 1.4,
     fontFamily: 'Menlo',
+    fontFamilyFallback: kAppCodeFontFamilyFallback,
   );
 }

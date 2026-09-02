@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_text_styles.dart';
 import 'app_theme_data.dart';
 
 /// 应用主题组装入口。
@@ -18,6 +19,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamilyFallback: kAppFontFamilyFallback,
       colorScheme: const ColorScheme(
         brightness: Brightness.light,
         primary: Color(0xFF575992),
@@ -106,6 +108,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      fontFamilyFallback: kAppFontFamilyFallback,
       colorScheme: const ColorScheme(
         brightness: Brightness.dark,
         primary: Color(0xFFC0C1FF),

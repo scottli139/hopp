@@ -777,8 +777,8 @@ void main() {
 
     group('test-mode data dir isolation (2026-09-02 incident regression)', () {
       test('should use hopp_test dir when testMode is true', () {
-        expect(StorageService.dataDirNameFor(testMode: true),
-            equals('hopp_test'));
+        expect(
+            StorageService.dataDirNameFor(testMode: true), equals('hopp_test'));
       });
 
       test('should use hopp dir when testMode is false', () {

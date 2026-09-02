@@ -1,8 +1,11 @@
 #include "my_application.h"
 
+#include <unistd.h>
+
 #include <flutter_linux/flutter_linux.h>
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
+#include <X11/Xatom.h>
 #endif
 
 #include "flutter/generated_plugin_registrant.h"
@@ -13,6 +16,72 @@ struct _MyApplication {
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
+
+// 设置窗口图标。
+// Deepin 的 GTK3 补丁会使 gtk_window_set_icon 不写入 _NET_WM_ICON，
+// 任务栏/Dock 只能显示占位 X 图标；因此在 X11 下手动补写该属性。
+// 图标由 CMake 安装到 bundle 的 data/logo.svg.png，按可执行文件位置解析。
+static void set_window_icon(GtkWindow* window, const gchar* exe_dir) {
+  gchar* icon_path = g_build_filename(exe_dir, "data", "logo.svg.png", nullptr);
+  GError* error = nullptr;
+  GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file(icon_path, &error);
+  g_free(icon_path);
+  if (pixbuf == nullptr) {
+    g_warning("Failed to load window icon: %s",
+              error != nullptr ? error->message : "unknown");
+    g_clear_error(&error);
+    return;
+  }
+
+  // 统一缩到 128px，_NET_WM_ICON 数据更小，Dock 实际展示尺寸也足够。
+  const gint size = 128;
+  GdkPixbuf* scaled = gdk_pixbuf_scale_simple(
+      pixbuf, size, size, GDK_INTERP_BILINEAR);
+  g_object_unref(pixbuf);
+  if (scaled == nullptr) {
+    return;
+  }
+
+  gtk_window_set_icon(window, scaled);  // Wayland/GTK 侧
+
+#ifdef GDK_WINDOWING_X11
+  if (GDK_IS_X11_SCREEN(gtk_window_get_screen(window))) {
+    // 需要 realize 之后才有 XID；realize 不影响后续 show。
+    if (!gtk_widget_get_realized(GTK_WIDGET(window))) {
+      gtk_widget_realize(GTK_WIDGET(window));
+    }
+    GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(window));
+    if (gdk_window != nullptr) {
+      const guchar* src = gdk_pixbuf_get_pixels(scaled);
+      const gint channels = gdk_pixbuf_get_n_channels(scaled);
+      const gint stride = gdk_pixbuf_get_rowstride(scaled);
+      g_autofree gulong* icon = g_new(gulong, 2 + size * size);
+      icon[0] = size;
+      icon[1] = size;
+      for (gint y = 0; y < size; y++) {
+        for (gint x = 0; x < size; x++) {
+          const guchar* p = src + y * stride + x * channels;
+          const guchar r = p[0];
+          const guchar g = p[1];
+          const guchar b = p[2];
+          const guchar a = channels == 4 ? p[3] : 255;
+          icon[2 + y * size + x] =
+              ((gulong)a << 24) | ((gulong)r << 16) | ((gulong)g << 8) | b;
+        }
+      }
+      Display* display = gdk_x11_display_get_xdisplay(
+          gtk_widget_get_display(GTK_WIDGET(window)));
+      const Atom atom = XInternAtom(display, "_NET_WM_ICON", False);
+      XChangeProperty(display, GDK_WINDOW_XID(gdk_window), atom, XA_CARDINAL,
+                      32, PropModeReplace,
+                      reinterpret_cast<const unsigned char*>(icon),
+                      2 + size * size);
+    }
+  }
+#endif
+
+  g_object_unref(scaled);
+}
 
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
@@ -45,6 +114,19 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
     gtk_window_set_title(window, "hopp");
+  }
+
+  // 解析可执行文件所在目录，用于定位 bundle 内的窗口图标。
+  gchar exe_path[4096];
+  const ssize_t exe_len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+  gchar* exe_dir = nullptr;
+  if (exe_len > 0) {
+    exe_path[exe_len] = '\0';
+    exe_dir = g_path_get_dirname(exe_path);
+  }
+  if (exe_dir != nullptr) {
+    set_window_icon(GTK_WINDOW(window), exe_dir);
+    g_free(exe_dir);
   }
 
   gtk_window_set_default_size(window, 1280, 720);

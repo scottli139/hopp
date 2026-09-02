@@ -97,6 +97,12 @@ install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)
 
+# 窗口图标，供 runner 设置为 _NET_WM_ICON（任务栏/Dock 显示，否则回退 X 图标）。
+# 注意：install(FILES ... RENAME) 需要 CMake 3.14+，本项目最低 3.13，保持原文件名。
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../assets/images/logo.svg.png"
+  DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
+  COMPONENT Runtime)
+
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 

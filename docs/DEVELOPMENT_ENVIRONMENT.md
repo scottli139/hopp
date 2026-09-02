@@ -366,6 +366,18 @@ sudo dnf install -y clang cmake ninja-build pkgconfig gtk3-devel xz-devel
 sudo pacman -S clang cmake ninja pkgconf gtk3 xz
 ```
 
+### 7. Linux 界面频繁闪白/闪黑
+
+**现象**：窗口在滚动、动画、切换主题时整窗闪一下（ARM64 + Mesa 软渲染环境）。
+
+**原因**：llvmpipe 与 Flutter 按区域重绘配合有缺陷，半绘制帧被送出；非应用代码问题。
+
+**解决**：用引擎自带软件渲染器启动，绕开 GL（详见「平台特定配置 → Linux → ARM64 与软件渲染」）：
+
+```bash
+FLUTTER_LINUX_RENDERER=software fvm flutter run -d linux
+```
+
 ---
 
 ## 平台特定配置
@@ -397,6 +409,31 @@ cd ..
 # 启用桌面支持
 fvm flutter config --enable-linux-desktop
 ```
+
+#### ARM64 与软件渲染（华为擎云等国产 ARM 设备，2026-09 实测）
+
+ARM64 Linux（鲲鹏/麒麟等）与 x86_64 有几处差异，按顺序处理：
+
+**1. Flutter SDK**：官方 releases 只有 x64 Linux SDK（`releases_linux.json` 中无 arm64），需用社区 ARM64 构建（如 [flutter-native-arm64](https://github.com/MohamedAlkindi/flutter-native-arm64)）。3.27.4 无对应 ARM64 版本，实测 3.35.4 可构建本项目：`sdk: ^3.6.2` 约束兼容，但 `intl` 需临时加 `pubspec_overrides.yaml` 升到 `^0.20.2`（新版 flutter_localizations 固定 intl 0.20.2），构建完即删。
+
+**2. linux-arm64 引擎产物**：国内镜像 `storage.flutter-io.cn` 不同步 linux-arm64 引擎产物（403）。构建时**不要**设置 `FLUTTER_STORAGE_BASE_URL`，默认走 `storage.googleapis.com`（国内实测可达）；`PUB_HOSTED_URL=https://pub.flutter-io.cn` 包镜像不受影响。
+
+**3. 系统依赖**：与 x64 相同（`clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev`）。
+
+**4. GPU / 渲染（关键）**：国产 ARM 整机常配 Mali GPU，但厂商 libmali 只提供 GLES 配置，Flutter 桌面端需要桌面 GL，直接启动会 FATAL（`glGetString(GL_VERSION) failed`）。两条路：
+
+- Mesa llvmpipe 软渲染可跑（GLVND + `LIBGL_ALWAYS_SOFTWARE=1`），但与 Flutter 的按区域重绘配合有缺陷：重绘量大的窗口会把**半绘制帧**送显，表现为界面频繁闪白/闪黑（滚动、动画、切主题时尤甚）。
+- **推荐：引擎自带软件渲染器，完全绕开 GL**。启动加 `FLUTTER_LINUX_RENDERER=software`，无闪烁、无 GPU 依赖，对本应用（无视频/着色器）无功能损失。
+
+```bash
+# 直接运行构建产物
+FLUTTER_LINUX_RENDERER=software ./build/linux/arm64/debug/bundle/hopp
+
+# 开发期
+FLUTTER_LINUX_RENDERER=software fvm flutter run -d linux
+```
+
+> 任务栏图标：Deepin 的 GTK3 补丁会使 `gtk_window_set_icon` 不生效（任务栏显示 X 占位图标）。runner 已内置 X11 手动写 `_NET_WM_ICON`（见 `linux/runner/my_application.cc` 的 `set_window_icon`），各 Linux 发行版通用，无需额外配置。
 
 ---
 

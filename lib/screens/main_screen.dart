@@ -222,9 +222,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final appTheme = context.appTheme;
     final version =
         ref.watch(appVersionProvider).valueOrNull ?? kFallbackAppVersion;
+    // F5.7 界面缩放只放大文字，栏高需同步乘缩放因子，否则 125%/150% 下显挤
+    final uiScale = MediaQuery.textScalerOf(context).scale(1.0);
 
     return Container(
-      height: 28,
+      height: AppMetrics.height28 * uiScale,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: appTheme.surface,

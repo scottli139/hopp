@@ -201,9 +201,11 @@ class _SidebarState extends ConsumerState<Sidebar> {
   Widget _buildFooter(BuildContext context) {
     final themeMode =
         ref.watch(settingsProvider).valueOrNull?.themeMode ?? 'system';
+    // F5.7 界面缩放只放大文字，栏高需同步乘缩放因子，否则 125%/150% 下显挤
+    final uiScale = MediaQuery.textScalerOf(context).scale(1.0);
 
     return Container(
-      height: AppMetrics.height36,
+      height: AppMetrics.height36 * uiScale,
       padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space8),
       alignment: Alignment.centerLeft,
       child: Row(

@@ -535,6 +535,7 @@
 | F5.5 | 分屏视图 | ✅ | 请求/响应上下布局 | 可拖拽调整分割比例 |
 | F5.6 | 字体缩放 | ⏸️ | 编辑器字体大小调整 | Ctrl+滚轮或设置调整 |
 | F5.7 | 界面缩放 | ✅ | 全局文字缩放（100%/125%/150%），适配 Linux HiDPI 等系统缩放不生效场景（M8.7 / v0.15.0，2026-09-02） | 设置切换即时生效并持久化，150% 下紧凑布局无裁切 |
+| F5.8 | Linux 标题栏主题跟随 | ✅ | 窗口标题栏颜色/高度/按钮与应用主题统一（v0.15.0，2026-09-02） | 亮/暗主题下标题栏同色即时跟随；高度 36px；窗口按钮清晰可点 |
 
 #### F5.7 界面缩放（全局文字缩放）详细需求
 
@@ -556,6 +557,24 @@
 - [x] 三档切换即时生效，重启后保持
 - [x] 150% 下紧凑布局（KV 行 / 徽章 / 对话框 / 状态栏）无裁切溢出（Linux ARM64 实机验证）
 - [x] design_guard 零新增违规；亮/暗双主题截图审计通过
+
+#### F5.8 Linux 标题栏主题跟随（自定义 GtkBox 标题栏）
+
+**痛点（2026-09-02 用户截图反馈「头重脚轻」）**：暗色模式下系统标题栏仍白色——环境 `GDK_BACKEND=x11` 使应用走 XWayland，Flutter 模板「X11 非 GNOME 用传统标题栏」分支给出 kwin 绘制的白底 SSD；强制 CSD 后发现 **Deepin 的 GTK3 补丁锁定 GtkHeaderBar**（纯 GTK3 探针同样 ~60px 高、PNG 背景小按钮、子元素 CSS 免疫），窗口按钮小而标题栏高。底栏（侧栏 footer / 主区 status bar）在界面缩放 125%/150% 下因固定高度显挤。
+
+**方案**：
+
+| 项 | 决策 |
+|----|------|
+| 标题栏 | runner 用普通 GtkBox 自定义标题栏（补丁只 hook GtkHeaderBar）：高 36px + 1px 底部分割线 + 窗口按钮 36×36 命中区/20px 图标；拖动移动、双击最大化、最大化态切还原图标自实现 |
+| 主题同步 | `com.example.hopp/window` 通道 `updateTitleBar` 下发 {dark, background, foreground, separator}——prefer-dark + GtkCssProvider 直控 `.titlebar`，颜色对齐 AppThemeData surface/textPrimary/border token；Dart 侧 `TitleBarSync` 随 themeMode/平台亮度去重同步 |
+| 底栏 | 两条固定高栏（36px / 28px）改乘 `MediaQuery.textScalerOf` 缩放因子跟随 F5.7（1.0 时不变，golden 基线不受影响） |
+
+**验收标准**：
+
+- [x] 亮/暗主题下标题栏颜色即时跟随（surface/textPrimary/border token 逐像素命中）
+- [x] 标题栏 60→32px、窗口按钮图标 ~16→20px（实机逐像素测量）
+- [x] 底栏 125%/150% 下不拥挤；新增测试 6（title_bar_sync），全量测试通过
 
 ### 六、数据与同步功能
 

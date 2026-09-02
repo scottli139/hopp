@@ -942,6 +942,18 @@ cli/hopp.dart + cli/src/                            # hopp run 运行器（app �
 
 ---
 
+## Linux 标题栏主题跟随 (F5.8 / v0.15.0, 2026-09-02)
+
+> 痛点（用户截图反馈）：暗色模式下系统标题栏白色、高度偏大、窗口按钮小；底栏在界面缩放 125%/150% 下显挤（「头重脚轻」）。
+
+- **两层根因**：①环境 `GDK_BACKEND=x11` → 应用跑在 XWayland，Flutter 模板「X11 非 GNOME 用传统标题栏」分支给出 kwin 绘制的白底 SSD（不跟随应用主题、尺寸不可控）；②强制 CSD 后发现 **Deepin 的 GTK3 补丁锁定 GtkHeaderBar**——用 20 行 PyGObject 探针复现：任何 GTK3 应用的 headerbar 都是 ~60px 高，按钮为主题 PNG 背景小图标，且 headerbar 子元素（按钮/标题）对 CSS 完全免疫（APPLICATION/USER 级 `min-height`/`font-size`/`margin` 全无效，仅 headerbar 节点自身的 background/color 可覆盖）。
+- **方案：GtkBox 自定义标题栏**（`linux/runner/my_application.cc`）——补丁只 hook GtkHeaderBar，普通 Box 经 `gtk_window_set_titlebar` 装上即可绕过。内容全自控：高 36px（实测渲染 32px）、1px 底部分割线、窗口按钮 36×36 命中区 + 20px 图标（`gtk_image_set_pixel_size`）；拖动移动（`gtk_window_begin_move_drag`）、双击最大化、最大化态切还原图标（window-state-event）均自实现。**按钮不能加主题的 `titlebutton` class**（deepin 主题会用它接管成 PNG 背景并隐藏图标），用自有 `hopp-titlebutton` class。
+- **主题同步**：Dart 侧 `services/title_bar_sync.dart`（resolveDark/buildArgs 纯函数 + 异常静默降级）在 `MaterialApp.builder` 里随 themeMode/平台亮度去重同步——注意根级 `MediaQuery.platformBrightnessOf` 在无 MediaQuery 作用域时静默回退 light，必须放在 builder 内；通道 `com.example.hopp/window` 方法 `updateTitleBar` 下发 {dark, background, foreground, separator}——dark → `gtk-application-prefer-dark-theme`，三色 → GtkCssProvider 直控 `.titlebar`（surface/textPrimary/border token，hover = alpha(foreground, 0.12)）。
+- **底栏缩放**：F5.7 只放大文字（textScaler），侧栏 footer（36px）与主区 status bar（28px，顺手换 AppMetrics token）固定高在 125%/150% 下显挤——两处栏高改乘 `MediaQuery.textScalerOf(context).scale(1.0)`。
+- **验证**：逐像素测量（deepin-screen-recorder 全屏截图 + PIL 扫色带边界）——标题栏 60→32px、分割线双主题命中 token 色；新增测试 6（title_bar_sync），全量 1007 通过（2 跳过，本机仅既有 Badges golden 平台差异）。**遗留**：最大化态图标切换未实机验证（XWayland 下外部 EWMH 最大化请求不被合成器接受）；本机 `wmctrl` 未安装、用户级 `~/.config/gtk-3.0/gtk.css` 不加载（deepin 补丁）。
+
+---
+
 ## 环境变量系统 (M8.1)
 
 > 定位（2026-08-20 决策）：「可复用 + AI 变量注入的基础」，不是 Postman parity。AI 生成的请求引用 `{{baseUrl}}` / `{{token}}`。

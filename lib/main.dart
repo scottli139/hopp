@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'providers/providers.dart';
 import 'screens/main_screen.dart';
 import 'services/menu_channel.dart';
 import 'services/storage_service.dart';
+import 'services/title_bar_sync.dart';
 import 'theme/app_theme.dart';
 import 'utils/app_logger.dart';
 import 'utils/testing/test_helpers.dart';
@@ -58,6 +61,9 @@ class HoppApp extends ConsumerStatefulWidget {
 }
 
 class _HoppAppState extends ConsumerState<HoppApp> {
+  /// 上次已同步到原生标题栏的暗色态（避免重复下调通道）
+  bool? _lastTitleBarDark;
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +73,21 @@ class _HoppAppState extends ConsumerState<HoppApp> {
 
   Future<void> _initTestMode() async {
     await UITestModeManager().initialize(appArgs, ref);
+  }
+
+  /// F5.8：把当前主题态同步给 Linux 原生标题栏（GTK headerbar 不跟随
+  /// Flutter 主题，需显式下发 prefer-dark + token 颜色）。
+  void _syncTitleBarTheme(ThemeMode mode, Brightness platformBrightness) {
+    if (!Platform.isLinux) {
+      return;
+    }
+    final dark = TitleBarSync.resolveDark(mode, platformBrightness);
+    if (dark == _lastTitleBarDark) {
+      return;
+    }
+    _lastTitleBarDark = dark;
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => TitleBarSync.sync(dark: dark));
   }
 
   @override
@@ -92,6 +113,9 @@ class _HoppAppState extends ConsumerState<HoppApp> {
       builder: (context, child) {
         // F5.7 界面缩放：全局文字缩放（Linux HiDPI 等系统缩放不生效场景）
         final uiScale = ref.watch(uiScaleProvider);
+        // F5.8：Linux 原生标题栏主题同步（此处 MediaQuery 必定在作用域内，
+        // 根级 platformBrightnessOf 无 MediaQuery 时会静默回退 light）
+        _syncTitleBarTheme(themeMode, MediaQuery.platformBrightnessOf(context));
         return MediaQuery(
           data: MediaQuery.of(context)
               .copyWith(textScaler: TextScaler.linear(uiScale)),

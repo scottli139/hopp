@@ -132,6 +132,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 6. ~~**Tier 1 本地模型**~~（已完成，2026-08-31，M8.5：Ollama/LM Studio 解释响应 / AI 生成断言 / 自然语言建请求 + OpenAI 兼容客户端，见 [PRD](./docs/PRD.md) F9.5 与 [NOTES](./docs/IMPLEMENTATION_NOTES.md)；真模型冒烟已补：Ollama + qwen2.5:3b）
 7. ~~**时间戳工效增强**~~（已完成，2026-09-01，M8.6 / v0.14.0：fx 动态变量直达 + 管道时间函数 date_add/date_floor + 响应 epoch 人性化注解，见 [PRD](./docs/PRD.md) F8.5 与 [NOTES](./docs/IMPLEMENTATION_NOTES.md)）
 8. ~~**界面缩放（F5.7 / M8.7）**~~（已完成，2026-09-02，v0.15.0：侧栏底栏 100%/125%/150% 全局文字缩放，MediaQuery textScaler 注入；同日 P0 修复 test-mode Linux 数据隔离失效——`Platform.executableArguments` 拿不到 argv 改由 main() 显式传参，见 [CHANGELOG](./docs/CHANGELOG.md)）
+9. ~~**Linux 标题栏主题跟随（F5.8）**~~（已完成，2026-09-02，v0.15.0：GtkBox 自定义标题栏绕开 Deepin GTK3 补丁对 GtkHeaderBar 的锁定，updateTitleBar 通道随主题下发 token 色，底栏高度跟随界面缩放，见 [PRD](./docs/PRD.md) F5.8 与 [NOTES](./docs/IMPLEMENTATION_NOTES.md)）
 
 ### 已知问题 🐛
 

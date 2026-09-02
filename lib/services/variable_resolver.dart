@@ -247,13 +247,13 @@ class VariableResolver {
   ) {
     final buffer = StringBuffer()
       ..write(request.url)
-      ..write(' ')
+      ..write('\u{0}')
       ..write(request.body);
     for (final pair in [...request.params, ...request.headers]) {
       buffer
-        ..write(' ')
+        ..write('\u{0}')
         ..write(pair.key)
-        ..write(' ')
+        ..write('\u{0}')
         ..write(pair.value);
     }
     return findUnresolved(buffer.toString(), variables);

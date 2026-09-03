@@ -17,7 +17,7 @@
 ```
 🐰 Hopp - A lightweight, cross-platform API testing tool and open-source alternative to Postman.
 
-Built with ❤️ using Flutter 3.27.x + Dart + Riverpod. 
+Built with ❤️ using Flutter 3.35.x + Dart + Riverpod. 
 🤖 100% AI-developed by Kimi Code CLI (Kimi K3 & DeepSeek V4 Pro)
 
 Features:
@@ -37,7 +37,7 @@ Features:
 ```
 🐰 Hopp - 轻量级跨平台 API 测试工具，Postman 的开源替代品。
 
-使用 Flutter 3.27.x + Dart + Riverpod 构建。
+使用 Flutter 3.35.x + Dart + Riverpod 构建。
 🤖 100% AI 开发：由 Kimi Code CLI（Kimi K3 & DeepSeek V4 Pro）开发
 ```
 

@@ -730,8 +730,8 @@ analyzer:
 
 关键点：
 
-- Flutter 版本经 env `FLUTTER_VERSION: "3.27.4"` 统一锁定（与 `.fvmrc` 同版本）；Windows 固定 `windows-2022`（windows-latest 已升 VS2026，Flutter 3.27 不支持）
-- analyze 用 `--no-fatal-infos`：info 级存量为基线（约 1400+），0 error / 0 warning 即过，新增 warning 会挂
+- Flutter 版本经 env `FLUTTER_VERSION: "3.35.4"` 统一锁定（与 `.fvmrc` 同版本）；Windows 固定 `windows-2022`（windows-latest 已升 VS2026，Flutter 3.35 尚不支持）
+- analyze 用 `--no-fatal-infos`：info 级存量为基线（3.35.4 下约 1500+），0 error / 0 warning 即过，新增 warning 会挂
 - 本地提交前跑 `fvm dart format lib test cli`（pre-push 钩子同样做 format 检查）
 
 ---

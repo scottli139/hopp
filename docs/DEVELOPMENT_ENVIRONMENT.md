@@ -23,8 +23,8 @@
 | 操作系统 | macOS 10.15+ / Windows 10+ / Ubuntu 20.04+ |
 | 内存 | 8 GB RAM |
 | 磁盘空间 | 10 GB 可用空间 |
-| Flutter | 3.27.4（项目用 `.fvmrc` 锁定，见下文 FVM） |
-| Dart | 3.6.2（随 Flutter SDK；`pubspec.yaml` 要求 `^3.6.2`） |
+| Flutter | 3.35.4（项目用 `.fvmrc` 锁定，见下文 FVM） |
+| Dart | 3.9.2（随 Flutter SDK；`pubspec.yaml` 要求 `^3.6.2`，兼容满足） |
 
 ### 推荐配置
 
@@ -258,7 +258,7 @@ Format check 失败。每个 clone 只需启用一次：
 git config core.hooksPath .githooks
 ```
 
-Hook 优先使用 `.fvm/flutter_sdk` 锁定的 SDK 自带 dart（与 CI 的 Flutter 3.27.4
+Hook 优先使用 `.fvm/flutter_sdk` 锁定的 SDK 自带 dart（与 CI 的 Flutter 3.35.4
 格式化行为一致），不依赖 `fvm` 在 PATH 中，GUI Git 客户端同样生效。
 检查失败时运行 `fvm dart format lib/ test/` 修复后重新提交即可。
 
@@ -414,7 +414,7 @@ fvm flutter config --enable-linux-desktop
 
 ARM64 Linux（鲲鹏/麒麟等）与 x86_64 有几处差异，按顺序处理：
 
-**1. Flutter SDK**：官方 releases 只有 x64 Linux SDK（`releases_linux.json` 中无 arm64），需用社区 ARM64 构建（如 [flutter-native-arm64](https://github.com/MohamedAlkindi/flutter-native-arm64)）。3.27.4 无对应 ARM64 版本，实测 3.35.4 可构建本项目：`sdk: ^3.6.2` 约束兼容，但 `intl` 需临时加 `pubspec_overrides.yaml` 升到 `^0.20.2`（新版 flutter_localizations 固定 intl 0.20.2），构建完即删。
+**1. Flutter SDK**：官方 releases 只有 x64 Linux SDK（`releases_linux.json` 中无 arm64），需用社区 ARM64 构建（如 [flutter-native-arm64](https://github.com/MohamedAlkindi/flutter-native-arm64)）。项目自 2026-09-03 起锁定 **3.35.4**（该社区构建有对应版本，本机与 CI 完全一致）；`intl` 已在 `pubspec.yaml` 升到 `^0.20.2`（3.35 的 flutter_localizations 固定 0.20.2），无需任何 override。
 
 **2. linux-arm64 引擎产物**：国内镜像 `storage.flutter-io.cn` 不同步 linux-arm64 引擎产物（403）。构建时**不要**设置 `FLUTTER_STORAGE_BASE_URL`，默认走 `storage.googleapis.com`（国内实测可达）；`PUB_HOSTED_URL=https://pub.flutter-io.cn` 包镜像不受影响。
 
@@ -437,7 +437,12 @@ FLUTTER_LINUX_RENDERER=software fvm flutter run -d linux
 >
 > 中文字体：社区 ARM64 引擎通常未编译 fontconfig（无 `SkFontMgr_fontconfig`，退回 `SkFontMgr_New_Custom_Directory` 目录扫描，其逐字符回退是空操作），界面中文会显示为方块。应用已在主题层显式声明 CJK 回退链（`lib/theme/app_text_styles.dart` 的 `kAppFontFamilyFallback` / `kAppCodeFontFamilyFallback`，经 `ThemeData(fontFamilyFallback:)` 全局生效），系统装有常见 CJK 字体（Noto Sans CJK / 思源黑体等）即可正常显示，macOS / Windows / x64 Linux 行为不变（同名家族不存在时自动跳过，退回系统回退）。
 
-**5. deb 打包**（ARM64 / x64 通用，架构自动识别）：
+**5. 本机 SDK 与 CI 版本一致性（2026-09-03 起已对齐）**：ARM64 曾被迫用社区 3.35.4 与 CI 锁定的 3.27.4 错位开发（官方 Linux SDK 只有 x64）；2026-09-03 起 CI 与 `.fvmrc` 统一升到 3.35.4，错位消除。留档两条经验教训：
+
+- **dart format 按 language version 选风格**：Dart 3.7 起 formatter 改为 tall style，但只作用于 language version ≥ 3.7 的代码。本项目 `pubspec.yaml` sdk 约束为 `^3.6.2`（language version 3.6），实测 Dart 3.9.2 与 3.6.2 的 `dart format` 对 `lib/` `test/` 输出逐字节一致；**哪天把 sdk 约束升到 3.7+，全仓会被 tall style 重排，须单独成 commit**。
+- **Color API 代差**：`Color.toARGB32()` 是 Flutter 3.29+ 新增；旧 `Color.value` 已 deprecated，warning 会让 `flutter analyze --no-fatal-infos` 失败。写颜色转换用 `.r/.g/.b` 通道（如 `(c.r * 255).round()`）或 `toARGB32()`，`lib/services/title_bar_sync.dart` 的 `_hex()` 即前者。
+
+**6. deb 打包**（ARM64 / x64 通用，架构自动识别）：
 
 ```bash
 # 一条命令：release 构建 + 组装 + dpkg-deb，产物在 build/deb/
@@ -448,7 +453,7 @@ sudo dpkg -i build/deb/hopp_<version>_arm64.deb
 sudo dpkg -r hopp
 ```
 
-安装内容：`/usr/lib/hopp/`（release bundle）、`/usr/bin/hopp`（wrapper，内置 `FLUTTER_LINUX_RENDERER=software`）、`/usr/share/applications/hopp.desktop`（桌面快捷方式，`StartupWMClass` 与 `linux/CMakeLists.txt` 的 `APPLICATION_ID` 一致）、hicolor 图标。打包定义在 `packaging/linux/`（control / desktop / wrapper），脚本内置 intl override 的临时处理。
+安装内容：`/usr/lib/hopp/`（release bundle）、`/usr/bin/hopp`（wrapper，内置 `FLUTTER_LINUX_RENDERER=software`）、`/usr/share/applications/hopp.desktop`（桌面快捷方式，`StartupWMClass` 与 `linux/CMakeLists.txt` 的 `APPLICATION_ID` 一致）、hicolor 图标。打包定义在 `packaging/linux/`（control / desktop / wrapper）。
 
 ---
 

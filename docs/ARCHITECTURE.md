@@ -80,8 +80,8 @@
 
 | 技术 | 版本 | 用途 |
 |-----|------|-----|
-| Flutter | 3.27.x | UI 框架 |
-| Dart | 3.6.x | 编程语言 |
+| Flutter | 3.35.x | UI 框架 |
+| Dart | 3.9.x | 编程语言 |
 | Riverpod | 2.6.x | 状态管理 |
 | Dio | 5.8.x | HTTP 客户端 |
 
@@ -103,7 +103,7 @@
 
 ### 核心依赖
 
-> 版本以 `pubspec.yaml` 为准（2026-08-31 核对）。
+> 版本以 `pubspec.yaml` 为准（2026-09-03 核对）。
 
 | 包名 | 版本 | 用途 |
 |-----|------|------|
@@ -114,7 +114,7 @@
 | shared_preferences | ^2.5.2 | 配置存储 |
 | path_provider / path | ^2.1.5 / ^1.9.0 | 路径工具 |
 | logger | ^2.5.0 | 日志（CLI 闭包共用） |
-| intl | ^0.19.0 | 国际化 |
+| intl | ^0.20.2 | 国际化 |
 | freezed_annotation | ^2.4.4 | 不可变类注解 |
 | json_annotation | ^4.9.0 | JSON 序列化注解 |
 | crypto | ^3.0.3 | 证书指纹 + 变量转换摘要（sha1/md5/sha256/hmac） |

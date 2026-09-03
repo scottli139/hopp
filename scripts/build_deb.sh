@@ -24,14 +24,6 @@ PKG="hopp_${VERSION}_${DEB_ARCH}"
 STAGE="build/deb/${PKG}"
 DEB="build/deb/${PKG}.deb"
 
-# ---- intl 依赖冲突的临时 override（社区 ARM64 Flutter 3.35.x 需要） ----------
-cleanup() {
-  rm -f pubspec_overrides.yaml
-  git checkout -- pubspec.lock 2>/dev/null || true
-}
-trap cleanup EXIT
-printf 'dependency_overrides:\n  intl: ^0.20.2\n' > pubspec_overrides.yaml
-
 # ---- 构建 release bundle -----------------------------------------------------
 "$FLUTTER" build linux --release
 

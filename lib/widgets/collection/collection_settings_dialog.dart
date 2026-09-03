@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/auth_config.dart';
 import '../../models/collection.dart';
 import '../../providers/providers.dart';
@@ -86,7 +87,7 @@ class _CollectionSettingsDialogState
         widget.collection;
 
     return AppDialog(
-      title: '${collection.name} · 设置',
+      title: context.l10n.collectionSettings_title(collection.name),
       width: 680,
       height: 480,
       contentPadding: EdgeInsets.zero,
@@ -111,7 +112,7 @@ class _CollectionSettingsDialogState
                     bottom: AppMetrics.space8,
                   ),
                   child: Text(
-                    'COLLECTION',
+                    context.l10n.collectionSettings_sectionHeader,
                     style: AppTextStyles.micro10.copyWith(
                       color: t.textTertiary,
                       fontWeight: FontWeight.w700,
@@ -123,19 +124,19 @@ class _CollectionSettingsDialogState
                   context,
                   index: 0,
                   icon: Icons.info_outline,
-                  label: 'General',
+                  label: context.l10n.collectionSettings_navGeneral,
                 ),
                 _buildNavItem(
                   context,
                   index: 1,
                   icon: Icons.lock_outline,
-                  label: 'Auth',
+                  label: context.l10n.request_auth,
                 ),
                 _buildNavItem(
                   context,
                   index: 2,
                   icon: Icons.account_tree_outlined,
-                  label: 'Pre-request',
+                  label: context.l10n.collectionSettings_navPreRequest,
                 ),
               ],
             ),
@@ -194,7 +195,7 @@ class _CollectionSettingsDialogState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'General',
+            context.l10n.collectionSettings_navGeneral,
             style: AppTextStyles.title16.copyWith(
               color: t.textPrimary,
               fontWeight: FontWeight.w600,
@@ -203,7 +204,7 @@ class _CollectionSettingsDialogState
           const SizedBox(height: AppMetrics.space16),
           _buildLabeledField(
             context,
-            label: 'Name',
+            label: context.l10n.collectionSettings_nameLabel,
             child: AppTextField(
               controller: _nameController,
               onChanged: (v) => _update((c) => c.copyWith(name: v)),
@@ -211,10 +212,10 @@ class _CollectionSettingsDialogState
           ),
           _buildLabeledField(
             context,
-            label: 'Description',
+            label: context.l10n.collectionSettings_descLabel,
             child: AppTextField(
               controller: _descController,
-              hintText: 'Optional description',
+              hintText: context.l10n.collectionSettings_descHint,
               // 注意：freezed copyWith 无法把可空字段改回 null，空描述存空串
               onChanged: (v) => _update((c) => c.copyWith(description: v)),
             ),
@@ -231,11 +232,13 @@ class _CollectionSettingsDialogState
       final source =
           AuthResolver.inheritedFromCollection(collection, collectionsById);
       if (source != null && source.auth.type != AuthType.none) {
-        inheritedSummary = '当前继承自父集合「${source.name}」。修改请到对应集合的设置。';
+        inheritedSummary =
+            context.l10n.collectionSettings_inheritFrom(source.name);
       } else if (source != null) {
-        inheritedSummary = '继承自父集合「${source.name}」：No Auth。';
+        inheritedSummary =
+            context.l10n.collectionSettings_inheritNoAuth(source.name);
       } else if (collection.parentId == null) {
-        inheritedSummary = '根集合的 Inherit 等同于 No Auth，发送时不附加认证信息。';
+        inheritedSummary = context.l10n.collectionSettings_rootInherit;
       }
     }
 

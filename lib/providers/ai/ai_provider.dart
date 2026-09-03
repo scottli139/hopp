@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/app_settings.dart';
 import '../../services/ai/ai_models.dart';
 import '../../services/ai/ai_prompts.dart';
@@ -104,11 +105,11 @@ class ExplainNotifier extends StateNotifier<AiOpState<String>> {
   AppSettings? _requireSettings() {
     final settings = _ref.read(settingsProvider).value;
     if (settings == null) {
-      state = const AiOpState.error('AI 配置未加载，请稍后重试');
+      state = AiOpState.error(L10nBridge.t.ai_configNotLoaded);
       return null;
     }
     if (settings.aiModel.isEmpty) {
-      state = const AiOpState.error('请先在设置中配置本地模型（模型名）');
+      state = AiOpState.error(L10nBridge.t.ai_modelNotConfigured);
       return null;
     }
     return settings;
@@ -137,7 +138,7 @@ class GenerateAssertionsNotifier
   }) async {
     // 无响应样本：业务错误，不发请求
     if (responseBody == null || responseBody.isEmpty) {
-      state = const AiOpState.error('请先在 Tests 运行或发送请求');
+      state = AiOpState.error(L10nBridge.t.ai_noResponseSample);
       return;
     }
 
@@ -168,11 +169,11 @@ class GenerateAssertionsNotifier
   AppSettings? _requireSettings() {
     final settings = _ref.read(settingsProvider).value;
     if (settings == null) {
-      state = const AiOpState.error('AI 配置未加载，请稍后重试');
+      state = AiOpState.error(L10nBridge.t.ai_configNotLoaded);
       return null;
     }
     if (settings.aiModel.isEmpty) {
-      state = const AiOpState.error('请先在设置中配置本地模型（模型名）');
+      state = AiOpState.error(L10nBridge.t.ai_modelNotConfigured);
       return null;
     }
     return settings;
@@ -217,11 +218,11 @@ class BuildRequestNotifier extends StateNotifier<AiOpState<AiRequestDraft>> {
   AppSettings? _requireSettings() {
     final settings = _ref.read(settingsProvider).value;
     if (settings == null) {
-      state = const AiOpState.error('AI 配置未加载，请稍后重试');
+      state = AiOpState.error(L10nBridge.t.ai_configNotLoaded);
       return null;
     }
     if (settings.aiModel.isEmpty) {
-      state = const AiOpState.error('请先在设置中配置本地模型（模型名）');
+      state = AiOpState.error(L10nBridge.t.ai_modelNotConfigured);
       return null;
     }
     return settings;
@@ -238,9 +239,9 @@ final buildRequestProvider =
 String _friendlyError(Object e) {
   return switch (e) {
     LlmConnectionException() => e.message,
-    LlmHttpException() => '模型服务错误：${e.message}',
+    LlmHttpException() => L10nBridge.t.ai_httpError(e.message),
     LlmResponseException() => e.message,
     AiParseException() => e.message,
-    _ => 'AI 调用失败：$e',
+    _ => L10nBridge.t.ai_callFailed('$e'),
   };
 }

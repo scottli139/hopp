@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n.dart';
 import '../../theme/app_metrics.dart';
 import '../../theme/app_shadows.dart';
 import '../../theme/app_text_styles.dart';
@@ -99,7 +100,7 @@ class AppDialog extends StatelessWidget {
                     if (showClose)
                       AppIconButton(
                         icon: Icons.close,
-                        tooltip: 'Close',
+                        tooltip: L10nBridge.t.common_close,
                         size: AppMetrics.height24,
                         iconSize: 14,
                         onPressed: () => Navigator.of(context).pop(),

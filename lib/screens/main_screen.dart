@@ -5,6 +5,7 @@ import 'package:multi_split_view/multi_split_view.dart';
 
 import '../utils/testing/ui_test_mode.dart';
 
+import '../l10n/l10n.dart';
 import '../providers/providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_metrics.dart';
@@ -141,14 +142,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'No requests yet',
+            context.l10n.main_emptyTitle,
             style: AppTextStyles.title16.copyWith(
               color: appTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Get started by creating your first request',
+            context.l10n.main_emptySubtitle,
             style: AppTextStyles.body13.copyWith(
               color: appTheme.textTertiary,
             ),
@@ -158,12 +159,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           AppButton.primary(
             onPressed: () => _createNewRequest(),
             icon: Icons.add,
-            label: 'Create Request',
+            label: context.l10n.main_createRequest,
           ),
           const SizedBox(height: 12),
           // Keyboard shortcut hint
           Text(
-            'or press Cmd+N',
+            context.l10n.main_emptyShortcutHint,
             style: AppTextStyles.caption12.copyWith(
               color: appTheme.textTertiary,
             ),
@@ -181,9 +182,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildNoActiveTabState() {
-    return const AppEmptyState(
+    return AppEmptyState(
       icon: Icons.tab_outlined,
-      title: 'Select a tab to start',
+      title: context.l10n.main_selectTab,
     );
   }
 
@@ -263,7 +264,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'Hopp',
+                  context.l10n.appName,
                   style: AppTextStyles.micro10.copyWith(
                     color: AppColors.onBrand,
                     fontWeight: FontWeight.w600,
@@ -291,7 +292,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ),
           const SizedBox(width: 6),
           Text(
-            'Ready',
+            context.l10n.status_ready,
             style: AppTextStyles.tiny11.copyWith(
               color: appTheme.textSecondary,
             ),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../l10n/l10n.dart';
 import '../../models/assertion_rule.dart';
 import '../assertion/assertion_engine.dart';
 import 'ai_models.dart';
@@ -21,7 +22,7 @@ class AiParseException implements Exception {
 class AiResponseParser {
   AiResponseParser._();
 
-  static const _parseErrorMessage = 'AI 返回格式异常，请重试';
+  static String get _parseErrorMessage => L10nBridge.t.ai_parseError;
 
   static const _allowedMethods = {
     'GET',
@@ -59,7 +60,7 @@ class AiResponseParser {
     try {
       return jsonDecode(text);
     } on FormatException {
-      throw const AiParseException(_parseErrorMessage);
+      throw AiParseException(_parseErrorMessage);
     }
   }
 
@@ -68,7 +69,7 @@ class AiResponseParser {
   /// matches 要求合法正则。非法项丢弃并计入 discarded。
   static AiAssertionParseResult parseAssertionDrafts(dynamic decoded) {
     if (decoded is! List) {
-      throw const AiParseException(_parseErrorMessage);
+      throw AiParseException(_parseErrorMessage);
     }
 
     final items = <AiAssertionDraft>[];
@@ -142,7 +143,7 @@ class AiResponseParser {
   /// bodyType / rawContentType 枚举合法。任一非法即抛 [AiParseException]。
   static AiRequestDraft parseRequestDraft(dynamic decoded) {
     if (decoded is! Map) {
-      throw const AiParseException(_parseErrorMessage);
+      throw AiParseException(_parseErrorMessage);
     }
 
     final nameRaw = decoded['name'];
@@ -150,16 +151,16 @@ class AiResponseParser {
 
     final methodRaw = decoded['method'];
     if (methodRaw is! String) {
-      throw const AiParseException(_parseErrorMessage);
+      throw AiParseException(_parseErrorMessage);
     }
     final method = methodRaw.toUpperCase();
     if (!_allowedMethods.contains(method)) {
-      throw const AiParseException(_parseErrorMessage);
+      throw AiParseException(_parseErrorMessage);
     }
 
     final urlRaw = decoded['url'];
     if (urlRaw is! String || urlRaw.isEmpty) {
-      throw const AiParseException(_parseErrorMessage);
+      throw AiParseException(_parseErrorMessage);
     }
 
     final params = _parseKeyValueList(decoded['params']);
@@ -168,7 +169,7 @@ class AiResponseParser {
     final bodyTypeRaw = decoded['bodyType'];
     final bodyType = bodyTypeRaw is String ? bodyTypeRaw : 'none';
     if (!_allowedBodyTypes.contains(bodyType)) {
-      throw const AiParseException(_parseErrorMessage);
+      throw AiParseException(_parseErrorMessage);
     }
 
     String? rawContentType;
@@ -178,13 +179,13 @@ class AiResponseParser {
         rawContentType = rawType;
       } else if (rawType != null) {
         // raw 时给了非法或不支持的值，整体不可用
-        throw const AiParseException(_parseErrorMessage);
+        throw AiParseException(_parseErrorMessage);
       }
     }
 
     final bodyRaw = decoded['body'];
     if (bodyRaw != null && bodyRaw is! String) {
-      throw const AiParseException(_parseErrorMessage);
+      throw AiParseException(_parseErrorMessage);
     }
 
     return AiRequestDraft(
@@ -203,25 +204,25 @@ class AiResponseParser {
   /// 任一元素非法即抛 [AiParseException]
   static List<AiKeyValueDraft> _parseKeyValueList(dynamic raw) {
     if (raw == null) return const [];
-    if (raw is! List) throw const AiParseException(_parseErrorMessage);
+    if (raw is! List) throw AiParseException(_parseErrorMessage);
 
     final result = <AiKeyValueDraft>[];
     for (final entry in raw) {
-      if (entry is! Map) throw const AiParseException(_parseErrorMessage);
+      if (entry is! Map) throw AiParseException(_parseErrorMessage);
 
       final key = entry['key'];
       if (key is! String || key.isEmpty) {
-        throw const AiParseException(_parseErrorMessage);
+        throw AiParseException(_parseErrorMessage);
       }
 
       final value = entry['value'];
       if (value != null && value is! String) {
-        throw const AiParseException(_parseErrorMessage);
+        throw AiParseException(_parseErrorMessage);
       }
 
       final enabled = entry['enabled'];
       if (enabled != null && enabled is! bool) {
-        throw const AiParseException(_parseErrorMessage);
+        throw AiParseException(_parseErrorMessage);
       }
 
       result.add(

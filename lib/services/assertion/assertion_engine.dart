@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:json_path/json_path.dart';
 
+import '../../l10n/generated/l10n_core.g.dart';
 import '../../models/assertion_rule.dart';
 import '../../models/http_response.dart';
 import '../variable_resolver.dart';
@@ -131,8 +132,10 @@ class AssertionEngine {
       return _fail(
         rule,
         null,
-        'operator ${rule.operator.name} is not supported for target '
-        '${rule.target.name}',
+        L10nCore.t('assertion_operatorNotSupported', {
+          'operator': rule.operator.name,
+          'target': rule.target.name,
+        }),
       );
     }
 
@@ -160,13 +163,13 @@ class AssertionEngine {
   ) {
     final code = response.statusCode;
     if (code == null) {
-      return _fail(rule, null, 'no response');
+      return _fail(rule, null, L10nCore.t('assertion_noResponse'));
     }
     final actual = '$code';
 
     final expectedNum = num.tryParse(expected);
     if (expectedNum == null) {
-      return _fail(rule, actual, 'expected not a number');
+      return _fail(rule, actual, L10nCore.t('assertion_expectedNotANumber'));
     }
     final ok = switch (rule.operator) {
       AssertionOperator.equals => code == expectedNum,
@@ -179,7 +182,14 @@ class AssertionEngine {
     };
     return ok
         ? _pass(rule, actual)
-        : _fail(rule, actual, 'expected ${rule.operator.name} $expected');
+        : _fail(
+            rule,
+            actual,
+            L10nCore.t('assertion_expectedComparison', {
+              'operator': rule.operator.name,
+              'expected': expected,
+            }),
+          );
   }
 
   // ---------- header ----------
@@ -202,7 +212,7 @@ class AssertionEngine {
     if (value == null) {
       return switch (rule.operator) {
         AssertionOperator.notExists => _pass(rule, null),
-        _ => _fail(rule, null, 'header not found'),
+        _ => _fail(rule, null, L10nCore.t('assertion_headerNotFound')),
       };
     }
 
@@ -210,36 +220,53 @@ class AssertionEngine {
       case AssertionOperator.exists:
         return _pass(rule, value);
       case AssertionOperator.notExists:
-        return _fail(rule, value, 'header exists');
+        return _fail(rule, value, L10nCore.t('assertion_headerExists'));
       case AssertionOperator.equals:
         return value == expected
             ? _pass(rule, value)
-            : _fail(rule, value, 'expected "$expected"');
+            : _fail(rule, value,
+                L10nCore.t('assertion_expectedEquals', {'expected': expected}));
       case AssertionOperator.notEquals:
         return value != expected
             ? _pass(rule, value)
-            : _fail(rule, value, 'expected not "$expected"');
+            : _fail(
+                rule,
+                value,
+                L10nCore.t(
+                    'assertion_expectedNotEquals', {'expected': expected}));
       case AssertionOperator.contains:
         return value.contains(expected)
             ? _pass(rule, value)
-            : _fail(rule, value, 'expected to contain "$expected"');
+            : _fail(
+                rule,
+                value,
+                L10nCore.t(
+                    'assertion_expectedContain', {'expected': expected}));
       case AssertionOperator.notContains:
         return !value.contains(expected)
             ? _pass(rule, value)
-            : _fail(rule, value, 'expected not to contain "$expected"');
+            : _fail(
+                rule,
+                value,
+                L10nCore.t(
+                    'assertion_expectedNotContain', {'expected': expected}));
       case AssertionOperator.matches:
         final regex = _tryRegex(expected);
         if (regex == null) {
-          return _fail(rule, value, 'invalid regex');
+          return _fail(rule, value, L10nCore.t('assertion_invalidRegex'));
         }
         return regex.hasMatch(value)
             ? _pass(rule, value)
-            : _fail(rule, value, 'expected to match /$expected/');
+            : _fail(rule, value,
+                L10nCore.t('assertion_expectedMatch', {'expected': expected}));
       default:
         return _fail(
           rule,
           value,
-          'operator ${rule.operator.name} is not supported for target header',
+          L10nCore.t('assertion_operatorNotSupported', {
+            'operator': rule.operator.name,
+            'target': 'header',
+          }),
         );
     }
   }
@@ -256,32 +283,55 @@ class AssertionEngine {
       case AssertionOperator.contains:
         return body.contains(expected)
             ? _pass(rule, null)
-            : _fail(rule, null, 'expected body to contain "$expected"');
+            : _fail(
+                rule,
+                null,
+                L10nCore.t(
+                    'assertion_expectedBodyContain', {'expected': expected}));
       case AssertionOperator.notContains:
         return !body.contains(expected)
             ? _pass(rule, null)
-            : _fail(rule, null, 'expected body not to contain "$expected"');
+            : _fail(
+                rule,
+                null,
+                L10nCore.t('assertion_expectedBodyNotContain',
+                    {'expected': expected}));
       case AssertionOperator.equals:
         return body == expected
             ? _pass(rule, null)
-            : _fail(rule, null, 'expected body to equal "$expected"');
+            : _fail(
+                rule,
+                null,
+                L10nCore.t(
+                    'assertion_expectedBodyEqual', {'expected': expected}));
       case AssertionOperator.notEquals:
         return body != expected
             ? _pass(rule, null)
-            : _fail(rule, null, 'expected body not to equal "$expected"');
+            : _fail(
+                rule,
+                null,
+                L10nCore.t(
+                    'assertion_expectedBodyNotEqual', {'expected': expected}));
       case AssertionOperator.matches:
         final regex = _tryRegex(expected);
         if (regex == null) {
-          return _fail(rule, null, 'invalid regex');
+          return _fail(rule, null, L10nCore.t('assertion_invalidRegex'));
         }
         return regex.hasMatch(body)
             ? _pass(rule, null)
-            : _fail(rule, null, 'expected body to match /$expected/');
+            : _fail(
+                rule,
+                null,
+                L10nCore.t(
+                    'assertion_expectedBodyMatch', {'expected': expected}));
       default:
         return _fail(
           rule,
           null,
-          'operator ${rule.operator.name} is not supported for target body',
+          L10nCore.t('assertion_operatorNotSupported', {
+            'operator': rule.operator.name,
+            'target': 'body',
+          }),
         );
     }
   }
@@ -298,7 +348,7 @@ class AssertionEngine {
     try {
       json = jsonDecode(response.body ?? '');
     } on FormatException {
-      return _fail(rule, null, 'response body is not valid JSON');
+      return _fail(rule, null, L10nCore.t('assertion_bodyNotJson'));
     }
 
     final List<Object?> values;
@@ -307,13 +357,13 @@ class AssertionEngine {
     } on Exception {
       // 表达式语法错误等（petitparser ParserException 未经 json_path 导出，
       // 这里按 Exception 兜底）
-      return _fail(rule, null, 'invalid JSONPath expression');
+      return _fail(rule, null, L10nCore.t('assertion_invalidJsonPath'));
     }
 
     if (values.isEmpty) {
       return switch (rule.operator) {
         AssertionOperator.notExists => _pass(rule, null),
-        _ => _fail(rule, null, 'path not found'),
+        _ => _fail(rule, null, L10nCore.t('assertion_pathNotFound')),
       };
     }
 
@@ -325,30 +375,40 @@ class AssertionEngine {
       case AssertionOperator.exists:
         return _pass(rule, actual);
       case AssertionOperator.notExists:
-        return _fail(rule, actual, 'path exists');
+        return _fail(rule, actual, L10nCore.t('assertion_pathExists'));
       case AssertionOperator.equals:
         return _jsonEquals(value, expected)
             ? _pass(rule, actual)
-            : _fail(rule, actual, 'expected "$expected"');
+            : _fail(rule, actual,
+                L10nCore.t('assertion_expectedEquals', {'expected': expected}));
       case AssertionOperator.notEquals:
         return !_jsonEquals(value, expected)
             ? _pass(rule, actual)
-            : _fail(rule, actual, 'expected not "$expected"');
+            : _fail(
+                rule,
+                actual,
+                L10nCore.t(
+                    'assertion_expectedNotEquals', {'expected': expected}));
       case AssertionOperator.contains:
         return actual.contains(expected)
             ? _pass(rule, actual)
-            : _fail(rule, actual, 'expected to contain "$expected"');
+            : _fail(
+                rule,
+                actual,
+                L10nCore.t(
+                    'assertion_expectedContain', {'expected': expected}));
       case AssertionOperator.lt:
       case AssertionOperator.lte:
       case AssertionOperator.gt:
       case AssertionOperator.gte:
         final actualNum = _asNum(value);
         if (actualNum == null) {
-          return _fail(rule, actual, 'value is not a number');
+          return _fail(rule, actual, L10nCore.t('assertion_valueNotANumber'));
         }
         final expectedNum = num.tryParse(expected);
         if (expectedNum == null) {
-          return _fail(rule, actual, 'expected not a number');
+          return _fail(
+              rule, actual, L10nCore.t('assertion_expectedNotANumber'));
         }
         final ok = switch (rule.operator) {
           AssertionOperator.lt => actualNum < expectedNum,
@@ -358,13 +418,22 @@ class AssertionEngine {
         };
         return ok
             ? _pass(rule, actual)
-            : _fail(rule, actual, 'expected ${rule.operator.name} $expected');
+            : _fail(
+                rule,
+                actual,
+                L10nCore.t('assertion_expectedComparison', {
+                  'operator': rule.operator.name,
+                  'expected': expected,
+                }),
+              );
       default:
         return _fail(
           rule,
           actual,
-          'operator ${rule.operator.name} is not supported for target '
-          'jsonPath',
+          L10nCore.t('assertion_operatorNotSupported', {
+            'operator': rule.operator.name,
+            'target': 'jsonPath',
+          }),
         );
     }
   }
@@ -378,13 +447,13 @@ class AssertionEngine {
   ) {
     final durationMs = response.durationMs;
     if (durationMs == null) {
-      return _fail(rule, null, 'no timing info');
+      return _fail(rule, null, L10nCore.t('assertion_noTimingInfo'));
     }
     final actual = '$durationMs';
 
     final expectedNum = num.tryParse(expected);
     if (expectedNum == null) {
-      return _fail(rule, actual, 'expected not a number');
+      return _fail(rule, actual, L10nCore.t('assertion_expectedNotANumber'));
     }
     final ok = switch (rule.operator) {
       AssertionOperator.lt => durationMs < expectedNum,
@@ -394,7 +463,14 @@ class AssertionEngine {
     };
     return ok
         ? _pass(rule, actual)
-        : _fail(rule, actual, 'expected ${rule.operator.name} $expected');
+        : _fail(
+            rule,
+            actual,
+            L10nCore.t('assertion_expectedComparison', {
+              'operator': rule.operator.name,
+              'expected': expected,
+            }),
+          );
   }
 
   // ---------- 工具 ----------

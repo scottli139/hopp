@@ -16,6 +16,7 @@ import 'package:hopp/widgets/common/app_controls.dart';
 import 'package:hopp/widgets/request/assertion_editor.dart';
 import 'package:mockito/mockito.dart';
 
+import '../../helpers/test_app.dart';
 import '../../mocks/service_mocks.mocks.dart';
 
 class FakeGenerateAssertionsNotifier extends GenerateAssertionsNotifier {
@@ -107,8 +108,8 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: Scaffold(
+          child: hoppTestApp(
+            home: const Scaffold(
               body: AssertionEditor(
                 assertions: [],
                 onChanged: _noopOnChanged,
@@ -121,7 +122,7 @@ void main() {
     }
 
     Future<void> openDialog(WidgetTester tester) async {
-      await tester.tap(find.text('AI 生成'));
+      await tester.tap(find.text('AI Generate'));
       await tester.pumpAndSettle();
       expect(
         find.byKey(const Key('generate_assertions_dialog')),
@@ -135,9 +136,10 @@ void main() {
       await pumpEditor(tester, container);
       await openDialog(tester);
 
-      expect(find.text('基于最近一次响应生成 · 已选 3/3 条'), findsOneWidget);
-      expect(find.text('添加 3 条'), findsOneWidget);
-      expect(find.text('已丢弃 2 条不合规建议'), findsOneWidget);
+      expect(find.text('Generated from the latest response · 3/3 selected'),
+          findsOneWidget);
+      expect(find.text('Add 3'), findsOneWidget);
+      expect(find.text('Discarded 2 invalid suggestions'), findsOneWidget);
       expect(find.text('张三'), findsOneWidget);
 
       // 行内值通过 TextField controller 校验（hint 与值同文本时会
@@ -161,13 +163,15 @@ void main() {
 
       await tester.tap(find.byType(AppCheckbox).first);
       await tester.pump();
-      expect(find.text('基于最近一次响应生成 · 已选 2/3 条'), findsOneWidget);
-      expect(find.text('添加 2 条'), findsOneWidget);
+      expect(find.text('Generated from the latest response · 2/3 selected'),
+          findsOneWidget);
+      expect(find.text('Add 2'), findsOneWidget);
 
       await tester.tap(find.byType(AppCheckbox).first);
       await tester.pump();
-      expect(find.text('基于最近一次响应生成 · 已选 3/3 条'), findsOneWidget);
-      expect(find.text('添加 3 条'), findsOneWidget);
+      expect(find.text('Generated from the latest response · 3/3 selected'),
+          findsOneWidget);
+      expect(find.text('Add 3'), findsOneWidget);
     });
 
     testWidgets('confirm appends selected rules via onChanged', (tester) async {
@@ -178,7 +182,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(
+          child: hoppTestApp(
             home: Scaffold(
               body: AssertionEditor(
                 assertions: const [],
@@ -196,7 +200,7 @@ void main() {
       // 取消勾选第 3 条，只添加前 2 条
       await tester.tap(find.byType(AppCheckbox).at(2));
       await tester.pump();
-      await tester.tap(find.text('添加 2 条'));
+      await tester.tap(find.text('Add 2'));
       await tester.pumpAndSettle();
 
       expect(captured, hasLength(2));
@@ -220,10 +224,10 @@ void main() {
       addTearDown(container.dispose);
       await pumpEditor(tester, container);
 
-      await tester.tap(find.text('AI 生成'));
+      await tester.tap(find.text('AI Generate'));
       await tester.pumpAndSettle();
 
-      expect(find.text('请先在 Tests 运行或发送请求'), findsOneWidget);
+      expect(find.text('Run tests or send a request first'), findsOneWidget);
       expect(
         find.byKey(const Key('generate_assertions_dialog')),
         findsNothing,

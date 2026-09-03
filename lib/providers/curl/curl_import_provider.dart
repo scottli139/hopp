@@ -6,6 +6,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/http_request.dart';
 
 import '../../services/curl/curl_import_service.dart';
@@ -99,7 +100,7 @@ class CurlImportNotifier extends StateNotifier<CurlImportState> with LogMixin {
     if (input.isEmpty) {
       state = state.copyWith(
         status: CurlImportStatus.error,
-        errorMessage: 'Please enter a cURL command',
+        errorMessage: L10nBridge.t.curl_emptyInput,
       );
       return;
     }
@@ -109,7 +110,7 @@ class CurlImportNotifier extends StateNotifier<CurlImportState> with LogMixin {
     if (!service.isValidCurlCommand(input)) {
       state = state.copyWith(
         status: CurlImportStatus.error,
-        errorMessage: 'Invalid cURL command. Must start with "curl"',
+        errorMessage: L10nBridge.t.curl_invalidCommand,
       );
       return;
     }
@@ -130,7 +131,7 @@ class CurlImportNotifier extends StateNotifier<CurlImportState> with LogMixin {
       } else {
         state = state.copyWith(
           status: CurlImportStatus.error,
-          errorMessage: result.errorMessage ?? 'Unknown error',
+          errorMessage: result.errorMessage ?? L10nBridge.t.curl_unknownError,
           request: null,
         );
       }

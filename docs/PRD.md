@@ -579,6 +579,8 @@
 
 #### F5.9 多语言（界面国际化）详细需求
 
+> UI 原型：[design/i18n_preview.html](./design/i18n_preview.html)（浏览器打开，可切换中/英 + 亮/暗预览）。
+
 **现状（2026-09-03 排查）**：v0.4.0 引入的 i18n 框架是未接线的死骨架——`lib/l10n/` 两个 ARB 各仅 ~30 个 key、`pubspec.yaml` 已开 `generate: true`，但 `MaterialApp` 未挂 `AppLocalizations.delegate`，没有任何代码引用生成的本地化类；UI 文本全部硬编码、中英文混杂（121 个文件、~290 处中文字符串字面量，另有大量英文硬串），且没有语言切换入口。
 
 **方案**：

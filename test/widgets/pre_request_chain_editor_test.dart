@@ -7,6 +7,8 @@ import 'package:hopp/providers/collection/collection_provider.dart';
 import 'package:hopp/widgets/common/app_text_field.dart';
 import 'package:hopp/widgets/request/pre_request_chain_editor.dart';
 
+import '../helpers/test_app.dart';
+
 void main() {
   group('PreRequestChainEditor 提取规则编辑', () {
     PreRequestStep buildStep() => PreRequestStep(
@@ -31,7 +33,7 @@ void main() {
         overrides: [
           requestsProvider.overrideWith((ref) async => <HttpRequest>[]),
         ],
-        child: MaterialApp(
+        child: hoppTestApp(
           home: Scaffold(
             body: StatefulBuilder(
               builder: (context, setState) {

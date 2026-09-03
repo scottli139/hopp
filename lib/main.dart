@@ -9,6 +9,8 @@ import 'screens/main_screen.dart';
 import 'services/menu_channel.dart';
 import 'services/storage_service.dart';
 import 'services/title_bar_sync.dart';
+import 'l10n/generated/app_localizations.dart';
+import 'l10n/l10n.dart';
 import 'theme/app_theme.dart';
 import 'utils/app_logger.dart';
 import 'utils/testing/test_helpers.dart';
@@ -102,17 +104,26 @@ class _HoppAppState extends ConsumerState<HoppApp> {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('en'),
-        Locale('zh', 'CN'),
-      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      // F5.9：null 表示跟随系统（'system' 档），由 localeResolutionCallback 解析
+      locale: ref.watch(localeProvider),
+      localeResolutionCallback: (locale, supported) {
+        if (locale == null) return const Locale('en');
+        for (final s in supported) {
+          if (s.languageCode == locale.languageCode) return s;
+        }
+        return const Locale('en');
+      },
       builder: (context, child) {
         // F5.7 界面缩放：全局文字缩放（Linux HiDPI 等系统缩放不生效场景）
         final uiScale = ref.watch(uiScaleProvider);
+        // F5.9：无 context 场景（services/providers）取词桥随 locale 刷新
+        L10nBridge.update(context.l10n);
         // F5.8：Linux 原生标题栏主题同步（此处 MediaQuery 必定在作用域内，
         // 根级 platformBrightnessOf 无 MediaQuery 时会静默回退 light）
         _syncTitleBarTheme(themeMode, MediaQuery.platformBrightnessOf(context));

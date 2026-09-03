@@ -13,6 +13,7 @@ import 'package:hopp/widgets/common/optimized_response_viewer.dart';
 import 'package:hopp/widgets/request/response_viewer.dart';
 import 'package:mockito/mockito.dart';
 
+import '../helpers/test_app.dart';
 import '../mocks/service_mocks.mocks.dart';
 
 void main() {
@@ -31,8 +32,8 @@ void main() {
     }) {
       return UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(
-          home: Scaffold(
+        child: hoppTestApp(
+          home: const Scaffold(
             body: ResponseViewer(),
           ),
         ),

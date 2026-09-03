@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../l10n/l10n.dart';
 import '../../providers/providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_metrics.dart';
@@ -34,7 +35,7 @@ class AboutScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('About'),
+        title: Text(context.l10n.about_title),
         centerTitle: true,
       ),
       body: Center(
@@ -51,7 +52,7 @@ class AboutScreen extends ConsumerWidget {
 
                 // App Name
                 Text(
-                  'Hopp',
+                  context.l10n.appName,
                   style: theme.textTheme.headlineLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                     foreground: Paint()
@@ -69,7 +70,7 @@ class AboutScreen extends ConsumerWidget {
 
                 // Tagline
                 Text(
-                  'Hop to your APIs',
+                  context.l10n.about_tagline,
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: context.appTheme.textTertiary,
                     fontStyle: FontStyle.italic,
@@ -80,7 +81,7 @@ class AboutScreen extends ConsumerWidget {
                 // Version Card
                 _buildInfoCard(
                   context,
-                  title: 'Version',
+                  title: context.l10n.about_version,
                   content: ref.watch(appVersionProvider).valueOrNull ??
                       kFallbackAppVersion,
                   icon: Icons.info_outline,
@@ -90,9 +91,8 @@ class AboutScreen extends ConsumerWidget {
                 // Description Card
                 _buildInfoCard(
                   context,
-                  title: 'Description',
-                  content:
-                      'A lightweight, cross-platform API testing tool built with Flutter. Hopp makes API testing simple, fast, and enjoyable.',
+                  title: context.l10n.about_description,
+                  content: context.l10n.about_descriptionContent,
                   icon: Icons.description_outlined,
                 ),
                 const SizedBox(height: 16),
@@ -198,14 +198,14 @@ class AboutScreen extends ConsumerWidget {
   Widget _buildFeaturesCard(BuildContext context) {
     final theme = Theme.of(context);
     final features = [
-      '🔥 Lightweight & Fast',
-      '💻 Cross-Platform (macOS, Windows, Linux)',
-      '📝 Full HTTP Request Support',
-      '📦 Collection Management',
-      '📑 Multiple Tabs',
-      '🌓 Dark Mode Support',
-      '🌍 Multi-language Support',
-      '🔒 Local Data Storage',
+      context.l10n.about_featureLightweight,
+      context.l10n.about_featureCrossPlatform,
+      context.l10n.about_featureHttp,
+      context.l10n.about_featureCollections,
+      context.l10n.about_featureTabs,
+      context.l10n.about_featureDarkMode,
+      context.l10n.about_featureLanguages,
+      context.l10n.about_featureLocal,
     ];
 
     return Card(
@@ -230,7 +230,7 @@ class AboutScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Features',
+                  context.l10n.about_features,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: context.appTheme.brand,
@@ -301,7 +301,7 @@ class AboutScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Tech Stack',
+                  context.l10n.about_techStack,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: context.appTheme.brand,
@@ -353,7 +353,7 @@ class AboutScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Links',
+                  context.l10n.about_links,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: context.appTheme.brand,
@@ -365,7 +365,7 @@ class AboutScreen extends ConsumerWidget {
             _buildLinkItem(
               context,
               icon: Icons.home_outlined,
-              title: 'GitHub Repository',
+              title: context.l10n.about_githubRepo,
               subtitle: 'github.com/scottli139/hopp',
               url: 'https://github.com/scottli139/hopp',
             ),
@@ -373,16 +373,16 @@ class AboutScreen extends ConsumerWidget {
             _buildLinkItem(
               context,
               icon: Icons.bug_report_outlined,
-              title: 'Report Issues',
-              subtitle: 'Submit bug reports and feature requests',
+              title: context.l10n.about_reportIssues,
+              subtitle: context.l10n.about_reportIssuesSubtitle,
               url: 'https://github.com/scottli139/hopp/issues',
             ),
             const AppDivider(height: 24),
             _buildLinkItem(
               context,
               icon: Icons.favorite_outline,
-              title: 'Contribute',
-              subtitle: 'Help make Hopp better',
+              title: context.l10n.about_contribute,
+              subtitle: context.l10n.about_contributeSubtitle,
               url:
                   'https://github.com/scottli139/hopp/blob/main/CONTRIBUTING.md',
             ),
@@ -469,7 +469,7 @@ class AboutScreen extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'Built with passion by the Hopp team',
+              context.l10n.about_builtWith,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: context.appTheme.textTertiary,
               ),
@@ -478,7 +478,7 @@ class AboutScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          '© 2026 Hopp. All rights reserved.',
+          context.l10n.about_copyright,
           style: AppTextStyles.tiny11.copyWith(
             color: context.appTheme.textTertiary,
           ),
@@ -505,7 +505,7 @@ class AboutScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'Powered by AI · Built with Flutter',
+                context.l10n.about_poweredBy,
                 style: AppTextStyles.tiny11.copyWith(
                   color: context.appTheme.brand,
                   fontWeight: FontWeight.w500,

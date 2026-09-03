@@ -10,6 +10,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/l10n.dart';
 import '../../../providers/import_export/openapi_import_provider.dart';
 import '../../../services/import_export/openapi/openapi_import_service.dart';
 import '../../../services/import_export/openapi/openapi_spec.dart';
@@ -59,9 +60,9 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
       case OpenApiImportStage.idle:
         return _buildIdle();
       case OpenApiImportStage.parsing:
-        return _buildProgress('Parsing spec…');
+        return _buildProgress(context.l10n.openapi_parsing);
       case OpenApiImportStage.importing:
-        return _buildProgress('Importing…');
+        return _buildProgress(context.l10n.openapi_importing);
       case OpenApiImportStage.preview:
         return _buildPreview(state);
       case OpenApiImportStage.conflict:
@@ -105,19 +106,19 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
                   Icon(Icons.cloud_upload, size: 32, color: t.brand),
                   const SizedBox(height: AppMetrics.space8),
                   Text(
-                    'Click to select a spec file',
+                    context.l10n.openapi_dropZoneHint,
                     style: AppTextStyles.body13.copyWith(color: t.textPrimary),
                   ),
                   const SizedBox(height: AppMetrics.space4),
                   Text(
-                    'Supports .json / .yaml / .yml · OpenAPI 3.x · Swagger 2.0',
+                    context.l10n.openapi_dropZoneSupport,
                     style: AppTextStyles.caption12
                         .copyWith(color: t.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppMetrics.space12),
                   AppButton.secondary(
-                    label: 'Select File',
+                    label: context.l10n.import_selectFile,
                     icon: Icons.folder_open,
                     size: AppButtonSize.small,
                     onPressed: _pickFile,
@@ -136,7 +137,7 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
                   horizontal: AppMetrics.space12,
                 ),
                 child: Text(
-                  'Or import from URL',
+                  context.l10n.openapi_orFromUrl,
                   style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
                 ),
               ),
@@ -146,20 +147,18 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
           const SizedBox(height: AppMetrics.space12),
           // Spec URL
           _buildFormRow(
-            label: 'Spec URL',
+            label: context.l10n.openapi_specUrlLabel,
             field: AppTextField(
               controller: widget.urlController,
               hintText: 'https://petstore3.swagger.io/api/v3/openapi.json',
               style: AppTextStyles.code12,
             ),
-            hint:
-                'Machine-readable address (openapi.json / swagger.yaml), parsed '
-                'locally — data never leaves your machine.',
+            hint: context.l10n.openapi_specUrlHint,
           ),
           const SizedBox(height: AppMetrics.space12),
           // 自定义请求头
           _buildFormRow(
-            label: 'Header',
+            label: context.l10n.openapi_headerLabel,
             field: Row(
               children: [
                 Expanded(
@@ -180,9 +179,7 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
                 ),
               ],
             ),
-            hint:
-                'Optional. One custom header used only for this fetch (private '
-                'specs). Not saved.',
+            hint: context.l10n.openapi_headerHint,
           ),
         ],
       ),
@@ -322,15 +319,17 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
                     ),
                   ),
                   TextSpan(
-                    text: ' · OpenAPI ${spec.specVersion}'
-                        ' · ${spec.tagOrder.length} tags'
-                        ' · ${spec.operations.length} operations',
+                    text: context.l10n.openapi_specSummary(
+                      '${spec.operations.length}',
+                      '${spec.tagOrder.length}',
+                      spec.specVersion,
+                    ),
                     style: AppTextStyles.caption12
                         .copyWith(color: t.textSecondary),
                   ),
                   if (spec.serverUrl != null) ...[
                     TextSpan(
-                      text: ' · Server ',
+                      text: context.l10n.openapi_serverLabel,
                       style: AppTextStyles.caption12
                           .copyWith(color: t.textSecondary),
                     ),
@@ -362,18 +361,18 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
         Expanded(
           child: AppTextField(
             compact: true,
-            hintText: 'Search path or name…',
+            hintText: context.l10n.openapi_searchHint,
             onChanged: _notifier.setSearchQuery,
           ),
         ),
         const SizedBox(width: AppMetrics.space8),
         AppButton.ghost(
-          label: 'Select all',
+          label: context.l10n.openapi_selectAll,
           size: AppButtonSize.small,
           onPressed: () => _notifier.selectAll(true),
         ),
         AppButton.ghost(
-          label: 'Select none',
+          label: context.l10n.openapi_selectNone,
           size: AppButtonSize.small,
           onPressed: () => _notifier.selectAll(false),
         ),
@@ -394,7 +393,7 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
         ),
         child: Center(
           child: Text(
-            'No operations match your search',
+            context.l10n.openapi_noMatch,
             style: AppTextStyles.caption12.copyWith(color: t.textTertiary),
           ),
         ),
@@ -466,7 +465,7 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
           const SizedBox(width: AppMetrics.space8),
           Flexible(
             child: Text(
-              tag.isEmpty ? 'No tag' : tag,
+              tag.isEmpty ? context.l10n.openapi_noTag : tag,
               style: AppTextStyles.caption12.copyWith(
                 fontWeight: FontWeight.w600,
                 color: t.textPrimary,
@@ -569,7 +568,7 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
             Expanded(
               child: _StatCard(
                 value: '${report.requestCount}',
-                label: 'Requests imported',
+                label: context.l10n.openapi_statRequests,
                 color: t.success,
               ),
             ),
@@ -577,7 +576,7 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
             Expanded(
               child: _StatCard(
                 value: '${report.collectionCount + 1}',
-                label: 'Collections',
+                label: context.l10n.sidebar_collections,
                 color: t.info,
               ),
             ),
@@ -585,7 +584,7 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
             Expanded(
               child: _StatCard(
                 value: '${report.placeholders.length}',
-                label: 'Placeholders',
+                label: context.l10n.openapi_statPlaceholders,
                 color: t.warning,
               ),
             ),
@@ -595,9 +594,10 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
           const SizedBox(height: AppMetrics.space8),
           Text(
             report.renamed
-                ? 'Imported as "${report.newName ?? report.collectionName}"'
-                : 'Merged into existing collection '
-                    '"${report.collectionName}"',
+                ? context.l10n.openapi_importedAs(
+                    report.newName ?? report.collectionName,
+                  )
+                : context.l10n.openapi_mergedInto(report.collectionName),
             style: AppTextStyles.caption12.copyWith(color: t.textSecondary),
           ),
         ],
@@ -609,7 +609,7 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
         if (report.placeholders.isNotEmpty) ...[
           const SizedBox(height: AppMetrics.space12),
           Text(
-            'PLACEHOLDERS (VALUES FROM SCHEMA SKELETON, NOT SPEC EXAMPLES)',
+            context.l10n.openapi_placeholdersHeader,
             style: AppTextStyles.micro10.copyWith(color: t.textTertiary),
           ),
           const SizedBox(height: AppMetrics.space4),
@@ -643,10 +643,8 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
               children: [
                 if (report.oauthNotices.isNotEmpty)
                   Text(
-                    'OAuth2 / OpenID Connect scheme(s) '
-                    '${report.oauthNotices.join(', ')} were not configured '
-                    'automatically. Go to Collection settings → Auth to '
-                    'complete the authorization flow.',
+                    context.l10n
+                        .openapi_oauthNotice(report.oauthNotices.join(', ')),
                     style: AppTextStyles.caption12
                         .copyWith(color: t.textSecondary),
                   ),
@@ -654,8 +652,8 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
                   if (report.oauthNotices.isNotEmpty)
                     const SizedBox(height: AppMetrics.space4),
                   Text(
-                    'Configured collection-level Auth: '
-                    '${report.authDescription}.',
+                    context.l10n
+                        .openapi_authConfigured('${report.authDescription}'),
                     style: AppTextStyles.caption12
                         .copyWith(color: t.textSecondary),
                   ),
@@ -743,7 +741,7 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
           Icon(Icons.error_outline, size: 48, color: t.error),
           const SizedBox(height: AppMetrics.space16),
           Text(
-            'Import Failed',
+            context.l10n.import_failedTitle,
             style: AppTextStyles.body13.copyWith(
               fontWeight: FontWeight.w500,
               color: t.textPrimary,
@@ -751,7 +749,7 @@ class _OpenApiImportPanelState extends ConsumerState<OpenApiImportPanel>
           ),
           const SizedBox(height: AppMetrics.space8),
           Text(
-            state.error ?? 'Unknown error',
+            state.error ?? context.l10n.import_unknownError,
             style: AppTextStyles.body13.copyWith(color: t.error),
             textAlign: TextAlign.center,
           ),

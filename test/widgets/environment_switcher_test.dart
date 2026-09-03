@@ -8,6 +8,7 @@ import 'package:hopp/providers/request/request_tab_provider.dart';
 import 'package:hopp/widgets/environment/environment_switcher.dart';
 import 'package:mockito/mockito.dart';
 
+import '../helpers/test_app.dart';
 import '../mocks/service_mocks.mocks.dart';
 
 void main() {
@@ -45,8 +46,8 @@ void main() {
   Widget buildTestWidget(ProviderContainer container) {
     return UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(
-        home: Scaffold(body: EnvironmentSwitcher()),
+      child: hoppTestApp(
+        home: const Scaffold(body: EnvironmentSwitcher()),
       ),
     );
   }

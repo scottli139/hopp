@@ -320,7 +320,7 @@ void main() {
       );
 
       expect(result.allSucceeded, isFalse);
-      expect(result.firstError, contains('引用的请求不存在'));
+      expect(result.firstError, contains('Referenced request not found'));
       verifyNever(httpService.sendRequest(any));
     });
 

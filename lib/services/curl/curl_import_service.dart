@@ -5,6 +5,7 @@ library;
 
 import 'dart:convert';
 
+import '../../l10n/l10n.dart';
 import '../../models/http_request.dart';
 import '../../models/key_value_pair.dart';
 import '../../utils/app_logger.dart';
@@ -37,7 +38,7 @@ class CurlImportService with LogMixin {
       return CurlImportResult.error(e.message);
     } catch (e, stack) {
       logError('cURL import failed', e, stack);
-      return CurlImportResult.error('Failed to parse cURL command: $e');
+      return CurlImportResult.error(L10nBridge.t.curl_parseFailed('$e'));
     }
   }
 

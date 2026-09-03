@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import '../l10n/generated/l10n_core.g.dart';
 import '../models/environment.dart';
 import '../models/http_request.dart';
 import '../models/key_value_pair.dart';
@@ -27,13 +28,14 @@ class VariableResolver {
   ];
 
   /// 动态变量用途说明（供 fx 菜单「INSERT DYNAMIC VARIABLE」区展示，F8.5）
-  static const Map<String, String> dynamicVariableDescriptions = {
-    r'$timestamp': '当前 Unix 时间戳（秒）',
-    r'$timestampMs': '当前 Unix 时间戳（毫秒）',
-    r'$isoTimestamp': '当前 UTC ISO8601 时间',
-    r'$randomUUID': '随机 UUID v4',
-    r'$randomInt': '0–1000000 随机整数',
-  };
+  /// 文案走 L10nCore（F5.9），随 L10nBridge.update 同步的 locale 变化
+  static Map<String, String> get dynamicVariableDescriptions => {
+        r'$timestamp': L10nCore.t('var_dynamicDescTimestamp'),
+        r'$timestampMs': L10nCore.t('var_dynamicDescTimestampMs'),
+        r'$isoTimestamp': L10nCore.t('var_dynamicDescIsoTimestamp'),
+        r'$randomUUID': L10nCore.t('var_dynamicDescRandomUuid'),
+        r'$randomInt': L10nCore.t('var_dynamicDescRandomInt'),
+      };
 
   /// 一处 `{{...}}` 占位符的扫描结果
   ///

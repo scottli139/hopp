@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/environment.dart';
 import '../../providers/providers.dart';
 import '../../theme/app_metrics.dart';
@@ -96,7 +97,8 @@ class _EnvironmentManagerDialogState
       _selectedEnvironment?.variables ?? _globals;
 
   void _syncNameController() {
-    _nameController.text = _selectedEnvironment?.name ?? 'Globals';
+    _nameController.text =
+        _selectedEnvironment?.name ?? context.l10n.env_globals;
   }
 
   TextEditingController _keyController(EnvironmentVariable variable) {
@@ -263,13 +265,13 @@ class _EnvironmentManagerDialogState
 
     return AppDialog(
       key: const Key('environment_manager_dialog'),
-      title: 'Manage Environments',
+      title: context.l10n.env_manage,
       width: 840,
       height: 560,
       contentPadding: EdgeInsets.zero,
       showDividers: true,
       footerLeading: Text(
-        'Reference variables as {{key}} in URL, headers and body · secret values are write-only',
+        context.l10n.env_footerHint('{{key}}'),
         style: AppTextStyles.tiny11.copyWith(
           color: t.textTertiary,
           fontWeight: FontWeight.w400,
@@ -278,12 +280,12 @@ class _EnvironmentManagerDialogState
       actions: [
         AppButton.ghost(
           key: const Key('environment_dialog_cancel_button'),
-          label: 'Cancel',
+          label: context.l10n.common_cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
           key: const Key('environment_dialog_save_button'),
-          label: 'Save',
+          label: context.l10n.common_save,
           onPressed: _save,
         ),
       ],
@@ -317,7 +319,7 @@ class _EnvironmentManagerDialogState
                 AppMetrics.space8,
               ),
               children: [
-                const _SideLabel('ENVIRONMENTS'),
+                _SideLabel(context.l10n.env_sectionEnvironments),
                 for (final env in _environments)
                   _SideItem(
                     key: Key('environment_entry_${env.id}'),
@@ -335,7 +337,7 @@ class _EnvironmentManagerDialogState
                 _SideItem(
                   key: const Key('new_environment_button'),
                   icon: Icons.add,
-                  label: 'New Environment',
+                  label: context.l10n.env_newEnvironment,
                   ghost: true,
                   onTap: _addEnvironment,
                 ),
@@ -343,14 +345,14 @@ class _EnvironmentManagerDialogState
             ),
           ),
           const AppDivider(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
               AppMetrics.space8,
               AppMetrics.space8,
               AppMetrics.space8,
               0,
             ),
-            child: _SideLabel('SHARED'),
+            child: _SideLabel(context.l10n.env_sectionShared),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -362,7 +364,7 @@ class _EnvironmentManagerDialogState
             child: _SideItem(
               key: const Key('globals_entry'),
               icon: Icons.public,
-              label: 'Globals',
+              label: context.l10n.env_globals,
               selected: _selectedId == _globalsId,
               onTap: () {
                 setState(() {
@@ -404,7 +406,7 @@ class _EnvironmentManagerDialogState
                             fieldKey: const Key('environment_name_field'),
                             controller: _nameController,
                             borderless: true,
-                            hintText: 'Name',
+                            hintText: context.l10n.env_nameHint,
                             style: AppTextStyles.title16,
                             onChanged: (value) {
                               setState(() {
@@ -427,7 +429,7 @@ class _EnvironmentManagerDialogState
                                   horizontal: AppMetrics.space12 - 2,
                                 ),
                                 child: Text(
-                                  'Globals',
+                                  context.l10n.env_globals,
                                   style: AppTextStyles.title16
                                       .copyWith(color: t.textPrimary),
                                 ),
@@ -440,7 +442,7 @@ class _EnvironmentManagerDialogState
                     AppIconButton(
                       key: const Key('delete_environment_button'),
                       icon: Icons.delete_outline,
-                      tooltip: 'Delete environment',
+                      tooltip: context.l10n.env_deleteTooltip,
                       danger: true,
                       onPressed: _deleteSelectedEnvironment,
                     ),
@@ -454,8 +456,9 @@ class _EnvironmentManagerDialogState
                 ),
                 child: Text(
                   env != null
-                      ? '${variables.length} variables · referenced as {{key}}'
-                      : 'Shared across all environments · overridden by environment variables',
+                      ? context.l10n
+                          .env_variableCount('${variables.length}', '{{key}}')
+                      : context.l10n.env_globalsHint,
                   style: AppTextStyles.caption12.copyWith(
                     color: t.textTertiary,
                   ),
@@ -495,7 +498,7 @@ class _EnvironmentManagerDialogState
           ),
           const SizedBox(height: AppMetrics.space12),
           Text(
-            'No variables yet',
+            context.l10n.env_emptyTitle,
             style: AppTextStyles.body13.copyWith(
               color: t.textPrimary,
               fontWeight: FontWeight.w600,
@@ -503,13 +506,13 @@ class _EnvironmentManagerDialogState
           ),
           const SizedBox(height: AppMetrics.space4),
           Text(
-            'Add one and reference it as {{key}}',
+            context.l10n.env_emptySubtitle('{{key}}'),
             style: AppTextStyles.caption12.copyWith(color: t.textTertiary),
           ),
           const SizedBox(height: AppMetrics.space16),
           AppButton.primary(
             key: const Key('add_variable_button'),
-            label: 'Add Variable',
+            label: context.l10n.env_addVariable,
             icon: Icons.add,
             size: AppButtonSize.small,
             onPressed: _addVariable,
@@ -534,9 +537,9 @@ class _EnvironmentManagerDialogState
           child: Row(
             children: [
               const SizedBox(width: AppMetrics.height28),
-              _buildHeaderCell(t, 'KEY', flex: 3),
-              _buildHeaderCell(t, 'VALUE', flex: 4),
-              _buildHeaderCell(t, 'TYPE', width: 108),
+              _buildHeaderCell(t, context.l10n.env_headerKey, flex: 3),
+              _buildHeaderCell(t, context.l10n.env_headerValue, flex: 4),
+              _buildHeaderCell(t, context.l10n.env_headerType, width: 108),
               const SizedBox(width: AppMetrics.height28),
             ],
           ),
@@ -774,7 +777,7 @@ class _VariableRowState extends State<VariableRow> {
                   compact: true,
                   borderless: true,
                   controller: widget.keyController,
-                  hintText: 'Key',
+                  hintText: context.l10n.env_keyHint,
                   style: AppTextStyles.code12,
                   onChanged: (value) =>
                       widget.onChanged(variable.copyWith(key: value)),
@@ -814,7 +817,7 @@ class _VariableRowState extends State<VariableRow> {
                   ? Center(
                       child: AppIconButton(
                         icon: Icons.close,
-                        tooltip: 'Remove variable',
+                        tooltip: context.l10n.env_removeVariable,
                         size: AppMetrics.height24,
                         iconSize: 14,
                         onPressed: widget.onRemove,
@@ -836,7 +839,7 @@ class _VariableRowState extends State<VariableRow> {
         compact: true,
         borderless: true,
         controller: widget.valueController,
-        hintText: 'Value',
+        hintText: context.l10n.env_valueHint,
         style: AppTextStyles.code12,
         onChanged: (value) => widget.onChanged(variable.copyWith(value: value)),
       );
@@ -846,11 +849,13 @@ class _VariableRowState extends State<VariableRow> {
       borderless: true,
       controller: widget.valueController,
       obscureText: !widget.secretRevealed,
-      hintText: 'Value',
+      hintText: context.l10n.env_valueHint,
       style: AppTextStyles.code12,
       suffix: AppIconButton(
         icon: widget.secretRevealed ? Icons.visibility_off : Icons.visibility,
-        tooltip: widget.secretRevealed ? 'Hide value' : 'Show value',
+        tooltip: widget.secretRevealed
+            ? context.l10n.env_hideValue
+            : context.l10n.env_showValue,
         size: AppMetrics.height24,
         iconSize: 14,
         onPressed: widget.onToggleSecretRevealed,
@@ -973,7 +978,7 @@ class _AddVariableRowState extends State<_AddVariableRow> {
                 Icon(Icons.add, size: 14, color: foreground),
                 const SizedBox(width: 6),
                 Text(
-                  'Add Variable',
+                  context.l10n.env_addVariable,
                   style: AppTextStyles.caption12.copyWith(
                     color: foreground,
                     fontWeight: FontWeight.w500,

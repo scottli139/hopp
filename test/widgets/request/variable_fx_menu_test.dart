@@ -5,6 +5,8 @@ import 'package:hopp/providers/providers.dart';
 import 'package:hopp/services/variable_resolver.dart';
 import 'package:hopp/widgets/request/variable_fx_menu.dart';
 
+import '../../helpers/test_app.dart';
+
 void main() {
   Widget buildMenu(TextEditingController controller) {
     return ProviderScope(
@@ -12,7 +14,7 @@ void main() {
         resolvedVariablesProvider.overrideWithValue(const {}),
         variableResolverProvider.overrideWithValue(VariableResolver()),
       ],
-      child: MaterialApp(
+      child: hoppTestApp(
         home: Scaffold(
           body: Center(
             child: VariableFxMenu(
@@ -26,7 +28,7 @@ void main() {
   }
 
   Future<void> openMenu(WidgetTester tester) async {
-    await tester.tap(find.byTooltip('变量预览与转换函数'));
+    await tester.tap(find.byTooltip('Variable preview & transform functions'));
     await tester.pumpAndSettle();
   }
 
@@ -71,7 +73,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('date_floor(unit)'), findsOneWidget); // 对话框标题
 
-      await tester.tap(find.text('插入'));
+      await tester.tap(find.text('Insert'));
       await tester.pumpAndSettle();
       expect(controller.text, ' | date_floor(day)');
     });
@@ -88,14 +90,14 @@ void main() {
       // 非法值：插入按钮不可用
       await tester.enterText(find.byType(TextField).first, '7');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('插入'));
+      await tester.tap(find.text('Insert'));
       await tester.pumpAndSettle();
       expect(controller.text, isEmpty);
 
       // 合法值：插入成功
       await tester.enterText(find.byType(TextField).first, '-7d');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('插入'));
+      await tester.tap(find.text('Insert'));
       await tester.pumpAndSettle();
       expect(controller.text, ' | date_add(-7d)');
     });
@@ -109,7 +111,7 @@ void main() {
 
       await tester.tap(find.text('date_floor(unit)'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('插入'));
+      await tester.tap(find.text('Insert'));
       await tester.pumpAndSettle();
 
       // 光标前已有 |，插入片段复用已有管道而非再加一个

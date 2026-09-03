@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hopp · M8.8 多语言（F5.9）· UI 原型</title>
+<style>
+/* ============================================================
+   Tokens — 与 lib/theme/ 及既有原型（timestamp_ergonomics 等）一致
+   ============================================================ */
+:root {
+  --brand: #6366F1; --brand-hover: #4F46E5; --brand-soft: #EEF2FF; --brand-text: #6366F1;
+  --bg: #FFFFFF; --surface: #F8FAFC; --surface-2: #F1F5F9;
+  --border: #E2E8F0; --border-strong: #CBD5E1;
+  --text-1: #0F172A; --text-2: #475569; --text-3: #94A3B8;
+  --success: #16A34A; --error: #DC2626; --warning: #D97706;
+  --code-bg: #F1F5F9;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+[data-theme="dark"] {
+  --brand: #818CF8; --brand-hover: #6366F1; --brand-soft: rgba(129,140,248,.14); --brand-text: #818CF8;
+  --bg: #0F172A; --surface: #1E293B; --surface-2: #273549;
+  --border: #334155; --border-strong: #475569;
+  --text-1: #F1F5F9; --text-2: #94A3B8; --text-3: #64748B;
+  --success: #4ADE80; --error: #F87171; --warning: #FBBF24;
+  --code-bg: #1E293B;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "PingFang SC", "Segoe UI", sans-serif;
+  background: var(--bg); color: var(--text-1);
+  padding: 40px 48px 80px; transition: background .2s, color .2s;
+}
+.toggles { position: fixed; top: 20px; right: 24px; display: flex; gap: 8px; }
+.toggle {
+  padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border-strong);
+  background: var(--surface); color: var(--text-2); font-size: 12px; cursor: pointer;
+}
+.toggle.on { color: var(--brand-text); border-color: var(--brand); background: var(--brand-soft); }
+h1 { font-size: 22px; margin-bottom: 6px; }
+.sub { color: var(--text-3); font-size: 13px; margin-bottom: 28px; }
+h2 { font-size: 15px; margin: 36px 0 4px; }
+h2 .fid { color: var(--brand); font-family: var(--font-mono); font-size: 12px; margin-right: 6px; }
+.desc { color: var(--text-2); font-size: 13px; margin-bottom: 14px; line-height: 1.7; max-width: 900px; }
+.desc code { font-family: var(--font-mono); font-size: 12px; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+.frame {
+  border: 1px solid var(--border); border-radius: 12px; background: var(--surface);
+  padding: 20px; max-width: 960px;
+}
+/* ---------- 设置对话框 ---------- */
+.dialog {
+  width: 520px; margin: 0 auto; background: var(--bg);
+  border: 1px solid var(--border-strong); border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(2,6,23,.30); overflow: hidden;
+}
+.dhead {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 600;
+}
+.dhead .x { color: var(--text-3); font-size: 14px; }
+.dbody { padding: 8px 18px 16px; }
+.srow {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.srow:last-child { border-bottom: none; }
+.srow .lab { font-size: 12px; font-weight: 600; }
+.srow .hint { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.seg { display: flex; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; }
+.seg span {
+  font-size: 11px; padding: 6px 12px; color: var(--text-2); background: var(--bg);
+  border-right: 1px solid var(--border-strong); cursor: pointer;
+}
+.seg span:last-child { border-right: none; }
+.seg span.on { background: var(--brand); color: #fff; font-weight: 600; }
+/* ---------- 主界面缩略 ---------- */
+.app {
+  display: flex; border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; background: var(--bg); min-height: 300px;
+}
+.sidebar {
+  width: 190px; background: var(--surface); border-right: 1px solid var(--border);
+  padding: 10px 0; flex-shrink: 0; font-size: 12px;
+}
+.sb-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px 8px; font-size: 11px; font-weight: 700; color: var(--text-3);
+  letter-spacing: .4px;
+}
+.sb-item { padding: 5px 12px; color: var(--text-2); display: flex; gap: 6px; align-items: center; }
+.sb-item.sel { background: var(--brand-soft); color: var(--brand-text); font-weight: 600; }
+.sb-item .m { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--success); }
+.sb-foot {
+  margin-top: 10px; border-top: 1px solid var(--border); padding: 8px 12px 0;
+  display: flex; gap: 10px; color: var(--text-3); font-size: 11px;
+}
+.main { flex: 1; min-width: 0; }
+.tabs {
+  display: flex; gap: 2px; padding: 6px 10px 0; border-bottom: 1px solid var(--border);
+  font-size: 11px; color: var(--text-3);
+}
+.tabs span { padding: 5px 10px; border-radius: 6px 6px 0 0; }
+.tabs span.on { color: var(--brand-text); background: var(--brand-soft); font-weight: 600; }
+.urlrow { display: flex; gap: 8px; padding: 12px; align-items: center; }
+.method {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--success);
+  background: rgba(22,163,74,.12); padding: 5px 8px; border-radius: 6px;
+}
+.urlbox {
+  flex: 1; font-family: var(--font-mono); font-size: 11px; color: var(--text-2);
+  background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.send {
+  font-size: 11px; font-weight: 600; color: #fff; background: var(--brand);
+  border: none; padding: 7px 14px; border-radius: 8px;
+}
+.kv { padding: 0 12px 12px; font-size: 11px; }
+.kv .h, .kv .r { display: flex; gap: 8px; padding: 4px 0; }
+.kv .h { color: var(--text-3); font-weight: 600; border-bottom: 1px solid var(--border); }
+.kv .k { width: 110px; font-family: var(--font-mono); }
+.kv .v { flex: 1; font-family: var(--font-mono); color: var(--text-2); }
+.statusbar {
+  display: flex; gap: 14px; padding: 6px 12px; border-top: 1px solid var(--border);
+  font-size: 10px; color: var(--text-3); background: var(--surface);
+}
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 1180px; }
+.pair .cap { font-size: 11px; color: var(--text-3); margin: 0 0 6px 2px; font-family: var(--font-mono); }
+/* ---------- ARB 片段 ---------- */
+pre.code {
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.7; color: var(--text-1);
+  background: var(--code-bg); border-radius: 8px; padding: 14px 16px; overflow-x: auto;
+  border: 1px solid var(--border); max-width: 960px;
+}
+.k { color: var(--brand); font-weight: 600; }
+.s { color: var(--success); }
+.c { color: var(--text-3); }
+.notes { margin-top: 36px; max-width: 900px; font-size: 13px; color: var(--text-2); line-height: 1.9; }
+.notes li { margin-left: 20px; }
+.notes code { font-family: var(--font-mono); font-size: 12px; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="toggles">
+  <button class="toggle on" id="langZh" onclick="setLang('zh')">中文</button>
+  <button class="toggle" id="langEn" onclick="setLang('en')">English</button>
+  <button class="toggle" onclick="toggleTheme()">🌓 亮 / 暗</button>
+</div>
+
+<h1>Hopp · M8.8 多语言（界面国际化）</h1>
+<div class="sub">F5.9 · 原型先行 · 2026-09-03 · 对应实现：l10n.yaml 接线 / AppSettings.locale / 设置对话框语言选择 / 全量字符串抽取</div>
+
+<h2><span class="fid">①</span>设置对话框：语言选择器（本期唯一新增 UI）</h2>
+<div class="desc">语言项位于设置对话框「外观」区，与主题、界面缩放并列。三档分段选择：<b data-i18n="segSystem">跟随系统</b> / English / 中文。切换<b>即时生效</b>（无需重启），选择持久化到 <code>AppSettings.locale</code>（<code>system</code> / <code>en</code> / <code>zh</code>，默认 <code>system</code>）。</div>
+
+<div class="frame">
+  <div class="dialog">
+    <div class="dhead"><span data-i18n="settingsTitle">设置</span><span class="x">✕</span></div>
+    <div class="dbody">
+      <div class="srow">
+        <div><div class="lab" data-i18n="settingsTheme">主题</div><div class="hint" data-i18n="settingsThemeHint">跟随系统或手动切换</div></div>
+        <div class="seg"><span data-i18n="segSystem">跟随系统</span><span class="on" data-i18n="segLight">浅色</span><span data-i18n="segDark">深色</span></div>
+      </div>
+      <div class="srow" style="outline: 2px solid var(--brand); outline-offset: 4px; border-radius: 4px;">
+        <div><div class="lab" data-i18n="settingsLang">语言</div><div class="hint" data-i18n="settingsLangHint">界面显示语言，切换即时生效</div></div>
+        <div class="seg"><span class="on" data-i18n="segSystem">跟随系统</span><span>English</span><span data-i18n="segZh">中文</span></div>
+      </div>
+      <div class="srow">
+        <div><div class="lab" data-i18n="settingsScale">界面缩放</div><div class="hint" data-i18n="settingsScaleHint">全局文字缩放，适配 HiDPI</div></div>
+        <div class="seg"><span>100%</span><span class="on">125%</span><span>150%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2><span class="fid">②</span>主界面目标态：任一语种零混杂</h2>
+<div class="desc">点右上角「中文 / English」切换下面两组缩略图的文案语言。目标态：侧栏、Tab、按钮、KV 表头、状态栏<b>全部</b>来自 ARB，任一语种下无中英混杂。URL、方法徽章、变量等数据内容不翻译。</div>
+
+<div class="pair">
+  <div>
+    <div class="cap">zh — 中文界面</div>
+    <div class="app" data-lang-frame="zh">
+      <div class="sidebar">
+        <div class="sb-head"><span>集合</span><span>＋</span></div>
+        <div class="sb-item">📁 用户服务</div>
+        <div class="sb-item sel" style="padding-left:22px"><span class="m">GET</span> 获取用户列表</div>
+        <div class="sb-item" style="padding-left:22px"><span class="m" style="color:var(--warning)">POST</span> 创建用户</div>
+        <div class="sb-item">📁 订单服务</div>
+        <div class="sb-foot"><span>导入</span><span>导出</span><span style="margin-left:auto">⚙</span></div>
+      </div>
+      <div class="main">
+        <div class="tabs"><span class="on">参数</span><span>请求头</span><span>请求体</span><span>认证</span><span>预请求</span><span>断言</span></div>
+        <div class="urlrow">
+          <span class="method">GET</span>
+          <div class="urlbox">https://api.example.com/v2/users?page=1</div>
+          <button class="send">发送</button>
+        </div>
+        <div class="kv">
+          <div class="h"><span class="k">键</span><span class="v">值</span><span>描述</span></div>
+          <div class="r"><span class="k">page</span><span class="v">1</span><span style="color:var(--text-3)">页码</span></div>
+          <div class="r"><span class="k">size</span><span class="v">20</span><span style="color:var(--text-3)">每页数量</span></div>
+        </div>
+        <div class="statusbar"><span>就绪</span><span>200 OK · 132ms</span><span style="margin-left:auto">2.4 KB</span></div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">en — English UI</div>
+    <div class="app" data-lang-frame="en">
+      <div class="sidebar">
+        <div class="sb-head"><span>Collections</span><span>＋</span></div>
+        <div class="sb-item">📁 User Service</div>
+        <div class="sb-item sel" style="padding-left:22px"><span class="m">GET</span> List Users</div>
+        <div class="sb-item" style="padding-left:22px"><span class="m" style="color:var(--warning)">POST</span> Create User</div>
+        <div class="sb-item">📁 Order Service</div>
+        <div class="sb-foot"><span>Import</span><span>Export</span><span style="margin-left:auto">⚙</span></div>
+      </div>
+      <div class="main">
+        <div class="tabs"><span class="on">Params</span><span>Headers</span><span>Body</span><span>Auth</span><span>Pre-request</span><span>Tests</span></div>
+        <div class="urlrow">
+          <span class="method">GET</span>
+          <div class="urlbox">https://api.example.com/v2/users?page=1</div>
+          <button class="send">Send</button>
+        </div>
+        <div class="kv">
+          <div class="h"><span class="k">Key</span><span class="v">Value</span><span>Description</span></div>
+          <div class="r"><span class="k">page</span><span class="v">1</span><span style="color:var(--text-3)">Page number</span></div>
+          <div class="r"><span class="k">size</span><span class="v">20</span><span style="color:var(--text-3)">Items per page</span></div>
+        </div>
+        <div class="statusbar"><span>Ready</span><span>200 OK · 132ms</span><span style="margin-left:auto">2.4 KB</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2><span class="fid">③</span>ARB 组织约定（沿用 <code>模块_名称</code> 命名 + 插值 placeholder）</h2>
+<div class="desc">两个 ARB 文件 key 全量对齐；带动态内容的用 placeholder，禁止代码里拼字符串。</div>
+<pre class="code"><span class="c">// app_zh.arb</span>
+{
+  <span class="k">"settings_language"</span>: <span class="s">"语言"</span>,
+  <span class="k">"settings_languageHint"</span>: <span class="s">"界面显示语言，切换即时生效"</span>,
+  <span class="k">"common_systemDefault"</span>: <span class="s">"跟随系统"</span>,
+  <span class="k">"response_itemsCount"</span>: <span class="s">"{count} 项"</span>,
+  <span class="k">"@response_itemsCount"</span>: { <span class="k">"placeholders"</span>: { <span class="k">"count"</span>: { <span class="k">"type"</span>: <span class="s">"int"</span> } } },
+  <span class="k">"error_requestFailed"</span>: <span class="s">"请求失败：{reason}"</span>
+}
+<span class="c">// app_en.arb（同 key）</span>
+{
+  <span class="k">"settings_language"</span>: <span class="s">"Language"</span>,
+  <span class="k">"response_itemsCount"</span>: <span class="s">"{count} items"</span>,
+  <span class="k">"error_requestFailed"</span>: <span class="s">"Request failed: {reason}"</span>
+}</pre>
+
+<div class="notes">
+  <b>设计决策（2026-09-03 澄清确认）/ 边界</b>
+  <ul>
+    <li><b>默认语言</b>：<code>system</code> 跟随系统（OS 是中文 → 中文，否则英文）；设置对话框可覆盖为 English / 中文，即时生效 + Hive 持久化。</li>
+    <li><b>入口唯一</b>：只在设置对话框放语言选择，侧栏底栏不增常驻元素。</li>
+    <li><b>抽取范围</b>：用户可见字符串全量进 ARB——界面文案 + services/providers 的用户可见错误与提示消息；代码注释、日志、test-mode 指令协议（英文）不动。</li>
+    <li><b>AI prompt 固定中文</b>：发给模型的 prompt 模板本期不做双语；AI 按钮/状态/错误提示等界面文案随界面语言。</li>
+    <li><b>CLI 不动</b>：<code>hopp run</code> 输出维持英文（CI 场景约定）。</li>
+    <li><b>不翻译数据</b>：URL、Header 名、变量名、collection/请求名称等用户数据一律不翻译。</li>
+    <li><b>测试策略</b>：widget 测试统一到英文 locale 下用英文串查找（~60 处中文 finder 集中改 6 个文件）；新增 localeProvider 单测 + 双语言 test-mode 截图审计。</li>
+  </ul>
+</div>
+
+<script>
+function toggleTheme() {
+  const b = document.body;
+  b.dataset.theme = b.dataset.theme === 'dark' ? '' : 'dark';
+}
+/* 原型内语言切换演示：第一组缩略图跟随所选语言 */
+const zhMap = {
+  settingsTitle: '设置', settingsTheme: '主题', settingsThemeHint: '跟随系统或手动切换',
+  settingsLang: '语言', settingsLangHint: '界面显示语言，切换即时生效',
+  settingsScale: '界面缩放', settingsScaleHint: '全局文字缩放，适配 HiDPI',
+  segSystem: '跟随系统', segLight: '浅色', segDark: '深色', segZh: '中文'
+};
+const enMap = {
+  settingsTitle: 'Settings', settingsTheme: 'Theme', settingsThemeHint: 'Follow system or switch manually',
+  settingsLang: 'Language', settingsLangHint: 'UI display language, applies immediately',
+  settingsScale: 'UI Scale', settingsScaleHint: 'Global text scaling for HiDPI',
+  segSystem: 'System', segLight: 'Light', segDark: 'Dark', segZh: '中文'
+};
+function setLang(lang) {
+  document.getElementById('langZh').classList.toggle('on', lang === 'zh');
+  document.getElementById('langEn').classList.toggle('on', lang === 'en');
+  const map = lang === 'zh' ? zhMap : enMap;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    if (map[el.dataset.i18n]) el.textContent = map[el.dataset.i18n];
+  });
+}
+</script>
+</body>
+</html>

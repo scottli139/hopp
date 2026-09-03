@@ -10,6 +10,7 @@ import 'package:hopp/providers/providers.dart';
 import 'package:hopp/widgets/layout/sidebar.dart';
 import 'package:mockito/mockito.dart';
 
+import '../helpers/test_app.dart';
 import '../mocks/service_mocks.mocks.dart';
 
 /// 模拟鼠标悬停到指定 widget 上
@@ -48,8 +49,8 @@ void main() {
     }) {
       return UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(
-          home: Scaffold(
+        child: hoppTestApp(
+          home: const Scaffold(
             body: Sidebar(),
           ),
         ),

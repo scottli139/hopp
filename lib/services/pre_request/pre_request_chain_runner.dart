@@ -1,5 +1,6 @@
 import 'package:logger/logger.dart';
 
+import '../../l10n/generated/l10n_core.g.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../models/pre_request_step.dart';
@@ -146,7 +147,7 @@ class PreRequestChainRunner {
             '(${step.requestId})，可能已被删除');
         stepResults.add(ChainStepResult(
           step: step,
-          error: '引用的请求不存在（${step.requestId}），可能已被删除',
+          error: L10nCore.t('prereq_referencedMissing', {'id': step.requestId}),
         ));
         break;
       }

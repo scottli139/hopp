@@ -13,6 +13,8 @@ import 'package:hopp/widgets/common/app_segmented_control.dart';
 import 'package:hopp/widgets/common/app_tabs.dart';
 import 'package:hopp/widgets/common/app_text_field.dart';
 
+import '../../helpers/test_app.dart';
+
 /// 设计系统组件 Golden 测试（亮/暗双主题）。
 ///
 /// 更新基线图：fvm flutter test test/widgets/common/ --update-goldens
@@ -20,8 +22,7 @@ import 'package:hopp/widgets/common/app_text_field.dart';
 void main() {
   Widget wrap(Widget child,
       {required bool dark, Size size = const Size(420, 320)}) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
+    return hoppTestApp(
       theme: dark ? AppTheme.dark() : AppTheme.light(),
       home: Scaffold(
         body: Center(

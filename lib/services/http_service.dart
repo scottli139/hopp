@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:logger/logger.dart';
 
+import '../l10n/generated/l10n_core.g.dart';
 import '../models/certificate_info.dart';
 import '../models/http_request.dart';
 import '../models/http_request_info.dart';
@@ -286,7 +287,7 @@ class HttpService {
       _logger.e('Unexpected error: $e', error: e);
 
       return HttpResponse(
-        error: 'Unexpected error: $e',
+        error: L10nCore.t('http_unexpectedError', {'message': '$e'}),
         durationMs: totalStopwatch.elapsedMilliseconds,
         timestamp: DateTime.now(),
       );
@@ -469,15 +470,20 @@ class HttpService {
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.transformTimeout:
-        return 'Request timeout: ${error.message}';
+        return L10nCore.t(
+            'http_requestTimeout', {'message': '${error.message}'});
       case DioExceptionType.badCertificate:
         return _formatCertificateError(error, validateCertificates);
       case DioExceptionType.badResponse:
-        return 'Server error: ${error.response?.statusCode} ${error.response?.statusMessage}';
+        return L10nCore.t('http_serverError', {
+          'code': '${error.response?.statusCode}',
+          'message': '${error.response?.statusMessage}',
+        });
       case DioExceptionType.cancel:
-        return 'Request cancelled';
+        return L10nCore.t('http_requestCancelled');
       case DioExceptionType.connectionError:
-        return 'Connection error: ${error.message}';
+        return L10nCore.t(
+            'http_connectionError', {'message': '${error.message}'});
       case DioExceptionType.unknown:
         // 检查是否是证书相关错误
         final errorStr = error.toString().toLowerCase();
@@ -487,7 +493,7 @@ class HttpService {
             errorStr.contains('handshake')) {
           return _formatCertificateError(error, validateCertificates);
         }
-        return 'Network error: ${error.message}';
+        return L10nCore.t('http_networkError', {'message': '${error.message}'});
     }
   }
 
@@ -495,7 +501,7 @@ class HttpService {
   String _formatCertificateError(
       DioException error, bool validateCertificates) {
     final buffer = StringBuffer();
-    buffer.writeln('SSL Certificate Error');
+    buffer.writeln(L10nCore.t('http_certErrorTitle'));
     buffer.writeln();
 
     // 提取具体的证书错误信息
@@ -503,30 +509,28 @@ class HttpService {
     final errorStr = error.toString();
 
     if (errorMsg.contains('self signed') || errorStr.contains('self signed')) {
-      buffer.writeln('The server is using a self-signed certificate.');
+      buffer.writeln(L10nCore.t('http_certSelfSigned'));
     } else if (errorMsg.contains('expired') || errorStr.contains('expired')) {
-      buffer.writeln('The server\'s SSL certificate has expired.');
+      buffer.writeln(L10nCore.t('http_certExpired'));
     } else if (errorMsg.contains('hostname') || errorStr.contains('hostname')) {
-      buffer.writeln(
-          'The server\'s SSL certificate does not match the hostname.');
+      buffer.writeln(L10nCore.t('http_certHostnameMismatch'));
     } else if (errorMsg.contains('untrusted') ||
         errorStr.contains('untrusted')) {
-      buffer.writeln('The server\'s SSL certificate is not trusted.');
+      buffer.writeln(L10nCore.t('http_certUntrusted'));
     } else {
-      buffer.writeln('Unable to verify the server\'s SSL certificate.');
+      buffer.writeln(L10nCore.t('http_certVerifyFailed'));
     }
 
     buffer.writeln();
-    buffer.writeln('Technical details: ${error.message}');
+    buffer.writeln(L10nCore.t(
+        'http_certTechnicalDetails', {'message': '${error.message}'}));
     buffer.writeln();
 
     // 提供解决方案
     if (validateCertificates) {
-      buffer.writeln(
-          '💡 Tip: You can disable "Enable SSL certificate verification" in Settings > SSL/TLS to bypass this error for testing purposes.');
+      buffer.writeln(L10nCore.t('http_certTipDisable'));
     } else {
-      buffer.writeln(
-          '💡 SSL verification is already disabled, but the connection still failed.');
+      buffer.writeln(L10nCore.t('http_certAlreadyDisabled'));
     }
 
     return buffer.toString();
@@ -554,7 +558,7 @@ class HttpService {
   CancelToken createCancelToken() => CancelToken();
 
   void cancelRequest(CancelToken token, [String? reason]) {
-    token.cancel(reason ?? 'Cancelled by user');
+    token.cancel(reason ?? L10nCore.t('http_cancelledByUser'));
   }
 
   /// 根据请求创建 Dio 实例，确保每个请求的配置独立

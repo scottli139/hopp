@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_metrics.dart';
 import '../../theme/app_shadows.dart';
@@ -29,13 +30,19 @@ class DesignGalleryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Design Gallery')),
+      appBar: AppBar(title: Text(context.l10n.gallery_title)),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _GalleryThemePane(theme: AppTheme.light(), title: 'Light'),
-            _GalleryThemePane(theme: AppTheme.dark(), title: 'Dark'),
+            _GalleryThemePane(
+              theme: AppTheme.light(),
+              title: context.l10n.settings_themeLight,
+            ),
+            _GalleryThemePane(
+              theme: AppTheme.dark(),
+              title: context.l10n.settings_themeDark,
+            ),
           ],
         ),
       ),
@@ -64,7 +71,7 @@ class _GalleryThemePane extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$title Theme',
+                  context.l10n.gallery_themeTitle(title),
                   style: AppTextStyles.display20.copyWith(
                     color: t.textPrimary,
                   ),
@@ -222,17 +229,17 @@ class _ColorsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle('Colors'),
+        _SectionTitle(context.l10n.gallery_colors),
         const SizedBox(height: AppMetrics.space16),
-        const _GroupLabel('AppThemeData（随主题）'),
+        _GroupLabel(context.l10n.gallery_groupThemeData),
         const SizedBox(height: AppMetrics.space8),
         _SwatchWrap(entries: themeColors),
         const SizedBox(height: AppMetrics.space16),
-        const _GroupLabel('AppColors（常量调色板）'),
+        _GroupLabel(context.l10n.gallery_groupAppColors),
         const SizedBox(height: AppMetrics.space8),
         const _SwatchWrap(entries: _paletteColors),
         const SizedBox(height: AppMetrics.space16),
-        const _GroupLabel('AppSyntaxColors（当前主题）'),
+        _GroupLabel(context.l10n.gallery_groupSyntaxColors),
         const SizedBox(height: AppMetrics.space8),
         _SwatchWrap(entries: syntaxColors),
       ],
@@ -316,7 +323,7 @@ class _TypographySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle('Typography'),
+        _SectionTitle(context.l10n.gallery_typography),
         const SizedBox(height: AppMetrics.space16),
         for (final (name, style) in _styles) ...[
           Row(
@@ -333,7 +340,7 @@ class _TypographySection extends StatelessWidget {
               ),
               Expanded(
                 child: Text(
-                  'The quick brown fox 敏捷的狐狸',
+                  context.l10n.gallery_pangram,
                   style: style.copyWith(color: t.textPrimary),
                 ),
               ),
@@ -384,9 +391,9 @@ class _MetricsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle('Metrics'),
+        _SectionTitle(context.l10n.gallery_metrics),
         const SizedBox(height: AppMetrics.space16),
-        const _GroupLabel('Spacing'),
+        _GroupLabel(context.l10n.gallery_spacing),
         const SizedBox(height: AppMetrics.space8),
         for (final (name, value) in _spacings) ...[
           _MetricBarRow(
@@ -403,7 +410,7 @@ class _MetricsSection extends StatelessWidget {
           const SizedBox(height: AppMetrics.space8),
         ],
         const SizedBox(height: AppMetrics.space8),
-        const _GroupLabel('Radius'),
+        _GroupLabel(context.l10n.gallery_radius),
         const SizedBox(height: AppMetrics.space8),
         Wrap(
           spacing: AppMetrics.space16,
@@ -434,7 +441,7 @@ class _MetricsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppMetrics.space8),
-        const _GroupLabel('Height'),
+        _GroupLabel(context.l10n.gallery_height),
         const SizedBox(height: AppMetrics.space8),
         for (final (name, value) in _heights) ...[
           _MetricBarRow(
@@ -492,7 +499,7 @@ class _ShadowsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle('Shadows'),
+        _SectionTitle(context.l10n.gallery_shadows),
         const SizedBox(height: AppMetrics.space16),
         Wrap(
           spacing: AppMetrics.space24,
@@ -500,7 +507,7 @@ class _ShadowsSection extends StatelessWidget {
           children: [
             _ShadowCard(label: 'shadowSm', shadows: AppShadows.sm(context)),
             _ShadowCard(label: 'shadowMd', shadows: AppShadows.md(context)),
-            const _ShadowCard(label: 'none（仅边框）', shadows: []),
+            _ShadowCard(label: context.l10n.gallery_shadowNone, shadows: []),
           ],
         ),
       ],
@@ -547,7 +554,7 @@ class _ComponentsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle('Components'),
+        _SectionTitle(context.l10n.gallery_components),
         const SizedBox(height: AppMetrics.space16),
 
         // AppButton
@@ -558,21 +565,26 @@ class _ComponentsSection extends StatelessWidget {
           runSpacing: AppMetrics.space8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            AppButton.primary(label: 'Primary', onPressed: () {}),
-            AppButton.secondary(label: 'Secondary', onPressed: () {}),
-            AppButton.ghost(label: 'Ghost', onPressed: () {}),
-            AppButton.danger(label: 'Danger', onPressed: () {}),
             AppButton.primary(
-              label: 'With Icon',
+                label: context.l10n.gallery_btnPrimary, onPressed: () {}),
+            AppButton.secondary(
+                label: context.l10n.gallery_btnSecondary, onPressed: () {}),
+            AppButton.ghost(
+                label: context.l10n.gallery_btnGhost, onPressed: () {}),
+            AppButton.danger(
+                label: context.l10n.gallery_btnDanger, onPressed: () {}),
+            AppButton.primary(
+              label: context.l10n.gallery_btnWithIcon,
               icon: Icons.add,
               onPressed: () {},
             ),
             AppButton.primary(
-              label: 'Small',
+              label: context.l10n.gallery_btnSmall,
               size: AppButtonSize.small,
               onPressed: () {},
             ),
-            const AppButton.primary(label: 'Disabled', onPressed: null),
+            AppButton.primary(
+                label: context.l10n.gallery_btnDisabled, onPressed: null),
           ],
         ),
         const SizedBox(height: AppMetrics.space16),
@@ -587,18 +599,18 @@ class _ComponentsSection extends StatelessWidget {
           children: [
             AppIconButton(
               icon: Icons.refresh,
-              tooltip: 'Default',
+              tooltip: context.l10n.gallery_tipDefault,
               onPressed: () {},
             ),
             AppIconButton(
               icon: Icons.settings_outlined,
-              tooltip: 'Bordered',
+              tooltip: context.l10n.gallery_tipBordered,
               bordered: true,
               onPressed: () {},
             ),
-            const AppIconButton(
+            AppIconButton(
               icon: Icons.delete_outline,
-              tooltip: 'Disabled',
+              tooltip: context.l10n.gallery_btnDisabled,
               onPressed: null,
             ),
           ],
@@ -612,7 +624,7 @@ class _ComponentsSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '标准（高 32）',
+              context.l10n.gallery_textFieldStandard,
               style: AppTextStyles.caption12.copyWith(color: t.textTertiary),
             ),
             const SizedBox(height: AppMetrics.space4),
@@ -622,23 +634,25 @@ class _ComponentsSection extends StatelessWidget {
             ),
             const SizedBox(height: AppMetrics.space12),
             Text(
-              '紧凑（compact，高 28）',
+              context.l10n.gallery_textFieldCompact,
               style: AppTextStyles.caption12.copyWith(color: t.textTertiary),
             ),
             const SizedBox(height: AppMetrics.space4),
-            const SizedBox(
+            SizedBox(
               width: 280,
-              child: AppTextField(hintText: 'Search…', compact: true),
+              child: AppTextField(
+                  hintText: context.l10n.gallery_hintSearch, compact: true),
             ),
             const SizedBox(height: AppMetrics.space12),
             Text(
-              '多行（maxLines: 3）',
+              context.l10n.gallery_textFieldMultiline,
               style: AppTextStyles.caption12.copyWith(color: t.textTertiary),
             ),
             const SizedBox(height: AppMetrics.space4),
-            const SizedBox(
+            SizedBox(
               width: 280,
-              child: AppTextField(hintText: 'Body…', maxLines: 3),
+              child: AppTextField(
+                  hintText: context.l10n.gallery_hintBody, maxLines: 3),
             ),
           ],
         ),
@@ -653,21 +667,21 @@ class _ComponentsSection extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             _Labeled(
-              label: 'switch on',
+              label: context.l10n.gallery_switchOn,
               child: AppSwitch(value: true, onChanged: (_) {}),
             ),
             _Labeled(
-              label: 'switch off',
+              label: context.l10n.gallery_switchOff,
               child: AppSwitch(value: false, onChanged: (_) {}),
             ),
             AppCheckbox(
               value: true,
-              label: 'checked',
+              label: context.l10n.gallery_checked,
               onChanged: (_) {},
             ),
             AppCheckbox(
               value: false,
-              label: 'unchecked',
+              label: context.l10n.gallery_unchecked,
               onChanged: (_) {},
             ),
           ],
@@ -678,10 +692,10 @@ class _ComponentsSection extends StatelessWidget {
         const _GroupLabel('AppTabs'),
         const SizedBox(height: AppMetrics.space8),
         AppTabs(
-          tabs: const [
-            AppTabItem(label: 'Params', count: 3),
-            AppTabItem(label: 'Headers', count: 2),
-            AppTabItem(label: 'Body', dot: true),
+          tabs: [
+            AppTabItem(label: context.l10n.request_params, count: 3),
+            AppTabItem(label: context.l10n.request_headers, count: 2),
+            AppTabItem(label: context.l10n.request_body, dot: true),
           ],
           selectedIndex: 0,
           onChanged: (_) {},
@@ -699,7 +713,7 @@ class _ComponentsSection extends StatelessWidget {
               width: 240,
               child: AppCard(
                 child: Text(
-                  'standard：surface 底 + border 边',
+                  context.l10n.gallery_cardStandard,
                   style: AppTextStyles.caption12.copyWith(
                     color: t.textSecondary,
                   ),
@@ -710,7 +724,7 @@ class _ComponentsSection extends StatelessWidget {
               width: 240,
               child: AppCard.elevated(
                 child: Text(
-                  'elevated：background 底 + shadowMd',
+                  context.l10n.gallery_cardElevated,
                   style: AppTextStyles.caption12.copyWith(
                     color: t.textSecondary,
                   ),
@@ -759,7 +773,7 @@ class _ComponentsSection extends StatelessWidget {
           width: 200,
           child: AppPopupSelect<String>(
             value: 'dev',
-            hint: 'Select env',
+            hint: context.l10n.gallery_selectEnvHint,
             boxed: true,
             items: const [
               AppPopupSelectEntry(value: 'dev', label: 'Development'),
@@ -792,9 +806,10 @@ class _ComponentsSection extends StatelessWidget {
           ),
           child: AppEmptyState(
             icon: Icons.inbox_outlined,
-            title: 'No requests yet',
-            subtitle: 'Create a request to get started',
-            action: AppButton.primary(label: 'New Request', onPressed: () {}),
+            title: context.l10n.main_emptyTitle,
+            subtitle: context.l10n.gallery_emptyDemoSubtitle,
+            action: AppButton.primary(
+                label: context.l10n.sidebar_newRequest, onPressed: () {}),
           ),
         ),
       ],

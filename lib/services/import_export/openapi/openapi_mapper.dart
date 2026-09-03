@@ -7,6 +7,7 @@ library;
 
 import 'package:uuid/uuid.dart';
 
+import '../../../l10n/l10n.dart';
 import '../../../models/auth_config.dart';
 import '../../../models/collection.dart';
 import '../../../models/http_method.dart';
@@ -144,8 +145,8 @@ class OpenApiMapper {
             method: op.method.toUpperCase(),
             path: op.path,
             detail: body.bodyType == 'x-www-form-urlencoded'
-                ? 'Form fields generated from schema — review and fill in'
-                : 'Body generated from schema skeleton — review and fill in',
+                ? L10nBridge.t.openapi_placeholderFormData
+                : L10nBridge.t.openapi_placeholderBody,
           ),
         );
       }
@@ -250,12 +251,12 @@ class OpenApiMapper {
   String? _authDescription(AuthSchemeInfo? info) {
     switch (info?.kind) {
       case 'bearer':
-        return 'Bearer Token (fill in token)';
+        return L10nBridge.t.openapi_authBearer;
       case 'basic':
-        return 'Basic Auth (fill in username/password)';
+        return L10nBridge.t.openapi_authBasic;
       case 'apiKey':
         final where = (info?.apiKeyInQuery ?? false) ? 'Query' : 'Header';
-        return 'API Key ($where: ${info?.apiKeyName ?? ''} — fill in the key)';
+        return L10nBridge.t.openapi_authApiKey(info?.apiKeyName ?? '', where);
       default:
         return null;
     }

@@ -177,7 +177,8 @@ void main() {
       expect(options.headers!['Authorization'], equals('Bearer sk-test'));
     });
 
-    test('connectionError → LlmConnectionException（未检测到本地模型服务）', () async {
+    test('connectionError → LlmConnectionException（local service not detected）',
+        () async {
       stubChatError(
         DioException(
           requestOptions: RequestOptions(),
@@ -197,13 +198,13 @@ void main() {
           isA<LlmConnectionException>().having(
             (e) => e.message,
             'message',
-            contains('未检测到本地模型服务'),
+            contains('Local model service not detected'),
           ),
         ),
       );
     });
 
-    test('receiveTimeout → LlmConnectionException（响应超时提示）', () async {
+    test('receiveTimeout → LlmConnectionException（timeout hint）', () async {
       stubChatError(
         DioException(
           requestOptions: RequestOptions(),
@@ -223,7 +224,7 @@ void main() {
           isA<LlmConnectionException>().having(
             (e) => e.message,
             'message',
-            contains('响应超时'),
+            contains('Local model timed out'),
           ),
         ),
       );

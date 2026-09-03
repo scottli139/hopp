@@ -4,6 +4,8 @@ import 'package:hopp/theme/app_theme.dart';
 import 'package:hopp/theme/app_theme_data.dart';
 import 'package:hopp/widgets/common/app_segmented_control.dart';
 
+import '../../helpers/test_app.dart';
+
 /// AppSegmentedControl 规格测试。
 void main() {
   const items = [
@@ -25,7 +27,7 @@ void main() {
   ];
 
   Widget wrap(Widget child, {bool dark = false}) {
-    return MaterialApp(
+    return hoppTestApp(
       theme: dark ? AppTheme.dark() : AppTheme.light(),
       home: Scaffold(body: Center(child: child)),
     );

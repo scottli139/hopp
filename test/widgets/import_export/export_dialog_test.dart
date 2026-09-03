@@ -16,6 +16,7 @@ import 'package:hopp/widgets/common/app_button.dart';
 import 'package:hopp/widgets/import_export/export_dialog.dart';
 import 'package:mockito/mockito.dart';
 
+import '../../helpers/test_app.dart';
 import '../../mocks/service_mocks.mocks.dart';
 
 /// 伪 FilePicker：saveFile 直接返回预定路径（file_picker 10.x 需注入实例，
@@ -99,8 +100,8 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(
-          home: Scaffold(
+        child: hoppTestApp(
+          home: const Scaffold(
             body: ExportDialog(),
           ),
         ),

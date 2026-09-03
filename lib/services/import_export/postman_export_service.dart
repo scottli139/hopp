@@ -8,6 +8,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
+import '../../l10n/l10n.dart';
 import '../../services/storage_service.dart';
 import '../../utils/app_logger.dart';
 import 'import_export_exception.dart';
@@ -51,7 +52,7 @@ class PostmanExportService with LogMixin {
       final collection = await _storage.getCollection(collectionId);
       if (collection == null) {
         throw ExportException(
-          message: 'Collection not found: $collectionId',
+          message: L10nBridge.t.export_collectionNotFound(collectionId),
         );
       }
 
@@ -107,7 +108,7 @@ class PostmanExportService with LogMixin {
     } catch (e, stack) {
       logError('Export failed', e, stack);
       throw ExportException(
-        message: '导出失败: $e',
+        message: L10nBridge.t.export_failedWithError('$e'),
         details: stack,
       );
     }
@@ -122,7 +123,7 @@ class PostmanExportService with LogMixin {
     final collection = await _storage.getCollection(collectionId);
     if (collection == null) {
       throw ExportException(
-        message: 'Collection not found: $collectionId',
+        message: L10nBridge.t.export_collectionNotFound(collectionId),
       );
     }
 

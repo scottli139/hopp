@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../providers/providers.dart';
 import '../../theme/app_metrics.dart';
 import '../../theme/app_text_styles.dart';
@@ -55,7 +56,7 @@ class EnvironmentSwitcher extends ConsumerWidget {
           Expanded(
             child: PopupMenuButton<String?>(
               key: const Key('environment_switcher_dropdown'),
-              tooltip: 'Select environment',
+              tooltip: context.l10n.env_selectTooltip,
               offset: const Offset(0, 28),
               constraints: const BoxConstraints(minWidth: 160, maxWidth: 280),
               shape: AppPopupMenu.menuShape(theme),
@@ -68,7 +69,7 @@ class EnvironmentSwitcher extends ConsumerWidget {
                 AppPopupMenu.textItem(
                   theme: theme,
                   value: null,
-                  label: 'No Environment',
+                  label: context.l10n.env_none,
                   selected: activeEnv == null,
                   color: appTheme.textTertiary,
                 ),
@@ -84,7 +85,7 @@ class EnvironmentSwitcher extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      activeEnv?.name ?? 'No Environment',
+                      activeEnv?.name ?? context.l10n.env_none,
                       maxLines: 1,
                       softWrap: false,
                       overflow: TextOverflow.ellipsis,
@@ -107,7 +108,8 @@ class EnvironmentSwitcher extends ConsumerWidget {
           // 未定义变量警告
           if (unresolved.isNotEmpty)
             Tooltip(
-              message: 'Unresolved variables: ${unresolved.join(', ')}',
+              message:
+                  context.l10n.env_unresolvedVariables(unresolved.join(', ')),
               child: Icon(
                 key: const Key('unresolved_variables_warning'),
                 Icons.warning_amber_rounded,
@@ -119,7 +121,7 @@ class EnvironmentSwitcher extends ConsumerWidget {
           AppIconButton(
             key: const Key('manage_environments_button'),
             icon: Icons.tune,
-            tooltip: 'Manage Environments',
+            tooltip: context.l10n.env_manage,
             size: 24,
             iconSize: 14,
             onPressed: () => showEnvironmentManagerDialog(context),

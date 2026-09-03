@@ -3,6 +3,7 @@
 /// 将 Token 列表解析为结构化的 cURL 命令数据。
 library;
 
+import '../../l10n/l10n.dart';
 import '../../models/http_method.dart';
 import '../../models/key_value_pair.dart';
 import '../../utils/app_logger.dart';
@@ -112,8 +113,7 @@ class CurlParser with LogMixin {
 
     // 验证命令以 curl 开头
     if (tokens.isEmpty || tokens.first.type != CurlTokenType.command) {
-      throw const CurlParseException(
-          'Invalid cURL command: must start with "curl"');
+      throw CurlParseException(L10nBridge.t.curl_invalidCommand);
     }
 
     var method = HttpMethod.get;
@@ -257,7 +257,7 @@ class CurlParser with LogMixin {
             break;
 
           default:
-            warnings.add('Unsupported option: -$option');
+            warnings.add(L10nBridge.t.curl_unsupportedOption(option));
             logWarning('Unsupported cURL option: $option');
         }
       }

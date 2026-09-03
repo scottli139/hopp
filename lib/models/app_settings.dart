@@ -9,7 +9,10 @@ part 'app_settings.g.dart';
 class AppSettings with _$AppSettings {
   const factory AppSettings({
     @HiveField(0) @Default('system') String themeMode,
-    @HiveField(1) @Default('en') String language,
+
+    /// 界面语言（F5.9 / M8.8）：'system'（跟随系统）/ 'en' / 'zh'
+    /// 注意：v0.16 前该字段为死默认值 'en'，由 storage getSettings 一次性迁移为 'system'
+    @HiveField(1) @Default('system') String language,
     @HiveField(2) @Default(14) double editorFontSize,
     @HiveField(3) @Default('monospace') String editorFontFamily,
     @HiveField(4) @Default(true) bool validateCertificates,
@@ -29,7 +32,7 @@ class AppSettings with _$AppSettings {
     /// 模型名（本地服务为手填，如 'qwen2.5:7b'）
     @HiveField(11) @Default('') String aiModel,
 
-    /// API Key（本地服务留空；Tier 2 用，keychain 存储随 M8.8）
+    /// API Key（本地服务留空；Tier 2 用，keychain 存储随 M8.9）
     @HiveField(12) @Default('') String aiApiKey,
 
     /// 界面文字缩放（F5.7 / M8.7）：1.0 / 1.25 / 1.5，默认 1.0

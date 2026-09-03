@@ -138,18 +138,23 @@ final themeModeProvider = Provider<ThemeMode>((ref) {
   );
 });
 
-final localeProvider = Provider<Locale>((ref) {
+final localeProvider = Provider<Locale?>((ref) {
   final settings = ref.watch(settingsProvider);
 
   return settings.when(
     data: (s) {
-      if (s.language == 'zh') {
-        return const Locale('zh', 'CN');
+      switch (s.language) {
+        case 'zh':
+          return const Locale('zh');
+        case 'en':
+          return const Locale('en');
+        default:
+          // 'system'：返回 null 让 MaterialApp 跟随系统 locale
+          return null;
       }
-      return const Locale('en');
     },
-    loading: () => const Locale('en'),
-    error: (_, __) => const Locale('en'),
+    loading: () => null,
+    error: (_, __) => null,
   );
 });
 

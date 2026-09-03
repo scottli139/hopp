@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopp/models/app_settings.dart';
 import 'package:hopp/models/collection.dart';
@@ -9,6 +11,7 @@ import 'package:hopp/services/storage_service.dart';
 import 'package:hive/hive.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'storage_service_test.mocks.dart';
@@ -520,7 +523,7 @@ void main() {
 
         // Assert
         expect(settings.themeMode, equals('system'));
-        expect(settings.language, equals('en'));
+        expect(settings.language, equals('system'));
         expect(settings.editorFontSize, equals(14.0));
         expect(settings.editorFontFamily, equals('monospace'));
         expect(settings.validateCertificates, isTrue);
@@ -786,4 +789,68 @@ void main() {
       });
     });
   });
+
+  group('language migration (F5.9)', () {
+    late Directory tempDir;
+    late StorageService service;
+
+    Box<dynamic> settingsBox() => Hive.box<dynamic>('settings');
+
+    Map<String, dynamic> settingsJsonWithLanguage(String language) => {
+          ...AppSettings.defaults().toJson(),
+          'language': language,
+        };
+
+    setUpAll(() async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      tempDir = await Directory.systemTemp.createTemp('hopp_storage_test_');
+      SharedPreferences.setMockInitialValues({});
+      PathProviderPlatform.instance = _FakePathProviderPlatform(tempDir.path);
+      service = StorageService();
+      await service.initialize(testMode: true);
+    });
+
+    tearDownAll(() async {
+      await Hive.close();
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    });
+
+    setUp(() async {
+      await settingsBox().clear();
+    });
+
+    test('无迁移标记时 language==en 改写为 system 并写标记', () async {
+      await settingsBox().put('app_settings', settingsJsonWithLanguage('en'));
+
+      final settings = await service.getSettings();
+
+      expect(settings.language, equals('system'));
+      expect(settingsBox().get('language_migrated_v1'), isTrue);
+      final persisted = settingsBox().get('app_settings') as Map;
+      expect(persisted['language'], equals('system'));
+    });
+
+    test('已有迁移标记时 language==en 原样返回', () async {
+      await settingsBox().put('language_migrated_v1', true);
+      await settingsBox().put('app_settings', settingsJsonWithLanguage('en'));
+
+      final settings = await service.getSettings();
+
+      expect(settings.language, equals('en'));
+      final persisted = settingsBox().get('app_settings') as Map;
+      expect(persisted['language'], equals('en'));
+    });
+  });
+}
+
+/// 测试用 path_provider 平台实现：所有路径指向临时目录
+class _FakePathProviderPlatform extends PathProviderPlatform {
+  _FakePathProviderPlatform(this._documentsPath);
+
+  final String _documentsPath;
+
+  @override
+  Future<String?> getApplicationDocumentsPath() async => _documentsPath;
 }

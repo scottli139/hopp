@@ -6,6 +6,7 @@ import 'package:hopp/providers/import_export/openapi_import_provider.dart';
 import 'package:hopp/widgets/import_export/import_dialog.dart';
 import 'package:mockito/mockito.dart';
 
+import '../../helpers/test_app.dart';
 import '../../mocks/service_mocks.mocks.dart';
 
 /// OpenAPI 导入面板 widget 测试
@@ -62,8 +63,8 @@ void main() {
   Widget buildTestWidget(ProviderContainer container) {
     return UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(
-        home: Scaffold(
+      child: hoppTestApp(
+        home: const Scaffold(
           body: ImportDialog(initialFormat: ImportFormat.openApi),
         ),
       ),

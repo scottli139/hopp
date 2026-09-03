@@ -9,6 +9,7 @@ import 'package:hopp/services/ai/llm_client.dart';
 import 'package:hopp/widgets/ai/ai_settings_dialog.dart';
 import 'package:mockito/mockito.dart';
 
+import '../../helpers/test_app.dart';
 import '../../mocks/service_mocks.mocks.dart';
 
 class FakeLlmClient extends LlmClient {
@@ -65,7 +66,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(
+          child: hoppTestApp(
             home: Scaffold(
               body: Builder(
                 builder: (context) => ElevatedButton(
@@ -89,22 +90,23 @@ void main() {
       await openDialog(tester, container);
 
       // 开关 + 预设 + 三个输入框标签
-      expect(find.text('启用本地 AI'), findsOneWidget);
-      expect(find.text('Provider 预设'), findsOneWidget);
+      expect(find.text('Enable Local AI'), findsOneWidget);
+      expect(find.text('Provider Preset'), findsOneWidget);
       expect(find.text('Base URL'), findsOneWidget);
       expect(find.text('Model'), findsOneWidget);
       expect(find.text('API Key'), findsOneWidget);
       expect(find.text('Ollama'), findsOneWidget);
       expect(find.text('LM Studio'), findsOneWidget);
-      expect(find.text('自定义'), findsOneWidget);
+      expect(find.text('Custom'), findsOneWidget);
       expect(
-        find.text('本地模型通常无需 Key，留空即可；仅 Tier 2 云端使用'),
+        find.text(
+            'Local models usually work without a key; only needed for Tier 2 cloud providers'),
         findsOneWidget,
       );
-      expect(find.text('尚未检查连接'), findsOneWidget);
-      expect(find.text('检查连接'), findsOneWidget);
-      expect(find.text('取消'), findsOneWidget);
-      expect(find.text('保存'), findsOneWidget);
+      expect(find.text('Connection not checked yet'), findsOneWidget);
+      expect(find.text('Check Connection'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
 
       // 初始值来自 settingsProvider
       expect(
@@ -143,7 +145,7 @@ void main() {
       );
 
       // 自定义：不覆盖手填值
-      await tester.tap(find.text('自定义'));
+      await tester.tap(find.text('Custom'));
       await tester.pump();
       expect(
         tester
@@ -186,10 +188,10 @@ void main() {
       addTearDown(container.dispose);
       await openDialog(tester, container);
 
-      await tester.tap(find.text('检查连接'));
+      await tester.tap(find.text('Check Connection'));
       await tester.pumpAndSettle();
 
-      expect(find.text('已连接 · Ollama · qwen2.5:7b'), findsOneWidget);
+      expect(find.text('Connected · Ollama · qwen2.5:7b'), findsOneWidget);
     });
 
     testWidgets('check connection failure shows warning and keeps detail',
@@ -202,17 +204,17 @@ void main() {
       addTearDown(container.dispose);
       await openDialog(tester, container);
 
-      await tester.tap(find.text('检查连接'));
+      await tester.tap(find.text('Check Connection'));
       await tester.pumpAndSettle();
 
       expect(
         find.text(
-          '未检测到本地模型服务，请确认 Ollama / LM Studio 已启动（connection refused）',
+          'Local model service not detected. Make sure Ollama / LM Studio is running (connection refused)',
         ),
         findsOneWidget,
       );
       // 失败后仍可再次检查
-      expect(find.text('检查连接'), findsOneWidget);
+      expect(find.text('Check Connection'), findsOneWidget);
     });
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/http_request.dart';
 import '../../models/http_response.dart';
 import '../../providers/ai/ai_provider.dart';
@@ -28,7 +29,7 @@ class ExplainResponseButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AiSparkleButton(
-      tooltip: '解释响应',
+      tooltip: context.l10n.ai_explainTitle,
       onPressed: () => _handlePressed(context, ref),
     );
   }
@@ -38,7 +39,7 @@ class ExplainResponseButton extends ConsumerWidget {
     final body = response?.body ?? '';
     if (response == null || response.error != null || body.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('暂无响应可解释')),
+        SnackBar(content: Text(context.l10n.ai_noResponseToExplain)),
       );
       return;
     }
@@ -51,7 +52,7 @@ class ExplainResponseButton extends ConsumerWidget {
     final request = ref.read(activeTabProvider)?.request;
     showAppDialog(
       context: context,
-      title: '解释响应',
+      title: context.l10n.ai_explainTitle,
       width: 560,
       child: ExplainResponseDialogContent(
         response: response,
@@ -146,7 +147,7 @@ class _ExplainResponseDialogContentState
         Row(
           children: [
             AppButton.ghost(
-              label: '重新生成',
+              label: context.l10n.ai_regenerate,
               size: AppButtonSize.small,
               onPressed: aiState.isLoading
                   ? null
@@ -157,7 +158,7 @@ class _ExplainResponseDialogContentState
             ),
             const SizedBox(width: AppMetrics.space8),
             AppButton.ghost(
-              label: '复制',
+              label: context.l10n.response_copy,
               size: AppButtonSize.small,
               onPressed: aiState.isSuccess
                   ? () => Clipboard.setData(
@@ -167,7 +168,7 @@ class _ExplainResponseDialogContentState
             ),
             const Spacer(),
             AppButton.primary(
-              label: '关闭',
+              label: context.l10n.common_close,
               size: AppButtonSize.small,
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -198,7 +199,7 @@ class _ExplainResponseDialogContentState
             ),
             const SizedBox(height: AppMetrics.space12),
             Text(
-              '正在解释…（本地模型可能需要 10–30 秒）',
+              context.l10n.ai_explaining,
               style: AppTextStyles.caption12.copyWith(color: t.textTertiary),
             ),
           ],
@@ -224,7 +225,7 @@ class _ExplainResponseDialogContentState
                 const SizedBox(width: AppMetrics.space8 - 2),
                 Expanded(
                   child: Text(
-                    aiState.errorMessage ?? 'AI 调用失败',
+                    aiState.errorMessage ?? context.l10n.ai_callFailedGeneric,
                     style: AppTextStyles.caption12.copyWith(color: t.error),
                   ),
                 ),
@@ -232,7 +233,7 @@ class _ExplainResponseDialogContentState
             ),
             const SizedBox(height: AppMetrics.space12),
             AppButton.ghost(
-              label: '重试',
+              label: context.l10n.ai_retry,
               size: AppButtonSize.small,
               onPressed: () {
                 ref.read(explainProvider.notifier).reset();

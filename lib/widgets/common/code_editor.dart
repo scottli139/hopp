@@ -7,6 +7,7 @@ import 'package:highlight/languages/xml.dart';
 import 'package:highlight/languages/htmlbars.dart';
 import 'package:highlight/languages/javascript.dart';
 
+import '../../l10n/l10n.dart';
 import '../../theme/app_metrics.dart';
 import '../../theme/app_syntax_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -295,7 +296,7 @@ class SimpleCodeEditor extends StatelessWidget {
         maxLines: expands ? null : 10,
         expands: expands,
         decoration: InputDecoration(
-          hintText: _getHintText(),
+          hintText: _getHintText(context),
           contentPadding: const EdgeInsets.all(12),
           border: InputBorder.none,
         ),
@@ -305,7 +306,7 @@ class SimpleCodeEditor extends StatelessWidget {
     );
   }
 
-  String _getHintText() {
+  String _getHintText(BuildContext context) {
     switch (language) {
       case CodeLanguage.json:
         return '{\n  "key": "value"\n}';
@@ -316,7 +317,7 @@ class SimpleCodeEditor extends StatelessWidget {
       case CodeLanguage.javascript:
         return 'function example() {\n  return "Hello";\n}';
       case CodeLanguage.text:
-        return 'Enter text...';
+        return context.l10n.editor_enterText;
     }
   }
 }

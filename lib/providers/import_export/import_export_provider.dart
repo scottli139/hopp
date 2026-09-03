@@ -5,6 +5,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../providers/collection/collection_provider.dart';
@@ -139,7 +140,7 @@ class ImportExportNotifier extends StateNotifier<ImportExportState>
         );
       } else {
         state = ImportExportState.error(
-          result.errorMessage ?? '导入失败',
+          result.errorMessage ?? L10nBridge.t.import_failed,
         );
       }
     } on ImportException catch (e) {
@@ -147,7 +148,8 @@ class ImportExportNotifier extends StateNotifier<ImportExportState>
       state = ImportExportState.error(e.message);
     } catch (e, stack) {
       logError('Import failed', e, stack);
-      state = ImportExportState.error('导入失败: $e');
+      state =
+          ImportExportState.error(L10nBridge.t.import_failedWithError('$e'));
     }
   }
 
@@ -181,7 +183,7 @@ class ImportExportNotifier extends StateNotifier<ImportExportState>
         state = ImportExportState.idle();
       } else {
         state = ImportExportState.error(
-          result.errorMessage ?? '解决冲突失败',
+          result.errorMessage ?? L10nBridge.t.import_resolveConflictFailed,
         );
       }
     } on ImportException catch (e) {
@@ -189,7 +191,8 @@ class ImportExportNotifier extends StateNotifier<ImportExportState>
       state = ImportExportState.error(e.message);
     } catch (e, stack) {
       logError('Resolve conflict failed', e, stack);
-      state = ImportExportState.error('解决冲突失败: $e');
+      state = ImportExportState.error(
+          L10nBridge.t.import_resolveConflictFailedWithError('$e'));
     }
   }
 
@@ -218,7 +221,8 @@ class ImportExportNotifier extends StateNotifier<ImportExportState>
       state = ImportExportState.error(e.message);
     } catch (e, stack) {
       logError('Export failed', e, stack);
-      state = ImportExportState.error('导出失败: $e');
+      state =
+          ImportExportState.error(L10nBridge.t.export_failedWithError('$e'));
     }
   }
 
@@ -242,7 +246,8 @@ class ImportExportNotifier extends StateNotifier<ImportExportState>
         }
       }
       if (root == null) {
-        throw ExportException(message: 'Collection not found: $collectionId');
+        throw ExportException(
+            message: L10nBridge.t.export_collectionNotFound(collectionId));
       }
 
       const service = HoppExportService();
@@ -264,7 +269,8 @@ class ImportExportNotifier extends StateNotifier<ImportExportState>
       state = ImportExportState.error(e.message);
     } on Exception catch (e, stack) {
       logError('Export failed', e, stack);
-      state = ImportExportState.error('导出失败: $e');
+      state =
+          ImportExportState.error(L10nBridge.t.export_failedWithError('$e'));
     }
   }
 

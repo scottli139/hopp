@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../services/import_export/import_export_exception.dart';
@@ -200,7 +201,7 @@ class OpenApiImportNotifier extends StateNotifier<OpenApiImportState>
       state = _errorState(e.message);
     } catch (e, stack) {
       logError('OpenAPI parse failed', e, stack);
-      state = _errorState('Parse failed: $e');
+      state = _errorState(L10nBridge.t.openapi_parseFailed('$e'));
     }
   }
 
@@ -235,7 +236,7 @@ class OpenApiImportNotifier extends StateNotifier<OpenApiImportState>
       state = _errorState(e.message);
     } catch (e, stack) {
       logError('OpenAPI fetch failed', e, stack);
-      state = _errorState('Fetch failed: $e');
+      state = _errorState(L10nBridge.t.openapi_fetchFailed('$e'));
     }
   }
 
@@ -258,7 +259,7 @@ class OpenApiImportNotifier extends StateNotifier<OpenApiImportState>
       state = _errorState(e.message);
     } catch (e, stack) {
       logError('OpenAPI parse failed', e, stack);
-      state = _errorState('Parse failed: $e');
+      state = _errorState(L10nBridge.t.openapi_parseFailed('$e'));
     }
   }
 
@@ -368,7 +369,7 @@ class OpenApiImportNotifier extends StateNotifier<OpenApiImportState>
       state = _errorState(e.message);
     } catch (e, stack) {
       logError('OpenAPI import failed', e, stack);
-      state = _errorState('Import failed: $e');
+      state = _errorState(L10nBridge.t.import_failedWithError('$e'));
     }
   }
 
@@ -401,7 +402,8 @@ class OpenApiImportNotifier extends StateNotifier<OpenApiImportState>
       state = _errorState(e.message);
     } catch (e, stack) {
       logError('Resolve conflict failed', e, stack);
-      state = _errorState('Resolve conflict failed: $e');
+      state =
+          _errorState(L10nBridge.t.import_resolveConflictFailedWithError('$e'));
     }
   }
 

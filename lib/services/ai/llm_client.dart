@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 
+import '../../l10n/l10n.dart';
+
 /// LLM 调用异常基类（F9.5）
 sealed class LlmException implements Exception {
   const LlmException(this.message);
@@ -16,16 +18,16 @@ class LlmConnectionException extends LlmException {
   LlmConnectionException([String? detail])
       : super(
           detail == null || detail.isEmpty
-              ? '未检测到本地模型服务，请确认 Ollama / LM Studio 已启动'
-              : '未检测到本地模型服务，请确认 Ollama / LM Studio 已启动（$detail）',
+              ? L10nBridge.t.ai_connectionFailed
+              : L10nBridge.t.ai_connectionFailedDetail(detail),
         );
 
   /// 服务在线但生成超时（首次加载模型 / 机器负载高 / 超大 body）
   LlmConnectionException.timeout([String? detail])
       : super(
           detail == null || detail.isEmpty
-              ? '本地模型响应超时：可能是首次加载模型或机器负载较高，请重试'
-              : '本地模型响应超时：可能是首次加载模型或机器负载较高，请重试（$detail）',
+              ? L10nBridge.t.ai_timeout
+              : L10nBridge.t.ai_timeoutDetail(detail),
         );
 }
 
@@ -43,7 +45,9 @@ class LlmHttpException extends LlmException {
 class LlmResponseException extends LlmException {
   LlmResponseException([String detail = ''])
       : super(
-          detail.isEmpty ? '模型服务返回异常，请稍后重试' : '模型服务返回异常：$detail',
+          detail.isEmpty
+              ? L10nBridge.t.ai_responseError
+              : L10nBridge.t.ai_responseErrorDetail(detail),
         );
 }
 
@@ -127,7 +131,9 @@ class LlmClient {
       if (errResponse != null && errResponse.statusCode != null) {
         throw LlmHttpException(
           errResponse.statusCode!,
-          _extractErrorMessage(errResponse.data) ?? e.message ?? '请求失败',
+          _extractErrorMessage(errResponse.data) ??
+              e.message ??
+              L10nBridge.t.ai_requestFailed,
         );
       }
       // 发送/接收超时：服务在线但生成太慢，与「服务未启动」区分提示
@@ -153,7 +159,7 @@ class LlmClient {
     // 解析 choices[0].message.content；usage 仅用于元数据日志
     final data = response.data;
     if (data is! Map<String, dynamic>) {
-      throw LlmResponseException('响应体不是 JSON 对象');
+      throw LlmResponseException(L10nBridge.t.ai_responseNotJsonObject);
     }
 
     LlmUsage? usage;
@@ -168,17 +174,17 @@ class LlmClient {
 
     final choices = data['choices'];
     if (choices is! List || choices.isEmpty) {
-      throw LlmResponseException('choices 为空');
+      throw LlmResponseException(L10nBridge.t.ai_choicesEmpty);
     }
 
     final first = choices.first;
     if (first is! Map || first['message'] is! Map) {
-      throw LlmResponseException('choices[0].message 结构不符');
+      throw LlmResponseException(L10nBridge.t.ai_choiceMessageMalformed);
     }
 
     final content = (first['message'] as Map)['content'];
     if (content is! String || content.isEmpty) {
-      throw LlmResponseException('choices[0].message.content 为空');
+      throw LlmResponseException(L10nBridge.t.ai_choiceContentEmpty);
     }
 
     // 元数据-only 日志：端点 / 模型 / 耗时 / token 数

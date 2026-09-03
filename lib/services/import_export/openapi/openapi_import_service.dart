@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../l10n/l10n.dart';
 import '../../../models/collection.dart';
 import '../../../models/environment.dart';
 import '../../../models/http_request.dart';
@@ -191,9 +192,9 @@ class OpenApiImportService with LogMixin {
       );
       final data = response.data;
       if (data == null || data.trim().isEmpty) {
-        throw const ImportException(
+        throw ImportException(
           code: ImportErrorCode.unknown,
-          message: '拉取失败: 响应内容为空',
+          message: L10nBridge.t.openapi_fetchEmpty,
         );
       }
       return _parser.parse(data);
@@ -203,7 +204,7 @@ class OpenApiImportService with LogMixin {
       logError('Failed to fetch OpenAPI spec', e);
       throw ImportException(
         code: ImportErrorCode.unknown,
-        message: '拉取失败: ${e.message ?? e}',
+        message: L10nBridge.t.openapi_fetchFailed('${e.message ?? e}'),
       );
     }
   }
@@ -212,9 +213,9 @@ class OpenApiImportService with LogMixin {
   Future<String> readFile(String path) async {
     final file = File(path);
     if (!await file.exists()) {
-      throw const ImportException(
+      throw ImportException(
         code: ImportErrorCode.fileNotFound,
-        message: '文件不存在',
+        message: L10nBridge.t.import_fileNotFound,
       );
     }
     return file.readAsString();
@@ -243,9 +244,9 @@ class OpenApiImportService with LogMixin {
     );
 
     if (spec.operations.isEmpty) {
-      throw const ImportException(
+      throw ImportException(
         code: ImportErrorCode.emptyCollection,
-        message: '文档不包含任何可导入的接口',
+        message: L10nBridge.t.openapi_noOperations,
       );
     }
 
@@ -310,7 +311,8 @@ class OpenApiImportService with LogMixin {
     if (!result.success) {
       throw ImportException(
         code: ImportErrorCode.unknown,
-        message: result.errorMessage ?? '冲突解决失败',
+        message:
+            result.errorMessage ?? L10nBridge.t.openapi_conflictResolveFailed,
       );
     }
 
@@ -354,9 +356,9 @@ class OpenApiImportService with LogMixin {
       return fetchFromUrl(url,
           headerName: headerName, headerValue: headerValue);
     }
-    throw const ImportException(
+    throw ImportException(
       code: ImportErrorCode.unknownFormat,
-      message: '未提供导入来源（filePath / url / content 三选一）',
+      message: L10nBridge.t.openapi_noSource,
     );
   }
 

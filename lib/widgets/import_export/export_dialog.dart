@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/l10n.dart';
 import '../../../models/collection.dart';
 import '../../../providers/collection/collection_provider.dart';
 import '../../../providers/import_export/import_export_provider.dart';
@@ -77,15 +78,15 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
       data: (collections) => _buildDialog(context, state, collections),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => AppDialog(
-        title: 'Export',
+        title: context.l10n.sidebar_export,
         actions: [
           AppButton.primary(
-            label: 'OK',
+            label: context.l10n.common_ok,
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
         child: Text(
-          'Unable to load collection list',
+          context.l10n.export_loadFailed,
           style: AppTextStyles.body13.copyWith(
             color: context.appTheme.textSecondary,
           ),
@@ -103,10 +104,10 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
 
     if (state.isLoading) {
       return AppDialog(
-        title: 'Exporting...',
+        title: context.l10n.export_exporting,
         actions: [
           AppButton.ghost(
-            label: 'Cancel',
+            label: context.l10n.common_cancel,
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -119,7 +120,7 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
                 const CircularProgressIndicator(),
                 const SizedBox(height: AppMetrics.space16),
                 Text(
-                  'Exporting collection...',
+                  context.l10n.export_exportingCollection,
                   style: AppTextStyles.body13.copyWith(color: t.textSecondary),
                 ),
               ],
@@ -131,11 +132,11 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
 
     if (state.exportPath != null) {
       return AppDialog(
-        title: 'Export Successful',
+        title: context.l10n.export_successTitle,
         width: 480,
         actions: [
           AppButton.primary(
-            label: 'Done',
+            label: context.l10n.import_done,
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -144,7 +145,7 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'File saved to:',
+              context.l10n.export_savedTo,
               style: AppTextStyles.body13.copyWith(color: t.textPrimary),
             ),
             const SizedBox(height: AppMetrics.space8),
@@ -167,10 +168,10 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
 
     if (state.error != null) {
       return AppDialog(
-        title: 'Export Failed',
+        title: context.l10n.export_failedTitle,
         actions: [
           AppButton.primary(
-            label: 'OK',
+            label: context.l10n.common_ok,
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -182,15 +183,15 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
     }
 
     return AppDialog(
-      title: 'Export Collection',
+      title: context.l10n.export_dialogTitle,
       width: 480,
       actions: [
         AppButton.ghost(
-          label: 'Cancel',
+          label: context.l10n.common_cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
-          label: 'Export',
+          label: context.l10n.sidebar_export,
           onPressed: _selectedCollectionId == null ? null : _export,
         ),
       ],
@@ -201,24 +202,23 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
           children: [
             // Format selection (F4.4)
             Text(
-              'FORMAT',
+              context.l10n.export_formatHeader,
               style: AppTextStyles.micro10.copyWith(color: t.textTertiary),
             ),
             const SizedBox(height: AppMetrics.space8),
             _buildFormatOption(
               context,
               format: _ExportFormat.postman,
-              title: 'Postman Collection',
+              title: context.l10n.export_formatPostman,
               ext: 'v2.1 .json',
-              description: const TextSpan(
-                text: 'Interchange with Postman / other tools. Assertions and '
-                    'pre-request chains are ',
+              description: TextSpan(
+                text: context.l10n.export_formatPostmanDesc1,
                 children: [
                   TextSpan(
-                    text: 'not',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                    text: context.l10n.export_formatPostmanDescNot,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
-                  TextSpan(text: ' included (format cannot express them).'),
+                  TextSpan(text: context.l10n.export_formatPostmanDesc2),
                 ],
               ),
             ),
@@ -229,8 +229,7 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
               title: 'Hopp CLI',
               ext: '.hopp.json',
               description: TextSpan(
-                text: 'Full fidelity: assertions, pre-request chains, auth and '
-                    'variable pipelines. Run in CI with ',
+                text: context.l10n.export_formatHoppDesc1,
                 style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
                 children: [
                   TextSpan(
@@ -238,7 +237,7 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
                     style:
                         AppTextStyles.code11.copyWith(color: t.textSecondary),
                   ),
-                  const TextSpan(text: '.'),
+                  TextSpan(text: context.l10n.export_formatHoppDesc2),
                 ],
               ),
             ),
@@ -269,8 +268,7 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
                   Expanded(
                     child: Text.rich(
                       TextSpan(
-                        text: 'Secret variable values are exported empty. '
-                            'Inject them in CI with ',
+                        text: context.l10n.export_secretNotice1,
                         style: AppTextStyles.tiny11.copyWith(
                           color: t.textSecondary,
                         ),
@@ -281,8 +279,8 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
                               color: t.textSecondary,
                             ),
                           ),
-                          const TextSpan(
-                            text: ' or process environment variables.',
+                          TextSpan(
+                            text: context.l10n.export_secretNotice2,
                           ),
                         ],
                       ),
@@ -295,7 +293,7 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
 
             // Collection selection
             Text(
-              'Select Collection',
+              context.l10n.import_selectCollection,
               style: AppTextStyles.tiny11.copyWith(
                 fontWeight: FontWeight.w600,
                 color: t.textSecondary,
@@ -304,7 +302,7 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
             const SizedBox(height: AppMetrics.space4),
             AppPopupSelect<String>(
               value: _selectedCollectionId,
-              hint: 'Select Collection',
+              hint: context.l10n.import_selectCollection,
               boxed: true,
               textStyle: AppTextStyles.body13,
               items: [
@@ -325,7 +323,7 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
             // Format version (仅 Postman 格式)
             if (_format == _ExportFormat.postman) ...[
               Text(
-                'Format Version',
+                context.l10n.export_formatVersion,
                 style: AppTextStyles.tiny11.copyWith(
                   fontWeight: FontWeight.w600,
                   color: t.textSecondary,
@@ -355,11 +353,11 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
             // Prettify output
             CheckboxListTile(
               title: Text(
-                'Prettify JSON Output',
+                context.l10n.export_prettify,
                 style: AppTextStyles.body13.copyWith(color: t.textPrimary),
               ),
               subtitle: Text(
-                'Format with indentation for readability',
+                context.l10n.export_prettifyHint,
                 style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
               ),
               value: _prettyPrint,
@@ -479,8 +477,9 @@ class _ExportDialogState extends ConsumerState<ExportDialog> with LogMixin {
     try {
       // Select save path
       final result = await FilePicker.platform.saveFile(
-        dialogTitle:
-            isHoppCli ? 'Save Hopp CLI Collection' : 'Save Postman Collection',
+        dialogTitle: isHoppCli
+            ? context.l10n.export_saveHoppTitle
+            : context.l10n.export_savePostmanTitle,
         fileName: _generateFileName(),
         allowedExtensions: ['json'],
         type: FileType.custom,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hopp/l10n/l10n.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/auth_config.dart';
@@ -55,24 +56,24 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   bool _isSyncingFromUrl = false;
   bool _isSyncingFromParams = false;
 
-  // 常见 HTTP Headers 用于自动完成和提示
-  static const Map<String, String> _commonHeaders = {
-    'Accept': 'Media types that are acceptable for the response',
-    'Accept-Charset': 'Character sets that are acceptable',
-    'Accept-Encoding': 'List of acceptable encodings (gzip, deflate, br)',
-    'Accept-Language': 'List of acceptable human languages',
-    'Authorization': 'Authentication credentials (Bearer token, Basic auth)',
-    'Cache-Control': 'Directives for caching mechanisms',
-    'Connection': 'Control options for the current connection (keep-alive)',
-    'Content-Length': 'The length of the request body in octets',
-    'Content-Type': 'The MIME type of the body (application/json)',
-    'Cookie': 'An HTTP cookie previously sent by the server',
-    'Host': 'The domain name of the server (and optional port)',
-    'Origin': 'Indicates where a fetch originates from',
-    'Referer': 'The address of the previous web page',
-    'User-Agent': 'The user agent string of the client',
-    'X-Requested-With': 'Used to identify AJAX requests',
-  };
+  // 常见 HTTP Headers 用于自动完成和提示（描述文案走 l10n，无 context 用 L10nBridge 取词）
+  static Map<String, String> _commonHeaders() => {
+        'Accept': L10nBridge.t.request_headerDescAccept,
+        'Accept-Charset': L10nBridge.t.request_headerDescAcceptCharset,
+        'Accept-Encoding': L10nBridge.t.request_headerDescAcceptEncoding,
+        'Accept-Language': L10nBridge.t.request_headerDescAcceptLanguage,
+        'Authorization': L10nBridge.t.request_headerDescAuthorization,
+        'Cache-Control': L10nBridge.t.request_headerDescCacheControl,
+        'Connection': L10nBridge.t.request_headerDescConnection,
+        'Content-Length': L10nBridge.t.request_headerDescContentLength,
+        'Content-Type': L10nBridge.t.request_headerDescContentType,
+        'Cookie': L10nBridge.t.request_headerDescCookie,
+        'Host': L10nBridge.t.request_headerDescHost,
+        'Origin': L10nBridge.t.request_headerDescOrigin,
+        'Referer': L10nBridge.t.request_headerDescReferer,
+        'User-Agent': L10nBridge.t.request_headerDescUserAgent,
+        'X-Requested-With': L10nBridge.t.request_headerDescXRequestedWith,
+      };
 
   // Header key 输入框的 FocusNode 和 Overlay 控制
   final Map<int, FocusNode> _keyFocusNodes = {};
@@ -159,10 +160,10 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     final activeTab = ref.watch(activeTabProvider);
 
     if (activeTab == null) {
-      return const AppEmptyState(
+      return AppEmptyState(
         icon: Icons.tab_outlined,
-        title: 'Select a request',
-        subtitle: 'Select a request from the sidebar or create a new one',
+        title: context.l10n.request_selectRequestTitle,
+        subtitle: context.l10n.request_selectRequestSubtitle,
       );
     }
 
@@ -349,7 +350,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 controller: _urlController,
                 focusNode: _urlFocusNode,
                 decoration: InputDecoration(
-                  hintText: 'Enter URL',
+                  hintText: context.l10n.request_urlPlaceholder,
                   hintStyle: AppTextStyles.code12.copyWith(
                     color: appTheme.textTertiary,
                     height: 1.0,
@@ -436,7 +437,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     final theme = Theme.of(context);
     return [
       Tooltip(
-        message: 'Unresolved variables: ${unresolved.join(', ')}',
+        message:
+            context.l10n.request_unresolvedVariables(unresolved.join(', ')),
         child: Icon(
           key: const Key('url_bar_unresolved_warning'),
           Icons.warning_amber_rounded,
@@ -454,7 +456,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     HttpRequest request,
   ) {
     return AppButton.primary(
-      label: 'Send',
+      label: context.l10n.common_send,
       icon: Icons.send,
       onPressed: () => _sendRequest(ref, request),
     );
@@ -470,7 +472,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
     return AppIconButton(
       icon: Icons.save,
-      tooltip: 'Save',
+      tooltip: context.l10n.common_save,
       bordered: true,
       color: isDirty ? context.appTheme.brand : null,
       onPressed: () {
@@ -497,35 +499,38 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           tabs: [
             AppTabItem(
               icon: Icons.tune,
-              label: 'Params',
+              label: context.l10n.request_params,
               count: paramsCount > 0 ? paramsCount : null,
             ),
             AppTabItem(
               icon: Icons.http,
-              label: 'Headers',
+              label: context.l10n.request_headers,
               count: headersCount > 0 ? headersCount : null,
             ),
             AppTabItem(
               icon: Icons.code,
-              label: 'Body',
+              label: context.l10n.request_body,
               dot: hasBodyContent,
             ),
-            const AppTabItem(icon: Icons.lock_outline, label: 'Auth'),
+            AppTabItem(
+                icon: Icons.lock_outline, label: context.l10n.request_auth),
             AppTabItem(
               icon: Icons.account_tree_outlined,
-              label: 'Pre-request',
+              label: context.l10n.request_tabPreRequest,
               count: request.preRequestChain.isNotEmpty
                   ? request.preRequestChain.length
                   : null,
             ),
             AppTabItem(
               icon: Icons.fact_check_outlined,
-              label: 'Assertions',
+              label: context.l10n.request_tabAssertions,
               count: request.assertions.isNotEmpty
                   ? request.assertions.length
                   : null,
             ),
-            const AppTabItem(icon: Icons.settings_outlined, label: 'Settings'),
+            AppTabItem(
+                icon: Icons.settings_outlined,
+                label: context.l10n.settings_title),
           ],
           selectedIndex: _tabController.index,
           onChanged: (index) => _tabController.animateTo(index),
@@ -614,7 +619,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               Expanded(
                 flex: 2,
                 child: Text(
-                  'Key',
+                  context.l10n.request_keyColumn,
                   style: AppTextStyles.tiny11.copyWith(
                     fontWeight: FontWeight.w600,
                     color: appTheme.textTertiary,
@@ -626,7 +631,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               Expanded(
                 flex: 3,
                 child: Text(
-                  'Value',
+                  context.l10n.request_valueColumn,
                   style: AppTextStyles.tiny11.copyWith(
                     fontWeight: FontWeight.w600,
                     color: appTheme.textTertiary,
@@ -638,7 +643,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               Expanded(
                 flex: 2,
                 child: Text(
-                  'Description',
+                  context.l10n.request_descriptionColumn,
                   style: AppTextStyles.tiny11.copyWith(
                     fontWeight: FontWeight.w600,
                     color: appTheme.textTertiary,
@@ -717,7 +722,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               ),
               const SizedBox(width: 6),
               Text(
-                'Add new',
+                context.l10n.request_addNewRow,
                 style: AppTextStyles.caption12.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.w500,
@@ -768,7 +773,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     final keyLayerLink = _keyLayerLinks.putIfAbsent(index, () => LayerLink());
 
     // 检查是否是常见 header
-    final headerDescription = _commonHeaders[item.key];
+    final headerDescription = _commonHeaders()[item.key];
     final isCommonHeader = headerDescription != null;
 
     // 提交当前行到 provider（controller 为唯一实时输入源）。
@@ -812,7 +817,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 controller: keyController,
                 focusNode: keyFocusNode,
                 decoration: InputDecoration(
-                  hintText: 'Key',
+                  hintText: context.l10n.request_keyColumn,
                   isDense: true,
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -862,7 +867,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 TextField(
                   controller: valueController,
                   decoration: InputDecoration(
-                    hintText: _getValueHint(item.key),
+                    hintText: _getValueHint(context, item.key),
                     isDense: true,
                     contentPadding: const EdgeInsets.only(
                       left: 8,
@@ -918,7 +923,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             child: Center(
               child: AppIconButton(
                 icon: Icons.delete_outline,
-                tooltip: 'Delete',
+                tooltip: context.l10n.common_delete,
                 onPressed: () {
                   final newItems = [...items]..removeAt(index);
                   _updateRequest(ref, updateFn(newItems));
@@ -980,7 +985,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     }
 
     // 过滤匹配的 headers
-    final matches = _commonHeaders.keys
+    final matches = _commonHeaders()
+        .keys
         .where((header) => header.toLowerCase().contains(query.toLowerCase()))
         .take(5)
         .toList();
@@ -1058,7 +1064,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   }
 
   /// 获取 value 的提示文本
-  String _getValueHint(String key) {
+  String _getValueHint(BuildContext context, String key) {
     final lowerKey = key.toLowerCase();
     if (lowerKey == 'content-type') {
       return 'application/json';
@@ -1067,7 +1073,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     } else if (lowerKey == 'accept') {
       return 'application/json';
     }
-    return 'Value';
+    return context.l10n.request_valueColumn;
   }
 
   /// 检查是否是自动计算的值
@@ -1148,14 +1154,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           ),
           const SizedBox(height: 16),
           Text(
-            'No body content',
+            context.l10n.request_noBodyContent,
             style: AppTextStyles.body13.copyWith(
               color: theme.colorScheme.outline,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Select a body type to add content',
+            context.l10n.request_selectBodyTypeHint,
             style: AppTextStyles.body13.copyWith(
               color: theme.colorScheme.outline.withValues(alpha: 0.7),
             ),
@@ -1174,7 +1180,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     // TODO: 实现 form-data Key-Value 编辑器（含文件上传）
     return Center(
       child: Text(
-        'form-data editor (coming soon)',
+        context.l10n.request_formDataComingSoon,
         style: AppTextStyles.body13.copyWith(
           color: Theme.of(context).colorScheme.outline,
         ),
@@ -1191,7 +1197,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     // TODO: 实现 x-www-form-urlencoded Key-Value 编辑器
     return Center(
       child: Text(
-        'x-www-form-urlencoded editor (coming soon)',
+        context.l10n.request_urlEncodedComingSoon,
         style: AppTextStyles.body13.copyWith(
           color: Theme.of(context).colorScheme.outline,
         ),
@@ -1257,7 +1263,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       child: Row(
         children: [
           Text(
-            'BODY',
+            context.l10n.request_bodySectionTitle,
             style: AppTextStyles.micro10.copyWith(
               color: t.textTertiary,
               fontWeight: FontWeight.w700,
@@ -1292,14 +1298,14 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
           ),
           const SizedBox(height: 16),
           Text(
-            'Select file',
+            context.l10n.request_selectFile,
             style: AppTextStyles.body13.copyWith(
               color: Theme.of(context).colorScheme.outline,
             ),
           ),
           const SizedBox(height: 8),
           AppButton.secondary(
-            label: 'Choose File',
+            label: context.l10n.request_chooseFile,
             icon: Icons.upload_file,
             onPressed: () {
               // TODO: 打开文件选择器
@@ -1319,7 +1325,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     // TODO: 实现 GraphQL 双栏编辑器
     return Center(
       child: Text(
-        'GraphQL editor (coming soon)',
+        context.l10n.request_graphqlComingSoon,
         style: AppTextStyles.body13.copyWith(
           color: Theme.of(context).colorScheme.outline,
         ),
@@ -1547,10 +1553,11 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       final source = AuthResolver.inheritedFrom(request, collectionsById);
       if (source != null) {
         if (source.auth.type == AuthType.none) {
-          inheritedSummary = '继承自集合「${source.name}」：No Auth，发送时不附加认证信息。';
-        } else {
           inheritedSummary =
-              '当前继承自集合「${source.name}」：${_authTypeLabel(source.auth.type)}。修改请到集合设置。';
+              context.l10n.request_inheritSummaryNoAuth(source.name);
+        } else {
+          inheritedSummary = context.l10n.request_inheritSummary(
+              _authTypeLabel(source.auth.type), source.name);
         }
       }
     }
@@ -1569,15 +1576,15 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
   static String _authTypeLabel(AuthType type) {
     switch (type) {
       case AuthType.inherit:
-        return 'Inherit';
+        return L10nBridge.t.auth_typeInherit;
       case AuthType.none:
-        return 'No Auth';
+        return L10nBridge.t.auth_typeNone;
       case AuthType.bearer:
-        return 'Bearer Token';
+        return L10nBridge.t.auth_typeBearer;
       case AuthType.basic:
-        return 'Basic Auth';
+        return L10nBridge.t.auth_typeBasic;
       case AuthType.apiKey:
-        return 'API Key';
+        return L10nBridge.t.auth_typeApiKey;
     }
   }
 
@@ -1650,8 +1657,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
               children: [
                 _buildSwitchTile(
                   context: context,
-                  title: 'Enable SSL certificate verification',
-                  subtitle: 'Verify the server\'s SSL certificate chain',
+                  title: context.l10n.request_sslVerification,
+                  subtitle: context.l10n.request_sslVerificationHint,
                   value: request.validateCertificates,
                   onChanged: (value) {
                     final updatedRequest = request.copyWith(
@@ -1678,7 +1685,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                       const SizedBox(width: AppMetrics.space8),
                       Expanded(
                         child: Text(
-                          'Disable this option to allow self-signed certificates or bypass certificate errors for testing purposes.',
+                          context.l10n.request_sslDisableNote,
                           style: AppTextStyles.tiny11.copyWith(
                             color: t.textTertiary,
                           ),
@@ -1693,12 +1700,12 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             // 重定向设置
             _buildSettingsSection(
               context: context,
-              title: 'Redirects',
+              title: context.l10n.request_redirectsSection,
               children: [
                 _buildSwitchTile(
                   context: context,
-                  title: 'Follow redirects',
-                  subtitle: 'Automatically follow HTTP 3xx redirects',
+                  title: context.l10n.request_followRedirects,
+                  subtitle: context.l10n.request_followRedirectsHint,
                   value: request.followRedirects,
                   onChanged: (value) {
                     final updatedRequest = request.copyWith(
@@ -1712,9 +1719,8 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
                 if (request.followRedirects)
                   _buildNumberInputTile(
                     context: context,
-                    title: 'Maximum redirects',
-                    subtitle:
-                        'Limit the number of redirects to follow (0 = unlimited)',
+                    title: context.l10n.request_maxRedirects,
+                    subtitle: context.l10n.request_maxRedirectsHint,
                     value: request.maxRedirects,
                     min: 0,
                     max: 50,
@@ -1731,12 +1737,12 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             // 更多设置将在未来版本中实现
             _buildSettingsSection(
               context: context,
-              title: 'Coming Soon',
+              title: context.l10n.request_comingSoonSection,
               children: [
                 _buildDisabledTile(
                   context: context,
-                  title: 'Request timeout',
-                  subtitle: 'Set the request timeout duration',
+                  title: context.l10n.request_timeoutTitle,
+                  subtitle: context.l10n.request_timeoutHint,
                 ),
               ],
             ),
@@ -2024,9 +2030,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       // Show success feedback
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Request saved to collection'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.request_savedToCollection),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -2034,9 +2040,9 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
       AppLogger.error('[RequestEditor] Failed to save request', e);
 
       // Show user-friendly error feedback
-      String errorMessage = 'Failed to save request';
+      String errorMessage = L10nBridge.t.request_saveFailed;
       if (e.toString().contains('collection')) {
-        errorMessage = 'Unable to save: Collection error. Please try again.';
+        errorMessage = L10nBridge.t.request_saveFailedCollection;
       }
 
       // Show error feedback
@@ -2047,7 +2053,7 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 3),
             action: SnackBarAction(
-              label: 'Retry',
+              label: context.l10n.common_retry,
               textColor: AppColors.onBrand,
               onPressed: () => _saveRequest(ref, request),
             ),

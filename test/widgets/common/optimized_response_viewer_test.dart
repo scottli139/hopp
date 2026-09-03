@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hopp/utils/epoch_annotation.dart';
 import 'package:hopp/widgets/common/optimized_response_viewer.dart';
 
+import '../../helpers/test_app.dart';
+
 void main() {
   const jsonWithEpoch = '{\n'
       '  "startTime": 1564156800000,\n'
@@ -17,7 +19,7 @@ void main() {
     ResponseDisplayMode mode = ResponseDisplayMode.full,
     String? contentType,
   }) {
-    return MaterialApp(
+    return hoppTestApp(
       home: Scaffold(
         body: SizedBox(
           width: 800,
@@ -54,13 +56,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining(expectedAnnotation()), findsWidgets);
 
-      await tester.tap(find.byTooltip('隐藏时间戳注释'));
+      await tester.tap(find.byTooltip('Hide timestamp annotations'));
       await tester.pumpAndSettle();
       expect(find.textContaining(expectedAnnotation()), findsNothing);
       // 原文仍在
       expect(find.textContaining('1564156800000'), findsWidgets);
 
-      await tester.tap(find.byTooltip('显示时间戳注释'));
+      await tester.tap(find.byTooltip('Show timestamp annotations'));
       await tester.pumpAndSettle();
       expect(find.textContaining(expectedAnnotation()), findsWidgets);
     });
@@ -96,7 +98,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('→ 20'), findsNothing);
-      expect(find.byTooltip('隐藏时间戳注释'), findsNothing);
+      expect(find.byTooltip('Hide timestamp annotations'), findsNothing);
     });
   });
 }

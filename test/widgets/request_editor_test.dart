@@ -13,6 +13,7 @@ import 'package:hopp/widgets/common/app_controls.dart';
 import 'package:hopp/widgets/request/request_editor.dart';
 import 'package:mockito/mockito.dart';
 
+import '../helpers/test_app.dart';
 import '../mocks/service_mocks.mocks.dart';
 
 void main() {
@@ -36,8 +37,8 @@ void main() {
     }) {
       return UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(
-          home: Scaffold(
+        child: hoppTestApp(
+          home: const Scaffold(
             body: RequestEditor(),
           ),
         ),
@@ -606,7 +607,10 @@ void main() {
         expect(find.text('Basic Auth'), findsOneWidget);
         expect(find.text('API Key'), findsOneWidget);
         // 默认 Inherit：无继承来源时的兜底提示
-        expect(find.text('继承链上未找到认证配置，发送时不附加认证信息。'), findsOneWidget);
+        expect(
+            find.text(
+                'No auth configuration found in the inheritance chain; no credentials will be sent.'),
+            findsOneWidget);
       });
 
       testWidgets('should show bearer token field when Bearer selected',
@@ -661,10 +665,10 @@ void main() {
         await tester.tap(find.text('Pre-request'));
         await tester.pumpAndSettle();
 
-        expect(find.text('前置链'), findsOneWidget);
-        expect(find.text('暂无前置步骤'), findsOneWidget);
-        expect(find.text('添加步骤'), findsOneWidget);
-        expect(find.text('过期策略'), findsOneWidget);
+        expect(find.text('Pre-request Chain'), findsOneWidget);
+        expect(find.text('No pre-request steps yet'), findsOneWidget);
+        expect(find.text('Add Step'), findsOneWidget);
+        expect(find.text('Expiration Policy'), findsOneWidget);
       });
 
       testWidgets('should add step and show step card', (tester) async {
@@ -684,13 +688,14 @@ void main() {
         await tester.tap(find.text('Pre-request'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('添加步骤'));
+        await tester.tap(find.text('Add Step'));
         await tester.pumpAndSettle();
 
         // 步骤卡片：选择器占位 + 提取规则区
-        expect(find.text('选择请求…'), findsOneWidget);
-        expect(find.text('EXTRACT · 从响应提取变量'), findsOneWidget);
-        expect(find.text('添加提取规则'), findsOneWidget);
+        expect(find.text('Select request…'), findsOneWidget);
+        expect(find.text('EXTRACT · Extract variables from response'),
+            findsOneWidget);
+        expect(find.text('Add extraction rule'), findsOneWidget);
 
         // tab 上显示步骤计数
         expect(find.text('1'), findsWidgets);
@@ -716,7 +721,7 @@ void main() {
         await tester.tap(find.text('Pre-request'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('添加提取规则'));
+        await tester.tap(find.text('Add extraction rule'));
         await tester.pumpAndSettle();
 
         // 规则行：来源选择器 + 目标变量输入

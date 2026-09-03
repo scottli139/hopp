@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../utils/app_logger.dart';
@@ -252,12 +253,11 @@ class CollectionNotifier extends StateNotifier<AsyncValue<List<Collection>>> {
         if (collectionIdToUse != null) {
           await addRequestToCollection(collectionIdToUse, request);
         } else {
-          throw Exception(
-              'Failed to create or find a collection to save the request.');
+          throw Exception(L10nBridge.t.collection_saveNoCollection);
         }
       }
     } else {
-      throw Exception('Collections not loaded yet');
+      throw Exception(L10nBridge.t.collection_notLoaded);
     }
   }
 

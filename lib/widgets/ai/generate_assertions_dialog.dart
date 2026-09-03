@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/assertion_rule.dart';
 import '../../models/http_request.dart';
 import '../../models/http_response.dart';
@@ -38,7 +39,7 @@ class GenerateAssertionsButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AppButton.secondary(
-      label: 'AI 生成',
+      label: context.l10n.ai_generateButton,
       icon: Icons.auto_awesome,
       size: AppButtonSize.small,
       onPressed: () => _handlePressed(context, ref),
@@ -50,7 +51,7 @@ class GenerateAssertionsButton extends ConsumerWidget {
     final body = response?.body ?? '';
     if (response == null || response.error != null || body.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先在 Tests 运行或发送请求')),
+        SnackBar(content: Text(context.l10n.ai_needResponseSample)),
       );
       return;
     }
@@ -63,7 +64,7 @@ class GenerateAssertionsButton extends ConsumerWidget {
     ref.read(generateAssertionsProvider.notifier).reset();
     showAppDialog(
       context: context,
-      title: 'AI 生成断言',
+      title: context.l10n.ai_genAssertionsTitle,
       width: 640,
       child: GenerateAssertionsDialogContent(
         request: request,
@@ -199,7 +200,7 @@ class _GenerateAssertionsDialogContentState
       children: [
         // 说明行
         Text(
-          '基于最近一次响应生成 · 已选 $checked/$total 条',
+          context.l10n.ai_genSelected('$checked', '$total'),
           style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
         ),
         const SizedBox(height: AppMetrics.space12),
@@ -219,7 +220,7 @@ class _GenerateAssertionsDialogContentState
               Icon(Icons.warning_amber_rounded, size: 12, color: t.warning),
               const SizedBox(width: AppMetrics.space4 + 2),
               Text(
-                '已丢弃 $_discarded 条不合规建议',
+                context.l10n.ai_genDiscarded('$_discarded'),
                 style: AppTextStyles.tiny11.copyWith(color: t.warning),
               ),
             ],
@@ -231,7 +232,7 @@ class _GenerateAssertionsDialogContentState
         Row(
           children: [
             AppButton.ghost(
-              label: '重新生成',
+              label: context.l10n.ai_regenerate,
               size: AppButtonSize.small,
               onPressed: aiState.isLoading
                   ? null
@@ -242,13 +243,13 @@ class _GenerateAssertionsDialogContentState
             ),
             const Spacer(),
             AppButton.ghost(
-              label: '取消',
+              label: context.l10n.common_cancel,
               size: AppButtonSize.small,
               onPressed: () => Navigator.of(context).pop(),
             ),
             const SizedBox(width: AppMetrics.space8),
             AppButton.primary(
-              label: '添加 $checked 条',
+              label: context.l10n.ai_addChecked('$checked'),
               size: AppButtonSize.small,
               onPressed: aiState.isSuccess && checked > 0 ? _confirm : null,
             ),
@@ -277,7 +278,7 @@ class _GenerateAssertionsDialogContentState
             ),
             const SizedBox(height: AppMetrics.space12),
             Text(
-              '正在生成断言…（本地模型可能需要 10–30 秒）',
+              context.l10n.ai_generatingAssertions,
               style: AppTextStyles.caption12.copyWith(color: t.textTertiary),
             ),
           ],
@@ -303,7 +304,7 @@ class _GenerateAssertionsDialogContentState
                 const SizedBox(width: AppMetrics.space8 - 2),
                 Expanded(
                   child: Text(
-                    aiState.errorMessage ?? 'AI 调用失败',
+                    aiState.errorMessage ?? context.l10n.ai_callFailedGeneric,
                     style: AppTextStyles.caption12.copyWith(color: t.error),
                   ),
                 ),
@@ -311,7 +312,7 @@ class _GenerateAssertionsDialogContentState
             ),
             const SizedBox(height: AppMetrics.space12),
             AppButton.ghost(
-              label: '重试',
+              label: context.l10n.ai_retry,
               size: AppButtonSize.small,
               onPressed: () {
                 ref.read(generateAssertionsProvider.notifier).reset();
@@ -329,7 +330,7 @@ class _GenerateAssertionsDialogContentState
           padding: const EdgeInsets.symmetric(vertical: AppMetrics.space24),
           child: Center(
             child: Text(
-              '没有生成可用的断言建议',
+              context.l10n.ai_noSuggestions,
               style: AppTextStyles.caption12.copyWith(color: t.textTertiary),
             ),
           ),
@@ -374,13 +375,13 @@ class _GenerateAssertionsDialogContentState
         children: [
           const SizedBox(width: 28),
           const SizedBox(width: AppMetrics.space8),
-          headCell('TARGET', width: 108),
+          headCell(context.l10n.ai_colTarget, width: 108),
           const SizedBox(width: AppMetrics.space8),
-          headCell('PATH'),
+          headCell(context.l10n.ai_colPath),
           const SizedBox(width: AppMetrics.space8),
-          headCell('OPERATOR', width: 120),
+          headCell(context.l10n.ai_colOperator, width: 120),
           const SizedBox(width: AppMetrics.space8),
-          headCell('EXPECTED', width: 120),
+          headCell(context.l10n.ai_colExpected, width: 120),
           const SizedBox(width: AppMetrics.space8),
           const SizedBox(width: 24),
         ],
@@ -450,7 +451,7 @@ class _GenerateAssertionsDialogContentState
               enabled: showArg,
               hintText: showArg
                   ? (rule.target == AssertionTarget.header
-                      ? 'Header name'
+                      ? context.l10n.ai_headerNameHint
                       : r'$.data.id')
                   : '—',
               onChanged: (_) {},
@@ -481,14 +482,14 @@ class _GenerateAssertionsDialogContentState
               controller: row.expectedCtrl,
               compact: true,
               enabled: showExpected,
-              hintText: showExpected ? 'Expected value' : '—',
+              hintText: showExpected ? context.l10n.ai_expectedValueHint : '—',
               onChanged: (_) {},
             ),
           ),
           const SizedBox(width: AppMetrics.space8),
           AppIconButton(
             icon: Icons.close,
-            tooltip: 'Delete',
+            tooltip: context.l10n.common_delete,
             danger: true,
             size: 24,
             iconSize: 13,

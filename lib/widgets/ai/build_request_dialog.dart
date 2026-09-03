@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/http_request.dart';
 import '../../providers/ai/ai_provider.dart';
 import '../../providers/settings/settings_provider.dart';
@@ -34,7 +35,7 @@ class NaturalLanguageRequestButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AiSparkleButton(
-      tooltip: '自然语言建请求',
+      tooltip: context.l10n.ai_buildTitle,
       onPressed: () => _handlePressed(context, ref),
     );
   }
@@ -47,7 +48,7 @@ class NaturalLanguageRequestButton extends ConsumerWidget {
     ref.read(buildRequestProvider.notifier).reset();
     showAppDialog(
       context: context,
-      title: '自然语言建请求',
+      title: context.l10n.ai_buildTitle,
       width: 560,
       child: BuildRequestDialogContent(
         currentRequest: currentRequest,
@@ -111,21 +112,21 @@ class _BuildRequestDialogContentState
     if (hasContent) {
       final confirmed = await showAppDialog<bool>(
         context: context,
-        title: '覆盖当前请求内容？',
+        title: context.l10n.ai_overwriteTitle,
         child: Text(
-          '当前请求已有内容，填入草稿将覆盖 URL、Params、Headers 与 Body。',
+          context.l10n.ai_overwriteMessage,
           style: AppTextStyles.body13.copyWith(
             color: context.appTheme.textSecondary,
           ),
         ),
         actions: [
           AppButton.ghost(
-            label: '取消',
+            label: context.l10n.common_cancel,
             size: AppButtonSize.small,
             onPressed: () => Navigator.of(context).pop(false),
           ),
           AppButton.primary(
-            label: '覆盖',
+            label: context.l10n.ai_overwrite,
             size: AppButtonSize.small,
             onPressed: () => Navigator.of(context).pop(true),
           ),
@@ -171,7 +172,7 @@ class _BuildRequestDialogContentState
             ),
             const SizedBox(height: AppMetrics.space12),
             Text(
-              '正在生成…（本地模型可能需要 10–30 秒）',
+              context.l10n.ai_generating,
               style: AppTextStyles.caption12.copyWith(color: t.textTertiary),
             ),
           ],
@@ -198,7 +199,7 @@ class _BuildRequestDialogContentState
                 const SizedBox(width: AppMetrics.space8 - 2),
                 Expanded(
                   child: Text(
-                    aiState.errorMessage ?? 'AI 调用失败',
+                    aiState.errorMessage ?? context.l10n.ai_callFailedGeneric,
                     style: AppTextStyles.caption12.copyWith(color: t.error),
                   ),
                 ),
@@ -206,7 +207,7 @@ class _BuildRequestDialogContentState
             ),
             const SizedBox(height: AppMetrics.space12),
             AppButton.ghost(
-              label: '重试',
+              label: context.l10n.ai_retry,
               size: AppButtonSize.small,
               onPressed: () {
                 ref.read(buildRequestProvider.notifier).reset();
@@ -231,8 +232,7 @@ class _BuildRequestDialogContentState
           fieldKey: const Key('ai_request_description_field'),
           controller: _descCtrl,
           maxLines: 5,
-          hintText: '描述你想创建的请求，例如：POST 创建用户，JSON body 含 '
-              'name 和 email，需要认证',
+          hintText: context.l10n.ai_buildDescHint,
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: AppMetrics.space12),
@@ -252,7 +252,7 @@ class _BuildRequestDialogContentState
               const SizedBox(width: AppMetrics.space8 - 1),
               Expanded(
                 child: Text(
-                  '生成的是草稿，填入编辑器后可继续修改；字段取值仅来自你的描述',
+                  context.l10n.ai_buildDraftNote,
                   style: AppTextStyles.tiny11.copyWith(
                     color: t.textSecondary,
                     height: 1.6,
@@ -285,7 +285,7 @@ class _BuildRequestDialogContentState
     Widget kvRows(List<AiKeyValueDraft> items) {
       if (items.isEmpty) {
         return Text(
-          '0 行',
+          context.l10n.ai_zeroRows,
           style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
         );
       }
@@ -323,8 +323,9 @@ class _BuildRequestDialogContentState
     }
 
     final bodyLabel = draft.bodyType == 'raw'
-        ? 'BODY · ${(draft.rawContentType ?? '').toUpperCase()}'
-        : 'BODY · ${draft.bodyType.toUpperCase()}';
+        ? context.l10n
+            .ai_sectionBody((draft.rawContentType ?? '').toUpperCase())
+        : context.l10n.ai_sectionBody(draft.bodyType.toUpperCase());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,9 +355,9 @@ class _BuildRequestDialogContentState
             ],
           ),
         ),
-        sectionLabel('PARAMS'),
+        sectionLabel(context.l10n.ai_sectionParams),
         kvRows(draft.params),
-        sectionLabel('HEADERS'),
+        sectionLabel(context.l10n.ai_sectionHeaders),
         kvRows(draft.headers),
         if (draft.bodyType != 'none' && (draft.body ?? '').isNotEmpty) ...[
           sectionLabel(bodyLabel),
@@ -383,7 +384,7 @@ class _BuildRequestDialogContentState
       return Row(
         children: [
           AppButton.ghost(
-            label: '重新生成',
+            label: context.l10n.ai_regenerate,
             size: AppButtonSize.small,
             onPressed: () {
               ref.read(buildRequestProvider.notifier).reset();
@@ -392,14 +393,14 @@ class _BuildRequestDialogContentState
           ),
           const Spacer(),
           AppButton.ghost(
-            label: '取消',
+            label: context.l10n.common_cancel,
             size: AppButtonSize.small,
             onPressed: () => Navigator.of(context).pop(),
           ),
           const SizedBox(width: AppMetrics.space8),
           AppButton.primary(
             key: const Key('ai_apply_draft_button'),
-            label: '填入当前请求',
+            label: context.l10n.ai_applyDraft,
             size: AppButtonSize.small,
             onPressed: () => _apply(aiState.result!),
           ),
@@ -411,14 +412,14 @@ class _BuildRequestDialogContentState
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         AppButton.ghost(
-          label: '取消',
+          label: context.l10n.common_cancel,
           size: AppButtonSize.small,
           onPressed: () => Navigator.of(context).pop(),
         ),
         const SizedBox(width: AppMetrics.space8),
         AppButton.primary(
           key: const Key('ai_generate_request_button'),
-          label: '生成',
+          label: context.l10n.ai_generate,
           size: AppButtonSize.small,
           onPressed: aiState.isLoading || _descCtrl.text.trim().isEmpty
               ? null

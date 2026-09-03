@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopp/widgets/common/variable_highlight_controller.dart';
 
+import '../../helpers/test_app.dart';
+
 String _flatten(TextSpan span) {
   final buffer = StringBuffer(span.text ?? '');
   for (final child in span.children ?? const <InlineSpan>[]) {
@@ -20,7 +22,7 @@ void main() {
     ) async {
       final controller = VariableHighlightController()..text = value;
       late String result;
-      await tester.pumpWidget(MaterialApp(
+      await tester.pumpWidget(hoppTestApp(
         home: Builder(
           builder: (context) {
             final span = controller.buildTextSpan(

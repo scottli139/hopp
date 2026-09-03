@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hopp/l10n/l10n.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/pre_request_step.dart';
@@ -88,7 +89,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '前置链',
+                      context.l10n.prerequest_title,
                       style: AppTextStyles.body13.copyWith(
                         color: t.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -96,7 +97,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                     ),
                     const SizedBox(height: AppMetrics.space4),
                     Text(
-                      '发送本请求前依次执行；步骤产出的变量写入「本地」作用域，仅本次会话有效，不污染环境',
+                      context.l10n.prerequest_subtitle,
                       style: AppTextStyles.tiny11.copyWith(
                         color: t.textTertiary,
                         height: 1.5,
@@ -107,7 +108,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
               ),
               const SizedBox(width: AppMetrics.space12),
               AppButton.secondary(
-                label: '添加步骤',
+                label: context.l10n.prerequest_addStep,
                 icon: Icons.add,
                 size: AppButtonSize.small,
                 onPressed: _addStep,
@@ -115,7 +116,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
               if (widget.onTestRun != null) ...[
                 const SizedBox(width: AppMetrics.space8),
                 AppButton.primary(
-                  label: '试运行',
+                  label: context.l10n.prerequest_testRun,
                   icon: Icons.play_arrow,
                   size: AppButtonSize.small,
                   onPressed: widget.chain.isEmpty ? null : widget.onTestRun,
@@ -156,12 +157,12 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
           Icon(Icons.link_off, size: 24, color: t.textTertiary),
           const SizedBox(height: AppMetrics.space8),
           Text(
-            '暂无前置步骤',
+            context.l10n.prerequest_emptyTitle,
             style: AppTextStyles.caption12.copyWith(color: t.textSecondary),
           ),
           const SizedBox(height: AppMetrics.space4),
           Text(
-            '典型场景：先执行「登录」请求，从响应提取 {{token}}',
+            context.l10n.prerequest_emptyHint('{{token}}'),
             style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
           ),
         ],
@@ -239,7 +240,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                     width: 260,
                     child: AppPopupSelect<String>(
                       value: linked?.id,
-                      hint: '选择请求…',
+                      hint: context.l10n.prerequest_selectRequest,
                       boxed: true,
                       compact: true,
                       items: [
@@ -256,7 +257,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                   if (step.requestId.isNotEmpty && linked == null) ...[
                     const SizedBox(width: AppMetrics.space8),
                     Tooltip(
-                      message: '引用的请求已被删除',
+                      message: context.l10n.prerequest_requestDeleted,
                       child:
                           Icon(Icons.error_outline, size: 14, color: t.error),
                     ),
@@ -270,7 +271,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                   const SizedBox(width: AppMetrics.space4),
                   AppIconButton(
                     icon: Icons.delete_outline,
-                    tooltip: '删除步骤',
+                    tooltip: context.l10n.prerequest_deleteStep,
                     danger: true,
                     onPressed: () => _removeStep(index),
                   ),
@@ -293,7 +294,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'EXTRACT · 从响应提取变量',
+                    context.l10n.prerequest_extractHeader,
                     style: AppTextStyles.micro10.copyWith(
                       color: t.textTertiary,
                       fontWeight: FontWeight.w700,
@@ -363,18 +364,18 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
               value: rule.source,
               boxed: true,
               compact: true,
-              items: const [
+              items: [
                 AppPopupSelectEntry(
                   value: ExtractionSourceType.bodyJsonPath,
-                  label: 'Body · JSONPath',
+                  label: context.l10n.prerequest_sourceJsonPath,
                 ),
                 AppPopupSelectEntry(
                   value: ExtractionSourceType.header,
-                  label: 'Header',
+                  label: context.l10n.prerequest_sourceHeader,
                 ),
                 AppPopupSelectEntry(
                   value: ExtractionSourceType.bodyRegex,
-                  label: 'Body · Regex',
+                  label: context.l10n.prerequest_sourceRegex,
                 ),
               ],
               onSelected: (v) =>
@@ -416,7 +417,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
           ),
           AppIconButton(
             icon: Icons.close,
-            tooltip: '删除规则',
+            tooltip: context.l10n.prerequest_deleteRule,
             danger: true,
             size: 24,
             iconSize: 13,
@@ -435,7 +436,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
   Widget _buildAddRuleRow(
       BuildContext context, int stepIndex, PreRequestStep step) {
     return AppButton.secondary(
-      label: '添加提取规则',
+      label: context.l10n.prerequest_addRule,
       icon: Icons.add,
       size: AppButtonSize.small,
       onPressed: () {
@@ -466,7 +467,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
       child: Row(
         children: [
           Text(
-            '过期策略',
+            context.l10n.prerequest_policyTitle,
             style: AppTextStyles.caption12.copyWith(
               color: t.textPrimary,
               fontWeight: FontWeight.w600,
@@ -477,18 +478,18 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
           const SizedBox(width: AppMetrics.space8),
           Expanded(
             child: Text(
-              '收到 401 时自动重跑前置链（关闭 = 发送后手动重发）',
+              context.l10n.prerequest_retry401Hint,
               style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
             ),
           ),
           Tooltip(
-            message: '链产出变量写入本地作用域（会话级），不污染环境',
+            message: context.l10n.prerequest_scopeTooltip,
             child: Row(
               children: [
                 Icon(Icons.dns_outlined, size: 13, color: t.textTertiary),
                 const SizedBox(width: AppMetrics.space4),
                 Text(
-                  '变量作用域：本地',
+                  context.l10n.prerequest_scopeLocal,
                   style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
                 ),
               ],
@@ -526,7 +527,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
             child: Row(
               children: [
                 Text(
-                  '试运行结果',
+                  context.l10n.prerequest_resultTitle,
                   style: AppTextStyles.caption12.copyWith(
                     color: t.textPrimary,
                     fontWeight: FontWeight.w600,
@@ -539,7 +540,9 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                   color: succeeded ? t.success : t.error,
                 ),
                 Text(
-                  succeeded ? ' 全部步骤成功' : ' ${result.firstError ?? "有步骤失败"}',
+                  succeeded
+                      ? ' ${context.l10n.prerequest_allSucceeded}'
+                      : ' ${result.firstError ?? context.l10n.prerequest_someStepsFailed}',
                   style: AppTextStyles.tiny11.copyWith(
                     color: succeeded ? t.success : t.error,
                   ),
@@ -556,7 +559,7 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                     _buildResultRow(context, stepResult),
                 if (result.produced.isEmpty && succeeded)
                   Text(
-                    '未产出变量（检查提取规则）',
+                    context.l10n.prerequest_noVariables,
                     style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
                   ),
               ],
@@ -590,7 +593,8 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
               ),
               const SizedBox(width: AppMetrics.space4),
               Text(
-                '步骤 ${widget.chain.indexOf(step) + 1}',
+                context.l10n
+                    .prerequest_stepN('${widget.chain.indexOf(step) + 1}'),
                 style: AppTextStyles.tiny11.copyWith(
                   color: t.textSecondary,
                   fontWeight: FontWeight.w600,
@@ -642,7 +646,8 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
             Padding(
               padding: const EdgeInsets.only(left: 17, top: 2),
               child: Text(
-                '${rule.path} → {{${rule.targetVariable}}}：未取到值',
+                context.l10n.prerequest_missingValue(
+                    rule.path, '{{${rule.targetVariable}}}'),
                 style: AppTextStyles.tiny11.copyWith(color: t.warning),
               ),
             ),

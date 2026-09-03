@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hopp/l10n/l10n.dart';
 
 import '../../models/environment.dart';
 import '../../providers/providers.dart';
@@ -41,7 +42,7 @@ class VariableFxMenu extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return PopupMenuButton<String>(
-      tooltip: '变量预览与转换函数',
+      tooltip: context.l10n.fx_tooltip,
       iconSize: 16,
       padding: EdgeInsets.zero,
       offset: const Offset(0, 24),
@@ -67,7 +68,7 @@ class VariableFxMenu extends ConsumerWidget {
     final expressions = VariableResolver.scanExpressions(controller.text);
 
     if (expressions.isNotEmpty) {
-      items.add(_buildHeader(context, 'RESOLVED PREVIEW'));
+      items.add(_buildHeader(context, context.l10n.fx_resolvedPreview));
       for (final match in expressions) {
         items.addAll(_buildExpressionPreview(
           context,
@@ -83,7 +84,7 @@ class VariableFxMenu extends ConsumerWidget {
     // ---------- INSERT DYNAMIC VARIABLE ----------
     // ---------- INSERT TRANSFORM ----------
     items
-      ..add(_buildHeader(context, 'INSERT DYNAMIC VARIABLE'))
+      ..add(_buildHeader(context, context.l10n.fx_insertDynamicVariable))
       ..addAll([
         for (final name in VariableResolver.dynamicVariables)
           _dynamicVariableItem(
@@ -93,7 +94,7 @@ class VariableFxMenu extends ConsumerWidget {
           ),
       ])
       ..add(const PopupMenuDivider(height: 1))
-      ..add(_buildHeader(context, 'INSERT TRANSFORM'))
+      ..add(_buildHeader(context, context.l10n.fx_insertTransform))
       ..addAll([
         for (final fn in VariableTransforms.noArgFunctions)
           AppPopupMenu.textItem(
@@ -120,7 +121,7 @@ class VariableFxMenu extends ConsumerWidget {
           enabled: false,
           height: 28,
           child: Text(
-            '输入 {{variable}} 后可在此预览解析结果',
+            context.l10n.fx_emptyHint('{{variable}}'),
             style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
           ),
         ),
@@ -189,8 +190,9 @@ class VariableFxMenu extends ConsumerWidget {
 
     // secret 变量脱敏显示基础值
     final isSecret = !base.startsWith('\$') && _isSecretVariable(base, ref);
-    final baseDisplay =
-        value == null ? '（未定义）' : (isSecret ? '••••••••' : _truncate(value));
+    final baseDisplay = value == null
+        ? context.l10n.fx_undefined
+        : (isSecret ? '••••••••' : _truncate(value));
 
     entries.add(_previewRow(
       context,
@@ -214,7 +216,7 @@ class VariableFxMenu extends ConsumerWidget {
         entries.add(_previewRow(
           context,
           '  ↓ $segment',
-          '（转换失败）',
+          context.l10n.fx_transformFailed,
           valueColor: t.error,
         ));
         failed = true;
@@ -459,8 +461,8 @@ class _TransformParamFormState extends State<_TransformParamForm> {
           padding: const EdgeInsets.only(bottom: AppMetrics.space8),
           child: Text(
             showError
-                ? '格式：[+-]整数+单位（s/m/h/d/w），如 -7d'
-                : '单位：s 秒 / m 分 / h 时 / d 天 / w 周；基准为 10 位秒 / 13 位毫秒 epoch。',
+                ? context.l10n.fx_dateAddFormatError
+                : context.l10n.fx_dateAddUnitHint,
             style: AppTextStyles.tiny11.copyWith(
               color: showError ? t.error : t.textTertiary,
             ),
@@ -482,16 +484,19 @@ class _TransformParamFormState extends State<_TransformParamForm> {
           context,
           label: 'unit',
           value: _floorUnit,
-          entries: const [
-            AppPopupSelectEntry(value: 'hour', label: 'hour · 本小时零点'),
-            AppPopupSelectEntry(value: 'day', label: 'day · 今天零点'),
-            AppPopupSelectEntry(value: 'week', label: 'week · 本周一零点'),
-            AppPopupSelectEntry(value: 'month', label: 'month · 本月 1 号零点'),
+          entries: [
+            AppPopupSelectEntry(
+                value: 'hour', label: context.l10n.fx_floorHour),
+            AppPopupSelectEntry(value: 'day', label: context.l10n.fx_floorDay),
+            AppPopupSelectEntry(
+                value: 'week', label: context.l10n.fx_floorWeek),
+            AppPopupSelectEntry(
+                value: 'month', label: context.l10n.fx_floorMonth),
           ],
           onSelected: (v) => setState(() => _floorUnit = v),
         ),
         Text(
-          '本地时区取整；基准为 10 位秒 / 13 位毫秒 epoch，输出同单位。',
+          context.l10n.fx_dateFloorHint,
           style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
         ),
         const SizedBox(height: AppMetrics.space12),
@@ -506,12 +511,12 @@ class _TransformParamFormState extends State<_TransformParamForm> {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         AppButton.ghost(
-          label: '取消',
+          label: context.l10n.common_cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         const SizedBox(width: AppMetrics.space8),
         AppButton.primary(
-          label: '插入',
+          label: context.l10n.fx_insert,
           onPressed: canInsert
               ? () => Navigator.of(context).pop(buildSnippet())
               : null,
@@ -542,13 +547,13 @@ class _TransformParamFormState extends State<_TransformParamForm> {
             context,
             label: 'key',
             controller: _keyController,
-            hint: '{{aes_key}} · 16/24/32 字节',
+            hint: context.l10n.fx_aesKeyHint('{{aes_key}}'),
           ),
           _buildInputRow(
             context,
             label: 'iv',
             controller: _ivController,
-            hint: '{{aes_iv}} · cbc 需 16 字节',
+            hint: context.l10n.fx_aesIvHint('{{aes_iv}}'),
           ),
           _buildSelectRow(
             context,
@@ -580,7 +585,7 @@ class _TransformParamFormState extends State<_TransformParamForm> {
           ),
         ],
         Text(
-          '参数支持 {{variable}} 引用。',
+          context.l10n.fx_paramVariableHint('{{variable}}'),
           style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
         ),
         const SizedBox(height: AppMetrics.space12),

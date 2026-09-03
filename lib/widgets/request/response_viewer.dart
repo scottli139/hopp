@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hopp/l10n/l10n.dart';
 
 import '../../models/assertion_rule.dart';
 import '../../models/certificate_info.dart';
@@ -256,7 +257,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             ),
             const SizedBox(width: 6),
             Text(
-              'No response yet',
+              context.l10n.response_noResponseYet,
               style: AppTextStyles.tiny11.copyWith(
                 color: appTheme.textTertiary,
               ),
@@ -428,7 +429,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           _buildActionButton(
             context: context,
             icon: Icons.copy,
-            tooltip: 'Copy response',
+            tooltip: context.l10n.response_copyResponse,
             onPressed: response.body != null
                 ? () => _copyToClipboard(response.body!)
                 : null,
@@ -438,7 +439,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
           _buildActionButton(
             context: context,
             icon: Icons.save,
-            tooltip: 'Save response',
+            tooltip: context.l10n.response_saveResponse,
             onPressed: response.body != null ? () {} : null,
           ),
           const SizedBox(width: 8),
@@ -489,10 +490,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
   Widget _buildBodyTab(BuildContext context, HttpResponse? response) {
     if (response?.body == null) {
-      return const AppEmptyState(
+      return AppEmptyState(
         icon: Icons.code_off,
-        title: 'No response',
-        subtitle: 'Send a request to see the response',
+        title: context.l10n.response_noResponseTitle,
+        subtitle: context.l10n.response_noResponse,
       );
     }
 
@@ -514,10 +515,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
 
   Widget _buildHeadersTab(BuildContext context, HttpResponse? response) {
     if (response?.headers.isEmpty ?? true) {
-      return const AppEmptyState(
+      return AppEmptyState(
         icon: Icons.list_alt_outlined,
-        title: 'No headers',
-        subtitle: 'Send a request to see response headers',
+        title: context.l10n.response_noHeadersTitle,
+        subtitle: context.l10n.response_noHeadersHint,
       );
     }
 
@@ -543,7 +544,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 SizedBox(
                   width: 200,
                   child: Text(
-                    'Header Name',
+                    context.l10n.response_headerNameColumn,
                     style: AppTextStyles.micro10.copyWith(
                       color: appTheme.textTertiary,
                     ),
@@ -551,7 +552,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 ),
                 Expanded(
                   child: Text(
-                    'Value',
+                    context.l10n.request_valueColumn,
                     style: AppTextStyles.micro10.copyWith(
                       color: appTheme.textTertiary,
                     ),
@@ -611,10 +612,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   }
 
   Widget _buildCookiesTab(BuildContext context) {
-    return const AppEmptyState(
+    return AppEmptyState(
       icon: Icons.cookie_outlined,
-      title: 'Cookies',
-      subtitle: 'Cookie management coming soon',
+      title: context.l10n.response_cookies,
+      subtitle: context.l10n.response_cookiesComingSoon,
     );
   }
 
@@ -647,10 +648,10 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     final activeTab = ref.watch(activeTabProvider);
 
     if (activeTab == null) {
-      return const AppEmptyState(
+      return AppEmptyState(
         icon: Icons.upload_outlined,
-        title: 'No Request',
-        subtitle: 'Create a request to see details',
+        title: context.l10n.response_noRequestTitle,
+        subtitle: context.l10n.response_noRequestHint,
       );
     }
 
@@ -787,7 +788,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   ) {
     return _buildCompactInfoSection(
       context: context,
-      title: 'Headers (${headers.length})',
+      title: context.l10n.response_headersCount('${headers.length}'),
       children: headers.map((header) {
         return _buildCompactInfoRow(
           context,
@@ -801,7 +802,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   Widget _buildRequestBodySection(BuildContext context, HttpRequest request) {
     return _buildCompactInfoSection(
       context: context,
-      title: 'Body (${request.bodyType})',
+      title: context.l10n.response_bodyWithType(request.bodyType),
       children: [
         Container(
           padding: const EdgeInsets.all(12),
@@ -882,11 +883,15 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             spacing: 16,
             runSpacing: 4,
             children: [
-              _buildUrlInfoChip(context, 'Scheme', requestInfo.scheme),
-              _buildUrlInfoChip(context, 'Host', requestInfo.host),
+              _buildUrlInfoChip(
+                  context, context.l10n.response_urlScheme, requestInfo.scheme),
+              _buildUrlInfoChip(
+                  context, context.l10n.response_urlHost, requestInfo.host),
               if (requestInfo.port != null)
-                _buildUrlInfoChip(context, 'Port', '${requestInfo.port}'),
-              _buildUrlInfoChip(context, 'Path', requestInfo.path),
+                _buildUrlInfoChip(context, context.l10n.response_urlPort,
+                    '${requestInfo.port}'),
+              _buildUrlInfoChip(
+                  context, context.l10n.response_urlPath, requestInfo.path),
             ],
           ),
         ],
@@ -951,7 +956,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         Row(
           children: [
             Text(
-              'Headers (${headers.length})',
+              context.l10n.response_headersCount('${headers.length}'),
               style: AppTextStyles.micro10.copyWith(
                 fontWeight: FontWeight.w600,
                 color: context.appTheme.textPrimary,
@@ -960,7 +965,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             const Spacer(),
             if (userHeaders.isNotEmpty)
               Text(
-                '${userHeaders.length} custom',
+                context.l10n.response_customCount('${userHeaders.length}'),
                 style: AppTextStyles.micro10.copyWith(
                   fontWeight: FontWeight.w400,
                   color: context.appTheme.textTertiary,
@@ -991,7 +996,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               if (userHeaders.isNotEmpty && autoHeaders.isNotEmpty) ...[
                 const AppDivider(height: 16),
                 Text(
-                  'Auto-added Headers',
+                  context.l10n.response_autoAddedHeaders,
                   style: AppTextStyles.micro10.copyWith(
                     color: context.appTheme.textTertiary,
                     fontWeight: FontWeight.w500,
@@ -1051,7 +1056,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                       borderRadius: AppMetrics.br2,
                     ),
                     child: Text(
-                      'auto',
+                      context.l10n.response_autoBadge,
                       style: AppTextStyles.micro10.copyWith(
                         fontWeight: FontWeight.w400,
                         color: context.appTheme.textTertiary,
@@ -1086,7 +1091,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         Row(
           children: [
             Text(
-              'Body',
+              context.l10n.request_body,
               style: AppTextStyles.micro10.copyWith(
                 fontWeight: FontWeight.w600,
                 color: context.appTheme.textPrimary,
@@ -1199,7 +1204,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Total Request Time',
+                  context.l10n.response_totalRequestTime,
                   style: AppTextStyles.tiny11.copyWith(
                     color: context.appTheme.textTertiary,
                   ),
@@ -1227,12 +1232,12 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   ) {
     return _buildCompactInfoSection(
       context: context,
-      title: 'Phase Breakdown',
+      title: context.l10n.response_phaseBreakdown,
       children: [
         if (timing.dnsMs != null)
           _buildTimingRow(
             context: context,
-            label: 'DNS Lookup',
+            label: context.l10n.response_dnsLookup,
             value: timing.dnsFormatted,
             percentage: percentages['dns'] ?? 0,
             color: AppColors.info,
@@ -1240,7 +1245,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         if (timing.tcpMs != null)
           _buildTimingRow(
             context: context,
-            label: 'TCP Connect',
+            label: context.l10n.response_tcpConnect,
             value: timing.tcpFormatted,
             percentage: percentages['tcp'] ?? 0,
             color: AppColors.warning,
@@ -1248,7 +1253,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         if (timing.tlsMs != null)
           _buildTimingRow(
             context: context,
-            label: 'TLS Handshake',
+            label: context.l10n.response_tlsHandshake,
             value: timing.tlsFormatted,
             percentage: percentages['tls'] ?? 0,
             color: AppColors.success,
@@ -1256,7 +1261,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         if (timing.ttfbMs != null)
           _buildTimingRow(
             context: context,
-            label: 'TTFB (Time to First Byte)',
+            label: context.l10n.response_ttfb,
             value: timing.ttfbFormatted,
             percentage: percentages['ttfb'] ?? 0,
             color: AppColors.methodPatch,
@@ -1264,7 +1269,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         if (timing.downloadMs != null && timing.downloadMs! > 0)
           _buildTimingRow(
             context: context,
-            label: 'Download',
+            label: context.l10n.response_download,
             value: timing.downloadFormatted,
             percentage: percentages['download'] ?? 0,
             color: AppColors.methodGet,
@@ -1345,7 +1350,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   ) {
     return _buildCompactInfoSection(
       context: context,
-      title: 'Timeline',
+      title: context.l10n.response_timeline,
       children: [
         const SizedBox(height: 8),
         // 时间线条形图
@@ -1395,7 +1400,8 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             if (timing.ttfbMs != null)
               _buildLegendItem('TTFB', AppColors.methodPatch),
             if (timing.downloadMs != null && timing.downloadMs! > 0)
-              _buildLegendItem('Download', AppColors.methodGet),
+              _buildLegendItem(
+                  context.l10n.response_download, AppColors.methodGet),
           ],
         ),
       ],
@@ -1494,7 +1500,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
             ),
             const SizedBox(width: 4),
             Text(
-              '$passed/$evaluated passed',
+              context.l10n.response_assertionsPassed('$passed', '$evaluated'),
               style: AppTextStyles.tiny11.copyWith(
                 fontWeight: FontWeight.w700,
                 color: color,
@@ -1512,10 +1518,12 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     List<AssertionResult>? assertionResults,
   ) {
     final items = <AppTabItem>[
-      const AppTabItem(icon: Icons.upload_outlined, label: 'Request'),
-      const AppTabItem(icon: Icons.code, label: 'Body'),
-      const AppTabItem(icon: Icons.list, label: 'Headers'),
-      const AppTabItem(icon: Icons.cookie_outlined, label: 'Cookies'),
+      AppTabItem(
+          icon: Icons.upload_outlined, label: context.l10n.response_tabRequest),
+      AppTabItem(icon: Icons.code, label: context.l10n.response_body),
+      AppTabItem(icon: Icons.list, label: context.l10n.response_headers),
+      AppTabItem(
+          icon: Icons.cookie_outlined, label: context.l10n.response_cookies),
     ];
 
     // F4.1：Tests 页签（有结果时显示 n/m 计数，有失败时红色）
@@ -1523,7 +1531,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     items.add(
       AppTabItem(
         icon: Icons.fact_check_outlined,
-        label: 'Tests',
+        label: context.l10n.response_tabTests,
         countLabel: summary != null ? '${summary.$1}/${summary.$2}' : null,
         countError: summary != null && summary.$1 != summary.$2,
       ),
@@ -1532,14 +1540,16 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     // Timing Tab（固定标签，总耗时在内容区展示，避免标签宽度随响应时间跳动）
     if (response?.timingInfo != null) {
       items.add(
-        const AppTabItem(icon: Icons.timer, label: 'Timing'),
+        AppTabItem(icon: Icons.timer, label: context.l10n.response_tabTiming),
       );
     }
 
     // Certificate Tab
     if (response?.certificateInfo != null) {
       items.add(
-        const AppTabItem(icon: Icons.verified_user, label: 'Certificate'),
+        AppTabItem(
+            icon: Icons.verified_user,
+            label: context.l10n.response_tabCertificate),
       );
     }
     return items;
@@ -1578,7 +1588,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     if (request == null || request.assertions.isEmpty) {
       return Center(
         child: Text(
-          'No assertions configured — add them in the Assertions tab.',
+          context.l10n.response_noAssertionsConfigured,
           style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
         ),
       );
@@ -1588,7 +1598,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     if (results == null) {
       return Center(
         child: Text(
-          'Not run yet — send the request to evaluate assertions.',
+          context.l10n.response_assertionsNotRun,
           style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
         ),
       );
@@ -1701,7 +1711,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         code(rule.expected),
       if (!rule.enabled)
         TextSpan(
-          text: ' · disabled',
+          text: ' · ${context.l10n.response_assertionDisabled}',
           style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
         ),
     ];
@@ -1717,9 +1727,11 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
     final expectedDisplay = AssertionEngine.needsExpected(rule.operator)
         ? rule.expected
         : switch (rule.target) {
-            AssertionTarget.jsonPath => 'value at ${rule.targetArg}',
-            AssertionTarget.header => 'header "${rule.targetArg}"',
-            _ => 'present',
+            AssertionTarget.jsonPath =>
+              context.l10n.response_expectedValueAt(rule.targetArg),
+            AssertionTarget.header =>
+              context.l10n.response_expectedHeader(rule.targetArg),
+            _ => context.l10n.response_expectedPresent,
           };
     final actualDisplay = result.actual ?? result.message ?? '—';
 
@@ -1755,9 +1767,9 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         runSpacing: AppMetrics.space4,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          label('EXPECTED'),
+          label(context.l10n.response_expectedLabel),
           chip(expectedDisplay, t.successSoft, t.success),
-          label('ACTUAL'),
+          label(context.l10n.response_actualLabel),
           chip(actualDisplay, t.errorSoft, t.error),
         ],
       ),
@@ -1777,7 +1789,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'RESOLVED',
+            context.l10n.response_resolvedLabel,
             style: AppTextStyles.micro10.copyWith(
               color: t.textTertiary,
               fontWeight: FontWeight.w600,
@@ -1862,7 +1874,9 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isValid ? 'Certificate is valid' : 'Certificate expired',
+                  isValid
+                      ? context.l10n.response_certValid
+                      : context.l10n.response_certExpired,
                   style: AppTextStyles.caption12.copyWith(
                     fontWeight: FontWeight.w600,
                     color: validityColor,
@@ -1871,8 +1885,9 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                 const SizedBox(height: 2),
                 Text(
                   isValid
-                      ? '${cert.remainingDays} days remaining'
-                      : 'Expired on ${cert.validTo}',
+                      ? context.l10n
+                          .response_certDaysRemaining('${cert.remainingDays}')
+                      : context.l10n.response_certExpiredOn('${cert.validTo}'),
                   style: AppTextStyles.micro10.copyWith(
                     color: context.appTheme.textTertiary,
                   ),
@@ -1889,30 +1904,39 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       BuildContext context, CertificateInfo cert) {
     return _buildCompactInfoSection(
       context: context,
-      title: 'Certificate Details',
+      title: context.l10n.response_certDetails,
       children: [
-        _buildCompactInfoRow(context, 'Subject', cert.subject),
-        _buildCompactInfoRow(context, 'Issuer', cert.issuer),
-        _buildCompactInfoRow(context, 'Valid From', cert.validFrom.toString()),
-        _buildCompactInfoRow(context, 'Valid To', cert.validTo.toString()),
         _buildCompactInfoRow(
-            context, 'Signature Algorithm', cert.signatureAlgorithm),
-        _buildCompactInfoRow(context, 'Serial Number', cert.serialNumber),
+            context, context.l10n.response_certSubject, cert.subject),
         _buildCompactInfoRow(
-            context, 'SHA-256 Fingerprint', cert.sha256Fingerprint),
+            context, context.l10n.response_certIssuer, cert.issuer),
+        _buildCompactInfoRow(context, context.l10n.response_certValidFrom,
+            cert.validFrom.toString()),
+        _buildCompactInfoRow(context, context.l10n.response_certValidTo,
+            cert.validTo.toString()),
+        _buildCompactInfoRow(
+            context,
+            context.l10n.response_certSignatureAlgorithm,
+            cert.signatureAlgorithm),
+        _buildCompactInfoRow(
+            context, context.l10n.response_certSerialNumber, cert.serialNumber),
+        _buildCompactInfoRow(
+            context, context.l10n.response_certSha256, cert.sha256Fingerprint),
         if (cert.publicKeyAlgorithm != null)
           _buildCompactInfoRow(
-              context, 'Public Key Algorithm', cert.publicKeyAlgorithm!),
+              context,
+              context.l10n.response_certPublicKeyAlgorithm,
+              cert.publicKeyAlgorithm!),
         if (cert.publicKeyLength != null)
           _buildCompactInfoRow(
             context,
-            'Public Key Length',
-            '${cert.publicKeyLength} bits',
+            context.l10n.response_certPublicKeyLength,
+            context.l10n.response_certBits('${cert.publicKeyLength}'),
           ),
         if (cert.subjectAlternativeNames.isNotEmpty)
           _buildCompactInfoRow(
             context,
-            'Subject Alternative Names',
+            context.l10n.response_certSan,
             cert.subjectAlternativeNames.join(', '),
           ),
       ],
@@ -1923,7 +1947,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
       BuildContext context, CertificateInfo cert) {
     return _buildCompactInfoSection(
       context: context,
-      title: 'Certificate Chain',
+      title: context.l10n.response_certChain,
       children: cert.chain.asMap().entries.map((entry) {
         final index = entry.key;
         final chainCert = entry.value;
@@ -1969,7 +1993,7 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      'Issued by: ${chainCert.issuer}',
+                      context.l10n.response_certIssuedBy(chainCert.issuer),
                       style: AppTextStyles.micro10.copyWith(
                         fontWeight: FontWeight.w400,
                         color: context.appTheme.textTertiary,
@@ -2067,9 +2091,9 @@ class _ResponseViewerState extends ConsumerState<ResponseViewer>
   void _copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Copied to clipboard'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(context.l10n.response_copiedToClipboard),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

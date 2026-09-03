@@ -23,6 +23,7 @@
 | OpenAPI 导入（F9.4）      | Import 对话框 OpenAPI 页签  | 选文件 → 解析预览 → 生成 collection | ✅ v0.11.0 |
 | CLI 导出与运行（F4.4）    | Export 对话框 FORMAT 选项 + `cli/` 运行器 | `.hopp.json` 导出，`hopp run` 跑 CI | ✅ v0.12.0 |
 | AI 助手（F9）             | 主区新增「AI」Tab / 侧面板        | 自然语言 → 生成预览 → 应用           | 📋 M8.5 起 |
+| 多语言（F5.9）           | 设置对话框语言选择（跟随系统 / English / 中文） | 切换即时生效 + 持久化；原型见 [design/i18n_preview.html](./design/i18n_preview.html) | 📋 M8.8 |
 
 ## 3. 关键交互流程
 

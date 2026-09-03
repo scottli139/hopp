@@ -4,6 +4,8 @@ import 'package:hopp/theme/app_theme.dart';
 import 'package:hopp/theme/app_theme_data.dart';
 import 'package:hopp/widgets/common/app_text_field.dart';
 
+import '../../helpers/test_app.dart';
+
 /// AppTextField 规格测试。
 ///
 /// 背景：旧实现用 `SizedBox(height:) + InputDecorator(isDense)` 控高，
@@ -12,7 +14,7 @@ import 'package:hopp/widgets/common/app_text_field.dart';
 /// 量不出来。新实现用显式 Container 盒子，渲染盒 == 绘制盒，可测。
 void main() {
   Widget wrap(Widget child, {bool dark = true}) {
-    return MaterialApp(
+    return hoppTestApp(
       theme: dark ? AppTheme.dark() : AppTheme.light(),
       home: Scaffold(body: Center(child: SizedBox(width: 300, child: child))),
     );

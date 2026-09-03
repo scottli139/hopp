@@ -9,6 +9,7 @@ import 'dart:convert';
 
 import 'package:yaml/yaml.dart';
 
+import '../../../l10n/l10n.dart';
 import '../import_export_exception.dart';
 import 'openapi_spec.dart';
 
@@ -41,17 +42,17 @@ class OpenApiParser {
     final isV3 = openapi != null && openapi.startsWith('3.');
     final isV2 = swagger == '2.0';
     if (!isV3 && !isV2) {
-      throw const ImportException(
+      throw ImportException(
         code: ImportErrorCode.unknownFormat,
-        message: '无法识别为 OpenAPI/Swagger 文档',
+        message: L10nBridge.t.openapi_unknownFormat,
       );
     }
 
     final normalized = isV2 ? _convertV2(doc) : doc;
     if (normalized['paths'] is! Map<String, dynamic>) {
-      throw const ImportException(
+      throw ImportException(
         code: ImportErrorCode.unknownFormat,
-        message: '无法识别为 OpenAPI/Swagger 文档：缺少 paths',
+        message: L10nBridge.t.openapi_missingPaths,
       );
     }
 
@@ -72,18 +73,18 @@ class OpenApiParser {
       try {
         decoded = loadYaml(content);
       } on Exception catch (_) {
-        throw const ImportException(
+        throw ImportException(
           code: ImportErrorCode.unknownFormat,
-          message: '无法识别为 OpenAPI/Swagger 文档',
+          message: L10nBridge.t.openapi_unknownFormat,
         );
       }
     }
 
     final plain = _toPlain(decoded);
     if (plain is! Map<String, dynamic>) {
-      throw const ImportException(
+      throw ImportException(
         code: ImportErrorCode.unknownFormat,
-        message: '无法识别为 OpenAPI/Swagger 文档',
+        message: L10nBridge.t.openapi_unknownFormat,
       );
     }
     return plain;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hopp/l10n/l10n.dart';
 
 import '../../models/auth_config.dart';
 import '../../theme/app_metrics.dart';
@@ -111,7 +112,7 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
                   bottom: AppMetrics.space8,
                 ),
                 child: Text(
-                  'AUTH TYPE',
+                  context.l10n.auth_typeSectionTitle,
                   style: AppTextStyles.micro10.copyWith(
                     color: t.textTertiary,
                     fontWeight: FontWeight.w700,
@@ -124,31 +125,31 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
                   context,
                   type: AuthType.inherit,
                   icon: Icons.move_up,
-                  label: 'Inherit',
+                  label: context.l10n.auth_typeInherit,
                 ),
               _buildTypeItem(
                 context,
                 type: AuthType.none,
                 icon: Icons.block,
-                label: 'No Auth',
+                label: context.l10n.auth_typeNone,
               ),
               _buildTypeItem(
                 context,
                 type: AuthType.bearer,
                 icon: Icons.confirmation_number_outlined,
-                label: 'Bearer Token',
+                label: context.l10n.auth_typeBearer,
               ),
               _buildTypeItem(
                 context,
                 type: AuthType.basic,
                 icon: Icons.lock_outline,
-                label: 'Basic Auth',
+                label: context.l10n.auth_typeBasic,
               ),
               _buildTypeItem(
                 context,
                 type: AuthType.apiKey,
                 icon: Icons.vpn_key_outlined,
-                label: 'API Key',
+                label: context.l10n.auth_typeApiKey,
               ),
             ],
           ),
@@ -219,8 +220,8 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildFormTitle(context, 'Inherit'),
-        _buildFormDesc(context, '跟随所属集合的 Auth 配置。'),
+        _buildFormTitle(context, context.l10n.auth_typeInherit),
+        _buildFormDesc(context, context.l10n.auth_inheritDesc),
         const SizedBox(height: AppMetrics.space16),
         Container(
           padding: const EdgeInsets.all(AppMetrics.space12),
@@ -235,7 +236,7 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
               const SizedBox(width: AppMetrics.space8),
               Expanded(
                 child: Text(
-                  widget.inheritedSummary ?? '继承链上未找到认证配置，发送时不附加认证信息。',
+                  widget.inheritedSummary ?? context.l10n.auth_inheritNotFound,
                   style: AppTextStyles.caption12.copyWith(
                     color: t.textSecondary,
                     height: 1.5,
@@ -253,8 +254,8 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildFormTitle(context, 'No Auth'),
-        _buildFormDesc(context, '不附加认证信息，并阻断对集合配置的继承。'),
+        _buildFormTitle(context, context.l10n.auth_typeNone),
+        _buildFormDesc(context, context.l10n.auth_noneDesc),
       ],
     );
   }
@@ -263,15 +264,15 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildFormTitle(context, 'Bearer Token'),
+        _buildFormTitle(context, context.l10n.auth_typeBearer),
         _buildFormDesc(
           context,
-          '发送时自动附加 Authorization: Bearer <token>，Headers 中同名项将被覆盖。',
+          context.l10n.auth_bearerDesc,
         ),
         const SizedBox(height: AppMetrics.space16),
         _buildFieldRow(
           context,
-          label: 'Token',
+          label: context.l10n.auth_tokenLabel,
           controller: _tokenController,
           hintText: '{{token}}',
           secret: true,
@@ -289,22 +290,22 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildFormTitle(context, 'Basic Auth'),
+        _buildFormTitle(context, context.l10n.auth_typeBasic),
         _buildFormDesc(
           context,
-          '发送时自动附加 Authorization: Basic base64(user:pass)。',
+          context.l10n.auth_basicDesc,
         ),
         const SizedBox(height: AppMetrics.space16),
         _buildFieldRow(
           context,
-          label: 'Username',
+          label: context.l10n.auth_username,
           controller: _usernameController,
           hintText: '{{username}}',
           onChanged: (v) => _emit(widget.auth.copyWith(username: v)),
         ),
         _buildFieldRow(
           context,
-          label: 'Password',
+          label: context.l10n.auth_password,
           controller: _passwordController,
           hintText: '{{password}}',
           secret: true,
@@ -322,19 +323,19 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildFormTitle(context, 'API Key'),
-        _buildFormDesc(context, '自定义 key 注入 Header 或 Query Params。'),
+        _buildFormTitle(context, context.l10n.auth_typeApiKey),
+        _buildFormDesc(context, context.l10n.auth_apiKeyDesc),
         const SizedBox(height: AppMetrics.space16),
         _buildFieldRow(
           context,
-          label: 'Key',
+          label: context.l10n.auth_keyLabel,
           controller: _apiKeyNameController,
           hintText: 'X-API-Key',
           onChanged: (v) => _emit(widget.auth.copyWith(apiKeyName: v)),
         ),
         _buildFieldRow(
           context,
-          label: 'Value',
+          label: context.l10n.request_valueColumn,
           controller: _apiKeyValueController,
           hintText: '{{api_key}}',
           secret: true,
@@ -345,18 +346,18 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
         ),
         _buildFieldLabelRow(
           context,
-          label: 'Add to',
+          label: context.l10n.auth_addTo,
           child: AppPopupSelect<String>(
             value: widget.auth.apiKeyAddTo,
             boxed: true,
-            items: const [
+            items: [
               AppPopupSelectEntry(
                 value: AuthConfig.apiKeyAddToHeader,
-                label: 'Header',
+                label: context.l10n.auth_addToHeader,
               ),
               AppPopupSelectEntry(
                 value: AuthConfig.apiKeyAddToQuery,
-                label: 'Query Params',
+                label: context.l10n.auth_addToQuery,
               ),
             ],
             onSelected: (v) => _emit(widget.auth.copyWith(apiKeyAddTo: v)),
@@ -414,7 +415,9 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
                 icon: revealed ? Icons.visibility_off : Icons.visibility,
                 size: 24,
                 iconSize: 14,
-                tooltip: revealed ? 'Hide' : 'Show',
+                tooltip: revealed
+                    ? context.l10n.common_hide
+                    : context.l10n.common_show,
                 onPressed: onToggleReveal,
               )
             : null,
@@ -450,7 +453,7 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
 
   Widget _buildVariableHint(BuildContext context) {
     return Text(
-      '所有字段支持 {{variable}} 与转换管道（如 {{password | sha1}}）。',
+      context.l10n.auth_variableHint('{{password | sha1}}', '{{variable}}'),
       style: AppTextStyles.tiny11.copyWith(
         color: context.appTheme.textTertiary,
         height: 1.5,

@@ -32,6 +32,9 @@ class StorageService {
   static const String _requestsBoxName = 'requests';
   static const String _environmentsBoxName = 'environments';
   static const String _settingsKey = 'app_settings';
+
+  /// F5.9：language 死默认值 'en' → 'system' 的一次性迁移标记
+  static const String _languageMigratedKey = 'language_migrated_v1';
   static const String _activeEnvironmentIdKey = 'active_environment_id';
 
   /// 全局变量在 environments box 中的保留 ID
@@ -226,9 +229,22 @@ class StorageService {
     final json = _settingsBox?.get(_settingsKey) as Map<dynamic, dynamic>?;
     if (json == null) return AppSettings.defaults();
 
-    return AppSettings.fromJson(
+    final settings = AppSettings.fromJson(
       json.map((k, v) => MapEntry(k.toString(), v)),
     );
+
+    // F5.9 一次性迁移：v0.16 之前 language 是未接线的死默认值 'en'，
+    // 老用户的 'en' 并非主动选择；迁移为 'system'（跟随系统）并写标记，
+    // 之后用户显式选择的 'en' 不再被改写。
+    if (_settingsBox!.get(_languageMigratedKey, defaultValue: false) != true) {
+      await _settingsBox!.put(_languageMigratedKey, true);
+      if (settings.language == 'en') {
+        final migrated = settings.copyWith(language: 'system');
+        await saveSettings(migrated);
+        return migrated;
+      }
+    }
+    return settings;
   }
 
   /// 保存应用设置

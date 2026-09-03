@@ -7,6 +7,7 @@ import 'package:hopp/widgets/common/app_text_field.dart';
 import 'package:hopp/widgets/environment/environment_manager_dialog.dart';
 import 'package:mockito/mockito.dart';
 
+import '../helpers/test_app.dart';
 import '../mocks/service_mocks.mocks.dart';
 
 void main() {
@@ -44,7 +45,7 @@ void main() {
   Widget buildTestWidget(ProviderContainer container) {
     return UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(
+      child: hoppTestApp(
         home: Scaffold(
           body: Builder(
             builder: (context) => Center(

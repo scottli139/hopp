@@ -30,7 +30,7 @@ void main() {
         const settings = AppSettings();
 
         expect(settings.themeMode, equals('system'));
-        expect(settings.language, equals('en'));
+        expect(settings.language, equals('system'));
         expect(settings.editorFontSize, equals(14));
         expect(settings.editorFontFamily, equals('monospace'));
         expect(settings.validateCertificates, isTrue);
@@ -57,7 +57,7 @@ void main() {
         final settings = AppSettings.defaults();
 
         expect(settings.themeMode, equals('system'));
-        expect(settings.language, equals('en'));
+        expect(settings.language, equals('system'));
         expect(settings.editorFontSize, equals(14));
         expect(settings.editorFontFamily, equals('monospace'));
         expect(settings.validateCertificates, isTrue);
@@ -81,7 +81,7 @@ void main() {
         final copied = settings.copyWith(themeMode: 'dark');
 
         expect(copied.themeMode, equals('dark'));
-        expect(copied.language, equals('en')); // unchanged
+        expect(copied.language, equals('system')); // unchanged
       });
 
       test('should copy with new language', () {
@@ -196,7 +196,7 @@ void main() {
         final json = AppSettings.defaults().toJson();
 
         expect(json['themeMode'], equals('system'));
-        expect(json['language'], equals('en'));
+        expect(json['language'], equals('system'));
         expect(json['editorFontSize'], equals(14));
         expect(json['validateCertificates'], equals(true));
       });

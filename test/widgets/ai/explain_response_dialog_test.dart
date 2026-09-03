@@ -14,6 +14,7 @@ import 'package:hopp/providers/settings/settings_provider.dart';
 import 'package:hopp/widgets/ai/explain_response_dialog.dart';
 import 'package:mockito/mockito.dart';
 
+import '../../helpers/test_app.dart';
 import '../../mocks/service_mocks.mocks.dart';
 
 class FakeExplainNotifier extends ExplainNotifier {
@@ -81,7 +82,7 @@ void main() {
     }
 
     Future<void> tapEntry(WidgetTester tester) async {
-      await tester.tap(find.byTooltip('解释响应'));
+      await tester.tap(find.byTooltip('Explain Response'));
       await tester.pump();
     }
 
@@ -95,8 +96,8 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: Scaffold(body: ExplainResponseButton()),
+          child: hoppTestApp(
+            home: const Scaffold(body: ExplainResponseButton()),
           ),
         ),
       );
@@ -105,11 +106,11 @@ void main() {
       await tapEntry(tester);
       await tester.pumpAndSettle();
 
-      expect(find.text('解释响应'), findsWidgets);
+      expect(find.text('Explain Response'), findsWidgets);
       expect(find.text('这是 AI 生成的解释文本'), findsOneWidget);
-      expect(find.text('重新生成'), findsOneWidget);
-      expect(find.text('复制'), findsOneWidget);
-      expect(find.text('关闭'), findsOneWidget);
+      expect(find.text('Regenerate'), findsOneWidget);
+      expect(find.text('Copy'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
     });
 
     testWidgets('loading state shows spinner hint', (tester) async {
@@ -122,8 +123,8 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: Scaffold(body: ExplainResponseButton()),
+          child: hoppTestApp(
+            home: const Scaffold(body: ExplainResponseButton()),
           ),
         ),
       );
@@ -134,7 +135,7 @@ void main() {
       await tester.pump(); // loading 状态重建上树
 
       expect(
-        find.text('正在解释…（本地模型可能需要 10–30 秒）'),
+        find.text('Explaining... (local models may take 10–30 seconds)'),
         findsOneWidget,
       );
 
@@ -153,8 +154,8 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: Scaffold(body: ExplainResponseButton()),
+          child: hoppTestApp(
+            home: const Scaffold(body: ExplainResponseButton()),
           ),
         ),
       );
@@ -164,7 +165,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('未检测到本地模型服务'), findsOneWidget);
-      expect(find.text('重试'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
     });
 
     testWidgets('gate: shows snackbar when AI is not enabled', (tester) async {
@@ -178,8 +179,8 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: Scaffold(body: ExplainResponseButton()),
+          child: hoppTestApp(
+            home: const Scaffold(body: ExplainResponseButton()),
           ),
         ),
       );
@@ -188,8 +189,9 @@ void main() {
       await tapEntry(tester);
       await tester.pumpAndSettle();
 
-      expect(find.text('未启用本地 AI 或未配置模型'), findsOneWidget);
-      expect(find.text('打开设置'), findsOneWidget);
+      expect(find.text('Local AI is not enabled or no model is configured'),
+          findsOneWidget);
+      expect(find.text('Open Settings'), findsOneWidget);
       expect(find.byKey(const Key('explain_response_dialog')), findsNothing);
     });
 
@@ -204,8 +206,8 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: Scaffold(body: ExplainResponseButton()),
+          child: hoppTestApp(
+            home: const Scaffold(body: ExplainResponseButton()),
           ),
         ),
       );
@@ -214,7 +216,7 @@ void main() {
       await tapEntry(tester);
       await tester.pumpAndSettle();
 
-      expect(find.text('暂无响应可解释'), findsOneWidget);
+      expect(find.text('No response to explain'), findsOneWidget);
     });
   });
 }

@@ -10,6 +10,7 @@ import 'package:hopp/services/ai/ai_models.dart';
 import 'package:hopp/widgets/ai/build_request_dialog.dart';
 import 'package:mockito/mockito.dart';
 
+import '../../helpers/test_app.dart';
 import '../../mocks/service_mocks.mocks.dart';
 
 const _draft = AiRequestDraft(
@@ -74,7 +75,10 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(
+          // 对话框固定宽 560；测试字体的拉丁字形宽 ≈ 字号（方块），
+          // 英文按钮文案比真实字体宽近一倍会溢出底栏，缩 0.8 规避。
+          child: hoppTestApp(
+            textScaler: const TextScaler.linear(0.8),
             home: Scaffold(
               body: NaturalLanguageRequestButton(
                 currentRequest: currentRequest,
@@ -88,7 +92,7 @@ void main() {
     }
 
     Future<void> openDialog(WidgetTester tester) async {
-      await tester.tap(find.byTooltip('自然语言建请求'));
+      await tester.tap(find.byTooltip('Build Request with Natural Language'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('build_request_dialog')), findsOneWidget);
     }
@@ -99,7 +103,7 @@ void main() {
         'POST 创建用户，JSON body 含 name 和 email',
       );
       await tester.pump();
-      await tester.tap(find.text('生成'));
+      await tester.tap(find.text('Generate'));
       await tester.pumpAndSettle();
     }
 
@@ -115,8 +119,8 @@ void main() {
 
       // 输入态
       expect(
-        find.text('生成的是草稿，填入编辑器后可继续修改；'
-            '字段取值仅来自你的描述'),
+        find.text(
+            'The result is a draft you can keep editing after applying; field values come only from your description'),
         findsOneWidget,
       );
 
@@ -129,8 +133,8 @@ void main() {
       expect(find.text('Content-Type'), findsOneWidget);
       expect(find.text('BODY · JSON'), findsOneWidget);
       expect(find.text('{"name":"张三"}'), findsOneWidget);
-      expect(find.text('重新生成'), findsOneWidget);
-      expect(find.text('填入当前请求'), findsOneWidget);
+      expect(find.text('Regenerate'), findsOneWidget);
+      expect(find.text('Apply to Current Request'), findsOneWidget);
     });
 
     testWidgets('apply without confirmation when current request is empty',
@@ -148,7 +152,7 @@ void main() {
       await openDialog(tester);
       await generateDraft(tester);
 
-      await tester.tap(find.text('填入当前请求'));
+      await tester.tap(find.text('Apply to Current Request'));
       await tester.pumpAndSettle();
 
       // 空请求直接填入，无覆盖确认
@@ -177,13 +181,13 @@ void main() {
       await openDialog(tester);
       await generateDraft(tester);
 
-      await tester.tap(find.text('填入当前请求'));
+      await tester.tap(find.text('Apply to Current Request'));
       await tester.pumpAndSettle();
 
       // 覆盖确认对话框
-      expect(find.text('覆盖当前请求内容？'), findsOneWidget);
+      expect(find.text('Overwrite current request?'), findsOneWidget);
 
-      await tester.tap(find.text('覆盖'));
+      await tester.tap(find.text('Overwrite'));
       await tester.pumpAndSettle();
 
       expect(applied, isNotNull);
@@ -201,10 +205,11 @@ void main() {
         currentRequest: HttpRequest(id: 'r1', name: 'req'),
       );
 
-      await tester.tap(find.byTooltip('自然语言建请求'));
+      await tester.tap(find.byTooltip('Build Request with Natural Language'));
       await tester.pumpAndSettle();
 
-      expect(find.text('未启用本地 AI 或未配置模型'), findsOneWidget);
+      expect(find.text('Local AI is not enabled or no model is configured'),
+          findsOneWidget);
       expect(find.byKey(const Key('build_request_dialog')), findsNothing);
     });
   });

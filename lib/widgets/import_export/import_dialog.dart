@@ -11,6 +11,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/l10n.dart';
 import '../../../models/collection.dart';
 import '../../../providers/collection/collection_provider.dart';
 import '../../../providers/curl/curl_import_provider.dart';
@@ -101,7 +102,7 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
     final curlState = ref.watch(curlImportProvider);
 
     return AppDialog(
-      title: 'Import',
+      title: context.l10n.sidebar_import,
       width: _dialogWidth(openApiState),
       actions: _buildActions(postmanState, openApiState, curlState),
       footerLeading: _buildFooterLeading(openApiState),
@@ -221,7 +222,7 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
           const CircularProgressIndicator(),
           const SizedBox(height: AppMetrics.space16),
           Text(
-            'Importing...',
+            context.l10n.import_importing,
             style: AppTextStyles.body13.copyWith(color: t.textSecondary),
           ),
         ],
@@ -238,7 +239,7 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
           Icon(Icons.error_outline, size: 48, color: t.error),
           const SizedBox(height: AppMetrics.space16),
           Text(
-            'Import Failed',
+            context.l10n.import_failedTitle,
             style: AppTextStyles.body13.copyWith(
               fontWeight: FontWeight.w500,
               color: t.textPrimary,
@@ -264,7 +265,7 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
           Icon(Icons.check_circle, size: 48, color: t.brand),
           const SizedBox(height: AppMetrics.space16),
           Text(
-            'Import Successful',
+            context.l10n.import_successTitle,
             style: AppTextStyles.body13.copyWith(
               fontWeight: FontWeight.w500,
               color: t.textPrimary,
@@ -273,20 +274,21 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
           const SizedBox(height: AppMetrics.space8),
           if (result.renamed)
             Text(
-              'Collection renamed to: ${result.newName}',
+              context.l10n.import_successRenamed('${result.newName}'),
               style: AppTextStyles.body13.copyWith(color: t.textSecondary),
               textAlign: TextAlign.center,
             )
           else if (result.merged)
             Text(
-              'Collection merged with existing collection',
+              context.l10n.import_successMerged,
               style: AppTextStyles.body13.copyWith(color: t.textSecondary),
               textAlign: TextAlign.center,
             )
           else
             Text(
               result.successMessage ??
-                  'Successfully imported ${result.importedRequestCount} requests',
+                  context.l10n
+                      .import_successCount('${result.importedRequestCount}'),
               style: AppTextStyles.body13.copyWith(color: t.textSecondary),
             ),
         ],
@@ -328,18 +330,18 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
               ),
               const SizedBox(height: AppMetrics.space16),
               Text(
-                'Click to select file or drag and drop here',
+                context.l10n.import_dropZoneHint,
                 style: AppTextStyles.body13.copyWith(color: t.textPrimary),
               ),
               const SizedBox(height: AppMetrics.space8),
               Text(
-                'Supports Postman Collection v2.0/v2.1 and Environment',
+                context.l10n.import_dropZoneSupport,
                 style: AppTextStyles.caption12.copyWith(color: t.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppMetrics.space16),
               AppButton.secondary(
-                label: 'Select File',
+                label: context.l10n.import_selectFile,
                 icon: Icons.folder_open,
                 size: AppButtonSize.small,
                 onPressed: _pickFile,
@@ -378,7 +380,7 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
     if (state.importResult != null && state.importResult!.success) {
       return [
         AppButton.primary(
-          label: 'Done',
+          label: context.l10n.import_done,
           onPressed: () => Navigator.of(context).pop(),
         ),
       ];
@@ -388,11 +390,11 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
     if (state.error != null) {
       return [
         AppButton.ghost(
-          label: 'Cancel',
+          label: context.l10n.common_cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
-          label: 'Retry',
+          label: context.l10n.import_retry,
           onPressed: () {
             ref.read(importExportProvider.notifier).reset();
           },
@@ -404,7 +406,7 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
     if (state.conflict != null) {
       return [
         AppButton.ghost(
-          label: 'Cancel',
+          label: context.l10n.common_cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
       ];
@@ -414,7 +416,7 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
     if (state.isLoading) {
       return [
         AppButton.ghost(
-          label: 'Cancel',
+          label: context.l10n.common_cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
       ];
@@ -423,7 +425,7 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
     // Default state
     return [
       AppButton.ghost(
-        label: 'Cancel',
+        label: context.l10n.common_cancel,
         onPressed: () => Navigator.of(context).pop(),
       ),
     ];
@@ -439,11 +441,11 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
         final headerValue = _headerValueController.text.trim();
         return [
           AppButton.ghost(
-            label: 'Cancel',
+            label: context.l10n.common_cancel,
             onPressed: () => Navigator.of(context).pop(),
           ),
           AppButton.primary(
-            label: 'Parse',
+            label: context.l10n.import_parse,
             onPressed: url.isEmpty
                 ? null
                 : () => notifier.parseUrl(
@@ -458,7 +460,7 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
       case OpenApiImportStage.conflict:
         return [
           AppButton.ghost(
-            label: 'Cancel',
+            label: context.l10n.common_cancel,
             onPressed: () => Navigator.of(context).pop(),
           ),
         ];
@@ -466,33 +468,35 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
         final count = state.selectedIds.length;
         return [
           AppButton.ghost(
-            label: 'Cancel',
+            label: context.l10n.common_cancel,
             onPressed: () => Navigator.of(context).pop(),
           ),
           AppButton.primary(
-            label: 'Import $count ${count == 1 ? 'request' : 'requests'}',
+            label: count == 1
+                ? context.l10n.import_importRequest('$count')
+                : context.l10n.import_importRequests('$count'),
             onPressed: count == 0 ? null : notifier.importSelected,
           ),
         ];
       case OpenApiImportStage.success:
         return [
           AppButton.ghost(
-            label: 'Close',
+            label: context.l10n.common_close,
             onPressed: () => Navigator.of(context).pop(),
           ),
           AppButton.primary(
-            label: 'Open collection',
+            label: context.l10n.import_openCollection,
             onPressed: _openImportedCollection,
           ),
         ];
       case OpenApiImportStage.error:
         return [
           AppButton.ghost(
-            label: 'Back',
+            label: context.l10n.import_back,
             onPressed: notifier.reset,
           ),
           AppButton.ghost(
-            label: 'Cancel',
+            label: context.l10n.common_cancel,
             onPressed: () => Navigator.of(context).pop(),
           ),
         ];
@@ -515,8 +519,11 @@ class _ImportDialogState extends ConsumerState<ImportDialog> with LogMixin {
         if (op.tag != null && state.selectedIds.contains(op.id)) op.tag!,
     };
     return Text(
-      'Selected ${state.selectedIds.length} / ${spec.operations.length}'
-      ' · 1 collection + ${subCollections.length} sub-collections',
+      context.l10n.import_previewStats(
+        '${state.selectedIds.length}',
+        '${subCollections.length}',
+        '${spec.operations.length}',
+      ),
       style: AppTextStyles.caption12.copyWith(color: t.textSecondary),
       overflow: TextOverflow.ellipsis,
     );
@@ -593,7 +600,7 @@ class _ConflictResolutionContentState extends State<ConflictResolutionContent> {
             const SizedBox(width: AppMetrics.space8),
             Expanded(
               child: Text(
-                '"${widget.collectionName}" Already Exists',
+                context.l10n.conflict_title(widget.collectionName),
                 style: AppTextStyles.body13.copyWith(
                   fontWeight: FontWeight.w500,
                   color: t.textPrimary,
@@ -604,17 +611,17 @@ class _ConflictResolutionContentState extends State<ConflictResolutionContent> {
         ),
         const SizedBox(height: AppMetrics.space8),
         Text(
-          'Please choose how to handle this:',
+          context.l10n.conflict_prompt,
           style: AppTextStyles.caption12.copyWith(color: t.textSecondary),
         ),
         const SizedBox(height: AppMetrics.space16),
         RadioListTile<ConflictResolution>(
           title: Text(
-            'Rename Import',
+            context.l10n.conflict_rename,
             style: AppTextStyles.body13.copyWith(color: t.textPrimary),
           ),
           subtitle: Text(
-            'Rename imported collection to "Collection Name (1)"',
+            context.l10n.conflict_renameSubtitle('Collection Name'),
             style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
           ),
           value: ConflictResolution.rename,
@@ -629,11 +636,11 @@ class _ConflictResolutionContentState extends State<ConflictResolutionContent> {
         ),
         RadioListTile<ConflictResolution>(
           title: Text(
-            'Overwrite Existing',
+            context.l10n.conflict_overwrite,
             style: AppTextStyles.body13.copyWith(color: t.textPrimary),
           ),
           subtitle: Text(
-            'Replace existing collection with imported content',
+            context.l10n.conflict_overwriteSubtitle,
             style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
           ),
           value: ConflictResolution.overwrite,
@@ -648,11 +655,11 @@ class _ConflictResolutionContentState extends State<ConflictResolutionContent> {
         ),
         RadioListTile<ConflictResolution>(
           title: Text(
-            'Merge Collections',
+            context.l10n.conflict_merge,
             style: AppTextStyles.body13.copyWith(color: t.textPrimary),
           ),
           subtitle: Text(
-            'Keep existing requests and add new ones',
+            context.l10n.conflict_mergeSubtitle,
             style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
           ),
           value: ConflictResolution.merge,
@@ -667,11 +674,11 @@ class _ConflictResolutionContentState extends State<ConflictResolutionContent> {
         ),
         RadioListTile<ConflictResolution>(
           title: Text(
-            'Skip',
+            context.l10n.conflict_skip,
             style: AppTextStyles.body13.copyWith(color: t.textPrimary),
           ),
           subtitle: Text(
-            'Cancel import for this collection',
+            context.l10n.conflict_skipSubtitle,
             style: AppTextStyles.tiny11.copyWith(color: t.textSecondary),
           ),
           value: ConflictResolution.skip,
@@ -689,12 +696,12 @@ class _ConflictResolutionContentState extends State<ConflictResolutionContent> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             AppButton.ghost(
-              label: 'Skip',
+              label: context.l10n.conflict_skip,
               onPressed: () => widget.onResolve(ConflictResolution.skip),
             ),
             const SizedBox(width: AppMetrics.space8),
             AppButton.primary(
-              label: 'Confirm',
+              label: context.l10n.conflict_confirm,
               onPressed: () => widget.onResolve(_selectedResolution),
             ),
           ],

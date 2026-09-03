@@ -5,6 +5,8 @@ import 'package:hopp/widgets/common/app_button.dart';
 import 'package:hopp/widgets/common/app_dialog.dart';
 import 'package:hopp/widgets/common/app_divider.dart';
 
+import '../../helpers/test_app.dart';
+
 void main() {
   group('AppDivider', () {
     /// 宽度塌缩回归（UI 审计发现）：无子节点的 DecoratedBox 在宽松
@@ -13,7 +15,7 @@ void main() {
     testWidgets('horizontal divider expands to full width in loose column',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        hoppTestApp(
           theme: AppTheme.light(),
           home: Scaffold(
             body: Center(
@@ -40,7 +42,7 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(
-        MaterialApp(
+        hoppTestApp(
           theme: AppTheme.light(),
           home: Scaffold(
             body: Center(

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../providers/providers.dart';
@@ -28,6 +29,7 @@ import '../common/app_popup_menu.dart';
 import '../common/app_segmented_control.dart';
 import '../common/app_text_field.dart';
 import '../environment/environment_manager_dialog.dart';
+import '../settings/app_settings_dialog.dart';
 import '../environment/environment_switcher.dart';
 
 class Sidebar extends ConsumerStatefulWidget {
@@ -168,7 +170,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
                   ),
                   error: (err, _) => Center(
                     child: Text(
-                      'Error: $err',
+                      context.l10n.sidebar_error(err),
                       style: AppTextStyles.body13.copyWith(
                         color: AppColors.error,
                       ),
@@ -181,7 +183,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
               ),
               error: (err, _) => Center(
                 child: Text(
-                  'Error: $err',
+                  context.l10n.sidebar_error(err),
                   style: AppTextStyles.body13.copyWith(
                     color: AppColors.error,
                   ),
@@ -212,21 +214,21 @@ class _SidebarState extends ConsumerState<Sidebar> {
         children: [
           AppSegmentedControl<String>(
             value: themeMode,
-            items: const [
+            items: [
               AppSegmentedItem(
                 value: 'system',
                 icon: Icons.brightness_auto_outlined,
-                tooltip: 'System theme',
+                tooltip: context.l10n.sidebar_themeSystem,
               ),
               AppSegmentedItem(
                 value: 'light',
                 icon: Icons.light_mode_outlined,
-                tooltip: 'Light theme',
+                tooltip: context.l10n.sidebar_themeLight,
               ),
               AppSegmentedItem(
                 value: 'dark',
                 icon: Icons.dark_mode_outlined,
-                tooltip: 'Dark theme',
+                tooltip: context.l10n.sidebar_themeDark,
               ),
             ],
             onChanged: (mode) =>
@@ -237,8 +239,17 @@ class _SidebarState extends ConsumerState<Sidebar> {
           const Spacer(),
           // F9.5：AI 设置入口
           AiSparkleButton(
-            tooltip: 'AI 设置',
+            tooltip: context.l10n.sidebar_aiSettings,
             onPressed: () => openAiSettingsDialog(context),
+          ),
+          // F5.9：应用设置入口（主题 / 语言 / 界面缩放）
+          IconButton(
+            icon: Icon(Icons.settings_outlined,
+                size: 18, color: context.appTheme.textTertiary),
+            tooltip: context.l10n.settings_title,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            onPressed: () => openAppSettingsDialog(context),
           ),
         ],
       ),
@@ -253,7 +264,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
     return PopupMenuButton<double>(
       icon: Icon(Icons.format_size,
           size: 18, color: context.appTheme.textTertiary),
-      tooltip: '界面缩放',
+      tooltip: context.l10n.settings_uiScale,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
       offset: const Offset(0, 28),
@@ -308,7 +319,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
   Widget _buildQuickAddButton(BuildContext context) {
     return AppIconButton(
       icon: Icons.add,
-      tooltip: 'New Collection',
+      tooltip: context.l10n.sidebar_newCollection,
       iconSize: 18,
       onPressed: () => _showNewCollectionDialog(context),
     );
@@ -317,8 +328,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
   Widget _buildSearch(BuildContext context) {
     // 与环境选择器左缘对齐（8px 水平边距 + 8px 底距，设计原型规格）；
     // 高度 30px 与上方环境选择器齐平
-    return const Padding(
-      padding: EdgeInsets.only(
+    return Padding(
+      padding: const EdgeInsets.only(
         left: AppMetrics.space8,
         right: AppMetrics.space8,
         bottom: AppMetrics.space8,
@@ -326,7 +337,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
       child: AppTextField(
         compact: true,
         height: 30,
-        hintText: 'Filter...',
+        hintText: context.l10n.sidebar_searchHint,
       ),
     );
   }
@@ -449,10 +460,10 @@ class _SidebarState extends ConsumerState<Sidebar> {
   Widget _buildEmptyState(BuildContext context) {
     return AppEmptyState(
       icon: Icons.folder_open_outlined,
-      title: 'No collections yet',
-      subtitle: 'Collections group your API requests',
+      title: context.l10n.sidebar_emptyTitle,
+      subtitle: context.l10n.sidebar_emptySubtitle,
       action: AppButton.primary(
-        label: 'Create Collection',
+        label: context.l10n.sidebar_createCollection,
         icon: Icons.add,
         size: AppButtonSize.small,
         onPressed: () => _showNewCollectionDialog(context),
@@ -724,7 +735,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
       children: [
         AppIconButton(
           icon: Icons.check,
-          tooltip: 'Save',
+          tooltip: context.l10n.common_save,
           color: AppColors.success,
           size: 20,
           iconSize: 14,
@@ -733,7 +744,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
         const SizedBox(width: 4),
         AppIconButton(
           icon: Icons.close,
-          tooltip: 'Cancel',
+          tooltip: context.l10n.common_cancel,
           color: AppColors.error,
           size: 20,
           iconSize: 14,
@@ -774,13 +785,13 @@ class _SidebarState extends ConsumerState<Sidebar> {
               theme: theme,
               value: 'rename',
               icon: Icons.edit_outlined,
-              label: 'Rename',
+              label: context.l10n.sidebar_rename,
             ),
             AppPopupMenu.iconItem(
               theme: theme,
               value: 'delete',
               icon: Icons.delete_outline,
-              label: 'Delete',
+              label: context.l10n.common_delete,
               iconColor: AppColors.error,
               labelColor: AppColors.error,
             ),
@@ -885,13 +896,13 @@ class _SidebarState extends ConsumerState<Sidebar> {
           theme: theme,
           value: 'rename',
           icon: Icons.edit_outlined,
-          label: 'Rename',
+          label: context.l10n.sidebar_rename,
         ),
         AppPopupMenu.iconItem(
           theme: theme,
           value: 'delete',
           icon: Icons.delete_outline,
-          label: 'Delete',
+          label: context.l10n.common_delete,
           iconColor: AppColors.error,
           labelColor: AppColors.error,
         ),
@@ -912,20 +923,20 @@ class _SidebarState extends ConsumerState<Sidebar> {
   ) {
     showAppDialog(
       context: context,
-      title: 'Delete Request',
+      title: context.l10n.sidebar_deleteRequestTitle,
       child: Text(
-        'Are you sure you want to delete "${request.name}"? This action cannot be undone.',
+        context.l10n.sidebar_deleteRequestBody(request.name),
         style: AppTextStyles.body13.copyWith(
           color: context.appTheme.textSecondary,
         ),
       ),
       actions: [
         AppButton.ghost(
-          label: 'Cancel',
+          label: context.l10n.common_cancel,
           onPressed: () => Navigator.pop(context),
         ),
         AppButton.danger(
-          label: 'Delete',
+          label: context.l10n.common_delete,
           onPressed: () {
             // 删除请求
             _deleteRequest(request);
@@ -981,14 +992,14 @@ class _SidebarState extends ConsumerState<Sidebar> {
               theme: theme,
               value: 'add_request',
               icon: Icons.add,
-              label: 'Add Request',
+              label: context.l10n.sidebar_addRequest,
               iconColor: AppColors.brand,
             ),
             AppPopupMenu.iconItem(
               theme: theme,
               value: 'add_folder',
               icon: Icons.create_new_folder_outlined,
-              label: 'Add Folder',
+              label: context.l10n.sidebar_addFolder,
               iconColor: AppColors.info,
             ),
             const PopupMenuDivider(height: 1),
@@ -996,25 +1007,25 @@ class _SidebarState extends ConsumerState<Sidebar> {
               theme: theme,
               value: 'export',
               icon: Icons.upload,
-              label: 'Export',
+              label: context.l10n.sidebar_export,
             ),
             AppPopupMenu.iconItem(
               theme: theme,
               value: 'settings',
               icon: Icons.settings_outlined,
-              label: 'Settings',
+              label: context.l10n.settings_title,
             ),
             AppPopupMenu.iconItem(
               theme: theme,
               value: 'rename',
               icon: Icons.edit_outlined,
-              label: 'Rename',
+              label: context.l10n.sidebar_rename,
             ),
             AppPopupMenu.iconItem(
               theme: theme,
               value: 'delete',
               icon: Icons.delete_outline,
-              label: 'Delete',
+              label: context.l10n.common_delete,
               iconColor: AppColors.error,
               labelColor: AppColors.error,
             ),
@@ -1066,8 +1077,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
   void _showAddFolderDialog(BuildContext context, Collection parentCollection) {
     _showNameInputDialog(
       context,
-      title: 'New Folder',
-      hintText: 'Enter folder name',
+      title: context.l10n.sidebar_newFolder,
+      hintText: context.l10n.sidebar_folderNameHint,
       onCreate: (name) {
         final newFolder = Collection.empty().copyWith(
           name: name,
@@ -1081,8 +1092,8 @@ class _SidebarState extends ConsumerState<Sidebar> {
   void _showNewCollectionDialog(BuildContext context) {
     _showNameInputDialog(
       context,
-      title: 'New Collection',
-      hintText: 'Enter collection name',
+      title: context.l10n.sidebar_newCollection,
+      hintText: context.l10n.sidebar_collectionNameHint,
       onCreate: (name) {
         ref.read(collectionProvider.notifier).addCollection(
               Collection.empty().copyWith(name: name),
@@ -1121,11 +1132,11 @@ class _SidebarState extends ConsumerState<Sidebar> {
       ),
       actions: [
         AppButton.ghost(
-          label: 'Cancel',
+          label: context.l10n.common_cancel,
           onPressed: () => Navigator.pop(context),
         ),
         AppButton.primary(
-          label: 'Create',
+          label: context.l10n.common_create,
           onPressed: submit,
         ),
       ],
@@ -1138,20 +1149,20 @@ class _SidebarState extends ConsumerState<Sidebar> {
   ) {
     showAppDialog(
       context: context,
-      title: 'Delete Collection',
+      title: context.l10n.sidebar_deleteCollectionTitle,
       child: Text(
-        'Are you sure you want to delete "${collection.name}"? This action cannot be undone.',
+        context.l10n.sidebar_deleteCollectionBody(collection.name),
         style: AppTextStyles.body13.copyWith(
           color: context.appTheme.textSecondary,
         ),
       ),
       actions: [
         AppButton.ghost(
-          label: 'Cancel',
+          label: context.l10n.common_cancel,
           onPressed: () => Navigator.pop(context),
         ),
         AppButton.danger(
-          label: 'Delete',
+          label: context.l10n.common_delete,
           onPressed: () {
             ref.read(collectionProvider.notifier).deleteCollection(
                   collection.id,
@@ -1206,27 +1217,27 @@ class _SidebarState extends ConsumerState<Sidebar> {
           theme: theme,
           value: 'new',
           icon: Icons.add,
-          label: 'New Collection',
+          label: context.l10n.sidebar_newCollection,
           iconColor: AppColors.brand,
         ),
         AppPopupMenu.iconItem(
           theme: theme,
           value: 'import',
           icon: Icons.download,
-          label: 'Import…',
+          label: context.l10n.sidebar_importMenu,
         ),
         AppPopupMenu.iconItem(
           theme: theme,
           value: 'refresh',
           icon: Icons.refresh,
-          label: 'Refresh',
+          label: context.l10n.sidebar_refresh,
         ),
         const PopupMenuDivider(height: 1),
         AppPopupMenu.iconItem(
           theme: theme,
           value: 'about',
           icon: Icons.info_outline,
-          label: 'About',
+          label: context.l10n.sidebar_about,
         ),
       ],
     );
@@ -1262,7 +1273,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
 
     showAppDialog(
       context: context,
-      title: 'About',
+      title: context.l10n.sidebar_about,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1291,7 +1302,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
           const SizedBox(height: 16),
           // App name
           Text(
-            'Hopp',
+            context.l10n.appName,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w700,
               foreground: Paint()
@@ -1308,7 +1319,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
           const SizedBox(height: 4),
           // Tagline
           Text(
-            'Hop to your APIs',
+            context.l10n.sidebar_aboutTagline,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: context.appTheme.textPrimary.withValues(alpha: 0.6),
               fontStyle: FontStyle.italic,
@@ -1320,11 +1331,11 @@ class _SidebarState extends ConsumerState<Sidebar> {
           // Version
           _buildInfoRow(
             context,
-            'Version',
+            context.l10n.sidebar_aboutVersion,
             ref.watch(appVersionProvider).valueOrNull ?? kFallbackAppVersion,
           ),
           const SizedBox(height: 8),
-          _buildInfoRow(context, 'Platform', 'macOS'),
+          _buildInfoRow(context, context.l10n.sidebar_aboutPlatform, 'macOS'),
           const SizedBox(height: 8),
           _buildInfoRow(context, 'Flutter', '3.27.x'),
           const SizedBox(height: 16),
@@ -1341,7 +1352,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
               ),
               const SizedBox(width: 6),
               Text(
-                'Powered by AI · Built with Flutter',
+                context.l10n.sidebar_aboutFooter,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.primary,
                   fontWeight: FontWeight.w500,
@@ -1351,7 +1362,7 @@ class _SidebarState extends ConsumerState<Sidebar> {
           ),
           const SizedBox(height: 4),
           Text(
-            '© 2026 Hopp. All rights reserved.',
+            context.l10n.sidebar_aboutCopyright,
             style: AppTextStyles.tiny11.copyWith(
               color: context.appTheme.textPrimary.withValues(alpha: 0.4),
             ),
@@ -1360,11 +1371,11 @@ class _SidebarState extends ConsumerState<Sidebar> {
       ),
       actions: [
         AppButton.ghost(
-          label: 'Close',
+          label: context.l10n.common_close,
           onPressed: () => Navigator.pop(context),
         ),
         AppButton.primary(
-          label: 'More Info',
+          label: context.l10n.sidebar_aboutMoreInfo,
           onPressed: () {
             Navigator.pop(context);
             Navigator.of(context).push(

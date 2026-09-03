@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hopp/l10n/l10n.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/assertion_rule.dart';
@@ -17,13 +18,13 @@ import '../ai/generate_assertions_dialog.dart';
 class AssertionLabels {
   AssertionLabels._();
 
-  static const Map<AssertionTarget, String> target = {
-    AssertionTarget.status: 'Status code',
-    AssertionTarget.header: 'Header',
-    AssertionTarget.body: 'Body text',
-    AssertionTarget.jsonPath: 'JSONPath',
-    AssertionTarget.responseTime: 'Response time',
-  };
+  static Map<AssertionTarget, String> get target => {
+        AssertionTarget.status: L10nBridge.t.assertion_targetStatus,
+        AssertionTarget.header: L10nBridge.t.assertion_targetHeader,
+        AssertionTarget.body: L10nBridge.t.assertion_targetBody,
+        AssertionTarget.jsonPath: L10nBridge.t.assertion_targetJsonPath,
+        AssertionTarget.responseTime: L10nBridge.t.assertion_targetResponseTime,
+      };
 
   /// 与原型一致：单词操作符用文案，比较操作用符号
   static const Map<AssertionOperator, String> operator = {
@@ -107,7 +108,7 @@ class _AssertionEditorState extends State<AssertionEditor> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Response assertions',
+                      context.l10n.assertion_title,
                       style: AppTextStyles.body13.copyWith(
                         color: t.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -120,14 +121,16 @@ class _AssertionEditorState extends State<AssertionEditor> {
                           color: t.textTertiary,
                           height: 1.5,
                         ),
-                        children: const [
-                          TextSpan(text: 'Evaluated after every send. '),
-                          TextSpan(text: 'Expected values support '),
-                          WidgetSpan(
+                        children: [
+                          TextSpan(text: context.l10n.assertion_noteEvaluated),
+                          TextSpan(
+                              text: context.l10n.assertion_noteExpectedPrefix),
+                          const WidgetSpan(
                             alignment: PlaceholderAlignment.middle,
                             child: _InlineCode('{{var}}'),
                           ),
-                          TextSpan(text: '.'),
+                          TextSpan(
+                              text: context.l10n.assertion_noteExpectedSuffix),
                         ],
                       ),
                     ),
@@ -142,7 +145,7 @@ class _AssertionEditorState extends State<AssertionEditor> {
               ),
               const SizedBox(width: AppMetrics.space8),
               AppButton.secondary(
-                label: 'Add assertion',
+                label: context.l10n.assertion_add,
                 icon: Icons.add,
                 size: AppButtonSize.small,
                 onPressed: _addAssertion,
@@ -179,20 +182,19 @@ class _AssertionEditorState extends State<AssertionEditor> {
                 color: t.textTertiary,
                 height: 1.5,
               ),
-              children: const [
-                TextSpan(text: 'Operators are filtered by target — e.g. '),
-                WidgetSpan(
+              children: [
+                TextSpan(text: context.l10n.assertion_hintPrefix),
+                const WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
                   child: _InlineCode('exists'),
                 ),
-                TextSpan(text: ' needs no expected value; '),
-                WidgetSpan(
+                TextSpan(text: context.l10n.assertion_hintNoExpected),
+                const WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
                   child: _InlineCode('< >'),
                 ),
                 TextSpan(
-                  text: ' apply to Status code / Response time. '
-                      'Response time is in milliseconds.',
+                  text: context.l10n.assertion_hintComparison,
                 ),
               ],
             ),
@@ -230,13 +232,13 @@ class _AssertionEditorState extends State<AssertionEditor> {
         children: [
           const SizedBox(width: 28),
           const SizedBox(width: AppMetrics.space8),
-          headCell('TARGET', width: 128),
+          headCell(context.l10n.assertion_colTarget, width: 128),
           const SizedBox(width: AppMetrics.space8),
-          headCell('NAME / PATH', width: 160),
+          headCell(context.l10n.assertion_colNamePath, width: 160),
           const SizedBox(width: AppMetrics.space8),
-          headCell('OPERATOR', width: 128),
+          headCell(context.l10n.assertion_colOperator, width: 128),
           const SizedBox(width: AppMetrics.space8),
-          headCell('EXPECTED'),
+          headCell(context.l10n.assertion_colExpected),
         ],
       ),
     );
@@ -330,7 +332,7 @@ class _AssertionEditorState extends State<AssertionEditor> {
                       controller: argController,
                       compact: true,
                       hintText: rule.target == AssertionTarget.header
-                          ? 'Header name'
+                          ? context.l10n.assertion_headerNameHint
                           : r'$.data.token',
                       onChanged: (_) =>
                           commit(rule.copyWith(targetArg: argController.text)),
@@ -366,7 +368,7 @@ class _AssertionEditorState extends State<AssertionEditor> {
                   ? AppTextField(
                       controller: expectedController,
                       compact: true,
-                      hintText: 'Expected value',
+                      hintText: context.l10n.assertion_expectedHint,
                       onChanged: (_) => commit(
                         rule.copyWith(expected: expectedController.text),
                       ),
@@ -380,7 +382,7 @@ class _AssertionEditorState extends State<AssertionEditor> {
             // 删除
             AppIconButton(
               icon: Icons.close,
-              tooltip: 'Delete',
+              tooltip: context.l10n.common_delete,
               danger: true,
               size: 24,
               iconSize: 13,
@@ -460,12 +462,12 @@ class _EmptyState extends StatelessWidget {
           Icon(Icons.fact_check_outlined, size: 24, color: t.textTertiary),
           const SizedBox(height: AppMetrics.space8),
           Text(
-            'No assertions yet',
+            context.l10n.assertion_emptyTitle,
             style: AppTextStyles.caption12.copyWith(color: t.textSecondary),
           ),
           const SizedBox(height: AppMetrics.space4),
           Text(
-            'Add one to validate the response after every send',
+            context.l10n.assertion_emptySubtitle,
             style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
           ),
         ],

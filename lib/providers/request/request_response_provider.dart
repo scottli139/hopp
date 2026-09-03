@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../models/http_response.dart';
@@ -48,8 +49,8 @@ class RequestResponseNotifier extends StateNotifier<Map<String, HttpResponse>> {
         AppLogger.warning(
             '[RequestResponseNotifier] Pre-request chain failed: ${result.firstError}');
         // 链失败不发目标请求，错误呈现在响应区；断言按失败响应求值
-        final errorResponse =
-            HttpResponse.error('预请求链执行失败：${result.firstError}');
+        final errorResponse = HttpResponse.error(
+            L10nBridge.t.request_preRequestChainFailed('${result.firstError}'));
         _evaluateAssertions(tabId, request, errorResponse);
         state = {
           ...state,

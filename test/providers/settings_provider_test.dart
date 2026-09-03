@@ -55,7 +55,7 @@ void main() {
 
         final state = container.read(settingsProvider);
         expect(state.valueOrNull?.themeMode, equals('system'));
-        expect(state.valueOrNull?.language, equals('en'));
+        expect(state.valueOrNull?.language, equals('system'));
         expect(state.valueOrNull?.editorFontSize, equals(14));
       });
 
@@ -402,7 +402,7 @@ void main() {
   });
 
   group('localeProvider', () {
-    test('should return English locale when loading', () {
+    test('should return null locale when loading (follow system)', () {
       final mockStorageService = MockStorageService();
       when(mockStorageService.getSettings())
           .thenAnswer((_) async => AppSettings.defaults());
@@ -413,10 +413,10 @@ void main() {
         ],
       );
 
-      expect(container.read(localeProvider), equals(const Locale('en')));
+      expect(container.read(localeProvider), isNull);
     });
 
-    test('should return English locale on error', () async {
+    test('should return null locale on error (follow system)', () async {
       final mockStorageService = MockStorageService();
       when(mockStorageService.getSettings()).thenThrow(Exception('Load error'));
 
@@ -428,7 +428,7 @@ void main() {
 
       await container.read(settingsProvider.notifier).loadSettings();
 
-      expect(container.read(localeProvider), equals(const Locale('en')));
+      expect(container.read(localeProvider), isNull);
     });
 
     test('should return Chinese locale', () async {
@@ -444,13 +444,13 @@ void main() {
 
       await container.read(settingsProvider.notifier).loadSettings();
 
-      expect(container.read(localeProvider), equals(const Locale('zh', 'CN')));
+      expect(container.read(localeProvider), equals(const Locale('zh')));
     });
 
-    test('should return English locale for unknown language', () async {
+    test('should return null locale for system language', () async {
       final mockStorageService = MockStorageService();
       when(mockStorageService.getSettings()).thenAnswer(
-          (_) async => AppSettings.defaults().copyWith(language: 'unknown'));
+          (_) async => AppSettings.defaults().copyWith(language: 'system'));
 
       final container = ProviderContainer(
         overrides: [
@@ -460,7 +460,7 @@ void main() {
 
       await container.read(settingsProvider.notifier).loadSettings();
 
-      expect(container.read(localeProvider), equals(const Locale('en')));
+      expect(container.read(localeProvider), isNull);
     });
 
     test('should update when language changes', () async {
@@ -476,10 +476,13 @@ void main() {
       );
 
       await container.read(settingsProvider.notifier).loadSettings();
-      expect(container.read(localeProvider), equals(const Locale('en')));
+      expect(container.read(localeProvider), isNull);
 
       await container.read(settingsProvider.notifier).updateLanguage('zh');
-      expect(container.read(localeProvider), equals(const Locale('zh', 'CN')));
+      expect(container.read(localeProvider), equals(const Locale('zh')));
+
+      await container.read(settingsProvider.notifier).updateLanguage('en');
+      expect(container.read(localeProvider), equals(const Locale('en')));
     });
   });
 }

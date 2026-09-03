@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/app_settings.dart';
 import '../../providers/ai/ai_provider.dart';
 import '../../providers/settings/settings_provider.dart';
@@ -14,11 +15,11 @@ import '../common/app_controls.dart';
 import '../common/app_dialog.dart';
 import '../common/app_text_field.dart';
 
-/// Provider 预设 → 展示名
+/// Provider 预设 → 固定展示名（'custom' 的展示名走 l10n，见 [aiPresetLabel]）
 const Map<String, String> kAiPresetLabels = {
   'ollama': 'Ollama',
   'lmstudio': 'LM Studio',
-  'custom': '自定义',
+  'custom': 'custom',
 };
 
 /// 预设 → 默认 Base URL（'custom' 无默认值，选中原样保留）
@@ -27,7 +28,9 @@ const Map<String, String> kAiPresetBaseUrls = {
   'lmstudio': 'http://localhost:1234/v1',
 };
 
-String aiPresetLabel(String preset) => kAiPresetLabels[preset] ?? preset;
+String aiPresetLabel(String preset) => preset == 'custom'
+    ? L10nBridge.t.ai_presetCustom
+    : (kAiPresetLabels[preset] ?? preset);
 
 /// AI 可用门控：总开关开启且模型名已配置
 bool isAiReady(AppSettings? settings) =>
@@ -39,7 +42,7 @@ bool isAiReady(AppSettings? settings) =>
 Future<T?> openAiSettingsDialog<T>(BuildContext context) {
   return showAppDialog<T>(
     context: context,
-    title: 'AI 设置',
+    title: context.l10n.ai_settingsTitle,
     width: 480,
     child: const AiSettingsDialog(),
   );
@@ -49,9 +52,9 @@ Future<T?> openAiSettingsDialog<T>(BuildContext context) {
 void showAiNotReadySnackBar(BuildContext context) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      content: const Text('未启用本地 AI 或未配置模型'),
+      content: Text(context.l10n.ai_notReady),
       action: SnackBarAction(
-        label: '打开设置',
+        label: context.l10n.ai_openSettings,
         textColor: AppColors.onBrand,
         onPressed: () => openAiSettingsDialog(context),
       ),
@@ -157,7 +160,7 @@ class _AiSettingsDialogState extends ConsumerState<AiSettingsDialog> {
           children: [
             Expanded(
               child: Text(
-                '启用本地 AI',
+                context.l10n.ai_enableLocal,
                 style: AppTextStyles.body13.copyWith(color: t.textPrimary),
               ),
             ),
@@ -170,13 +173,13 @@ class _AiSettingsDialogState extends ConsumerState<AiSettingsDialog> {
         const SizedBox(height: AppMetrics.space16),
 
         // Provider 预设
-        _fieldLabel('Provider 预设'),
+        _fieldLabel(context.l10n.ai_providerPreset),
         const SizedBox(height: AppMetrics.space4 + 2),
         _buildPresetSegmented(context),
         const SizedBox(height: AppMetrics.space12),
 
         // Base URL
-        _fieldLabel('Base URL'),
+        _fieldLabel(context.l10n.ai_baseUrl),
         const SizedBox(height: AppMetrics.space4 + 2),
         AppTextField(
           fieldKey: const Key('ai_base_url_field'),
@@ -187,7 +190,7 @@ class _AiSettingsDialogState extends ConsumerState<AiSettingsDialog> {
         const SizedBox(height: AppMetrics.space12),
 
         // Model
-        _fieldLabel('Model'),
+        _fieldLabel(context.l10n.ai_model),
         const SizedBox(height: AppMetrics.space4 + 2),
         AppTextField(
           fieldKey: const Key('ai_model_field'),
@@ -198,21 +201,21 @@ class _AiSettingsDialogState extends ConsumerState<AiSettingsDialog> {
         Padding(
           padding: const EdgeInsets.only(top: AppMetrics.space4 + 1),
           child: Text(
-            '手填，如 llama3.1:8b',
+            context.l10n.ai_modelHint,
             style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
           ),
         ),
         const SizedBox(height: AppMetrics.space12),
 
         // API Key（脱敏 + 可见性切换）
-        _fieldLabel('API Key'),
+        _fieldLabel(context.l10n.ai_apiKey),
         const SizedBox(height: AppMetrics.space4 + 2),
         AppTextField(
           fieldKey: const Key('ai_api_key_field'),
           controller: _apiKeyCtrl,
           compact: true,
           obscureText: !_showKey,
-          hintText: '留空即可',
+          hintText: context.l10n.ai_apiKeyHint,
           suffix: GestureDetector(
             onTap: () => setState(() => _showKey = !_showKey),
             child: Icon(
@@ -227,7 +230,7 @@ class _AiSettingsDialogState extends ConsumerState<AiSettingsDialog> {
         Padding(
           padding: const EdgeInsets.only(top: AppMetrics.space4 + 1),
           child: Text(
-            '本地模型通常无需 Key，留空即可；仅 Tier 2 云端使用',
+            context.l10n.ai_apiKeyNote,
             style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
           ),
         ),
@@ -242,14 +245,14 @@ class _AiSettingsDialogState extends ConsumerState<AiSettingsDialog> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             AppButton.ghost(
-              label: '取消',
+              label: context.l10n.common_cancel,
               size: AppButtonSize.small,
               onPressed: () => Navigator.of(context).pop(),
             ),
             const SizedBox(width: AppMetrics.space8),
             AppButton.primary(
               key: const Key('ai_settings_save_button'),
-              label: '保存',
+              label: context.l10n.common_save,
               size: AppButtonSize.small,
               onPressed: _save,
             ),
@@ -281,7 +284,7 @@ class _AiSettingsDialogState extends ConsumerState<AiSettingsDialog> {
           for (final entry in kAiPresetLabels.entries)
             Expanded(
               child: _PresetSegment(
-                label: entry.value,
+                label: aiPresetLabel(entry.key),
                 selected: _preset == entry.key,
                 onTap: () {
                   setState(() {
@@ -311,7 +314,7 @@ class _AiSettingsDialogState extends ConsumerState<AiSettingsDialog> {
           const SizedBox(width: AppMetrics.space8),
           Expanded(
             child: Text(
-              '尚未检查连接',
+              context.l10n.ai_connIdle,
               style: AppTextStyles.caption12.copyWith(color: t.textTertiary),
             ),
           ),
@@ -328,7 +331,7 @@ class _AiSettingsDialogState extends ConsumerState<AiSettingsDialog> {
           const SizedBox(width: AppMetrics.space8),
           Expanded(
             child: Text(
-              '正在检查连接…',
+              context.l10n.ai_connChecking,
               style: AppTextStyles.caption12.copyWith(color: t.textSecondary),
             ),
           ),
@@ -345,7 +348,7 @@ class _AiSettingsDialogState extends ConsumerState<AiSettingsDialog> {
           const SizedBox(width: AppMetrics.space8),
           Expanded(
             child: Text(
-              '已连接 · ${aiPresetLabel(_preset)} · ${_modelCtrl.text.trim()}',
+              '${context.l10n.ai_connected} · ${aiPresetLabel(_preset)} · ${_modelCtrl.text.trim()}',
               style: AppTextStyles.caption12.copyWith(
                 color: t.success,
                 fontWeight: FontWeight.w600,
@@ -384,7 +387,7 @@ class _AiSettingsDialogState extends ConsumerState<AiSettingsDialog> {
   Widget _checkButton() {
     return AppButton.ghost(
       key: const Key('ai_check_connection_button'),
-      label: '检查连接',
+      label: context.l10n.ai_checkConnection,
       size: AppButtonSize.small,
       onPressed: _conn == _ConnState.checking ? null : _checkConnection,
     );

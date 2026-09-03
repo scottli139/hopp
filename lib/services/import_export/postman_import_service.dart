@@ -6,6 +6,7 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import '../../l10n/l10n.dart';
 import '../../models/collection.dart';
 import '../../models/http_request.dart';
 import '../../services/storage_service.dart';
@@ -123,9 +124,9 @@ class PostmanImportService with LogMixin {
     try {
       final file = File(filePath);
       if (!await file.exists()) {
-        throw const ImportException(
+        throw ImportException(
           code: ImportErrorCode.fileNotFound,
-          message: '文件不存在',
+          message: L10nBridge.t.import_fileNotFound,
         );
       }
 
@@ -138,9 +139,9 @@ class PostmanImportService with LogMixin {
       } else if (_isEnvironment(json)) {
         return importEnvironment(content);
       } else {
-        throw const ImportException(
+        throw ImportException(
           code: ImportErrorCode.unknownFormat,
-          message: '无法识别文件格式，请确保是有效的 Postman Collection 或 Environment',
+          message: L10nBridge.t.import_unknownFormat,
         );
       }
     } on ImportException {
@@ -149,7 +150,7 @@ class PostmanImportService with LogMixin {
       logError('Import failed', e, stack);
       throw ImportException(
         code: ImportErrorCode.unknown,
-        message: '导入失败: $e',
+        message: L10nBridge.t.import_failedWithError('$e'),
         details: stack,
       );
     }
@@ -173,9 +174,9 @@ class PostmanImportService with LogMixin {
 
       // 检查是否为空
       if (collection.item.isEmpty) {
-        throw const ImportException(
+        throw ImportException(
           code: ImportErrorCode.emptyCollection,
-          message: '导入的集合不包含任何请求',
+          message: L10nBridge.t.import_emptyCollection,
         );
       }
 
@@ -221,7 +222,7 @@ class PostmanImportService with LogMixin {
       logError('Failed to import collection', e, stack);
       throw ImportException(
         code: ImportErrorCode.invalidJson,
-        message: '无法解析 JSON 文件: $e',
+        message: L10nBridge.t.import_invalidJson('$e'),
       );
     }
   }
@@ -245,15 +246,16 @@ class PostmanImportService with LogMixin {
       return ImportResult.success(
         collectionId: environment.id,
         importedRequestCount: 0,
-        successMessage:
-            'Successfully imported environment "${environment.name}" '
-            '(${environment.variables.length} variables)',
+        successMessage: L10nBridge.t.import_environmentSuccess(
+          '${environment.variables.length}',
+          environment.name,
+        ),
       );
     } catch (e, stack) {
       logError('Failed to import environment', e, stack);
       throw ImportException(
         code: ImportErrorCode.invalidJson,
-        message: '无法解析 Environment 文件: $e',
+        message: L10nBridge.t.import_invalidEnvironmentJson('$e'),
       );
     }
   }
@@ -422,12 +424,12 @@ class PostmanImportService with LogMixin {
     List<HttpRequest>? allRequests,
   }) async {
     if (existingId == null) {
-      return ImportResult.error('无法找到现有集合');
+      return ImportResult.error(L10nBridge.t.import_existingCollectionNotFound);
     }
 
     final existing = await _storage.getCollection(existingId);
     if (existing == null) {
-      return ImportResult.error('现有集合不存在');
+      return ImportResult.error(L10nBridge.t.import_existingCollectionMissing);
     }
 
     logInfo('Merging collections: ${existing.name}');
@@ -527,9 +529,9 @@ class PostmanImportService with LogMixin {
       return PostmanVersion.v2_0;
     }
     if (schema.contains('v1.0') || schema.contains('/v1/')) {
-      throw const ImportException(
+      throw ImportException(
         code: ImportErrorCode.unsupportedVersion,
-        message: '不支持的 Postman Collection 版本: v1.0。请升级到 v2.0 或 v2.1 格式',
+        message: L10nBridge.t.import_unsupportedVersion,
       );
     }
     return PostmanVersion.v2_1;

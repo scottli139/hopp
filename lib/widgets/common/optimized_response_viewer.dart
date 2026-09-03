@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:highlight/languages/json.dart';
 
+import '../../l10n/l10n.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_metrics.dart';
 import '../../theme/app_syntax_colors.dart';
@@ -198,9 +199,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   void _copyToClipboard() {
     Clipboard.setData(ClipboardData(text: widget.content));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Copied to clipboard'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(L10nBridge.t.viewer_copied),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -257,9 +258,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       // 显示成功提示
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Code beautified'),
-            duration: Duration(seconds: 1),
+          SnackBar(
+            content: Text(L10nBridge.t.viewer_beautified),
+            duration: const Duration(seconds: 1),
           ),
         );
       }
@@ -269,9 +270,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       // 显示错误提示
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to beautify code'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(L10nBridge.t.viewer_beautifyFailed),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -318,7 +319,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           ),
           const SizedBox(width: 6),
           Text(
-            '$sizeText • ${_lines.length} lines',
+            L10nBridge.t.viewer_sizeLines('${_lines.length}', sizeText),
             style: AppTextStyles.tiny11.copyWith(
               color: context.appTheme.textSecondary,
             ),
@@ -328,7 +329,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           if (_isJson)
             _buildToolbarButton(
               icon: Icons.schedule,
-              tooltip: _annotateEpoch ? '隐藏时间戳注释' : '显示时间戳注释',
+              tooltip: _annotateEpoch
+                  ? L10nBridge.t.viewer_hideTimestamps
+                  : L10nBridge.t.viewer_showTimestamps,
               onPressed: () => setState(() => _annotateEpoch = !_annotateEpoch),
               theme: theme,
               isActive: _annotateEpoch,
@@ -341,7 +344,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           if (widget.showBeautifyButton && _isJson)
             _buildToolbarButton(
               icon: Icons.format_align_left,
-              tooltip: 'Beautify',
+              tooltip: L10nBridge.t.viewer_beautify,
               onPressed: _beautifyCode,
               theme: theme,
             ),
@@ -349,7 +352,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           // 复制按钮
           _buildToolbarButton(
             icon: Icons.copy,
-            tooltip: 'Copy',
+            tooltip: L10nBridge.t.response_copy,
             onPressed: _copyToClipboard,
             theme: theme,
           ),
@@ -371,7 +374,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildModeButton(
-            label: 'Performance',
+            label: L10nBridge.t.viewer_modePerformance,
             isActive: _currentMode == ResponseDisplayMode.performance,
             onPressed: () => _switchMode(ResponseDisplayMode.performance),
             theme: theme,
@@ -383,7 +386,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             color: context.appTheme.border,
           ),
           _buildModeButton(
-            label: 'Full',
+            label: L10nBridge.t.viewer_modeFull,
             isActive: _currentMode == ResponseDisplayMode.full,
             onPressed: () => _switchMode(ResponseDisplayMode.full),
             theme: theme,
@@ -702,7 +705,8 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Showing $_displayedLines of ${_lines.length} lines',
+            context.l10n
+                .viewer_showingLines('$_displayedLines', '${_lines.length}'),
             style: AppTextStyles.caption12.copyWith(
               color: context.appTheme.textSecondary,
             ),
@@ -710,12 +714,12 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           const SizedBox(width: 16),
           AppButton.secondary(
             onPressed: _showMoreLines,
-            label: 'Load $remaining more',
+            label: L10nBridge.t.viewer_loadMore('$remaining'),
           ),
           const SizedBox(width: 8),
           AppButton.ghost(
             onPressed: _showAllLinesNow,
-            label: 'Load all',
+            label: L10nBridge.t.viewer_loadAll,
           ),
         ],
       ),
@@ -937,15 +941,14 @@ class LargeResponseWarning extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Large Response',
+              L10nBridge.t.viewer_largeResponseTitle,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'This response is $sizeText which may cause performance issues. '
-              'Would you like to view it in performance mode?',
+              L10nBridge.t.viewer_largeResponseBody(sizeText),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
@@ -957,12 +960,12 @@ class LargeResponseWarning extends StatelessWidget {
               children: [
                 AppButton.secondary(
                   onPressed: onCancel,
-                  label: 'View Full',
+                  label: L10nBridge.t.viewer_viewFull,
                 ),
                 const SizedBox(width: 12),
                 AppButton.primary(
                   onPressed: onContinue,
-                  label: 'Performance Mode',
+                  label: L10nBridge.t.viewer_performanceMode,
                 ),
               ],
             ),

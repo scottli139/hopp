@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/http_method.dart';
 import '../../models/http_request.dart';
 import '../../providers/collection/collection_provider.dart';
@@ -44,15 +45,15 @@ class CurlImportPanel extends ConsumerStatefulWidget {
     if (state.isSuccess && state.request != null) {
       return [
         AppButton.ghost(
-          label: 'Cancel',
+          label: context.l10n.common_cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppButton.secondary(
-          label: 'Import & Send',
+          label: context.l10n.curl_importAndSend,
           onPressed: onImportAndSend,
         ),
         AppButton.primary(
-          label: 'Import',
+          label: context.l10n.sidebar_import,
           onPressed: onImport,
         ),
       ];
@@ -61,7 +62,7 @@ class CurlImportPanel extends ConsumerStatefulWidget {
     // 其他状态 - 只显示取消
     return [
       AppButton.ghost(
-        label: 'Cancel',
+        label: context.l10n.common_cancel,
         onPressed: () => Navigator.of(context).pop(),
       ),
     ];
@@ -126,14 +127,14 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'cURL Command',
+              context.l10n.curl_commandLabel,
               style: AppTextStyles.tiny11.copyWith(
                 fontWeight: FontWeight.w600,
                 color: t.textSecondary,
               ),
             ),
             AppButton.ghost(
-              label: 'Paste',
+              label: context.l10n.curl_paste,
               icon: Icons.content_paste,
               size: AppButtonSize.small,
               onPressed: _pasteFromClipboard,
@@ -147,8 +148,8 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
             controller: _textController,
             expands: true,
             style: AppTextStyles.code12,
-            hintText: 'Paste cURL command here...\n\n'
-                'Example:\n'
+            hintText: '${context.l10n.curl_inputHint}\n\n'
+                '${context.l10n.curl_inputHintExample}\n'
                 'curl -X POST https://api.example.com/users \\\n'
                 '  -H "Content-Type: application/json" \\\n'
                 '  -d \'{"name":"John"}\'',
@@ -165,7 +166,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 AppButton.primary(
-                  label: 'Parse',
+                  label: context.l10n.import_parse,
                   icon: Icons.play_arrow,
                   size: AppButtonSize.small,
                   onPressed: state.isParsing ? null : _parse,
@@ -214,7 +215,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
             ),
             const SizedBox(height: AppMetrics.space8),
             Text(
-              'Parsed request will appear here',
+              context.l10n.curl_emptyPreview,
               style: AppTextStyles.caption12.copyWith(color: t.textTertiary),
             ),
           ],
@@ -243,7 +244,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
             ),
             const SizedBox(height: AppMetrics.space12),
             Text(
-              'Parsing...',
+              context.l10n.curl_parsing,
               style: AppTextStyles.caption12.copyWith(color: t.textSecondary),
             ),
           ],
@@ -274,7 +275,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
               ),
               const SizedBox(width: AppMetrics.space8),
               Text(
-                'Parse Error',
+                context.l10n.curl_parseError,
                 style: AppTextStyles.caption12.copyWith(
                   fontWeight: FontWeight.w600,
                   color: t.error,
@@ -286,7 +287,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
           Expanded(
             child: SingleChildScrollView(
               child: Text(
-                state.errorMessage ?? 'Unknown error',
+                state.errorMessage ?? context.l10n.import_unknownError,
                 style: AppTextStyles.tiny11.copyWith(
                   fontWeight: FontWeight.w400,
                   color: t.textPrimary,
@@ -338,7 +339,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Parsed Successfully',
+                  context.l10n.curl_parsedSuccess,
                   style: AppTextStyles.tiny11.copyWith(
                     fontWeight: FontWeight.w600,
                     color: t.brand,
@@ -354,7 +355,11 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
                       borderRadius: AppMetrics.br4,
                     ),
                     child: Text(
-                      '${warnings.length} warning${warnings.length > 1 ? 's' : ''}',
+                      warnings.length > 1
+                          ? context.l10n
+                              .curl_warningCountMany('${warnings.length}')
+                          : context.l10n
+                              .curl_warningCountOne('${warnings.length}'),
                       style: AppTextStyles.micro10.copyWith(
                         fontWeight: FontWeight.w500,
                         color: t.warning,
@@ -381,33 +386,37 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
                   const AppDivider(),
                   const SizedBox(height: AppMetrics.space12),
                   _buildPreviewRow(
-                    'Method',
+                    context.l10n.curl_labelMethod,
                     request.method.value.toUpperCase(),
                     valueColor: _getMethodColor(request.method),
                   ),
-                  _buildPreviewRow('URL', request.url),
+                  _buildPreviewRow(context.l10n.curl_labelUrl, request.url),
                   if (request.headers.isNotEmpty)
                     _buildPreviewRow(
-                      'Headers',
-                      '${request.headers.where((h) => h.enabled).length} enabled',
+                      context.l10n.request_headers,
+                      context.l10n.curl_headersEnabled(
+                        '${request.headers.where((h) => h.enabled).length}',
+                      ),
                     ),
                   if (request.bodyType != 'none')
                     _buildPreviewRow(
-                      'Body Type',
+                      context.l10n.curl_labelBodyType,
                       request.bodyType,
                     ),
                   if (request.body.isNotEmpty)
                     _buildPreviewRow(
-                      'Body Size',
-                      '${request.body.length} bytes',
+                      context.l10n.curl_labelBodySize,
+                      context.l10n.curl_bodyBytes('${request.body.length}'),
                     ),
                   // 设置项
                   if (!request.validateCertificates || request.followRedirects)
                     _buildPreviewRow(
-                      'Settings',
+                      context.l10n.settings_title,
                       [
-                        if (!request.validateCertificates) 'SSL verify: OFF',
-                        if (request.followRedirects) 'Follow redirects: ON',
+                        if (!request.validateCertificates)
+                          context.l10n.curl_sslVerifyOff,
+                        if (request.followRedirects)
+                          context.l10n.curl_followRedirectsOn,
                       ].join(', '),
                       valueColor: t.textSecondary,
                     ),
@@ -424,7 +433,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Warnings:',
+                            context.l10n.curl_warningsLabel,
                             style: AppTextStyles.micro10.copyWith(
                               color: t.warning,
                             ),
@@ -500,7 +509,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Request Name',
+          context.l10n.request_namePlaceholder,
           style: AppTextStyles.tiny11.copyWith(
             fontWeight: FontWeight.w600,
             color: t.textSecondary,
@@ -509,7 +518,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
         const SizedBox(height: AppMetrics.space4),
         AppTextField(
           controller: _nameController,
-          hintText: 'Enter request name...',
+          hintText: context.l10n.curl_requestNameHint,
         ),
       ],
     );
@@ -539,7 +548,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
                 const SizedBox(width: AppMetrics.space8),
                 Expanded(
                   child: Text(
-                    'No collections available. Please create a collection first.',
+                    context.l10n.curl_noCollections,
                     style: AppTextStyles.tiny11.copyWith(
                       fontWeight: FontWeight.w400,
                       color: t.error,
@@ -560,7 +569,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Save to Collection',
+              context.l10n.curl_saveToCollection,
               style: AppTextStyles.tiny11.copyWith(
                 fontWeight: FontWeight.w600,
                 color: t.textSecondary,
@@ -569,7 +578,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
             const SizedBox(height: AppMetrics.space4),
             AppPopupSelect<String>(
               value: _selectedCollectionId,
-              hint: 'Select Collection',
+              hint: context.l10n.import_selectCollection,
               boxed: true,
               textStyle: AppTextStyles.body13,
               items: [
@@ -611,7 +620,7 @@ class CurlImportPanelState extends ConsumerState<CurlImportPanel>
             const SizedBox(width: AppMetrics.space8),
             Expanded(
               child: Text(
-                'Failed to load collections',
+                context.l10n.curl_loadFailed,
                 style: AppTextStyles.tiny11.copyWith(
                   fontWeight: FontWeight.w400,
                   color: t.error,

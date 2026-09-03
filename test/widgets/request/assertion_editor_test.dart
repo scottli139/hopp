@@ -6,6 +6,8 @@ import 'package:hopp/widgets/common/app_popup_menu.dart';
 import 'package:hopp/widgets/common/app_text_field.dart';
 import 'package:hopp/widgets/request/assertion_editor.dart';
 
+import '../../helpers/test_app.dart';
+
 void main() {
   group('AssertionEditor', () {
     AssertionRule buildRule({
@@ -30,7 +32,7 @@ void main() {
       List<AssertionRule> assertions,
       void Function(List<AssertionRule>) onChanged,
     ) {
-      return MaterialApp(
+      return hoppTestApp(
         home: Scaffold(
           body: StatefulBuilder(
             builder: (context, setState) {

@@ -7,7 +7,7 @@
 # 安装（每个 clone 只需一次）:
 #   git config core.hooksPath .githooks
 
-# 优先使用 FVM 锁定的 Flutter SDK 自带的 dart，保证与 CI（FLUTTER_VERSION: 3.27.4）
+# 优先使用 FVM 锁定的 Flutter SDK 自带的 dart，保证与 CI（FLUTTER_VERSION: 3.35.4）
 # 格式化行为一致；不依赖 fvm 在 PATH 中（GUI Git 客户端的 hook 环境通常没有完整 PATH）
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT" || exit 1

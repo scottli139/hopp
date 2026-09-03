@@ -6,8 +6,8 @@
 
 [![CI](https://github.com/scottli139/hopp/actions/workflows/ci.yml/badge.svg)](https://github.com/scottli139/hopp/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Flutter](https://img.shields.io/badge/Flutter-3.27.x-02569B?logo=flutter)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.6.x-0175C2?logo=dart)](https://dart.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.35.x-02569B?logo=flutter)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.9.x-0175C2?logo=dart)](https://dart.dev)
 [![AI Powered](https://img.shields.io/badge/AI%20Powered-Kimi%20K3%20%26%20DeepSeek-orange?logo=artificial-intelligence)](https://www.moonshot.cn)
 
 **🤖 100% AI 开发** — 由 [Kimi Code CLI](https://www.moonshot.cn/) 构建 · 基于 [Kimi K3](https://www.moonshot.cn/) 与 [DeepSeek V4 Pro](https://platform.deepseek.com/)
@@ -67,7 +67,7 @@ Hopp 正在从「又一个 Postman 克隆」转向**本地优先、私有 AI 的
 
 ### 前置要求
 
-- [Flutter](https://flutter.dev/) 3.27+
+- [Flutter](https://flutter.dev/) 3.35+
 - [FVM](https://fvm.app/) (推荐用于版本管理)
 - [Dart](https://dart.dev/) 3.6+
 
@@ -138,7 +138,7 @@ hopp/
 
 ## 🛠️ 技术栈
 
-- **框架**: Flutter 3.27.x, Dart 3.6+
+- **框架**: Flutter 3.35.x, Dart 3.9+
 - **状态管理**: Riverpod 2.x
 - **HTTP 客户端**: Dio 5.x
 - **本地存储**: Hive + SharedPreferences

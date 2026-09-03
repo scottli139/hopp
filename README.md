@@ -6,8 +6,8 @@
 
 [![CI](https://github.com/scottli139/hopp/actions/workflows/ci.yml/badge.svg)](https://github.com/scottli139/hopp/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Flutter](https://img.shields.io/badge/Flutter-3.27.x-02569B?logo=flutter)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.6.x-0175C2?logo=dart)](https://dart.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.35.x-02569B?logo=flutter)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.9.x-0175C2?logo=dart)](https://dart.dev)
 [![AI Powered](https://img.shields.io/badge/AI%20Powered-Kimi%20K3%20%26%20DeepSeek-orange?logo=artificial-intelligence)](https://www.moonshot.cn)
 
 **🤖 100% AI Developed** — Built with [Kimi Code CLI](https://www.moonshot.cn/) · Powered by [Kimi K3](https://www.moonshot.cn/) & [DeepSeek V4 Pro](https://platform.deepseek.com/)
@@ -76,7 +76,7 @@ Planned next:
 
 ### Prerequisites
 
-- [Flutter](https://flutter.dev/) 3.27+
+- [Flutter](https://flutter.dev/) 3.35+
 - [FVM](https://fvm.app/) (recommended for version management)
 - [Dart](https://dart.dev/) 3.6+
 
@@ -150,7 +150,7 @@ hopp/
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Flutter 3.27.x, Dart 3.6+
+- **Framework**: Flutter 3.35.x, Dart 3.9+
 - **State Management**: Riverpod 2.x
 - **HTTP Client**: Dio 5.x
 - **Local Storage**: Hive + SharedPreferences

@@ -536,6 +536,7 @@
 | F5.6 | 字体缩放 | ⏸️ | 编辑器字体大小调整 | Ctrl+滚轮或设置调整 |
 | F5.7 | 界面缩放 | ✅ | 全局文字缩放（100%/125%/150%），适配 Linux HiDPI 等系统缩放不生效场景（M8.7 / v0.15.0，2026-09-02） | 设置切换即时生效并持久化，150% 下紧凑布局无裁切 |
 | F5.8 | Linux 标题栏主题跟随 | ✅ | 窗口标题栏颜色/高度/按钮与应用主题统一（v0.15.0，2026-09-02） | 亮/暗主题下标题栏同色即时跟随；高度 36px；窗口按钮清晰可点 |
+| F5.9 | 多语言（界面国际化） | ⏳ | 全量字符串抽取 + 语言切换（跟随系统 / English / 中文），消除界面中英文混杂（排期 M8.8，2026-09-03 立项） | 任一语种下界面无中英混杂；切换即时生效并持久化 |
 
 #### F5.7 界面缩放（全局文字缩放）详细需求
 
@@ -575,6 +576,28 @@
 - [x] 亮/暗主题下标题栏颜色即时跟随（surface/textPrimary/border token 逐像素命中）
 - [x] 标题栏 60→32px、窗口按钮图标 ~16→20px（实机逐像素测量）
 - [x] 底栏 125%/150% 下不拥挤；新增测试 6（title_bar_sync），全量测试通过
+
+#### F5.9 多语言（界面国际化）详细需求
+
+**现状（2026-09-03 排查）**：v0.4.0 引入的 i18n 框架是未接线的死骨架——`lib/l10n/` 两个 ARB 各仅 ~30 个 key、`pubspec.yaml` 已开 `generate: true`，但 `MaterialApp` 未挂 `AppLocalizations.delegate`，没有任何代码引用生成的本地化类；UI 文本全部硬编码、中英文混杂（121 个文件、~290 处中文字符串字面量，另有大量英文硬串），且没有语言切换入口。
+
+**方案**：
+
+| 项 | 决策 |
+|----|------|
+| 设置项 | `AppSettings.locale`（`system` / `en` / `zh`，默认 `system` 跟随系统），Hive 持久化，设置页切换即时生效无需重启 |
+| 接线 | 补 `l10n.yaml` + `AppLocalizations.delegate`；`MaterialApp.locale` 由新增的 localeProvider 驱动；`L10n.localeResolutionCallback` 保留做 system 档解析 |
+| 字符串抽取 | 全量用户可见字符串迁入 ARB：界面文案（screens/widgets）+ services/providers 的用户可见错误/提示消息；代码注释、日志输出、test-mode 指令协议（英文）不动 |
+| ARB 组织 | 沿用现有 `模块_名称` 下划线命名；带插值的用 placeholder（如 `"itemsCount": "{count} 项"`） |
+| CLI | `hopp run` 输出维持英文不变（CI 场景约定） |
+| AI 文案 | AI 按钮/状态/错误提示随界面语言；发给模型的 prompt 模板本期不做双语（固定中文指令 + 模型输出语言由 prompt 约束） |
+| 测试适配 | widget 测试 6 个文件 ~60 处中文 `find.text` 改为英文 locale 下查找英文串（或抽 key 常量），保证任一单语种可跑全量 |
+
+**验收标准**：
+
+- [ ] `en` / `zh` 任一语种下界面无中英混杂（test-mode 截图双语言审计）
+- [ ] 语言切换即时生效、重启后保持；`system` 档跟随 OS 语言
+- [ ] 全量测试 + design_guard 通过；亮/暗双主题截图无回归
 
 ### 六、数据与同步功能
 
@@ -886,12 +909,12 @@
 | 项 | 决策 |
 |----|------|
 | 本期做 | 解释响应/错误；AI 生成断言（F4.2）；自然语言建请求；OpenAI 兼容客户端 + 连接配置 |
-| 本期不做 | 读取 API 文档网页生成请求、历史语义搜索（挪 BACKLOG F9.7/F9.8）；Tier 2 BYOK（排期 M8.8；注：原写 M8.6，先后被 F8.5 时间戳工效增强（M8.6）、F5.7 界面缩放（M8.7）插队）；通用 AI 聊天面板；流式输出（BACKLOG F9.6）；`/v1/models` 模型列表拉取（模型名手填） |
+| 本期不做 | 读取 API 文档网页生成请求、历史语义搜索（挪 BACKLOG F9.7/F9.8）；Tier 2 BYOK（排期 M8.9；注：原写 M8.6，先后被 F8.5 时间戳工效增强（M8.6）、F5.7 界面缩放（M8.7）、F5.9 多语言（M8.8）插队）；通用 AI 聊天面板；流式输出（BACKLOG F9.6）；`/v1/models` 模型列表拉取（模型名手填） |
 
 **底座**（F9.3 本期落地）
 
 - 单一 OpenAI 兼容客户端：Dio 手写 chat completions，`baseURL + model + key` 可配；预设 Ollama `http://localhost:11434/v1`、LM Studio `http://localhost:1234/v1`
-- 配置存 `AppSettings` 新字段（settings box 不加密；baseURL/model 非敏感，API key 输入框为 Tier 2 铺路，keychain 级存储随 M8.8 / Tier 2）
+- 配置存 `AppSettings` 新字段（settings box 不加密；baseURL/model 非敏感，API key 输入框为 Tier 2 铺路，keychain 级存储随 M8.9 / Tier 2）
 - 非流式（v1）；连接超时 5s / 生成超时 60s；温度 0；日志只记端点/模型/耗时/token 数，不落请求体/响应文本/key
 
 **交互**

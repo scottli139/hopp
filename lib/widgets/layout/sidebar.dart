@@ -87,6 +87,13 @@ class _SidebarState extends ConsumerState<Sidebar> {
       }
     });
 
+    // F5.9：应用设置对话框触发器
+    ref.listen<int?>(uiTestAppSettingsDialogProvider, (previous, current) {
+      if (current != null && current != previous) {
+        openAppSettingsDialog(context);
+      }
+    });
+
     // Listen to delete collection dialog trigger
     ref.listen<int?>(uiTestDeleteCollectionDialogProvider, (previous, current) {
       if (current != null && current != previous) {

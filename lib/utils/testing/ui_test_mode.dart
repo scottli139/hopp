@@ -352,6 +352,17 @@ class UITestModeManager {
       case 'open_design_gallery':
         return await _triggerOpenDesignGallery();
 
+      case 'open_app_settings':
+        _ref!.read(uiTestAppSettingsDialogProvider.notifier).state =
+            DateTime.now().millisecondsSinceEpoch;
+        return {'triggered': true};
+
+      // F5.9：切换界面语言（'system' / 'en' / 'zh'），验证运行时即时生效
+      case 'set_language':
+        final lang = params['language'] as String;
+        await _ref!.read(settingsProvider.notifier).updateLanguage(lang);
+        return {'language': lang};
+
       case 'simulate_4xx_response':
         final statusCode = params['status_code'] as int? ?? 400;
         return await _simulate4xxResponse(statusCode);
@@ -3613,6 +3624,9 @@ final uiTestOpenAboutScreenProvider = StateProvider<int?>((ref) => null);
 
 /// UI 测试 - 打开 Design Gallery 页面触发器
 final uiTestDesignGalleryProvider = StateProvider<int?>((ref) => null);
+
+/// UI 测试 - 打开应用设置对话框触发器（F5.9）
+final uiTestAppSettingsDialogProvider = StateProvider<int?>((ref) => null);
 
 /// UI 测试 - cURL 解析结果
 final uiTestCurlParseResultProvider =

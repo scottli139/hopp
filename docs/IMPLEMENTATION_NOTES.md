@@ -954,6 +954,24 @@ cli/hopp.dart + cli/src/                            # hopp run 运行器（app �
 
 ---
 
+## 多语言（i18n）(M8.8 / F5.9 / v0.16.0, 2026-09-03)
+
+> 痛点：v0.4.0 的 i18n 是未接线死骨架（ARB 存在但 `MaterialApp` 没挂 delegate，0 引用），UI 全硬编码、中英文混杂，无切换入口。
+
+- **三层取词 API**（按调用方能否 import flutter 划分）：
+  - `context.l10n.xxx`（`L10nX` 扩展，lib/l10n/l10n.dart）——widget 层主力，类型安全；
+  - `L10nBridge.t.xxx`——无 BuildContext 的 flutter 层（provider/service/dialog 辅助函数），`MaterialApp.builder` 每次构建 `L10nBridge.update(context.l10n)` 刷新，测试环境（裸泵无 delegates）回退英文；
+  - `L10nCore.t('key', {'name': value})`——**纯 Dart**（scripts/gen_l10n_core.py 从 ARB 生成 lib/l10n/generated/l10n_core.g.dart，零 flutter import），CLI 共用 service（http_service / assertion_engine / pre_request_chain_runner / variable_resolver）必须走它，否则 `dart compile exe cli/hopp.dart` 被 dart:ui 污染；locale 由 L10nBridge.update 同步，CLI 不改默认 'en'（CLI 输出维持英文的决策天然成立）。
+- **生成物与 CI**：`lib/l10n/generated/` 不入库（沿 build_runner 惯例，`*.g.dart` 本就在 .gitignore）；`flutter pub get` 自动生成 AppLocalizations，CI「Generate code」步骤补跑 `python3 scripts/gen_l10n_core.py`。
+- **并行抽取工作流**：5 个并行 agent 各写片段 JSON → `flock /tmp/hopp_l10n.lock -c "python3 scripts/merge_arb.py <片段> && flutter gen-l10n"` 串行合并（撞 key 值不同即报错；merge 后自动重生成 l10n_core）。
+- **坑 1（gen-l10n 位置参数字母序）**：带 `{a} {b}` 占位的 key 生成的方法是**位置参数且按占位符名字母序排序**（`viewer_sizeLines(Object lines, Object size)`），与文案出现序无关——本次 6 处按文案序传参导致输出错乱（测试抓到 2 处）。新加多占位 key 时**必须查生成签名**或保持「占位名字母序 = 语义序」。
+- **坑 2（ICU 花括号/单引号）**：ARB 值里出现字面 `{}`（如 curl 示例命令）或 `{{var}}` 会让 gen-l10n 解析失败——把字面量留在 Dart 侧、经 String 占位参数传入（`{varRef}` 模式）。
+- **迁移**：`AppSettings.language` 原默认值 'en' 是死字段，改默认 'system' 后老用户存值仍是 'en'（非主动选择）——`getSettings` 一次性迁移（`language_migrated_v1` 标记），之后显式选 'en' 不再回改。
+- **设置对话框**：`lib/widgets/settings/app_settings_dialog.dart`（主题/语言/界面缩放），语言名用 endonym（English/中文）不随界面语言翻译；侧栏底栏 ⚙ 入口；test-mode 新增 `open_app_settings` / `set_language` 指令。
+- **测试约定**：`test/helpers/test_app.dart` 的 `hoppTestApp`（带 AppLocalizations delegate，默认英文 locale）是所有 widget 测试的统一壳——裸 MaterialApp 会因 `context.l10n` null check 崩溃；断言一律用英文串（值以 app_en.arb 为准）。
+
+---
+
 ## 环境变量系统 (M8.1)
 
 > 定位（2026-08-20 决策）：「可复用 + AI 变量注入的基础」，不是 Postman parity。AI 生成的请求引用 `{{baseUrl}}` / `{{token}}`。

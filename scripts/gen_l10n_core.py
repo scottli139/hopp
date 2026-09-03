@@ -11,6 +11,8 @@ locale 由 L10nBridge.update 同步进 L10nCore.locale。
 """
 import json
 import os
+import shutil
+import subprocess
 from collections import OrderedDict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -83,6 +85,12 @@ def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         f.write(content)
+    # CI 的 `dart format --set-exit-if-changed lib/` 会覆盖本文件，
+    # 生成后立即用 dart format 规范化（本地无 dart 时跳过——入库内容不受影响，
+    # 该文件被 .gitignore 排除，CI 上 dart 必在 PATH）。
+    dart = shutil.which("dart")
+    if dart:
+        subprocess.run([dart, "format", OUT], check=True, capture_output=True)
     print(f"OK: generated {OUT} ({len(en)} en keys, {len(zh)} zh keys)")
 
 

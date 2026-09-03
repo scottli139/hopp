@@ -972,6 +972,17 @@ cli/hopp.dart + cli/src/                            # hopp run 运行器（app �
 
 ---
 
+## 单实例保护（TD-7 / v0.16.1, 2026-09-03）
+
+> 背景：Hive 非跨进程安全，两个实例并发打开同一数据目录会清零 box（2026-08-28、2026-09-02 两次事故）；test-mode 独立数据目录只挡自动化，普通双开（用户手动启动第二个实例）无防护。
+
+- **方案**：`lib/services/single_instance_lock.dart`——main() 在 Hive 初始化前对数据目录内 `.hopp.lock` 加 OS 级文件锁（`RandomAccessFile.lock` 非阻塞 exclusive）；冲突即启动 `SingleInstanceNoticeApp`（仅说明 + 退出按钮的极简壳，此时 Hive 未初始化拿不到设置，语言跟随系统 locale）；锁随进程退出（含 SIGKILL）由 OS 自动释放，无残留锁。
+- **坑（fcntl per-process 语义）**：dart:io lock 在 POSIX 上是 fcntl 语义——**同进程**对同一文件重复加锁会成功（2026-09-03 实测固化成用例），只防跨进程；因此竞争分支无法做进程内单测，跨进程双开行为靠真机验证（启动 A → B 应弹提示 → 关 A → 新实例正常拿锁）。
+- **fail-open**：目录创建/文件打开失败等非锁冲突异常记日志放行——保持引入锁之前的行为（由后续 Hive 初始化自行报错），不因加锁失败把用户挡在门外。
+- **与 test-mode 的关系**：数据目录按 `dataDirNameFor(testMode:)` 各自加锁（`hopp/` 与 `hopp_test/` 独立），自动化实例与用户实例并存不互相阻塞；同时也顺带防住了两个 test-mode 实例并发。
+
+---
+
 ## 环境变量系统 (M8.1)
 
 > 定位（2026-08-20 决策）：「可复用 + AI 变量注入的基础」，不是 Postman parity。AI 生成的请求引用 `{{baseUrl}}` / `{{token}}`。

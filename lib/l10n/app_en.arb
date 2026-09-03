@@ -647,5 +647,8 @@
   "var_dynamicDescTimestampMs": "Current Unix timestamp (milliseconds)",
   "var_dynamicDescIsoTimestamp": "Current UTC ISO8601 time",
   "var_dynamicDescRandomUuid": "Random UUID v4",
-  "var_dynamicDescRandomInt": "Random integer between 0 and 1000000"
+  "var_dynamicDescRandomInt": "Random integer between 0 and 1000000",
+  "singleInstance_title": "Hopp Is Already Running",
+  "singleInstance_message": "Another Hopp instance is already running. To protect your local data, only one instance can run at a time.\n\nPlease use the running instance, or close it first and relaunch.",
+  "common_quit": "Quit"
 }

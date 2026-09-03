@@ -53,7 +53,10 @@ jobs:
         run: flutter pub get
       
       - name: Generate code
-        run: dart run build_runner build --delete-conflicting-outputs
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          # F5.9：生成纯 Dart 本地化核心（l10n_core.g.dart，pub get 不会生成）
+          python3 scripts/gen_l10n_core.py
       
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed lib/ test/

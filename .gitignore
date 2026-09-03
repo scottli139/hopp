@@ -105,3 +105,6 @@ backup_tauri/src-tauri/target/
 
 # golden 测试失败转储
 test/**/failures/
+
+# l10n 生成物（pub get 自动生成 AppLocalizations；l10n_core.g.dart 由 scripts/gen_l10n_core.py 生成）
+lib/l10n/generated/

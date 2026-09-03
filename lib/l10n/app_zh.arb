@@ -647,8 +647,5 @@
   "var_dynamicDescTimestampMs": "当前 Unix 时间戳（毫秒）",
   "var_dynamicDescIsoTimestamp": "当前 UTC ISO8601 时间",
   "var_dynamicDescRandomUuid": "随机 UUID v4",
-  "var_dynamicDescRandomInt": "0–1000000 随机整数",
-  "singleInstance_title": "Hopp 已在运行",
-  "singleInstance_message": "检测到另一个 Hopp 实例正在运行。为保护本地数据，同一时间只允许运行一个实例。\n\n请使用已运行的实例，或先关闭它再重新启动。",
-  "common_quit": "退出"
+  "var_dynamicDescRandomInt": "0–1000000 随机整数"
 }

@@ -188,6 +188,15 @@ class StorageService {
           encryptionCipher: cipher);
       _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
     } catch (e, stack) {
+      // 锁冲突（另一进程持有 box 锁）不是数据损坏——绝不能走删除恢复，
+      // 直接抛出让启动失败（2026-09-03 事故：并发实例在此误删全部 box）
+      if (e is FileSystemException && e.message.contains('lock failed')) {
+        AppLogger.fatal(
+            '[StorageService] Boxes locked by another process, aborting',
+            e,
+            stack);
+        rethrow;
+      }
       AppLogger.error('[StorageService] Failed to open boxes', e, stack);
       // 如果打开失败，可能是数据损坏，尝试清除并重新创建
       await _handleBoxOpenError();

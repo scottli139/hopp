@@ -1,14 +1,12 @@
-import 'dart:io' show Directory, Platform;
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'providers/providers.dart';
 import 'screens/main_screen.dart';
 import 'services/menu_channel.dart';
-import 'services/single_instance_lock.dart';
 import 'services/storage_service.dart';
 import 'services/title_bar_sync.dart';
 import 'l10n/generated/app_localizations.dart';
@@ -18,7 +16,6 @@ import 'utils/app_logger.dart';
 import 'utils/testing/test_helpers.dart';
 import 'utils/testing/ui_test_mode.dart';
 import 'widgets/common/shortcut_wrapper.dart';
-import 'widgets/single_instance_notice_app.dart';
 
 // 存储启动参数，供测试模式使用
 List<String> appArgs = [];
@@ -32,27 +29,15 @@ void main(List<String> args) async {
   // Initialize logging first
   await AppLogger.initialize();
 
+  // 单实例保护（TD-7）在 Linux runner 原生侧实现（linux/runner/main.cc，
+  // 引擎启动前 flock 数据目录）——dart:io File.lock 在本平台实测会被
+  // 线程池误关 fd 静默丢失（2026-09-03 事故），不可靠，勿重新引入。
+
   // Initialize storage
   final storage = StorageService();
   // test-mode 隔离必须由 main() 显式传入：Flutter Linux release 下
   // Platform.executableArguments 拿不到 argv（2026-09-02 事故根因）
   final testMode = args.contains('--test-mode') || args.contains('--ui-test');
-
-  // TD-7 单实例保护：对数据目录加 OS 级文件锁（Hive 非跨进程安全，双开会
-  // 清空 box——2026-08-28 / 2026-09-02 两次事故）。锁随进程退出自动释放；
-  // test-mode 数据目录独立，与用户实例互不干扰。
-  final appDir = await getApplicationDocumentsDirectory();
-  final instanceLock = SingleInstanceLock();
-  final acquired = await instanceLock.tryAcquire(
-    Directory(
-        '${appDir.path}/${StorageService.dataDirNameFor(testMode: testMode)}'),
-  );
-  if (!acquired) {
-    AppLogger.warning('[main] Another instance is already running');
-    runApp(const SingleInstanceNoticeApp());
-    return;
-  }
-
   await storage.initialize(testMode: testMode);
 
   // Create ProviderContainer for menu channel

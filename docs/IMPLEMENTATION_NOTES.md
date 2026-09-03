@@ -974,12 +974,12 @@ cli/hopp.dart + cli/src/                            # hopp run 运行器（app �
 
 ## 单实例保护（TD-7 / v0.16.1, 2026-09-03）
 
-> 背景：Hive 非跨进程安全，两个实例并发打开同一数据目录会清零 box（2026-08-28、2026-09-02 两次事故）；test-mode 独立数据目录只挡自动化，普通双开（用户手动启动第二个实例）无防护。
+> 背景：Hive 非跨进程安全，两个实例并发打开同一数据目录会清零 box（2026-08-28、2026-09-02、2026-09-03 三次事故）；test-mode 独立数据目录只挡自动化，普通双开无防护。
 
-- **方案**：`lib/services/single_instance_lock.dart`——main() 在 Hive 初始化前对数据目录内 `.hopp.lock` 加 OS 级文件锁（`RandomAccessFile.lock` 非阻塞 exclusive）；冲突即启动 `SingleInstanceNoticeApp`（仅说明 + 退出按钮的极简壳，此时 Hive 未初始化拿不到设置，语言跟随系统 locale）；锁随进程退出（含 SIGKILL）由 OS 自动释放，无残留锁。
-- **坑（fcntl per-process 语义）**：dart:io lock 在 POSIX 上是 fcntl 语义——**同进程**对同一文件重复加锁会成功（2026-09-03 实测固化成用例），只防跨进程；因此竞争分支无法做进程内单测，跨进程双开行为靠真机验证（启动 A → B 应弹提示 → 关 A → 新实例正常拿锁）。
-- **fail-open**：目录创建/文件打开失败等非锁冲突异常记日志放行——保持引入锁之前的行为（由后续 Hive 初始化自行报错），不因加锁失败把用户挡在门外。
-- **与 test-mode 的关系**：数据目录按 `dataDirNameFor(testMode:)` 各自加锁（`hopp/` 与 `hopp_test/` 独立），自动化实例与用户实例并存不互相阻塞；同时也顺带防住了两个 test-mode 实例并发。
+- **最终方案（原生侧 flock）**：`linux/runner/main.cc` 在 Flutter 引擎启动前对数据目录内 `.hopp.lock` 做 `flock(LOCK_EX|LOCK_NB)`；fd 由 main() 有意持有整个进程生命周期（不 close），进程退出（含 SIGKILL）由内核释放；冲突时直接弹原生 `GtkMessageDialog`（按 LC_ALL/LANG 判中英文）并退出——第二实例不再加载引擎，更轻更快。数据目录与 `getApplicationDocumentsDirectory()`（XDG DOCUMENTS）对齐；test-mode（--test-mode/--ui-test）锁 `hopp_test/`，与正常实例并存。非锁冲突异常（目录不可创建/文件打不开）fail-open 放行。
+- **为什么不能用 dart:io File.lock（strace 实锤）**：本平台（ARM64 社区引擎构建）上 dart:io 线程池会把 fd 生命周期搞乱——锁 fd 被**从未打开过它的工作线程** close（fd 号复用后遭误关），锁在进程存活期间静默丢失；锁对象即使被全局变量 root 住也没用（fd 关闭不经过 Dart 对象回收路径）。「同进程二次加锁成功」（fcntl per-process 语义）这类坑反而次要。**教训：进程级互斥原语要在原生层做，不经过 dart:io fd 管理。**
+- **第二道防线（storage 层）**：`_openBoxes` 遇到 Hive 自身 box 锁冲突（`lock failed`）不再走 `_handleBoxOpenError` 的「删除重建」——直接报错终止启动。「打不开就当损坏全删」是 09-03 事故中真正清数据的凶手；此后并发场景最坏结果是第二实例启动失败，而不是数据被删（当日 18:01 实测：B 实例触发该防线，数据无损）。
+- **验证方式**：竞争行为无法进程内单测（fcntl/flock 语义），靠真机多实例并发验证（启动 A → B/C 应弹原生提示且不加载引擎 → 关 A → 新实例正常拿锁；test-mode 与正常实例并存）。
 
 ---
 

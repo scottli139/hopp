@@ -4,7 +4,7 @@
 >
 > 战略决策、里程碑与已排期任务见 [DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)；需求细节与验收标准见 [PRD.md](./PRD.md)。
 
-**最后更新**: 2026-09-03
+**最后更新**: 2026-09-07
 
 ---
 
@@ -125,7 +125,7 @@
 | TD-1 | 后代集合遍历逻辑重复 | `collection_provider.dart` 的 `collectDescendants` 与 `postman_import_service.dart` 的 `_collectAllChildIds` 是同一段「按 parentId 递归收集子孙」逻辑 | 抽成公共工具函数，两处复用 | P2 | 下次改动集合层级 / 导入导出逻辑时 |
 | TD-2 | URL 查询参数解析重复 | `utils/url_params_sync.dart` 已提供 parse/build/sync，但 `http_service.dart`、`postman_mapper.dart`、`curl_import_service.dart` 各自重写 | 统一走 `url_params_sync.dart` | P2 | 下次改动 URL 处理相关代码时 |
 | TD-3 | Timing 的 TCP/TLS/TTFB 为估算值 | `http_service.dart` 用硬编码 `30/20/45` 及 `totalMs ~/ 3` 填充 | 改为真实测量，测不到就标记为未测量（null），避免误导 | P2 | 实现真实计时或重做 Timing Tab 时 |
-| TD-5 | site/ 版本徽章手动同步 | App 侧版本号已改为动态读取（v0.8.8，Issue #13）；残余：`site/` 两个静态页的 version 徽章需发布时手动改（2026-09-03 已对齐 v0.15.0） | 发布流程中加入 site/ 徽章同步步骤（或脚本化） | P3 | 每次发布 |
+| TD-5 | site/ 徽章手动同步 | App 侧版本号已改为动态读取（v0.8.8，Issue #13）；残余：`site/` 两个静态页的徽章需发布时手动改（version + Flutter + Dart 三个，2026-09-07 已对齐 v0.16.1 / Flutter 3.35.x / Dart 3.9.x） | 发布流程中加入 site/ 徽章同步步骤（或脚本化） | P3 | 每次发布 |
 | TD-6 | test-mode `tap_at` 疑似干扰 Tab 状态 | F8 截图审计（2026-08-25）：Params 页对 fx 按钮 `tap_at(745,118)`（47 个 hitTargets）后页面异常跳回 Pre-request tab；功能本身由 widget test 覆盖且正常 | 排查 `tap_at` 的命中分发与 `_tabController`/持久化 index 的互相影响 | P3 | 下次扩展 test-mode 指针指令时 |
 | TD-8 | test-mode `tap_at` 坐标空间不稳定 | 2026-08-31 营销截图实拍：坐标语义随实例漂移（窗口坐标 vs 视图坐标，标题栏 32px 时同一目标所需偏移在 +18 ~ +50 不等）；侧边栏行距仅约 19px，极易命中相邻行（曾误开请求 Tab 污染截图） | 统一为视图逻辑坐标并在 `_tapAt` 注释中写明；返回值附带命中组件路径便于校准（与 TD-6 分别跟进） | P3 | 下次扩展 test-mode 指针指令时 |
 | TD-9 | test-mode `reset_database` 不清空已打开 Tab | 遗留 Tab 跨 reset 存活，自动化连续运行时出现重复「New Request」Tab 栏，污染截图与 Tab 计数 | `reset_database` 一并关闭所有 Tab（或新增 `close_all_tabs` 指令） | P3 | 下次改动 test-mode 指令时 |

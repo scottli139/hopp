@@ -208,7 +208,7 @@ void main() {
       await tester.tap(find.byTooltip('Build Request with Natural Language'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Local AI is not enabled or no model is configured'),
+      expect(find.text('AI Assistant is not enabled or no model is configured'),
           findsOneWidget);
       expect(find.byKey(const Key('build_request_dialog')), findsNothing);
     });

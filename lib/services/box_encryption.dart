@@ -23,6 +23,9 @@ class BoxEncryption {
 
   /// 加载或创建加密 key。[hiveDir] 为 Hive 数据目录。
   static Future<List<int>> loadOrCreateKey(Directory hiveDir) async {
+    // 全新数据目录（如 test-mode 首跑的 hopp_test/）此时可能尚不存在——
+    // Hive.init 是懒建目录的，先落盘 key 会 PathNotFound 并静默降级明文
+    if (!await hiveDir.exists()) await hiveDir.create(recursive: true);
     final keyFile = File('${hiveDir.path}/$keyFileName');
     if (await keyFile.exists()) {
       return base64Decode(await keyFile.readAsString());

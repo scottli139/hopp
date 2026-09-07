@@ -135,7 +135,8 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 9. ~~**Linux 标题栏主题跟随（F5.8）**~~（已完成，2026-09-02，v0.15.0：GtkBox 自定义标题栏绕开 Deepin GTK3 补丁对 GtkHeaderBar 的锁定，updateTitleBar 通道随主题下发 token 色，底栏高度跟随界面缩放，见 [PRD](./docs/PRD.md) F5.8 与 [NOTES](./docs/IMPLEMENTATION_NOTES.md)）
 10. ~~**Flutter SDK 3.35.4 对齐**~~（已完成，2026-09-03：CI / `.fvmrc` / 本机 ARM64 社区构建统一锁定 3.35.4（Dart 3.9.2），`intl` 升 `^0.20.2`，本机/CI 版本错位消除，见 [DEVELOPMENT_ENVIRONMENT](./docs/DEVELOPMENT_ENVIRONMENT.md) ARM64 一节）
 11. ~~**多语言完善（i18n）**~~（已完成，2026-09-03，M8.8 / v0.16.0：i18n 接线 + 649 key 全量抽取 + 设置对话框语言切换（跟随系统/English/中文）+ L10nCore 纯 Dart 链路，见 [PRD](./docs/PRD.md) F5.9 与 [NOTES](./docs/IMPLEMENTATION_NOTES.md)「多语言（i18n）」）
-12. **Tier 2 BYOK 云端（M8.9 / 预计 v0.17.0）**：默认关闭 + keychain 级密钥存储 + 首次外发隐私门，见 [PRD](./docs/PRD.md) F9 与 [DEVELOPMENT_PLAN](./docs/DEVELOPMENT_PLAN.md)；之后 M8.10 日常工效补齐 → v1.0 GA
+12. ~~**Tier 2 BYOK 云端（M8.9 / F9.9）**~~（代码完成，2026-09-07：云端预设 OpenAI/DeepSeek/Anthropic/自定义 + 应用级 AES 加密 key（ai_keys box 分槽）+ 首次外发隐私门按 Provider 记一次 + provider chip；澄清决策与验收见 [PRD](./docs/PRD.md) F9.9；顺手修复 F8.4 全新目录加密静默降级 bug；发布随 v0.17.0 另排）
+13. **日常工效补齐（M8.10 / 预计 v0.18.0）**：cURL 生成（F1.10）+ 环境导出（F3.7）+ Body Beautify（UX-3）+ 响应体搜索（F5.4）+ AI 流式输出（F9.6），之后 → v1.0 GA，见 [DEVELOPMENT_PLAN](./docs/DEVELOPMENT_PLAN.md)
 
 ### 已知问题 🐛
 

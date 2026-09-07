@@ -26,6 +26,7 @@ import '../../providers/import_export/import_export_provider.dart';
 import '../../providers/import_export/openapi_import_provider.dart';
 import '../../providers/providers.dart';
 import '../../services/curl/curl_import_service.dart';
+import '../../services/ai/ai_presets.dart';
 import '../../services/import_export/import_export_exception.dart';
 import '../../services/import_export/openapi/openapi_import_service.dart';
 import '../../utils/app_logger.dart';
@@ -543,6 +544,23 @@ class UITestModeManager {
       case 'ai_build_request':
         final description = params['description'] as String;
         return await _aiBuildRequest(description);
+
+      case 'set_ai_provider':
+        final preset = params['preset'] as String;
+        final baseUrl = params['base_url'] as String?;
+        final model = params['model'] as String?;
+        return await _setAiProvider(preset, baseUrl, model);
+
+      case 'set_ai_consent':
+        final preset = params['preset'] as String;
+        final granted = params['granted'] as bool? ?? true;
+        return await _setAiConsent(preset, granted);
+
+      case 'reset_ai_consent':
+        return await _resetAiConsent();
+
+      case 'ai_gate_status':
+        return _aiGateStatus();
 
       default:
         throw Exception('未知指令: $action');
@@ -3422,6 +3440,67 @@ class UITestModeManager {
     _ref!.read(uiTestAiMockProvider.notifier).state = null;
 
     return {'mocked': false};
+  }
+
+  /// 切换 AI provider 预设（F9.9：配合 canned client 模拟云端链路）。
+  ///
+  /// 云端预设自动写入 canned key 与 aiKeySavedPresets 标志位，
+  /// 使 isAiReady 门控在 UI 级自动化中通过；不发起真实连接。
+  Future<Map<String, dynamic>> _setAiProvider(
+      String preset, String? baseUrl, String? model) async {
+    final effectiveBaseUrl = baseUrl ?? kAiPresetBaseUrls[preset];
+    await _ref!.read(settingsProvider.notifier).updateAiSettings(
+          aiEnabled: true,
+          aiProviderPreset: preset,
+          aiBaseUrl: effectiveBaseUrl,
+          aiModel: model,
+        );
+    final cloud = isCloudPreset(preset, effectiveBaseUrl ?? '');
+    if (cloud) {
+      await _ref!.read(storageServiceProvider).writeAiKey(preset, 'test-key');
+      final cur = _ref!.read(settingsProvider).value;
+      if (cur != null && !cur.aiKeySavedPresets.contains(preset)) {
+        await _ref!.read(settingsProvider.notifier).updateAiSettings(
+          aiKeySavedPresets: [...cur.aiKeySavedPresets, preset],
+        );
+      }
+    }
+    return {'preset': preset, 'cloud': cloud};
+  }
+
+  /// 预置 / 撤销指定云端预设的隐私门确认（F9.9）
+  Future<Map<String, dynamic>> _setAiConsent(
+      String preset, bool granted) async {
+    final cur = _ref!.read(settingsProvider).value;
+    if (cur == null) throw Exception('AI 配置未加载，请稍后重试');
+    final consents = {...cur.aiCloudConsents};
+    if (granted) {
+      consents[preset] = true;
+    } else {
+      consents.remove(preset);
+    }
+    await _ref!
+        .read(settingsProvider.notifier)
+        .updateAiSettings(aiCloudConsents: consents);
+    return {'preset': preset, 'granted': granted};
+  }
+
+  /// 清空全部隐私门确认记录（等价设置对话框「重置隐私确认」）
+  Future<Map<String, dynamic>> _resetAiConsent() async {
+    await _ref!.read(settingsProvider.notifier).resetAiCloudConsents();
+    return {'reset': true};
+  }
+
+  /// 隐私门当前状态（云端判定 + 是否已确认），供自动化断言门是否会出现
+  Map<String, dynamic> _aiGateStatus() {
+    final s = _ref!.read(settingsProvider).value;
+    if (s == null) return {'loaded': false};
+    return {
+      'loaded': true,
+      'preset': s.aiProviderPreset,
+      'cloud': isCloudPreset(s.aiProviderPreset, s.aiBaseUrl),
+      'consented': s.aiCloudConsents[s.aiProviderPreset] == true,
+    };
   }
 
   /// 确保 AI 配置就绪：未启用则置 aiEnabled=true，模型名为空时置

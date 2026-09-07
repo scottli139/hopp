@@ -322,5 +322,87 @@ void main() {
         throwsA(isA<LlmResponseException>()),
       );
     });
+
+    test('模型锁定 temperature（400 点名）时去温度重试一次（F9.9 实测 kimi-k3）',
+        () async {
+      var calls = 0;
+      final capturedBodies = <Map<String, dynamic>>[];
+      when(
+        mockDio.request<Map<String, dynamic>>(
+          any,
+          data: anyNamed('data'),
+          options: anyNamed('options'),
+        ),
+      ).thenAnswer((invocation) async {
+        calls++;
+        capturedBodies.add(Map<String, dynamic>.from(
+            invocation.namedArguments[#data] as Map));
+        if (calls == 1) {
+          throw DioException(
+            requestOptions: RequestOptions(),
+            response: Response(
+              requestOptions: RequestOptions(),
+              statusCode: 400,
+              data: {
+                'error': {
+                  'message':
+                      'invalid temperature: only 1 is allowed for this model',
+                },
+              },
+            ),
+          );
+        }
+        return Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(),
+          statusCode: 200,
+          data: okData(),
+        );
+      });
+
+      final result = await client.chat(
+        baseUrl: 'https://api.moonshot.cn/v1',
+        model: 'kimi-k3',
+        apiKey: 'sk-x',
+        messages: const [LlmMessage.user('ping')],
+      );
+
+      expect(result, equals('你好，这是解释'));
+      expect(calls, 2);
+      // 首次带温度 0，重试去掉温度字段
+      expect(capturedBodies[0]['temperature'], 0);
+      expect(capturedBodies[1].containsKey('temperature'), isFalse);
+    });
+
+    test('400 非温度原因不重试，直接抛 LlmHttpException', () async {
+      stubChatError(
+        DioException(
+          requestOptions: RequestOptions(),
+          response: Response(
+            requestOptions: RequestOptions(),
+            statusCode: 400,
+            data: {
+              'error': {'message': 'model not found'},
+            },
+          ),
+        ),
+      );
+
+      await expectLater(
+        client.chat(
+          baseUrl: 'http://x/v1',
+          model: 'nope',
+          apiKey: '',
+          messages: const [LlmMessage.user('hi')],
+        ),
+        throwsA(isA<LlmHttpException>()),
+      );
+      verify(
+        mockDio.request<Map<String, dynamic>>(
+          any,
+          data: anyNamed('data'),
+          options: anyNamed('options'),
+        ),
+      ).called(1);
+    });
   });
 }

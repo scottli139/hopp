@@ -13,6 +13,8 @@ import '../common/app_badge.dart';
 import '../common/app_button.dart';
 import '../common/app_dialog.dart';
 import '../common/app_text_field.dart';
+import 'ai_privacy_gate.dart';
+import 'ai_provider_chip.dart';
 import 'ai_settings_dialog.dart';
 import 'ai_sparkle_button.dart';
 
@@ -45,11 +47,24 @@ class NaturalLanguageRequestButton extends ConsumerWidget {
       showAiNotReadySnackBar(context);
       return;
     }
+    _openDialog(context, ref);
+  }
+
+  Future<void> _openDialog(BuildContext context, WidgetRef ref) async {
+    // F9.9：云端预设首次实际调用前过隐私门
+    final consented = await ensureAiCloudConsent(
+      context,
+      ref,
+      capability: context.l10n.ai_gateCapBuild,
+    );
+    if (!consented || !context.mounted) return;
+
     ref.read(buildRequestProvider.notifier).reset();
     showAppDialog(
       context: context,
       title: context.l10n.ai_buildTitle,
       width: 560,
+      titleSuffix: const AiProviderChip(),
       child: BuildRequestDialogContent(
         currentRequest: currentRequest,
         onApply: onApply,

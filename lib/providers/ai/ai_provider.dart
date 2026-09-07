@@ -6,7 +6,13 @@ import '../../services/ai/ai_models.dart';
 import '../../services/ai/ai_prompts.dart';
 import '../../services/ai/ai_response_parser.dart';
 import '../../services/ai/llm_client.dart';
+import '../core/providers.dart';
 import '../settings/settings_provider.dart';
+
+/// 读取当前预设的 API Key（F9.9：key 本体在 ai_keys 加密 box，
+/// 不再走 AppSettings 明文字段；未配置返回空串，本地预设即用空串）
+Future<String> _readApiKey(Ref ref, AppSettings settings) =>
+    ref.read(storageServiceProvider).readAiKey(settings.aiProviderPreset);
 
 /// AI 操作状态（F9.5：解释响应 / 生成断言 / 自然语言建请求共用）
 ///
@@ -86,10 +92,11 @@ class ExplainNotifier extends StateNotifier<AiOpState<String>> {
     state = const AiOpState.loading();
     try {
       final client = _ref.read(llmClientProvider);
+      final apiKey = await _readApiKey(_ref, settings);
       final content = await client.chat(
         baseUrl: settings.aiBaseUrl,
         model: settings.aiModel,
-        apiKey: settings.aiApiKey,
+        apiKey: apiKey,
         messages: AiPrompts.buildExplainPrompt(
           statusCode: statusCode,
           statusText: statusText,
@@ -148,10 +155,11 @@ class GenerateAssertionsNotifier
     state = const AiOpState.loading();
     try {
       final client = _ref.read(llmClientProvider);
+      final apiKey = await _readApiKey(_ref, settings);
       final content = await client.chat(
         baseUrl: settings.aiBaseUrl,
         model: settings.aiModel,
-        apiKey: settings.aiApiKey,
+        apiKey: apiKey,
         messages: AiPrompts.buildAssertionPrompt(
           method: method,
           url: url,
@@ -201,10 +209,11 @@ class BuildRequestNotifier extends StateNotifier<AiOpState<AiRequestDraft>> {
     state = const AiOpState.loading();
     try {
       final client = _ref.read(llmClientProvider);
+      final apiKey = await _readApiKey(_ref, settings);
       final content = await client.chat(
         baseUrl: settings.aiBaseUrl,
         model: settings.aiModel,
-        apiKey: settings.aiApiKey,
+        apiKey: apiKey,
         messages: AiPrompts.buildRequestPrompt(description: description),
       );
       final decoded = AiResponseParser.decodeAiJson(content);
@@ -235,10 +244,14 @@ final buildRequestProvider =
   return BuildRequestNotifier(ref);
 });
 
-/// 异常 → 用户可读的友好文案（区分连接失败 / 格式异常 / 其他）
+/// 异常 → 用户可读的友好文案（区分连接失败 / 格式异常 / 其他；
+/// F9.9 增云端 401 / 429 专项文案）
 String _friendlyError(Object e) {
   return switch (e) {
     LlmConnectionException() => e.message,
+    LlmHttpException() when e.statusCode == 401 => L10nBridge.t.ai_unauthorized,
+    LlmHttpException() when e.statusCode == 429 =>
+      L10nBridge.t.ai_quotaExceeded,
     LlmHttpException() => L10nBridge.t.ai_httpError(e.message),
     LlmResponseException() => e.message,
     AiParseException() => e.message,

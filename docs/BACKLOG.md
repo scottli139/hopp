@@ -113,6 +113,7 @@
 |------|--------|------|
 | 行号与内容滚动不同步 | P2 | 待修（CodeEditor 组件；TI-03 已修复，`scroll_response target=body` 可自动化验证，见 [UX_AUDIT_M8.md](UX_AUDIT_M8.md)） |
 | 导入对话框拖放未实现 | P3 | 待修（Postman/OpenAPI 导入的拖放区均为视觉残桩，实际只能点击选择；实现需引入 desktop_drop 类依赖） |
+| export_dialog_test 在 Windows 本机 tearDown 挂 | P3 | 环境限定（2026-09-07 实测：临时目录删除 errno 32 文件被占用，疑杀毒/索引占用新写出的 .hopp.json；HEAD 基线 worktree 同挂，确认非 M8.9 回归；CI/Linux 不受影响） |
 
 ---
 

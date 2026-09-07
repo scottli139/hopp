@@ -31,6 +31,19 @@ void main() {
       final key2 = await BoxEncryption.loadOrCreateKey(tempDir);
       expect(key2, equals(key1));
     });
+
+    test('数据目录不存在时自动创建（F9.9 冒烟实机回归：全新 hopp_test/ 目录写 key 不再失败降级明文）', () async {
+      final freshDir = Directory('${tempDir.path}/hopp_test');
+      expect(await freshDir.exists(), isFalse);
+
+      final key = await BoxEncryption.loadOrCreateKey(freshDir);
+
+      expect(key, hasLength(32));
+      expect(
+        await File('${freshDir.path}/${BoxEncryption.keyFileName}').exists(),
+        isTrue,
+      );
+    });
   });
 
   group('migrateToEncrypted', () {

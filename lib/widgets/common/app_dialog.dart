@@ -28,10 +28,15 @@ class AppDialog extends StatelessWidget {
     this.showClose = true,
     this.showDividers = false,
     this.footerLeading,
+    this.titleSuffix,
   });
 
   final String title;
   final Widget child;
+
+  /// 标题右侧的可选小部件（F9.9：AI 任务对话框挂 provider chip）；
+  /// null 时不渲染，既有对话框视觉不变。
+  final Widget? titleSuffix;
 
   /// 底部按钮（右对齐排布，间距 8）；null 时不渲染按钮区
   final List<Widget>? actions;
@@ -97,6 +102,10 @@ class AppDialog extends StatelessWidget {
                             .copyWith(color: t.textPrimary),
                       ),
                     ),
+                    if (titleSuffix != null) ...[
+                      const SizedBox(width: AppMetrics.space8),
+                      titleSuffix!,
+                    ],
                     if (showClose)
                       AppIconButton(
                         icon: Icons.close,
@@ -160,6 +169,7 @@ Future<T?> showAppDialog<T>({
   EdgeInsetsGeometry? contentPadding,
   bool showClose = true,
   bool barrierDismissible = true,
+  Widget? titleSuffix,
 }) {
   final dialog = AppDialog(
     title: title,
@@ -168,6 +178,7 @@ Future<T?> showAppDialog<T>({
     height: height,
     contentPadding: contentPadding ?? const EdgeInsets.fromLTRB(20, 16, 20, 16),
     showClose: showClose,
+    titleSuffix: titleSuffix,
     child: child,
   );
   return showDialog<T>(

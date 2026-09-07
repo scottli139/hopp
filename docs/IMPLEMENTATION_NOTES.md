@@ -983,6 +983,23 @@ cli/hopp.dart + cli/src/                            # hopp run 运行器（app �
 
 ---
 
+## Tier 2 BYOK 云端 (M8.9 / F9.9 / v0.17.0, 2026-09-07)
+
+> 需求与 5 项澄清决策见 PRD F9.9；UI 原型 `docs/design/tier2_byok_preview.html`。
+
+- **预设常量与云端判定**：`services/ai/ai_presets.dart` 单点持有 6 预设（本地 ollama/lmstudio + 云端 openai/deepseek/anthropic/custom）的展示名与默认 Base URL；Anthropic 走官方 OpenAI 兼容端点，单一 `LlmClient` 不变。`isCloudPreset(preset, baseUrl)`：云端三预设恒云端，custom 按 baseUrl 是否 loopback 判定（指向本机等价 Tier 1，不过隐私门、不要求 Key）。
+- **Key 存储（决策 1：复用应用级 AES，不引 flutter_secure_storage）**：`StorageService` 新增 `ai_keys` box，与数据 box 同一 `HiveAesCipher`（F8.4 的 `.secure_key`）；槽位 = 预设标识，分槽互不覆盖。`AppSettings` 只留两个非敏感字段：`aiKeySavedPresets`（标志位，供 `isAiReady` 同步门控）与历史明文 `aiApiKey`（仅作一次性迁移来源，`getSettings` 内 `ai_key_migrated_v1` 标记迁移入槽后清空）。Key 输入框只写不读：界面永不回显明文，已存显示「已加密保存」说明条，重新输入即覆盖，可「清除」。
+- **隐私门（决策 3：按 Provider 记一次）**：`ensureAiCloudConsent(context, ref, {capability})`（`widgets/ai/ai_privacy_gate.dart`）——非云端直通、已确认直通，否则弹门（本次外发内容随能力而异 + 目标端点 mono 行 + 日志策略 + 仅首次询问说明）。挂载 4 点：三个能力入口按钮 + 设置对话框「检查连接」（它也真实外发 ping）。设置对话框可「重置隐私确认」。确认记录存 `AppSettings.aiCloudConsents`（settings box，非敏感）。设置对话框里检查连接针对**未保存的编辑态**预设时，经 `preset/baseUrl` 参数显式覆盖，保证门与实际外发目标一致。
+- **运行时指示（决策 5）**：`AiProviderChip` 常驻三个 AI 任务对话框标题区（`AppDialog`/`showAppDialog` 新增可选 `titleSuffix`，既有对话框零变化）；云端 warning 色「数据外发」/ 本地 neutral 色「本地处理」。
+- **错误分层**：`_friendlyError` 增 `LlmHttpException` 401 →「Key 无效或未配置」、429 →「配额不足或限流」专项文案。
+- **冒烟实机发现的既有 bug 修复（F8.4 遗留）**：`BoxEncryption.loadOrCreateKey` 在全新数据目录（`Hive.init` 懒建目录，key 先落盘）下写 `.secure_key` 直接 PathNotFound → **加密静默降级明文**，此前被老目录早已存在掩盖；本机首跑 test-mode 实锤。修复 = 写 key 前 `hiveDir.create(recursive: true)`，附回归测试。M8.9 的 key 加密直接依赖此链路。
+- **试用实锤的 P0：冷加载嵌套 Map 强转 `_CastError`**：`AppSettings` 新增 `Map<String, bool> aiCloudConsents` 后，json_serializable 对 Map 字段生成 `as Map<String, dynamic>` 强转；Hive **冷加载**（重启后磁盘读回）嵌套 Map 是 `Map<dynamic, dynamic>` 运行时类型，强转直接抛异常 → `getSettings` 抛 → settingsProvider 永久 error → 设置相关按钮全部静默失灵（用户实测「检查连接/保存都没反应」）。热路径（同进程 put 后 get）Hive 返回写入时的原始对象、保留静态类型，因此单测不重启复现不了。修复 = `StorageService.normalizeSettingsJson` 递归规整嵌套容器后再 fromJson；回归测试显式喂动态类型嵌套 Map（并钉死「不规整必抛」）。
+- **试用反馈修复两条**：①模型锁定 temperature（实测 kimi-k3 只允许 1）——`LlmClient` 遇 400/422 且错误信息点名 temperature 时去掉该字段重试一次（服务端默认温度），非温度原因的 400 不瞎重试；②预设共享单个 `aiBaseUrl` 导致自定义预设 URL 被切换冲掉——新增 `aiPresetBaseUrls`（HiveField 16）按预设记忆，切换时「离开暂存 / 选中恢复（记忆 > 官方默认 > 保留现状）」，保存时持久化。
+- **test-mode**：新增 `set_ai_provider`（切云端预设 + 自动写 canned key/标志位）/ `set_ai_consent` / `reset_ai_consent` / `ai_gate_status` 四指令（TESTING.md 指令表已同步）。
+- **验证**：单测新增 ai_presets 判定矩阵、ai_keys CRUD + 明文迁移、box_encryption 新目录回归、401/429 文案；widget 测试新增隐私门 5 用例（直通/弹门/同意记录/取消中断/loopback）与设置对话框全量重写（两组分段、Key 只写不读、云端必填校验、清除、重置、检查连接过门）。Windows debug 真机 test-mode 冒烟：云端预设切换 → 门状态迁移（未确认→同意→重置）→ canned 解释全链路；`.secure_key` 首跑生成、`ai_keys.hive` 无明文。云端真 key 已由用户实测通过（自定义预设 + Moonshot kimi-k3，温度锁定重试生效）。
+
+---
+
 ## 环境变量系统 (M8.1)
 
 > 定位（2026-08-20 决策）：「可复用 + AI 变量注入的基础」，不是 Postman parity。AI 生成的请求引用 `{{baseUrl}}` / `{{token}}`。

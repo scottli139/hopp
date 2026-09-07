@@ -189,7 +189,7 @@ void main() {
       await tapEntry(tester);
       await tester.pumpAndSettle();
 
-      expect(find.text('Local AI is not enabled or no model is configured'),
+      expect(find.text('AI Assistant is not enabled or no model is configured'),
           findsOneWidget);
       expect(find.text('Open Settings'), findsOneWidget);
       expect(find.byKey(const Key('explain_response_dialog')), findsNothing);

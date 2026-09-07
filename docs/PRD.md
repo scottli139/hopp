@@ -860,7 +860,7 @@
 #### F9.3 实现要点
 
 - **单一 OpenAI 兼容客户端**：`baseURL + model + key` 可配，Tier 1 指向 `http://localhost:11434/v1`（Ollama），Tier 2 指向云端；一套代码覆盖两层
-- **密钥走 OS 安全存储**：macOS Keychain / Windows Credential Manager / Linux libsecret，不落 Hive/UserDefaults 明文
+- **密钥加密存储**（2026-09-07 修订，详见 F9.9 决策 1）：复用 F8.4 应用级 AES（box_encryption），按预设分槽，不落明文；原方案「macOS Keychain / Windows Credential Manager / Linux libsecret」因引入新依赖与平台构建风险被否，降级为后备方向
 - **元数据-only 日志**：只记端点/模型/耗时/字数，不落请求体、key、响应文本本体
 - **防脑补硬约束**：生成请求/断言时，字段、参数、取值只允许来自 spec 或用户输入，缺失即缺失，禁止脑补
 
@@ -940,6 +940,42 @@
 - [x] schema 校验单测覆盖防脑补用例（非法枚举 / 类型不匹配 / 缺失字段）
 - [x] 连接失败 / 超时 / 服务未启动均有友好提示，发请求主流程不受影响（单测覆盖错误分层）
 - [x] UI 过设计守卫（token + 通用组件），亮/暗双主题正常（token 自适应，无分支代码）
+
+#### F9.9 Tier 2：BYOK 云端（M8.9，2026-09-07 澄清确认）
+
+**范围**
+
+| 项 | 决策 |
+|----|------|
+| 本期做 | 云端 Provider 预设（OpenAI / DeepSeek / Anthropic / 自定义）；API Key 应用级 AES 加密存储（按预设分槽）；首次外发隐私门；AI 任务对话框 provider chip；云端 Key 必填校验 + 401/429 专项文案 |
+| 本期不做 | 流式输出（F9.6 排 M8.10）；`/v1/models` 模型列表拉取（模型名仍手填）；多 Key 管理 / 用量统计；代理配置；通用聊天面板 |
+
+**澄清决策（2026-09-07，UI 原型 `docs/design/tier2_byok_preview.html`）**
+
+| # | 决策点 | 结论 |
+|---|--------|------|
+| 1 | 密钥存储 | 复用 F8.4 应用级 AES（box_encryption 同一 key + HiveAesCipher 新建加密 box，按预设分槽），不引 flutter_secure_storage——零新依赖、零平台风险；诚实边界：防直接翻看数据文件，不防整机级攻击。F9.3 原「OS 安全存储」方案相应修订 |
+| 2 | Provider 预设 | 云端组 4 个全保留：OpenAI / DeepSeek / Anthropic（走官方 OpenAI 兼容端点 `https://api.anthropic.com/v1`）/ 自定义；单一 OpenAI 兼容客户端不变 |
+| 3 | 隐私门粒度 | 按 Provider 记一次；三个能力入口 + 设置对话框「检查连接」统一过门；取消则中断本次调用并 toast 提示；设置里可「重置隐私确认」 |
+| 4 | 启用开关 | 单总开关「启用 AI 助手」（原「启用本地 AI」改名），层由当前预设决定 |
+| 5 | 运行时指示 | 三个 AI 任务对话框标题区常驻 provider chip：云端 warning 色「数据外发」/ 本地 neutral 色「本地处理」 |
+
+**实现要点**
+
+- Key 存储：新 Hive box 用 BoxEncryption 同一 key 的 HiveAesCipher 打开，槽位 key = 预设标识；旧 `AppSettings.aiApiKey` 明文一次性迁移入槽并清空字段，界面不提供明文回显（只写不读，重新输入即覆盖）
+- 隐私门：确认记录存 AppSettings（按预设的 bool map）；任何云端实际调用前检查，未确认先弹门（列明外发内容 / 目标端点 / 日志策略）
+- 云端校验：预设为云端时 Key 必填；401 →「Key 无效或未配置」、429 →「配额不足或限流」专项文案
+- test-mode：Key 存储抽象接口 + InMemory 实现注入；隐私门状态可经指令重置/预置；云端链路沿用 CannedLlmClient mock 验证
+
+**验收标准**
+
+- [x] 云端 4 预设可选，选中自动填官方端点；Key 加密落盘、界面无明文回显；旧版明文 key 迁移后不残留（`ai_keys` box 分槽 + `ai_key_migrated_v1` 一次性迁移，storage 测试覆盖）
+- [x] 云端首次调用（任一能力入口或检查连接）弹隐私门，同意后才外发；按 Provider 记录，重置后再次询问（隐私门 widget 测试 5 用例 + test-mode `set_ai_consent` / `ai_gate_status` 真机冒烟）
+- [x] 三个 AI 任务对话框 chip 按本地/云端正确显示，亮/暗双主题正常，过设计守卫
+- [x] 云端 Key 缺失保存时校验提示；401/429 有专项文案（provider 级测试覆盖）；任何失败不影响发请求主流程
+- [x] test-mode 指令可自动化验证全链路（mock 云端 + 隐私门开关；Windows debug 真机冒烟通过）
+
+> 注：云端真 key 已由用户实测通过（2026-09-07，自定义预设 + Moonshot `https://api.moonshot.cn/v1` + kimi-k3；过程中发现并修复温度锁定兼容 / 冷加载 _CastError 两处问题，见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「Tier 2 BYOK 云端」）。
 
 ---
 

@@ -790,7 +790,7 @@ void main() {
     });
   });
 
-  group('language migration (F5.9)', () {
+  group('one-shot migrations (F5.9 language / F9.9 ai key)', () {
     late Directory tempDir;
     late StorageService service;
 
@@ -819,6 +819,7 @@ void main() {
 
     setUp(() async {
       await settingsBox().clear();
+      await Hive.box<dynamic>('ai_keys').clear();
     });
 
     test('无迁移标记时 language==en 改写为 system 并写标记', () async {
@@ -841,6 +842,70 @@ void main() {
       expect(settings.language, equals('en'));
       final persisted = settingsBox().get('app_settings') as Map;
       expect(persisted['language'], equals('en'));
+    });
+    test('明文 aiApiKey 一次性迁入加密 box 并清空明文字段（F9.9）', () async {
+      await settingsBox().put('app_settings', {
+        ...AppSettings.defaults().toJson(),
+        'aiProviderPreset': 'openai',
+        'aiApiKey': 'sk-legacy-plaintext',
+      });
+
+      final settings = await service.getSettings();
+
+      // 明文字段清空、标志位记录、key 本体可读回
+      expect(settings.aiApiKey, isEmpty);
+      expect(settings.aiKeySavedPresets, contains('openai'));
+      expect(await service.readAiKey('openai'), 'sk-legacy-plaintext');
+      expect(settingsBox().get('ai_key_migrated_v1'), isTrue);
+      final persisted = settingsBox().get('app_settings') as Map;
+      expect(persisted['aiApiKey'], isEmpty);
+    });
+
+    test('无明文 key 时只写迁移标记（F9.9）', () async {
+      await settingsBox().put('app_settings', AppSettings.defaults().toJson());
+
+      final settings = await service.getSettings();
+
+      expect(settings.aiApiKey, isEmpty);
+      expect(settings.aiKeySavedPresets, isEmpty);
+      expect(settingsBox().get('ai_key_migrated_v1'), isTrue);
+      expect(await service.readAiKey('ollama'), isEmpty);
+    });
+
+    test('ai_keys CRUD：写入 / 覆盖 / 分槽 / 删除（F9.9）', () async {
+      expect(await service.readAiKey('openai'), isEmpty);
+      await service.writeAiKey('openai', 'k1');
+      expect(await service.readAiKey('openai'), 'k1');
+      await service.writeAiKey('openai', 'k2');
+      expect(await service.readAiKey('openai'), 'k2');
+      // 分槽互不影响
+      await service.writeAiKey('deepseek', 'd1');
+      expect(await service.readAiKey('deepseek'), 'd1');
+      expect(await service.readAiKey('openai'), 'k2');
+      await service.deleteAiKey('openai');
+      expect(await service.readAiKey('openai'), isEmpty);
+      expect(await service.readAiKey('deepseek'), 'd1');
+    });
+
+    test('嵌套动态 Map 规整后可解析（F9.9 P0：冷加载 _CastError 回归）',
+        () async {
+      // 模拟 Hive 冷加载：嵌套容器全是 dynamic 运行时类型
+      final cold = <dynamic, dynamic>{
+        ...AppSettings.defaults().toJson(),
+        'aiCloudConsents': <dynamic, dynamic>{'custom': true},
+        'aiKeySavedPresets': <dynamic>['custom'],
+      };
+      // 不规整直读必抛（钉死 bug 本身存在）
+      expect(
+        () => AppSettings.fromJson(
+            cold.map((k, v) => MapEntry(k.toString(), v))),
+        throwsA(isA<TypeError>()),
+      );
+      // 规整后正常解析
+      final settings =
+          AppSettings.fromJson(StorageService.normalizeSettingsJson(cold));
+      expect(settings.aiCloudConsents['custom'], isTrue);
+      expect(settings.aiKeySavedPresets, contains('custom'));
     });
   });
 }

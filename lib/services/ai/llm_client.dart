@@ -80,7 +80,10 @@ class LlmUsage {
 /// 单一 OpenAI 兼容 chat completions 客户端（F9.3）
 ///
 /// `baseURL + model + key` 可配，Tier 1（Ollama / LM Studio）与 Tier 2
-/// （BYOK 云端）共用一套代码。非流式、温度 0。
+/// （BYOK 云端）共用一套代码。非流式、默认温度 0。
+///
+/// 温度兼容（F9.9 实测）：部分模型锁定 temperature（如 kimi-k3 只允许 1），
+/// 400/422 且错误点名 temperature 时去掉该字段重试一次（用服务端默认值）。
 ///
 /// 日志只记元数据（端点 / 模型 / 耗时 / token 数），不落 messages 内容、
 /// API key 与响应文本本体。
@@ -126,23 +129,22 @@ class LlmClient {
         options: Options(method: 'POST', headers: headers),
       );
     } on DioException catch (e) {
-      // 服务端返回了响应（4xx/5xx，dio 默认 validateStatus 会抛）
-      final errResponse = e.response;
-      if (errResponse != null && errResponse.statusCode != null) {
-        throw LlmHttpException(
-          errResponse.statusCode!,
-          _extractErrorMessage(errResponse.data) ??
-              e.message ??
-              L10nBridge.t.ai_requestFailed,
-        );
+      // 温度兼容重试（F9.9）：模型锁定 temperature（如 kimi-k3 只允许 1）
+      // 时去掉该字段重试一次，改用服务端默认温度
+      if (_isTemperatureRejected(e)) {
+        body.remove('temperature');
+        try {
+          response = await dio.request<Map<String, dynamic>>(
+            endpoint,
+            data: body,
+            options: Options(method: 'POST', headers: headers),
+          );
+        } on DioException catch (retryError) {
+          throw _mapDioError(retryError);
+        }
+      } else {
+        throw _mapDioError(e);
       }
-      // 发送/接收超时：服务在线但生成太慢，与「服务未启动」区分提示
-      if (e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout) {
-        throw LlmConnectionException.timeout(e.message);
-      }
-      // 连接失败 / 连接超时：服务未启动或端口不通
-      throw LlmConnectionException(e.message);
     }
 
     stopwatch.stop();
@@ -219,5 +221,34 @@ class LlmClient {
     }
     if (data is String && data.isNotEmpty) return data;
     return null;
+  }
+
+  /// 温度被模型拒绝（400/422 且错误信息点名 temperature）→ 允许去温度重试
+  bool _isTemperatureRejected(DioException e) {
+    final status = e.response?.statusCode;
+    if (status != 400 && status != 422) return false;
+    final msg = _extractErrorMessage(e.response?.data) ?? e.message ?? '';
+    return msg.toLowerCase().contains('temperature');
+  }
+
+  /// DioException → 分层异常（HTTP 状态 / 超时 / 连接失败）
+  LlmException _mapDioError(DioException e) {
+    // 服务端返回了响应（4xx/5xx，dio 默认 validateStatus 会抛）
+    final errResponse = e.response;
+    if (errResponse != null && errResponse.statusCode != null) {
+      return LlmHttpException(
+        errResponse.statusCode!,
+        _extractErrorMessage(errResponse.data) ??
+            e.message ??
+            L10nBridge.t.ai_requestFailed,
+      );
+    }
+    // 发送/接收超时：服务在线但生成太慢，与「服务未启动」区分提示
+    if (e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      return LlmConnectionException.timeout(e.message);
+    }
+    // 连接失败 / 连接超时：服务未启动或端口不通
+    return LlmConnectionException(e.message);
   }
 }

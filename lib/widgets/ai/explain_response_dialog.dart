@@ -15,6 +15,8 @@ import '../../theme/app_theme_data.dart';
 import '../common/app_badge.dart';
 import '../common/app_button.dart';
 import '../common/app_dialog.dart';
+import 'ai_privacy_gate.dart';
+import 'ai_provider_chip.dart';
 import 'ai_settings_dialog.dart';
 import 'ai_sparkle_button.dart';
 
@@ -48,12 +50,29 @@ class ExplainResponseButton extends ConsumerWidget {
       return;
     }
 
+    _openDialog(context, ref, response);
+  }
+
+  Future<void> _openDialog(
+    BuildContext context,
+    WidgetRef ref,
+    HttpResponse response,
+  ) async {
+    // F9.9：云端预设首次实际调用前过隐私门
+    final consented = await ensureAiCloudConsent(
+      context,
+      ref,
+      capability: context.l10n.ai_gateCapExplain,
+    );
+    if (!consented || !context.mounted) return;
+
     ref.read(explainProvider.notifier).reset();
     final request = ref.read(activeTabProvider)?.request;
     showAppDialog(
       context: context,
       title: context.l10n.ai_explainTitle,
       width: 560,
+      titleSuffix: const AiProviderChip(),
       child: ExplainResponseDialogContent(
         response: response,
         request: request,

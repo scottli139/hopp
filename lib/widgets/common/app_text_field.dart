@@ -34,6 +34,7 @@ class AppTextField extends StatefulWidget {
     this.compact = false,
     this.borderless = false,
     this.obscureText = false,
+    this.hasError = false,
     this.maxLines = 1,
     this.expands = false,
     this.height,
@@ -59,6 +60,9 @@ class AppTextField extends StatefulWidget {
   ///（表格单元格 / 行内可编辑标题场景）
   final bool borderless;
   final bool obscureText;
+
+  /// 校验失败态（F9.9 云端 Key 必填校验）：边框标 error 色，优先级高于 focus
+  final bool hasError;
 
   /// 多行时 > 1（如 3），盒子高度包裹内容；单行固定高时忽略
   final int? maxLines;
@@ -177,8 +181,10 @@ class _AppTextFieldState extends State<AppTextField> {
         : BoxDecoration(
             color: t.background,
             border: Border.all(
-              color: _focused ? t.brand : t.borderStrong,
-              width: _focused ? 1.5 : 1,
+              color: widget.hasError
+                  ? t.error
+                  : (_focused ? t.brand : t.borderStrong),
+              width: _focused || widget.hasError ? 1.5 : 1,
             ),
             borderRadius: AppMetrics.br6,
           );

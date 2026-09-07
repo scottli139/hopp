@@ -83,13 +83,20 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
     }
   }
 
-  /// 更新 AI 配置（F9.5：Tier 1 本地模型连接参数）
+  /// 更新 AI 配置（F9.5 连接参数；F9.9 增隐私门记录与 key 标志位）
+  ///
+  /// 注意：API Key 本体不走这里——F9.9 起存 ai_keys 加密 box，
+  /// 由调用方（AI 设置对话框）直接经 StorageService.writeAiKey 写入，
+  /// 此处只维护 [aiKeySavedPresets] 标志位。[aiApiKey] 参数仅历史兼容。
   Future<void> updateAiSettings({
     bool? aiEnabled,
     String? aiProviderPreset,
     String? aiBaseUrl,
     String? aiModel,
     String? aiApiKey,
+    Map<String, bool>? aiCloudConsents,
+    List<String>? aiKeySavedPresets,
+    Map<String, String>? aiPresetBaseUrls,
   }) async {
     final current = state.value;
     if (current != null) {
@@ -109,7 +116,34 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
       if (aiApiKey != null) {
         settings = settings.copyWith(aiApiKey: aiApiKey);
       }
+      if (aiCloudConsents != null) {
+        settings = settings.copyWith(aiCloudConsents: aiCloudConsents);
+      }
+      if (aiKeySavedPresets != null) {
+        settings = settings.copyWith(aiKeySavedPresets: aiKeySavedPresets);
+      }
+      if (aiPresetBaseUrls != null) {
+        settings = settings.copyWith(aiPresetBaseUrls: aiPresetBaseUrls);
+      }
       await updateSettings(settings);
+    }
+  }
+
+  /// 记录云端预设的隐私门确认（F9.9：按 Provider 记一次）
+  Future<void> grantAiCloudConsent(String preset) async {
+    final current = state.value;
+    if (current != null) {
+      await updateSettings(current.copyWith(
+        aiCloudConsents: {...current.aiCloudConsents, preset: true},
+      ));
+    }
+  }
+
+  /// 清空全部云端隐私门确认记录（设置对话框「重置隐私确认」）
+  Future<void> resetAiCloudConsents() async {
+    final current = state.value;
+    if (current != null && current.aiCloudConsents.isNotEmpty) {
+      await updateSettings(current.copyWith(aiCloudConsents: const {}));
     }
   }
 }

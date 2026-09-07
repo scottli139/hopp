@@ -588,6 +588,10 @@ python3 integration_test/test_client.py --port <PORT> full_test
 | `ai_explain` | —（取当前 tab 响应） | `{'status', 'result', 'error'}` |
 | `ai_generate_assertions` | —（取当前 tab 响应） | `{'status', 'assertions': [{'target','targetArg','operator','expected'}], 'discarded', 'error'}` |
 | `ai_build_request` | `description`: String（必填） | `{'status', 'draft': {'name','method','url','params','headers','bodyType','rawContentType','body'}, 'error'}` |
+| `set_ai_provider` | `preset`: String（必填，ollama/lmstudio/openai/deepseek/anthropic/custom），`base_url` / `model`: String? | `{'preset', 'cloud'}`；云端预设自动写入 canned key 与 `aiKeySavedPresets` 标志位（F9.9，不发真实连接） |
+| `set_ai_consent` | `preset`: String，`granted`: bool（缺省 true） | `{'preset', 'granted'}`；预置/撤销该云端预设的隐私门确认（F9.9） |
+| `reset_ai_consent` | — | `{'reset': true}`；清空全部隐私门确认记录 |
+| `ai_gate_status` | — | `{'loaded','preset','cloud','consented'}`；断言隐私门是否会出现（F9.9） |
 
 #### `import_openapi` 参数与返回
 

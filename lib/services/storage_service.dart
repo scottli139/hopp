@@ -31,10 +31,16 @@ class StorageService {
   static const String _collectionsBoxName = 'collections';
   static const String _requestsBoxName = 'requests';
   static const String _environmentsBoxName = 'environments';
+
+  /// F9.9：AI API Key 加密 box（槽位 key = 预设标识；box 本体随数据 box 加密）
+  static const String _aiKeysBoxName = 'ai_keys';
   static const String _settingsKey = 'app_settings';
 
   /// F5.9：language 死默认值 'en' → 'system' 的一次性迁移标记
   static const String _languageMigratedKey = 'language_migrated_v1';
+
+  /// F9.9：AppSettings.aiApiKey 明文 → ai_keys 加密 box 的一次性迁移标记
+  static const String _aiKeyMigratedKey = 'ai_key_migrated_v1';
   static const String _activeEnvironmentIdKey = 'active_environment_id';
 
   /// 全局变量在 environments box 中的保留 ID
@@ -44,6 +50,7 @@ class StorageService {
   Box<HttpRequest>? _requestsBox;
   Box<Environment>? _environmentsBox;
   Box<dynamic>? _settingsBox;
+  Box<dynamic>? _aiKeysBox;
   SharedPreferences? _prefs;
 
   /// 数据 box 加密 key（F8.4）；null 表示加密不可用（极端情况下降级明文）
@@ -186,6 +193,8 @@ class StorageService {
           encryptionCipher: cipher);
       _environmentsBox = await Hive.openBox<Environment>(_environmentsBoxName,
           encryptionCipher: cipher);
+      _aiKeysBox =
+          await Hive.openBox<dynamic>(_aiKeysBoxName, encryptionCipher: cipher);
       _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
     } catch (e, stack) {
       // 锁冲突（另一进程持有 box 锁）不是数据损坏——绝不能走删除恢复，
@@ -212,6 +221,7 @@ class StorageService {
       await Hive.deleteBoxFromDisk(_collectionsBoxName);
       await Hive.deleteBoxFromDisk(_requestsBoxName);
       await Hive.deleteBoxFromDisk(_environmentsBoxName);
+      await Hive.deleteBoxFromDisk(_aiKeysBoxName);
       await Hive.deleteBoxFromDisk(_settingsBoxName);
 
       final cipher =
@@ -222,6 +232,8 @@ class StorageService {
           encryptionCipher: cipher);
       _environmentsBox = await Hive.openBox<Environment>(_environmentsBoxName,
           encryptionCipher: cipher);
+      _aiKeysBox =
+          await Hive.openBox<dynamic>(_aiKeysBoxName, encryptionCipher: cipher);
       _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
 
       AppLogger.info('[StorageService] Boxes recovered successfully');
@@ -238,9 +250,7 @@ class StorageService {
     final json = _settingsBox?.get(_settingsKey) as Map<dynamic, dynamic>?;
     if (json == null) return AppSettings.defaults();
 
-    final settings = AppSettings.fromJson(
-      json.map((k, v) => MapEntry(k.toString(), v)),
-    );
+    final settings = AppSettings.fromJson(normalizeSettingsJson(json));
 
     // F5.9 一次性迁移：v0.16 之前 language 是未接线的死默认值 'en'，
     // 老用户的 'en' 并非主动选择；迁移为 'system'（跟随系统）并写标记，
@@ -253,12 +263,62 @@ class StorageService {
         return migrated;
       }
     }
+
+    // F9.9 一次性迁移：M8.5–M8.8 期间 aiApiKey 明文存 settings box；
+    // 迁入 ai_keys 加密 box（槽位 = 当前预设）并清空明文字段。
+    if (_settingsBox!.get(_aiKeyMigratedKey, defaultValue: false) != true) {
+      await _settingsBox!.put(_aiKeyMigratedKey, true);
+      if (settings.aiApiKey.isNotEmpty) {
+        final preset = settings.aiProviderPreset;
+        await writeAiKey(preset, settings.aiApiKey);
+        final migrated = settings.copyWith(
+          aiApiKey: '',
+          aiKeySavedPresets: {...settings.aiKeySavedPresets, preset}.toList(),
+        );
+        await saveSettings(migrated);
+        return migrated;
+      }
+    }
     return settings;
   }
 
   /// 保存应用设置
   Future<void> saveSettings(AppSettings settings) async {
     await _settingsBox?.put(_settingsKey, settings.toJson());
+  }
+
+  /// 递归规整 settings JSON 的嵌套容器（F9.9 试用实锤的 P0）：
+  /// Hive 冷加载（重启后从磁盘读）把嵌套 Map 读成 `Map<dynamic, dynamic>`，
+  /// 而 json_serializable 对 `Map<String, bool>` 字段（aiCloudConsents）
+  /// 生成 `as Map<String, dynamic>` 强转——直接抛 _CastError，设置全线
+  /// 僵死（按钮无反应）。热路径（同进程写入后读回）保留原始静态类型，
+  /// 所以单测不重启永远复现不了——回归测试必须喂动态类型嵌套 Map。
+  static Map<String, dynamic> normalizeSettingsJson(
+          Map<dynamic, dynamic> json) =>
+      json.map((k, v) => MapEntry(k.toString(), _normalizeJsonValue(v)));
+
+  static dynamic _normalizeJsonValue(dynamic v) {
+    if (v is Map) return normalizeSettingsJson(v);
+    if (v is List) return v.map(_normalizeJsonValue).toList();
+    return v;
+  }
+
+  // ==================== AI Keys（F9.9 加密存储） ====================
+
+  /// 读取指定预设的 API Key（ai_keys 加密 box；不存在返回空串）
+  Future<String> readAiKey(String preset) async {
+    final v = _aiKeysBox?.get(preset);
+    return v is String ? v : '';
+  }
+
+  /// 写入 / 覆盖指定预设的 API Key
+  Future<void> writeAiKey(String preset, String key) async {
+    await _aiKeysBox?.put(preset, key);
+  }
+
+  /// 删除指定预设的 API Key
+  Future<void> deleteAiKey(String preset) async {
+    await _aiKeysBox?.delete(preset);
   }
 
   // ==================== Collections ====================
@@ -393,6 +453,7 @@ class StorageService {
     await _collectionsBox?.clear();
     await _requestsBox?.clear();
     await _environmentsBox?.clear();
+    await _aiKeysBox?.clear();
     await _settingsBox?.clear();
     await _prefs?.clear();
   }
@@ -402,6 +463,7 @@ class StorageService {
     await _collectionsBox?.close();
     await _requestsBox?.close();
     await _environmentsBox?.close();
+    await _aiKeysBox?.close();
     await _settingsBox?.close();
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopp/utils/epoch_annotation.dart';
 import 'package:hopp/widgets/common/optimized_response_viewer.dart';
@@ -99,6 +100,52 @@ void main() {
 
       expect(find.textContaining('→ 20'), findsNothing);
       expect(find.byTooltip('Hide timestamp annotations'), findsNothing);
+    });
+  });
+
+  group('OptimizedResponseViewer 完整模式渲染器（字号翻转回归）', () {
+    testWidgets('完整模式用 SelectableText.rich 渲染而非 CodeField', (tester) async {
+      await tester.pumpWidget(buildViewer(
+        content: jsonWithEpoch,
+        contentType: 'application/json',
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CodeField), findsNothing);
+      expect(find.byType(SelectableText), findsWidgets);
+    });
+
+    testWidgets('行号与正文同一滚动视图：滚动后行号随动', (tester) async {
+      final controller = ScrollController();
+      final lines = List.generate(50, (i) => '  "key$i": $i,').join('\n');
+      await tester.pumpWidget(
+        hoppTestApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 800,
+              height: 200,
+              child: OptimizedResponseViewer(
+                content: '{\n$lines\n}',
+                contentType: 'application/json',
+                initialMode: ResponseDisplayMode.full,
+                scrollController: controller,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final before = tester.getTopLeft(find.text('1')).dy;
+      expect(before, greaterThanOrEqualTo(0));
+
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      // 行号随内容一起滚动：行号 1 滚出视口顶部
+      expect(
+        tester.getTopLeft(find.text('1')).dy,
+        lessThan(before - controller.position.maxScrollExtent + 1),
+      );
+      expect(tester.getTopLeft(find.text('1')).dy, lessThan(0));
     });
   });
 }

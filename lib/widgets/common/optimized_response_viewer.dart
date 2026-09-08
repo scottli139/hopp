@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_code_editor/flutter_code_editor.dart';
+import 'package:highlight/highlight_core.dart';
 import 'package:highlight/languages/json.dart';
 
 import '../../l10n/l10n.dart';
@@ -15,6 +15,14 @@ import '../../utils/app_logger.dart';
 import '../../utils/epoch_annotation.dart';
 import 'app_button.dart';
 import 'app_divider.dart';
+
+/// JSON 语法高亮注册（highlight 全局单例只需注册一次）
+bool _jsonHighlightRegistered = false;
+void _ensureJsonHighlightRegistered() {
+  if (_jsonHighlightRegistered) return;
+  highlight.registerLanguage('json', json);
+  _jsonHighlightRegistered = true;
+}
 
 /// 响应显示模式
 enum ResponseDisplayMode {
@@ -101,6 +109,11 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   // 滚动控制器
   final ScrollController _scrollController = ScrollController();
   final ScrollController _lineNumberScrollController = ScrollController();
+  final ScrollController _horizontalScrollController = ScrollController();
+
+  // 完整模式语法高亮 span 缓存（随内容/主题变化重建）
+  String _spanCacheKey = '';
+  List<InlineSpan>? _cachedSpans;
 
   /// 主内容滚动控制器：外部传入优先，否则用内部控制器
   ScrollController get _effectiveScrollController =>
@@ -124,6 +137,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   void dispose() {
     _scrollController.dispose();
     _lineNumberScrollController.dispose();
+    _horizontalScrollController.dispose();
     super.dispose();
   }
 
@@ -726,7 +740,11 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     );
   }
 
-  /// 完整模式视图（使用 CodeEditor 提供语法高亮）
+  /// 完整模式视图（highlight 语法高亮 + SelectableText 渲染）
+  ///
+  /// 不用 CodeField：只读场景下其 EditableText 单一大段落在 Windows 高分屏
+  /// 滚动重绘时会命中引擎字体替换异常（字形被替换为回退字体并放大），
+  /// SelectableText（RenderParagraph）无此问题。
   Widget _buildFullView(ThemeData theme) {
     // 注解仅注入显示文本，原始报文与 Copy 不受影响（F8.5）
     var content = _formatContent();
@@ -734,72 +752,101 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       content =
           content.split('\n').map(EpochAnnotation.annotateLine).join('\n');
     }
-    // 使用 CodeField 提供 JSON 语法高亮
-    final controller = CodeController(
-      text: content,
-      language: _isJson ? json : null,
-    );
+    final baseStyle = AppTextStyles.code12.copyWith(height: 1.5);
     final lines = content.split('\n');
 
-    return widget.showLineNumbers
-        ? Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 行号区域
-              _buildLineNumberArea(theme, lines.length),
-              // 分割线
+    final cacheKey = '${theme.brightness}|$content';
+    if (_cachedSpans == null || _spanCacheKey != cacheKey) {
+      _cachedSpans = _computeSpans(content, theme, baseStyle);
+      _spanCacheKey = cacheKey;
+    }
+
+    // 行号与正文放在同一个垂直滚动视图里，保证二者始终同步滚动
+    return Container(
+      color: theme.colorScheme.surface,
+      child: SingleChildScrollView(
+        controller: _effectiveScrollController,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.showLineNumbers) ...[
+              _buildStaticGutter(theme, lines.length),
               const AppDivider.vertical(subtle: true),
-              // 代码区域
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _effectiveScrollController,
-                  child: Theme(
-                    data: theme.copyWith(
-                      inputDecorationTheme: const InputDecorationTheme(
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                      ),
-                    ),
-                    child: CodeTheme(
-                      data: _buildCodeTheme(theme),
-                      child: CodeField(
-                        controller: controller,
-                        readOnly: true,
-                        gutterStyle: GutterStyle.none,
-                        textStyle: AppTextStyles.code12.copyWith(height: 1.5),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
             ],
-          )
-        : SingleChildScrollView(
-            controller: _effectiveScrollController,
-            padding: const EdgeInsets.all(12),
-            child: Theme(
-              data: theme.copyWith(
-                inputDecorationTheme: const InputDecorationTheme(
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                ),
-              ),
-              child: CodeTheme(
-                data: _buildCodeTheme(theme),
-                child: CodeField(
-                  controller: controller,
-                  readOnly: true,
-                  textStyle: AppTextStyles.code12.copyWith(height: 1.4),
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                controller: _horizontalScrollController,
+                padding: const EdgeInsets.all(12),
+                child: SelectableText.rich(
+                  TextSpan(style: baseStyle, children: _cachedSpans),
                 ),
               ),
             ),
-          );
+          ],
+        ),
+      ),
+    );
   }
 
-  /// 构建代码主题
-  CodeThemeData _buildCodeTheme(ThemeData theme) {
+  /// 计算高亮 span：JSON 走 highlight 解析，其余按纯文本
+  List<InlineSpan> _computeSpans(
+    String content,
+    ThemeData theme,
+    TextStyle baseStyle,
+  ) {
+    if (!_isJson) {
+      return [TextSpan(text: content, style: baseStyle)];
+    }
+    _ensureJsonHighlightRegistered();
+    final result = highlight.parse(content, language: 'json');
+    final styles = _codeThemeStyles(theme);
+    return _buildHighlightSpans(result.nodes, styles);
+  }
+
+  /// 将 highlight 节点树转换为 TextSpan 树；未命中的类名沿父级样式
+  List<InlineSpan> _buildHighlightSpans(
+    List<Node>? nodes,
+    Map<String, TextStyle> styles,
+  ) {
+    if (nodes == null) return const [];
+    return [
+      for (final node in nodes)
+        TextSpan(
+          text: node.children == null ? node.value : null,
+          style: node.className != null ? styles[node.className] : null,
+          children: node.children == null
+              ? null
+              : _buildHighlightSpans(node.children, styles),
+        ),
+    ];
+  }
+
+  /// 静态行号栏：与正文同处一个滚动视图，行高与 code12(height:1.5) 对齐
+  Widget _buildStaticGutter(ThemeData theme, int lineCount) {
+    final gutterStyle = AppTextStyles.code11.copyWith(
+      height: 1.5 * 12 / 11,
+      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+    );
+    return Container(
+      width: _lineNumberWidth,
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+      padding: const EdgeInsets.only(
+        right: _lineNumberPadding,
+        top: 12,
+        bottom: 12,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (var i = 1; i <= lineCount; i++) Text('$i', style: gutterStyle),
+        ],
+      ),
+    );
+  }
+
+  /// 构建语法高亮样式表（className → 颜色样式；字号字体继承 code12）
+  Map<String, TextStyle> _codeThemeStyles(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
 
     // Light theme colors (优化后的配色)
@@ -854,7 +901,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       ),
     };
 
-    return CodeThemeData(styles: isDark ? darkTheme : lightTheme);
+    return isDark ? darkTheme : lightTheme;
   }
 
   /// 原始文本视图

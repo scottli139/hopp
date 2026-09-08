@@ -143,7 +143,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 
 | 问题 | 优先级 | 状态 |
 |------|--------|------|
-| 行号与内容滚动不同步 | P2 | 需优化 CodeEditor 组件（Issue #4；test-mode `scroll_response target=body` 可自动化验证） |
+| 行号与内容滚动不同步 | P2 | 响应体完整模式已根治（v0.17.1，行号与正文同一滚动视图）；性能模式行号栏与 CodeEditor 编辑场景仍挂 Issue #4 |
 
 ---
 

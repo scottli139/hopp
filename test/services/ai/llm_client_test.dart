@@ -323,8 +323,7 @@ void main() {
       );
     });
 
-    test('模型锁定 temperature（400 点名）时去温度重试一次（F9.9 实测 kimi-k3）',
-        () async {
+    test('模型锁定 temperature（400 点名）时去温度重试一次（F9.9 实测 kimi-k3）', () async {
       var calls = 0;
       final capturedBodies = <Map<String, dynamic>>[];
       when(
@@ -335,8 +334,8 @@ void main() {
         ),
       ).thenAnswer((invocation) async {
         calls++;
-        capturedBodies.add(Map<String, dynamic>.from(
-            invocation.namedArguments[#data] as Map));
+        capturedBodies.add(
+            Map<String, dynamic>.from(invocation.namedArguments[#data] as Map));
         if (calls == 1) {
           throw DioException(
             requestOptions: RequestOptions(),

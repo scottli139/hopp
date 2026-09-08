@@ -91,8 +91,7 @@ void main() {
       expect(find.text('No assertions yet'), findsOneWidget);
     });
 
-    testWidgets('空态在极矮面板下不溢出（页首 + hint 固定块曾溢出 29px）',
-        (tester) async {
+    testWidgets('空态在极矮面板下不溢出（页首 + hint 固定块曾溢出 29px）', (tester) async {
       // 回归：分栏拖到极矮时页首 + 底部 hint 两个固定块超出可用高度，
       // 曾 BOTTOM OVERFLOWED 29px；hint 已并入空态滚动区
       await tester.pumpWidget(

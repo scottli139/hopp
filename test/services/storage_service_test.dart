@@ -887,8 +887,7 @@ void main() {
       expect(await service.readAiKey('deepseek'), 'd1');
     });
 
-    test('嵌套动态 Map 规整后可解析（F9.9 P0：冷加载 _CastError 回归）',
-        () async {
+    test('嵌套动态 Map 规整后可解析（F9.9 P0：冷加载 _CastError 回归）', () async {
       // 模拟 Hive 冷加载：嵌套容器全是 dynamic 运行时类型
       final cold = <dynamic, dynamic>{
         ...AppSettings.defaults().toJson(),
@@ -897,8 +896,8 @@ void main() {
       };
       // 不规整直读必抛（钉死 bug 本身存在）
       expect(
-        () => AppSettings.fromJson(
-            cold.map((k, v) => MapEntry(k.toString(), v))),
+        () =>
+            AppSettings.fromJson(cold.map((k, v) => MapEntry(k.toString(), v))),
         throwsA(isA<TypeError>()),
       );
       // 规整后正常解析

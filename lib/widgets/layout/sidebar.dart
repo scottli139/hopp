@@ -40,6 +40,9 @@ class Sidebar extends ConsumerStatefulWidget {
 }
 
 class _SidebarState extends ConsumerState<Sidebar> {
+  /// 底栏单行布局所需的最小宽度（五组控件 180 + 水平边距 16，留 18 余量）
+  static const double _footerSingleRowMinWidth = 214;
+
   // 编辑状态变量
   bool _isEditingName = false;
   String? _editingRequestId;
@@ -213,57 +216,76 @@ class _SidebarState extends ConsumerState<Sidebar> {
     // F5.7 界面缩放只放大文字，栏高需同步乘缩放因子，否则 125%/150% 下显挤
     final uiScale = MediaQuery.textScalerOf(context).scale(1.0);
 
-    return Container(
-      height: AppMetrics.height36 * uiScale,
-      padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space8),
-      alignment: Alignment.centerLeft,
-      child: Row(
-        children: [
-          AppSegmentedControl<String>(
-            value: themeMode,
-            items: [
-              AppSegmentedItem(
-                value: 'system',
-                icon: Icons.brightness_auto_outlined,
-                tooltip: context.l10n.sidebar_themeSystem,
-              ),
-              AppSegmentedItem(
-                value: 'light',
-                icon: Icons.light_mode_outlined,
-                tooltip: context.l10n.sidebar_themeLight,
-              ),
-              AppSegmentedItem(
-                value: 'dark',
-                icon: Icons.dark_mode_outlined,
-                tooltip: context.l10n.sidebar_themeDark,
-              ),
-            ],
-            onChanged: (mode) =>
-                ref.read(settingsProvider.notifier).updateThemeMode(mode),
-          ),
-          const SizedBox(width: AppMetrics.space8),
-          _buildUiScaleMenu(context),
-          const Spacer(),
-          // F9.5：AI 设置入口
-          AiSparkleButton(
-            tooltip: context.l10n.sidebar_aiSettings,
-            onPressed: () => openAiSettingsDialog(context),
-          ),
-          // F5.9：应用设置入口（主题 / 语言 / 界面缩放）
-          IconButton(
-            icon: Icon(Icons.settings_outlined,
-                size: 18, color: context.appTheme.textTertiary),
-            tooltip: context.l10n.settings_title,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            onPressed: () => openAppSettingsDialog(context),
-          ),
-        ],
-      ),
+    final themeControl = AppSegmentedControl<String>(
+      value: themeMode,
+      items: [
+        AppSegmentedItem(
+          value: 'system',
+          icon: Icons.brightness_auto_outlined,
+          tooltip: context.l10n.sidebar_themeSystem,
+        ),
+        AppSegmentedItem(
+          value: 'light',
+          icon: Icons.light_mode_outlined,
+          tooltip: context.l10n.sidebar_themeLight,
+        ),
+        AppSegmentedItem(
+          value: 'dark',
+          icon: Icons.dark_mode_outlined,
+          tooltip: context.l10n.sidebar_themeDark,
+        ),
+      ],
+      onChanged: (mode) =>
+          ref.read(settingsProvider.notifier).updateThemeMode(mode),
+    );
+    final scaleMenu = _buildUiScaleMenu(context);
+    // F9.5：AI 设置入口
+    final aiButton = AiSparkleButton(
+      tooltip: context.l10n.sidebar_aiSettings,
+      onPressed: () => openAiSettingsDialog(context),
+    );
+    // F5.9：应用设置入口（主题 / 语言 / 界面缩放）
+    final settingsButton = IconButton(
+      icon: Icon(Icons.settings_outlined,
+          size: 18, color: context.appTheme.textTertiary),
+      tooltip: context.l10n.settings_title,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      onPressed: () => openAppSettingsDialog(context),
+    );
+
+    // 侧栏可拖到很窄（窗口宽度的 15%），单行放不下全部按钮时会右侧溢出；
+    // 宽度足够保持单行布局，不足时降级为 Wrap 换行，栏高随之增高
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final singleRow = constraints.maxWidth >= _footerSingleRowMinWidth;
+        return Container(
+          constraints: BoxConstraints(minHeight: AppMetrics.height36 * uiScale),
+          padding: const EdgeInsets.symmetric(horizontal: AppMetrics.space8),
+          alignment: Alignment.centerLeft,
+          child: singleRow
+              ? Row(
+                  children: [
+                    themeControl,
+                    const SizedBox(width: AppMetrics.space8),
+                    scaleMenu,
+                    const Spacer(),
+                    aiButton,
+                    settingsButton,
+                  ],
+                )
+              : Wrap(
+                  spacing: AppMetrics.space8,
+                  runSpacing: AppMetrics.space4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [themeControl, scaleMenu, aiButton, settingsButton],
+                ),
+        );
+      },
     );
   }
 
-  /// 底栏：界面文字缩放（F5.7：100% / 125% / 150%），持久化到 AppSettings
+  /// 底栏：界面文字缩放（F5.7：80% ~ 150%），持久化到 AppSettings
   Widget _buildUiScaleMenu(BuildContext context) {
     final theme = Theme.of(context);
     final uiScale = ref.watch(settingsProvider).valueOrNull?.uiScale ?? 1.0;
@@ -281,6 +303,18 @@ class _SidebarState extends ConsumerState<Sidebar> {
       onSelected: (scale) =>
           ref.read(settingsProvider.notifier).updateUiScale(scale),
       itemBuilder: (context) => [
+        AppPopupMenu.textItem(
+          theme: theme,
+          value: 0.8,
+          label: '80%',
+          selected: uiScale == 0.8,
+        ),
+        AppPopupMenu.textItem(
+          theme: theme,
+          value: 0.9,
+          label: '90%',
+          selected: uiScale == 0.9,
+        ),
         AppPopupMenu.textItem(
           theme: theme,
           value: 1.0,

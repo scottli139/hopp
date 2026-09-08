@@ -120,36 +120,46 @@ class _AuthConfigEditorState extends State<AuthConfigEditor> {
                   ),
                 ),
               ),
-              if (widget.allowInherit)
-                _buildTypeItem(
-                  context,
-                  type: AuthType.inherit,
-                  icon: Icons.move_up,
-                  label: context.l10n.auth_typeInherit,
+              // 列表项较多或面板偏矮时滚动，避免固定高度 Column 溢出
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (widget.allowInherit)
+                        _buildTypeItem(
+                          context,
+                          type: AuthType.inherit,
+                          icon: Icons.move_up,
+                          label: context.l10n.auth_typeInherit,
+                        ),
+                      _buildTypeItem(
+                        context,
+                        type: AuthType.none,
+                        icon: Icons.block,
+                        label: context.l10n.auth_typeNone,
+                      ),
+                      _buildTypeItem(
+                        context,
+                        type: AuthType.bearer,
+                        icon: Icons.confirmation_number_outlined,
+                        label: context.l10n.auth_typeBearer,
+                      ),
+                      _buildTypeItem(
+                        context,
+                        type: AuthType.basic,
+                        icon: Icons.lock_outline,
+                        label: context.l10n.auth_typeBasic,
+                      ),
+                      _buildTypeItem(
+                        context,
+                        type: AuthType.apiKey,
+                        icon: Icons.vpn_key_outlined,
+                        label: context.l10n.auth_typeApiKey,
+                      ),
+                    ],
+                  ),
                 ),
-              _buildTypeItem(
-                context,
-                type: AuthType.none,
-                icon: Icons.block,
-                label: context.l10n.auth_typeNone,
-              ),
-              _buildTypeItem(
-                context,
-                type: AuthType.bearer,
-                icon: Icons.confirmation_number_outlined,
-                label: context.l10n.auth_typeBearer,
-              ),
-              _buildTypeItem(
-                context,
-                type: AuthType.basic,
-                icon: Icons.lock_outline,
-                label: context.l10n.auth_typeBasic,
-              ),
-              _buildTypeItem(
-                context,
-                type: AuthType.apiKey,
-                icon: Icons.vpn_key_outlined,
-                label: context.l10n.auth_typeApiKey,
               ),
             ],
           ),

@@ -96,6 +96,8 @@ class AppSettingsDialog extends ConsumerWidget {
               boxed: true,
               compact: true,
               items: const [
+                AppPopupSelectEntry(value: 0.8, label: '80%'),
+                AppPopupSelectEntry(value: 0.9, label: '90%'),
                 AppPopupSelectEntry(value: 1, label: '100%'),
                 AppPopupSelectEntry(value: 1.25, label: '125%'),
                 AppPopupSelectEntry(value: 1.5, label: '150%'),

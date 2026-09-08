@@ -1062,7 +1062,7 @@ def main():
 
     # set_divider_position
     divider_parser = subparsers.add_parser("set_divider_position", help="设置分隔线位置")
-    divider_parser.add_argument("--ratio", type=float, default=0.5, help="分隔线位置（0.2-0.8）")
+    divider_parser.add_argument("--ratio", type=float, default=0.5, help="分隔线位置（0.35-0.82，超出会被最小高度约束截断）")
 
     # focus_url_input
     subparsers.add_parser("focus_url_input", help="聚焦 URL 输入框（用于测试 focus 状态）")

@@ -154,53 +154,60 @@ class _AssertionEditorState extends State<AssertionEditor> {
           ),
         ),
 
-        // 表格
+        // 表格（hint 并入滚动区：面板偏矮时整体可滚动，固定块只剩页首）
         if (widget.assertions.isEmpty)
-          const Expanded(child: _EmptyState())
+          Expanded(child: _EmptyState(hint: _buildHint(context)))
         else ...[
           _buildGridHead(context),
           Expanded(
             child: ListView.builder(
-              itemCount: widget.assertions.length,
-              itemBuilder: (context, index) =>
-                  _buildRow(context, widget.assertions[index], index),
+              itemCount: widget.assertions.length + 1,
+              itemBuilder: (context, index) {
+                if (index == widget.assertions.length) {
+                  return _buildHint(context);
+                }
+                return _buildRow(context, widget.assertions[index], index);
+              },
             ),
           ),
         ],
-
-        // 底部 hint
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppMetrics.space16,
-            AppMetrics.space12,
-            AppMetrics.space16,
-            AppMetrics.space16,
-          ),
-          child: Text.rich(
-            TextSpan(
-              style: AppTextStyles.tiny11.copyWith(
-                color: t.textTertiary,
-                height: 1.5,
-              ),
-              children: [
-                TextSpan(text: context.l10n.assertion_hintPrefix),
-                const WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
-                  child: _InlineCode('exists'),
-                ),
-                TextSpan(text: context.l10n.assertion_hintNoExpected),
-                const WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
-                  child: _InlineCode('< >'),
-                ),
-                TextSpan(
-                  text: context.l10n.assertion_hintComparison,
-                ),
-              ],
-            ),
-          ),
-        ),
       ],
+    );
+  }
+
+  /// 底部操作符说明（空态时钉在空态底部，列表态跟在最后一行之后）
+  Widget _buildHint(BuildContext context) {
+    final t = context.appTheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppMetrics.space16,
+        AppMetrics.space12,
+        AppMetrics.space16,
+        AppMetrics.space16,
+      ),
+      child: Text.rich(
+        TextSpan(
+          style: AppTextStyles.tiny11.copyWith(
+            color: t.textTertiary,
+            height: 1.5,
+          ),
+          children: [
+            TextSpan(text: context.l10n.assertion_hintPrefix),
+            const WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: _InlineCode('exists'),
+            ),
+            TextSpan(text: context.l10n.assertion_hintNoExpected),
+            const WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: _InlineCode('< >'),
+            ),
+            TextSpan(
+              text: context.l10n.assertion_hintComparison,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -448,30 +455,58 @@ class _DashCell extends StatelessWidget {
   }
 }
 
-/// 空态：暂无断言
+/// 空态：暂无断言（[hint] 操作符说明钉在底部；整体可滚动，矮面板不溢出）
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const _EmptyState({required this.hint});
+
+  final Widget hint;
 
   @override
   Widget build(BuildContext context) {
     final t = context.appTheme;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.fact_check_outlined, size: 24, color: t.textTertiary),
-          const SizedBox(height: AppMetrics.space8),
-          Text(
-            context.l10n.assertion_emptyTitle,
-            style: AppTextStyles.caption12.copyWith(color: t.textSecondary),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.fact_check_outlined,
+                              size: 24, color: t.textTertiary),
+                          const SizedBox(height: AppMetrics.space8),
+                          Text(
+                            context.l10n.assertion_emptyTitle,
+                            style: AppTextStyles.caption12
+                                .copyWith(color: t.textSecondary),
+                          ),
+                          const SizedBox(height: AppMetrics.space4),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppMetrics.space16),
+                            child: Text(
+                              context.l10n.assertion_emptySubtitle,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.tiny11
+                                  .copyWith(color: t.textTertiary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  hint,
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: AppMetrics.space4),
-          Text(
-            context.l10n.assertion_emptySubtitle,
-            style: AppTextStyles.tiny11.copyWith(color: t.textTertiary),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

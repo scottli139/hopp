@@ -10,10 +10,10 @@
 
 | 项目信息 | 详情 |
 |----------|------|
-| **当前阶段** | 战略转向：本地 + 私有 AI（M8 系列进行中：M8.0–M8.9 已完成）；当前版本 v0.16.1（2026-09-03 发布）；M8.9（Tier 2 BYOK）代码已完成待发布（v0.17.0），下一步 M8.10（日常工效补齐）→ v1.0 GA |
+| **当前阶段** | 战略转向：本地 + 私有 AI（M8 系列进行中：M8.0–M8.9 已完成）；当前版本 v0.17.0（2026-09-08 发布，含 M8.9 Tier 2 BYOK + 两轮溢出/缩放修复），下一步 M8.10（日常工效补齐）→ v1.0 GA |
 | **目标版本** | v1.0.0 |
 | **技术栈** | Flutter 3.35.x + Dart 3.9.x + Riverpod |
-| **测试状态** | ✅ **1042 通过 / 2 跳过 / 1 失败为 Windows 本机既有环境问题**（2026-09-07 实测；export_dialog tearDown errno 32，HEAD 基线同挂，见 [BACKLOG](./BACKLOG.md) 已知问题） |
+| **测试状态** | ✅ **1049 通过 / 2 跳过 / 1 失败为 Windows 本机既有环境问题**（2026-09-08 实测；export_dialog tearDown errno 32，HEAD 基线同挂，见 [BACKLOG](./BACKLOG.md) 已知问题） |
 
 ### 测试统计
 
@@ -47,7 +47,7 @@
 | M8.6 | 时间戳工效增强（F8.5） | P1 | 数日 | ✅ (2026-09-01，v0.14.0)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「时间戳工效增强」 |
 | M8.7 | 界面缩放（F5.7）：全局文字缩放设置，适配 Linux HiDPI（2026-09-02 插队立项，实机痛点驱动） | P1 | 数日 | ✅ (2026-09-02，v0.15.0) |
 | M8.8 | 多语言完善（F5.9）：i18n 接线 + 全量字符串抽取 + 语言切换（2026-09-03 插队立项，界面中英文混杂痛点驱动） | P1 | ≈1.5 周 | ✅ (2026-09-03，v0.16.0)，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「多语言（i18n）」 |
-| M8.9 | Tier 2（F9.9）：BYOK 云端，默认关闭（预设 4 云端 + 应用级 AES 加密 key + 首次外发隐私门 + provider chip）（原 M8.8） | P2 | ≈1 周 | ✅ (2026-09-07；澄清决策与验收见 [PRD](./PRD.md) F9.9，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「Tier 2 BYOK 云端」；发布随 v0.17.0 另排) |
+| M8.9 | Tier 2（F9.9）：BYOK 云端，默认关闭（预设 4 云端 + 应用级 AES 加密 key + 首次外发隐私门 + provider chip）（原 M8.8） | P2 | ≈1 周 | ✅ (2026-09-07；澄清决策与验收见 [PRD](./PRD.md) F9.9，实现说明见 [IMPLEMENTATION_NOTES](./IMPLEMENTATION_NOTES.md)「Tier 2 BYOK 云端」；已随 v0.17.0 发布 2026-09-08) |
 | M8.10 | 日常工效补齐：cURL 生成（F1.10）+ 环境导出（F3.7）+ Request Body Beautify（UX-3）+ 响应体搜索（F5.4）+ AI 流式输出（F9.6）（原 M8.9） | P2 | ≈2 周 | ⏳ |
 
 **已搁置**：原 v0.8/v0.9 规划中的非差异化功能（Mock 服务器、代理、WebSocket、代码片段生成、Cookie 管理、文件上传下载等）统一由 [BACKLOG.md](./BACKLOG.md) 维护。
@@ -95,7 +95,7 @@
 | v0.15.0 | 2026-09-02 | **M8.7 界面缩放**（F5.7 全局文字缩放 100%/125%/150%，Linux HiDPI 适配）+ P0 修复 test-mode Linux 数据隔离失效 | ✅ |
 | v0.16.0 | 2026-09-03 | **M8.8 多语言完善**（F5.9 i18n 接线 + 649 key 全量抽取 + 语言切换 + L10nCore 纯 Dart 链路） | ✅ |
 | v0.16.1 | 2026-09-03 | **TD-7 单实例保护**（runner 原生 flock + Hive box 锁冲突终止启动，根治三次数据清零事故） | ✅ |
-| v0.17.0（预计） | — | M8.9 Tier 2 BYOK 云端（默认关闭 + keychain 密钥存储 + 首次外发隐私门） | ⏳ |
+| v0.17.0 | 2026-09-08 | M8.9 Tier 2 BYOK 云端（默认关闭 + AES 加密 key 分槽 + 首次外发隐私门）+ 分栏溢出根治 + 缩放档位 80%/90% | ✅ |
 | v0.18.0（预计） | — | M8.10 日常工效补齐（F1.10 cURL 生成、F3.7 环境导出、UX-3 Body Beautify、F5.4 响应体搜索、F9.6 流式输出） | ⏳ |
 | v1.0.0 GA | — | 差异化能力落地（M8.3–M8.9）+ 工效补齐（M8.10）+ 全平台稳定（macOS/Windows/Linux）+ 应用商店发布 | ⏳ |
 

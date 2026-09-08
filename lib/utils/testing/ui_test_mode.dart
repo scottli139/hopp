@@ -805,12 +805,12 @@ class UITestModeManager {
     return {'theme_mode': mode};
   }
 
-  /// 设置界面文字缩放（F5.7：1.0 / 1.25 / 1.5）
+  /// 设置界面文字缩放（F5.7：0.8 / 0.9 / 1.0 / 1.25 / 1.5）
   ///
   /// 通过设置持久化生效，用于 HiDPI 场景紧凑布局的自动化验收。
   Future<Map<String, dynamic>> _setUiScale(double scale) async {
     // 注意：double 无 primitive equality，不能用 const Set，只能用 const List
-    const validScales = [1.0, 1.25, 1.5];
+    const validScales = [0.8, 0.9, 1.0, 1.25, 1.5];
     if (!validScales.contains(scale)) {
       throw Exception('无效界面缩放: $scale（可选: ${validScales.join('/')}）');
     }

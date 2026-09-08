@@ -65,6 +65,91 @@ void main() {
       );
     });
 
+    testWidgets('空态在矮面板下不溢出（可滚动兜底）', (tester) async {
+      // 回归：125%/150% 缩放下面板变矮，空态 Column 曾 BOTTOM OVERFLOWED
+      // 25px（页首 ~155px 高，200px 面板只剩 ~45px 空态区，内容 ~90px）
+      await tester.pumpWidget(
+        hoppTestApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                SizedBox(
+                  height: 200,
+                  child: AssertionEditor(
+                    assertions: const [],
+                    onChanged: (_) {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('No assertions yet'), findsOneWidget);
+    });
+
+    testWidgets('空态在极矮面板下不溢出（页首 + hint 固定块曾溢出 29px）',
+        (tester) async {
+      // 回归：分栏拖到极矮时页首 + 底部 hint 两个固定块超出可用高度，
+      // 曾 BOTTOM OVERFLOWED 29px；hint 已并入空态滚动区
+      await tester.pumpWidget(
+        hoppTestApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                SizedBox(
+                  height: 120,
+                  child: AssertionEditor(
+                    assertions: const [],
+                    onChanged: (_) {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('列表态在极矮面板下不溢出（hint 为列表末项）', (tester) async {
+      await tester.pumpWidget(
+        hoppTestApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                SizedBox(
+                  height: 140,
+                  child: AssertionEditor(
+                    assertions: [buildRule()],
+                    onChanged: (_) {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // hint 在列表末尾，滚动到底部后可见
+      await tester.dragUntilVisible(
+        find.textContaining('Operators are filtered by target'),
+        find.byType(ListView),
+        const Offset(0, -100),
+      );
+      expect(
+        find.textContaining('Operators are filtered by target'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('Add assertion 追加默认规则行', (tester) async {
       final captured = <List<AssertionRule>>[];
       await tester.pumpWidget(buildHarness([], captured.add));

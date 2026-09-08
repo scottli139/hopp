@@ -33,11 +33,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       Area(flex: 0.78),
     ],
   );
+  // min 为 flex 比例：请求区至少 35%（约容纳 URL 栏 + Tab 栏 + 各页签最小内容），
+  // 响应区至少 18%（信息栏 + Tab 栏 + 少量内容），避免拖到极端高度时内容溢出
   final MultiSplitViewController _verticalSplitController =
       MultiSplitViewController(
     areas: [
-      Area(flex: 0.6),
-      Area(flex: 0.4),
+      Area(flex: 0.6, min: 0.35),
+      Area(flex: 0.4, min: 0.18),
     ],
   );
 
@@ -58,8 +60,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _verticalSplitController.areas = [
-            Area(flex: dividerRatio),
-            Area(flex: 1.0 - dividerRatio),
+            Area(flex: dividerRatio, min: 0.35),
+            Area(flex: 1.0 - dividerRatio, min: 0.18),
           ];
         }
       });

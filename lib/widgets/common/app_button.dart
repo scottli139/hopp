@@ -144,7 +144,15 @@ class _AppButtonState extends State<AppButton> {
             Icon(widget.icon, size: isSmall ? 14 : 16, color: iconColor),
             const SizedBox(width: 6),
           ],
-          Text(widget.label, style: textStyle),
+          // 窄容器（如拖到最窄的侧栏空态）下文字收缩省略，不再右溢出
+          Flexible(
+            child: Text(
+              widget.label,
+              style: textStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

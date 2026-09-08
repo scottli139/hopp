@@ -646,6 +646,58 @@ void main() {
             .last as AppSettings;
         expect(saved.uiScale, equals(1.5));
       });
+
+      testWidgets('should offer 80%/90% options for dense displays',
+          (tester) async {
+        final container = createContainer();
+
+        await tester.pumpWidget(buildTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.format_size));
+        await tester.pumpAndSettle();
+
+        expect(find.text('80%'), findsOneWidget);
+        expect(find.text('90%'), findsOneWidget);
+        expect(find.text('100%'), findsOneWidget);
+        expect(find.text('125%'), findsOneWidget);
+        expect(find.text('150%'), findsOneWidget);
+
+        await tester.tap(find.text('90%'));
+        await tester.pumpAndSettle();
+
+        final saved = verify(mockStorageService.saveSettings(captureAny))
+            .captured
+            .last as AppSettings;
+        expect(saved.uiScale, equals(0.9));
+      });
+    });
+
+    group('footer layout', () {
+      testWidgets('窄侧栏下底栏降级换行不溢出', (tester) async {
+        // 回归：侧栏拖窄时底栏五控件曾右侧溢出 19px 吃掉设置按钮
+        final container = createContainer();
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: hoppTestApp(
+              home: const Scaffold(
+                body: Align(
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(width: 180, child: Sidebar()),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        // 全部入口仍可达
+        expect(find.byIcon(Icons.format_size), findsOneWidget);
+        expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+      });
     });
   });
 }

@@ -36,7 +36,7 @@ class AppSettings with _$AppSettings {
     /// 此处仅作一次性迁移来源，迁移后清空（见 storage getSettings）
     @HiveField(12) @Default('') String aiApiKey,
 
-    /// 界面文字缩放（F5.7 / M8.7）：1.0 / 1.25 / 1.5，默认 1.0
+    /// 界面文字缩放（F5.7 / M8.7）：0.8 / 0.9 / 1.0 / 1.25 / 1.5，默认 1.0
     @HiveField(13) @Default(1.0) double uiScale,
 
     /// 云端隐私门确认记录（F9.9）：key = 云端预设标识，按 Provider 记一次

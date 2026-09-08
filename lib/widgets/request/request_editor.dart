@@ -1134,40 +1134,11 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
 
   /// 构建 "none" 类型的 Body 视图
   Widget _buildNoneBodyView(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: context.appTheme.surfaceVariant,
-              borderRadius: AppMetrics.br8,
-            ),
-            child: Icon(
-              Icons.block,
-              size: 32,
-              color: theme.colorScheme.outline.withValues(alpha: 0.5),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            context.l10n.request_noBodyContent,
-            style: AppTextStyles.body13.copyWith(
-              color: theme.colorScheme.outline,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            context.l10n.request_selectBodyTypeHint,
-            style: AppTextStyles.body13.copyWith(
-              color: theme.colorScheme.outline.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
-      ),
+    // AppEmptyState 自带矮面板滚动兜底（2026-09-08 溢出 35px 反馈）
+    return AppEmptyState(
+      icon: Icons.block,
+      title: context.l10n.request_noBodyContent,
+      subtitle: context.l10n.request_selectBodyTypeHint,
     );
   }
 
@@ -1287,31 +1258,16 @@ class _RequestEditorState extends ConsumerState<RequestEditor>
     HttpRequest request,
   ) {
     // TODO: 实现文件选择器
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.upload_file,
-            size: 48,
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            context.l10n.request_selectFile,
-            style: AppTextStyles.body13.copyWith(
-              color: Theme.of(context).colorScheme.outline,
-            ),
-          ),
-          const SizedBox(height: 8),
-          AppButton.secondary(
-            label: context.l10n.request_chooseFile,
-            icon: Icons.upload_file,
-            onPressed: () {
-              // TODO: 打开文件选择器
-            },
-          ),
-        ],
+    // AppEmptyState 自带矮面板滚动兜底
+    return AppEmptyState(
+      icon: Icons.upload_file,
+      title: context.l10n.request_selectFile,
+      action: AppButton.secondary(
+        label: context.l10n.request_chooseFile,
+        icon: Icons.upload_file,
+        onPressed: () {
+          // TODO: 打开文件选择器
+        },
       ),
     );
   }

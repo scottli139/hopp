@@ -16,8 +16,11 @@ const List<String> kAppFontFamilyFallback = [
   'Microsoft YaHei',
 ];
 
-/// 等宽场景回退链：优先等宽字体（含 CJK 等宽），再退回通用 CJK 链。
+/// 等宽场景回退链：首选内置 JetBrainsMono（pubspec 声明），其后按平台
+/// 系统字体（含 CJK 等宽）回退，再退回通用 CJK 链（CJK 字符按字形回退）。
 const List<String> kAppCodeFontFamilyFallback = [
+  'Menlo',
+  'Consolas',
   'Noto Sans Mono CJK SC',
   'DejaVu Sans Mono',
   'Liberation Mono',
@@ -70,21 +73,21 @@ class AppTextStyles {
     letterSpacing: 0.2,
   );
 
-  /// 12 w400 Menlo —— 代码 / 等宽文本统一入口
+  /// 12 w400 JetBrainsMono —— 代码 / 等宽文本统一入口
   static const code12 = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.45,
-    fontFamily: 'Menlo',
+    fontFamily: 'JetBrainsMono',
     fontFamilyFallback: kAppCodeFontFamilyFallback,
   );
 
-  /// 11 w400 Menlo —— 密集代码场景（KV 行 / 头信息等）
+  /// 11 w400 JetBrainsMono —— 密集代码场景（KV 行 / 头信息等）
   static const code11 = TextStyle(
     fontSize: 11,
     fontWeight: FontWeight.w400,
     height: 1.4,
-    fontFamily: 'Menlo',
+    fontFamily: 'JetBrainsMono',
     fontFamilyFallback: kAppCodeFontFamilyFallback,
   );
 }

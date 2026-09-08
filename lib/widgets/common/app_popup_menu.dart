@@ -119,7 +119,14 @@ class AppPopupSelectEntry<T> {
   final T value;
   final String label;
 
-  const AppPopupSelectEntry({required this.value, required this.label});
+  /// 可选前置组件（如 MethodBadge），显示在文字左侧
+  final Widget? leading;
+
+  const AppPopupSelectEntry({
+    required this.value,
+    required this.label,
+    this.leading,
+  });
 }
 
 /// 值选择弹出菜单（DropdownButton 的统一替代）
@@ -167,13 +174,14 @@ class AppPopupSelect<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.appTheme;
 
-    String? selectedLabel;
+    AppPopupSelectEntry<T>? selectedEntry;
     for (final entry in items) {
       if (entry.value == value) {
-        selectedLabel = entry.label;
+        selectedEntry = entry;
         break;
       }
     }
+    final selectedLabel = selectedEntry?.label;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -186,6 +194,8 @@ class AppPopupSelect<T> extends StatelessWidget {
           constraints: BoxConstraints(
             minWidth: triggerWidth ?? 120,
             maxWidth: triggerWidth ?? 280,
+            // 限高滚动：避免长列表（如预请求链选请求）顶满整个窗口
+            maxHeight: 320,
           ),
           shape: AppPopupMenu.menuShape(Theme.of(context)),
           elevation: AppPopupMenu.menuElevation,
@@ -193,12 +203,41 @@ class AppPopupSelect<T> extends StatelessWidget {
           onSelected: onSelected,
           itemBuilder: (context) => [
             for (final entry in items)
-              AppPopupMenu.textItem(
-                theme: Theme.of(context),
-                value: entry.value,
-                label: entry.label,
-                selected: entry.value == value,
-              ),
+              entry.leading != null
+                  ? PopupMenuItem<T>(
+                      value: entry.value,
+                      height: AppPopupMenu.itemHeight,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppPopupMenu.itemHorizontalPadding),
+                      child: Row(
+                        children: [
+                          entry.leading!,
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              entry.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppPopupMenu.itemTextStyle(
+                                Theme.of(context),
+                                color: entry.value == value
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
+                                fontWeight: entry.value == value
+                                    ? FontWeight.w600
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : AppPopupMenu.textItem(
+                      theme: Theme.of(context),
+                      value: entry.value,
+                      label: entry.label,
+                      selected: entry.value == value,
+                    ),
           ],
           // boxed 触发器规格与 AppTextField 对齐：高 32（compact 28）、
           // 底 background、边 borderStrong、圆角 6
@@ -217,6 +256,10 @@ class AppPopupSelect<T> extends StatelessWidget {
                 : null,
             child: Row(
               children: [
+                if (selectedEntry?.leading != null) ...[
+                  selectedEntry!.leading!,
+                  const SizedBox(width: 6),
+                ],
                 Expanded(
                   child: Text(
                     selectedLabel ?? hint ?? '',

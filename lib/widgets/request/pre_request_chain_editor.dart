@@ -9,6 +9,7 @@ import '../../services/pre_request/pre_request_chain_runner.dart';
 import '../../theme/app_metrics.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_theme_data.dart';
+import '../common/app_badge.dart';
 import '../common/app_button.dart';
 import '../common/app_controls.dart';
 import '../common/app_popup_menu.dart';
@@ -247,7 +248,8 @@ class _PreRequestChainEditorState extends ConsumerState<PreRequestChainEditor> {
                         for (final r in candidates)
                           AppPopupSelectEntry(
                             value: r.id,
-                            label: '${r.method.value} ${r.name}',
+                            label: r.name,
+                            leading: MethodBadge(r.method.value),
                           ),
                       ],
                       onSelected: (id) =>

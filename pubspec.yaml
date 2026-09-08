@@ -1,7 +1,7 @@
 name: hopp
 description: "Hopp - A lightweight, cross-platform API testing tool built with Flutter"
 publish_to: 'none'
-version: 0.17.0+1
+version: 0.17.1+1
 
 environment:
   sdk: ^3.6.2
@@ -75,3 +75,17 @@ flutter:
     - assets/images/
     - assets/images/logo.svg
     - assets/images/logo_text.svg
+
+  # 内置 JetBrains Mono（OFL 1.1，许可文件 assets/fonts/JetBrainsMono-OFL.txt）：
+  # 代码区首选字体，消除 Menlo 在 Windows/Linux 缺失时沿回退链异步解析
+  # 到 Microsoft YaHei 导致的字号抖动（2026-09-08 响应体字号 bug）
+  fonts:
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Regular.ttf
+        - asset: assets/fonts/JetBrainsMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/JetBrainsMono-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/JetBrainsMono-Italic.ttf
+          style: italic

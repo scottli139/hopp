@@ -190,8 +190,7 @@ void main() {
         );
         final top = ro.localToGlobal(Offset(0, boxes.first.top)).dy;
         final numberFind = find.text('${i + 1}');
-        expect(numberFind, findsWidgets,
-            reason: '第 ${i + 1} 行必须有行号（含末尾行）');
+        expect(numberFind, findsWidgets, reason: '第 ${i + 1} 行必须有行号（含末尾行）');
         deltas.add(tester.getTopLeft(numberFind.first).dy - top);
         charOffset = end + 1;
       }
@@ -213,8 +212,7 @@ void main() {
       final lo = deltas.reduce((a, b) => a < b ? a : b);
       final hi = deltas.reduce((a, b) => a > b ? a : b);
       // 字形盒与行盒存在恒定小偏差；关键是逐行一致（无累计漂移）
-      expect(hi - lo, lessThan(2.0),
-          reason: '各行 delta 应恒定：$lo ~ $hi');
+      expect(hi - lo, lessThan(2.0), reason: '各行 delta 应恒定：$lo ~ $hi');
     });
 
     testWidgets('原始模式：行号逐行对齐', (tester) async {
@@ -225,8 +223,7 @@ void main() {
           await fullModeDeltas(tester, lines, mode: ResponseDisplayMode.raw);
       final lo = deltas.reduce((a, b) => a < b ? a : b);
       final hi = deltas.reduce((a, b) => a > b ? a : b);
-      expect(hi - lo, lessThan(2.0),
-          reason: '原始模式各行 delta 应恒定：$lo ~ $hi');
+      expect(hi - lo, lessThan(2.0), reason: '原始模式各行 delta 应恒定：$lo ~ $hi');
     });
 
     testWidgets('性能模式：行号与虚拟化条目逐行对齐', (tester) async {
@@ -258,7 +255,8 @@ void main() {
         final numberFind = find.text('${pair.$1}');
         final contentFind = find.byWidgetPredicate(
           (w) =>
-              w is SelectableText && (w.data?.contains('"${pair.$2}"') ?? false),
+              w is SelectableText &&
+              (w.data?.contains('"${pair.$2}"') ?? false),
         );
         expect(numberFind, findsWidgets);
         expect(contentFind, findsWidgets);

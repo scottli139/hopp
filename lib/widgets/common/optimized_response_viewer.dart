@@ -837,8 +837,12 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           // 用与渲染一致的 TextPainter 计算各文档行首条可视行的位置，
           // 行号才能与软换行后的正文逐行对齐
           final gutterLayout = widget.showLineNumbers
-              ? _computeDocLineLayout(content, baseStyle, textWidth,
-                  MediaQuery.textScalerOf(context), DefaultTextStyle.of(context))
+              ? _computeDocLineLayout(
+                  content,
+                  baseStyle,
+                  textWidth,
+                  MediaQuery.textScalerOf(context),
+                  DefaultTextStyle.of(context))
               : null;
 
           // 行号与正文放在同一个垂直滚动视图里，保证二者始终同步滚动

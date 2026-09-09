@@ -7,8 +7,7 @@ import '../../helpers/test_app.dart';
 
 void main() {
   group('AppPopupSelect leading', () {
-    testWidgets('触发器与菜单项显示 leading 组件（MethodBadge + 名称）',
-        (tester) async {
+    testWidgets('触发器与菜单项显示 leading 组件（MethodBadge + 名称）', (tester) async {
       // 回归（2026-09-08 用户截图反馈）：预请求链请求选择器菜单项曾是
       // 纯文本 "POST xxx"，与侧栏 MethodBadge 风格不一致；leading 支持后
       // 触发器与菜单项都应渲染徽章

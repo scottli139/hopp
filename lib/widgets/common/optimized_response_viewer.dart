@@ -109,7 +109,6 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   // 滚动控制器
   final ScrollController _scrollController = ScrollController();
   final ScrollController _lineNumberScrollController = ScrollController();
-  final ScrollController _horizontalScrollController = ScrollController();
 
   // 完整模式语法高亮 span 缓存（随内容/主题变化重建）
   String _spanCacheKey = '';
@@ -137,7 +136,6 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   void dispose() {
     _scrollController.dispose();
     _lineNumberScrollController.dispose();
-    _horizontalScrollController.dispose();
     super.dispose();
   }
 
@@ -500,41 +498,62 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     }
   }
 
-  /// 性能模式视图（虚拟化列表）
+  /// 性能模式视图（虚拟化列表，超宽行按视口宽度分块）
+  ///
+  /// 分块原因与完整模式一致：宽度超过视口的大文本层在 Windows 150% 缩放
+  /// 下滚动重绘后会被引擎按错误比例光栅化（字号翻转）；分块后所有行宽
+  /// 恒 ≤ 视口宽。
   Widget _buildPerformanceView(ThemeData theme) {
     final displayLines =
         _showAllLines ? _lines : _lines.sublist(0, _displayedLines);
+    final gutterWidth = widget.showLineNumbers ? _lineNumberWidth + 1 : 0.0;
 
     return Column(
       children: [
         Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 行号区域
-              if (widget.showLineNumbers)
-                _buildLineNumberArea(theme, displayLines.length),
-              // 分割线
-              if (widget.showLineNumbers)
-                const AppDivider.vertical(subtle: true),
-              // 代码区域
-              Expanded(
-                child: Scrollbar(
-                  controller: _effectiveScrollController,
-                  child: ListView.builder(
-                    controller: _effectiveScrollController,
-                    itemCount: displayLines.length,
-                    itemBuilder: (context, index) {
-                      return _buildLineItem(
-                        displayLines[index],
-                        index,
-                        theme,
-                      );
-                    },
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // 等宽字体：ASCII 占 1 单元，CJK 等宽字符占 2 单元
+              final maxUnits = ((constraints.maxWidth - gutterWidth - 24) / 7.2)
+                  .floor()
+                  .clamp(20, 100000);
+              final chunks = <({String text, int? docLine})>[
+                for (var i = 0; i < displayLines.length; i++)
+                  ..._chunkLine(displayLines[i], i, maxUnits),
+              ];
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 行号区域
+                  if (widget.showLineNumbers)
+                    _buildLineNumberArea(
+                      theme,
+                      chunks.map((c) => c.docLine).toList(),
+                    ),
+                  // 分割线
+                  if (widget.showLineNumbers)
+                    const AppDivider.vertical(subtle: true),
+                  // 代码区域
+                  Expanded(
+                    child: Scrollbar(
+                      controller: _effectiveScrollController,
+                      child: ListView.builder(
+                        controller: _effectiveScrollController,
+                        itemCount: chunks.length,
+                        itemBuilder: (context, index) {
+                          return _buildLineItem(
+                            chunks[index].text,
+                            index,
+                            theme,
+                          );
+                        },
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           ),
         ),
         // 加载更多按钮
@@ -544,8 +563,37 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     );
   }
 
-  /// 构建行号区域
-  Widget _buildLineNumberArea(ThemeData theme, int lineCount) {
+  /// 按显示宽度单元切分一行：首个分块带文档行号，后续分块为续行（无行号）
+  List<({String text, int? docLine})> _chunkLine(
+    String line,
+    int docIndex,
+    int maxUnits,
+  ) {
+    if (line.isEmpty) return [(text: ' ', docLine: docIndex + 1)];
+    final chunks = <({String text, int? docLine})>[];
+    var start = 0;
+    var units = 0;
+    var first = true;
+    for (var i = 0; i < line.length; i++) {
+      final u = line.codeUnitAt(i) > 0xFF ? 2 : 1;
+      if (units + u > maxUnits) {
+        chunks.add((
+          text: line.substring(start, i),
+          docLine: first ? docIndex + 1 : null
+        ));
+        first = false;
+        start = i;
+        units = 0;
+      }
+      units += u;
+    }
+    chunks.add(
+        (text: line.substring(start), docLine: first ? docIndex + 1 : null));
+    return chunks;
+  }
+
+  /// 构建行号区域（docLine 为 null 的行是续行，不显示行号）
+  Widget _buildLineNumberArea(ThemeData theme, List<int?> docLines) {
     return Container(
       width: _lineNumberWidth,
       color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
@@ -562,17 +610,18 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           controller: _lineNumberScrollController,
           physics: const NeverScrollableScrollPhysics(),
           child: Column(
-            children: List.generate(lineCount, (index) {
-              return Text(
-                '${index + 1}',
-                textAlign: TextAlign.right,
-                style: AppTextStyles.code11.copyWith(
-                  height: 1.5,
-                  color:
-                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            children: [
+              for (final n in docLines)
+                Text(
+                  n == null ? '' : '$n',
+                  textAlign: TextAlign.right,
+                  style: AppTextStyles.code11.copyWith(
+                    height: 1.5,
+                    color: theme.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.6),
+                  ),
                 ),
-              );
-            }),
+            ],
           ),
         ),
       ),
@@ -611,6 +660,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             ? theme.colorScheme.surface
             : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       ),
+      // 软换行：行宽超过视口的大文本层会命中 Windows 高分屏滚动光栅化异常
       child: SelectableText(line.isEmpty ? ' ' : line, // 保持空行高度
           style: AppTextStyles.code12.copyWith(
             height: 1.5,
@@ -740,11 +790,13 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     );
   }
 
-  /// 完整模式视图（highlight 语法高亮 + SelectableText 渲染）
+  /// 完整模式视图（highlight 语法高亮 + SelectableText 渲染 + 软换行）
   ///
-  /// 不用 CodeField：只读场景下其 EditableText 单一大段落在 Windows 高分屏
-  /// 滚动重绘时会命中引擎字体替换异常（字形被替换为回退字体并放大），
-  /// SelectableText（RenderParagraph）无此问题。
+  /// 约束：文本宽度必须 ≤ 视口宽（软换行），不能有横向溢出。实测（用户
+  /// 三段录屏 + 本机复现）：Windows 150% 缩放下，宽度超过视口的大文本层
+  /// 在滚动重绘后会被引擎按错误比例光栅化（字形放大约 1.5–2 倍、行距变大、
+  /// 行内容横向错位），点击强制重建图片后恢复、再次滚动又复发；行号栏等
+  /// 窄层不受影响。软换行后文本层宽度恒等于视口宽，免疫该引擎异常。
   Widget _buildFullView(ThemeData theme) {
     // 注解仅注入显示文本，原始报文与 Copy 不受影响（F8.5）
     var content = _formatContent();
@@ -761,30 +813,48 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       _spanCacheKey = cacheKey;
     }
 
-    // 行号与正文放在同一个垂直滚动视图里，保证二者始终同步滚动
+    const contentPadding = 12.0;
+    final gutterWidth = widget.showLineNumbers ? _lineNumberWidth : 0.0;
+    const dividerWidth = 1.0;
+
     return Container(
       color: theme.colorScheme.surface,
-      child: SingleChildScrollView(
-        controller: _effectiveScrollController,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.showLineNumbers) ...[
-              _buildStaticGutter(theme, lines.length),
-              const AppDivider.vertical(subtle: true),
-            ],
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                controller: _horizontalScrollController,
-                padding: const EdgeInsets.all(12),
-                child: SelectableText.rich(
-                  TextSpan(style: baseStyle, children: _cachedSpans),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final textWidth = constraints.maxWidth -
+              gutterWidth -
+              (widget.showLineNumbers ? dividerWidth : 0.0) -
+              contentPadding * 2;
+          // 用与渲染一致的 TextPainter 计算各文档行首条可视行的位置，
+          // 行号才能与软换行后的正文逐行对齐
+          final gutterLayout = widget.showLineNumbers
+              ? _computeDocLineLayout(content, baseStyle, textWidth,
+                  MediaQuery.textScalerOf(context))
+              : null;
+
+          // 行号与正文放在同一个垂直滚动视图里，保证二者始终同步滚动
+          return SingleChildScrollView(
+            controller: _effectiveScrollController,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.showLineNumbers) ...[
+                  _buildWrapAwareGutter(
+                      theme, lines.length, gutterLayout!, contentPadding),
+                  const AppDivider.vertical(subtle: true),
+                ],
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(contentPadding),
+                    child: SelectableText.rich(
+                      TextSpan(style: baseStyle, children: _cachedSpans),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -822,25 +892,65 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     ];
   }
 
-  /// 静态行号栏：与正文同处一个滚动视图，行高与 code12(height:1.5) 对齐
-  Widget _buildStaticGutter(ThemeData theme, int lineCount) {
+  /// 计算每个文档行首条可视行相对段落顶部的 top 及段落总高（与渲染同一份
+  /// span/宽度）
+  ({List<double> tops, double height}) _computeDocLineLayout(
+    String content,
+    TextStyle baseStyle,
+    double maxWidth,
+    TextScaler scaler,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(style: baseStyle, children: _cachedSpans),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+    )..layout(maxWidth: maxWidth);
+
+    final tops = <double>[];
+    var charOffset = 0;
+    for (final line in content.split('\n')) {
+      // caret 偏移的 dy 即该字符所在可视行的 top
+      tops.add(
+        painter
+            .getOffsetForCaret(TextPosition(offset: charOffset), Rect.zero)
+            .dy,
+      );
+      charOffset += line.length + 1;
+    }
+    return (tops: tops, height: painter.height);
+  }
+
+  /// 软换行感知行号栏：每个行号按文档行首条可视行的 top 精确定位
+  Widget _buildWrapAwareGutter(
+    ThemeData theme,
+    int docLineCount,
+    ({List<double> tops, double height}) layout,
+    double contentPadding,
+  ) {
     final gutterStyle = AppTextStyles.code11.copyWith(
       height: 1.5 * 12 / 11,
       color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
     );
+    // 行号行高与正文行高一致（18），小号字形取行高差的一半做垂直居中
+    const lineHeight = 12 * 1.5;
+    final numberOffset = (lineHeight - 11 * (1.5 * 12 / 11)) / 2;
+
     return Container(
       width: _lineNumberWidth,
       color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      padding: const EdgeInsets.only(
-        right: _lineNumberPadding,
-        top: 12,
-        bottom: 12,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          for (var i = 1; i <= lineCount; i++) Text('$i', style: gutterStyle),
-        ],
+      padding: const EdgeInsets.only(right: _lineNumberPadding),
+      child: SizedBox(
+        height: layout.height + contentPadding * 2,
+        child: Stack(
+          children: [
+            for (var i = 1; i <= docLineCount; i++)
+              Positioned(
+                top: layout.tops[i - 1] + contentPadding + numberOffset,
+                right: 0,
+                child: Text('$i', style: gutterStyle),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -911,7 +1021,10 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 行号区域
-              _buildLineNumberArea(theme, _lines.length),
+              _buildLineNumberArea(
+                theme,
+                [for (var i = 1; i <= _lines.length; i++) i],
+              ),
               // 分割线
               const AppDivider.vertical(subtle: true),
               // 代码区域

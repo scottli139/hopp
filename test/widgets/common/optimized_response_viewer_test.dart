@@ -148,4 +148,126 @@ void main() {
       expect(tester.getTopLeft(find.text('1')).dy, lessThan(0));
     });
   });
+
+  group('OptimizedResponseViewer 行号对齐（软换行感知 gutter）', () {
+    /// 完整/原始模式：用 RenderEditable 的真实行位置对比行号 top，
+    /// 返回每行 (行号top - 文本行top) delta 列表
+    Future<List<double>> fullModeDeltas(
+      WidgetTester tester,
+      String content, {
+      ResponseDisplayMode mode = ResponseDisplayMode.full,
+    }) async {
+      await tester.pumpWidget(
+        hoppTestApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 800,
+              height: 600,
+              child: OptimizedResponseViewer(
+                content: content,
+                contentType: 'application/json',
+                initialMode: mode,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final editableState =
+          tester.state<EditableTextState>(find.byType(EditableText));
+      final ro = editableState.renderEditable;
+      final displayLines = ro.text!.toPlainText().split('\n');
+      final deltas = <double>[];
+      var charOffset = 0;
+      for (var i = 0; i < displayLines.length; i++) {
+        final end = charOffset + displayLines[i].length;
+        final boxes = ro.getBoxesForSelection(
+          TextSelection(
+            baseOffset: charOffset,
+            extentOffset: end > charOffset ? end : charOffset + 1,
+          ),
+        );
+        final top = ro.localToGlobal(Offset(0, boxes.first.top)).dy;
+        final numberFind = find.text('${i + 1}');
+        expect(numberFind, findsWidgets,
+            reason: '第 ${i + 1} 行必须有行号（含末尾行）');
+        deltas.add(tester.getTopLeft(numberFind.first).dy - top);
+        charOffset = end + 1;
+      }
+      return deltas;
+    }
+
+    testWidgets('完整模式：长行软换行后行号逐行对齐且末行不缺', (tester) async {
+      // 含 400 字符不可断长行 + 其后多行：验证换行数测算与渲染一致，
+      // 行号不漂移、末行行号不被裁剪
+      final lines = <String>[
+        '{',
+        for (var i = 1; i <= 5; i++) '  "key$i": $i,',
+        '  "token": "${'B' * 400}",',
+        '  "url": "ws://host/path?token=${'C' * 380}",',
+        for (var i = 6; i <= 12; i++) '  "key$i": $i,',
+        '}',
+      ].join('\n');
+      final deltas = await fullModeDeltas(tester, lines);
+      final lo = deltas.reduce((a, b) => a < b ? a : b);
+      final hi = deltas.reduce((a, b) => a > b ? a : b);
+      // 字形盒与行盒存在恒定小偏差；关键是逐行一致（无累计漂移）
+      expect(hi - lo, lessThan(2.0),
+          reason: '各行 delta 应恒定：$lo ~ $hi');
+    });
+
+    testWidgets('原始模式：行号逐行对齐', (tester) async {
+      final lines = <String>[
+        for (var i = 1; i <= 20; i++) 'line $i content',
+      ].join('\n');
+      final deltas =
+          await fullModeDeltas(tester, lines, mode: ResponseDisplayMode.raw);
+      final lo = deltas.reduce((a, b) => a < b ? a : b);
+      final hi = deltas.reduce((a, b) => a > b ? a : b);
+      expect(hi - lo, lessThan(2.0),
+          reason: '原始模式各行 delta 应恒定：$lo ~ $hi');
+    });
+
+    testWidgets('性能模式：行号与虚拟化条目逐行对齐', (tester) async {
+      final lines = <String>[
+        '{',
+        for (var i = 1; i <= 30; i++) '  "key$i": $i,',
+        '  "token": "${'C' * 400}"',
+        '}',
+      ].join('\n');
+      await tester.pumpWidget(
+        hoppTestApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 800,
+              height: 600,
+              child: OptimizedResponseViewer(
+                content: lines,
+                contentType: 'application/json',
+                initialMode: ResponseDisplayMode.performance,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 内容首行是 '{'，keyN 是第 N+1 行 → 数字 N+1 对应 keyN 条目
+      for (final pair in [(2, 'key1'), (6, 'key5'), (11, 'key10')]) {
+        final numberFind = find.text('${pair.$1}');
+        final contentFind = find.byWidgetPredicate(
+          (w) =>
+              w is SelectableText && (w.data?.contains('"${pair.$2}"') ?? false),
+        );
+        expect(numberFind, findsWidgets);
+        expect(contentFind, findsWidgets);
+        final numberTop = tester.getTopLeft(numberFind.first).dy;
+        // 条目容器 padding vertical: 2 → 条目 top = 文本 top - 2
+        final itemTop = tester.getTopLeft(contentFind.first).dy - 2;
+        expect((numberTop - itemTop).abs(), lessThan(2.0),
+            reason: '性能模式第 ${pair.$1} 行行号应贴齐条目');
+      }
+    });
+  });
 }

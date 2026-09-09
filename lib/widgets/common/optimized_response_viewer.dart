@@ -530,6 +530,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                     _buildLineNumberArea(
                       theme,
                       chunks.map((c) => c.docLine).toList(),
+                      rowHeight: 22,
                     ),
                   // 分割线
                   if (widget.showLineNumbers)
@@ -540,6 +541,8 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                       controller: _effectiveScrollController,
                       child: ListView.builder(
                         controller: _effectiveScrollController,
+                        // 与行号栏 top/bottom padding 对齐，保证行号与条目同一起点
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         itemCount: chunks.length,
                         itemBuilder: (context, index) {
                           return _buildLineItem(
@@ -593,7 +596,14 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   }
 
   /// 构建行号区域（docLine 为 null 的行是续行，不显示行号）
-  Widget _buildLineNumberArea(ThemeData theme, List<int?> docLines) {
+  ///
+  /// [rowHeight] 必须与内容区的行高完全一致（性能模式条目 = 18 文本 +
+  /// 上下各 2 padding = 22；原始模式 = 18），否则行号逐行漂移
+  Widget _buildLineNumberArea(
+    ThemeData theme,
+    List<int?> docLines, {
+    required double rowHeight,
+  }) {
     return Container(
       width: _lineNumberWidth,
       color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
@@ -616,7 +626,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                   n == null ? '' : '$n',
                   textAlign: TextAlign.right,
                   style: AppTextStyles.code11.copyWith(
-                    height: 1.5,
+                    height: rowHeight / 11,
+                    inherit: false,
+                    letterSpacing: 0,
                     color: theme.colorScheme.onSurfaceVariant
                         .withValues(alpha: 0.6),
                   ),
@@ -644,7 +656,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           ),
           child: SelectableText.rich(
             TextSpan(children: spans),
-            style: AppTextStyles.code12.copyWith(height: 1.5),
+            style: _viewerCodeStyle(theme),
           ),
         );
       }
@@ -662,8 +674,8 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       ),
       // 软换行：行宽超过视口的大文本层会命中 Windows 高分屏滚动光栅化异常
       child: SelectableText(line.isEmpty ? ' ' : line, // 保持空行高度
-          style: AppTextStyles.code12.copyWith(
-            height: 1.5,
+          style: _viewerCodeStyle(
+            theme,
             color: isJsonLine ? _getJsonLineColor(line, theme) : null,
           )),
     );
@@ -682,16 +694,13 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     final isDark = theme.brightness == Brightness.dark;
     final lineColor =
         _shouldHighlightLine(line) ? _getJsonLineColor(line, theme) : null;
-    final baseStyle = AppTextStyles.code12.copyWith(
-      height: 1.5,
-      color: lineColor,
-    );
-    final numberStyle = AppTextStyles.code12.copyWith(
-      height: 1.5,
+    final baseStyle = _viewerCodeStyle(theme, color: lineColor);
+    final numberStyle = _viewerCodeStyle(
+      theme,
       color: AppSyntaxColors.getNumber(isDark),
     );
-    final annoStyle = AppTextStyles.code12.copyWith(
-      height: 1.5,
+    final annoStyle = _viewerCodeStyle(
+      theme,
       color: context.appTheme.textTertiary,
     );
 
@@ -804,7 +813,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       content =
           content.split('\n').map(EpochAnnotation.annotateLine).join('\n');
     }
-    final baseStyle = AppTextStyles.code12.copyWith(height: 1.5);
+    final baseStyle = _viewerCodeStyle(theme);
     final lines = content.split('\n');
 
     final cacheKey = '${theme.brightness}|$content';
@@ -829,7 +838,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           // 行号才能与软换行后的正文逐行对齐
           final gutterLayout = widget.showLineNumbers
               ? _computeDocLineLayout(content, baseStyle, textWidth,
-                  MediaQuery.textScalerOf(context))
+                  MediaQuery.textScalerOf(context), DefaultTextStyle.of(context))
               : null;
 
           // 行号与正文放在同一个垂直滚动视图里，保证二者始终同步滚动
@@ -892,6 +901,21 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     ];
   }
 
+  /// 代码渲染样式：inherit:false + 显式 letterSpacing:0。
+  ///
+  /// SelectableText 会把样式 merge 到祖先 DefaultTextStyle（M3 bodyMedium
+  /// 带 letterSpacing:0.3）上；inherit:false 让 merge 直接返回本样式，
+  /// 保证实际渲染宽度与行号栏 TextPainter / 分块宽度测算完全一致。
+  TextStyle _viewerCodeStyle(ThemeData theme, {Color? color}) =>
+      AppTextStyles.code12.copyWith(
+        height: 1.5,
+        inherit: false,
+        color: color ?? theme.colorScheme.onSurface,
+        letterSpacing: 0,
+        leadingDistribution: TextLeadingDistribution.even,
+        textBaseline: TextBaseline.alphabetic,
+      );
+
   /// 计算每个文档行首条可视行相对段落顶部的 top 及段落总高（与渲染同一份
   /// span/宽度）
   ({List<double> tops, double height}) _computeDocLineLayout(
@@ -899,11 +923,18 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     TextStyle baseStyle,
     double maxWidth,
     TextScaler scaler,
+    DefaultTextStyle defaultTextStyle,
   ) {
+    // 与 SelectableText → EditableText 的实际排版参数逐项对齐：
+    // strutStyle 是 SelectableText 的固定默认值，textHeightBehavior /
+    // textWidthBasis 继承自 DefaultTextStyle
     final painter = TextPainter(
       text: TextSpan(style: baseStyle, children: _cachedSpans),
       textDirection: TextDirection.ltr,
       textScaler: scaler,
+      strutStyle: const StrutStyle(),
+      textHeightBehavior: defaultTextStyle.textHeightBehavior,
+      textWidthBasis: defaultTextStyle.textWidthBasis,
     )..layout(maxWidth: maxWidth);
 
     final tops = <double>[];
@@ -929,6 +960,8 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   ) {
     final gutterStyle = AppTextStyles.code11.copyWith(
       height: 1.5 * 12 / 11,
+      inherit: false,
+      letterSpacing: 0,
       color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
     );
     // 行号行高与正文行高一致（18），小号字形取行高差的一半做垂直居中
@@ -1024,6 +1057,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               _buildLineNumberArea(
                 theme,
                 [for (var i = 1; i <= _lines.length; i++) i],
+                rowHeight: 18,
               ),
               // 分割线
               const AppDivider.vertical(subtle: true),
@@ -1034,10 +1068,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                   padding: const EdgeInsets.all(12),
                   child: SelectableText(
                     widget.content,
-                    style: AppTextStyles.code12.copyWith(
-                      height: 1.5,
-                      color: theme.colorScheme.onSurface,
-                    ),
+                    style: _viewerCodeStyle(theme),
                   ),
                 ),
               ),

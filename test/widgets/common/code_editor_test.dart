@@ -1,9 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_code_editor/flutter_code_editor.dart' hide CodeEditor;
+import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hopp/theme/app_text_styles.dart';
 import 'package:hopp/widgets/common/code_editor.dart';
 
 import '../../helpers/test_app.dart';
@@ -68,39 +67,40 @@ void main() {
       expect(nums.first, greaterThan(5), reason: '滚动后首个可见行号应明显后移，实际：$nums');
     });
 
-    testWidgets('行号与内容行逐行对齐（textScaler 1.0 与 1.25）', (tester) async {
-      for (final scalerValue in [1.0, 1.25]) {
+    testWidgets('行号与内容行逐行对齐（textScaler 0.8/0.9/1.0/1.25）', (tester) async {
+      for (final scalerValue in [0.8, 0.9, 1.0, 1.25]) {
+        // 行数控制在最小行高档位（0.8→14px）下仍全部可见（虚拟化 gutter
+        // 只渲染视口内行号）
         final content =
-            [for (var i = 1; i <= 50; i++) '  "key$i": $i,'].join('\n');
+            [for (var i = 1; i <= 15; i++) '  "key$i": $i,'].join('\n');
         await tester.pumpWidget(
-          buildEditor(content: content, textScaler: scalerValue),
+          buildEditor(content: content, textScaler: scalerValue, height: 600),
         );
         await tester.pumpAndSettle();
 
-        // 内容行是 CodeField 内单个大 TextField，无法按行定位；改为验证
-        // 行号间距 = 当前缩放下实测行高，且首行号 top 与 CodeField 内容
-        // 起点一致（contentPadding 16）
-        final expectedPitch = () {
-          final p = TextPainter(
-            text: TextSpan(
-              text: 'A',
-              style: AppTextStyles.code12.copyWith(height: 1.5),
-            ),
-            textDirection: TextDirection.ltr,
-            textScaler: TextScaler.linear(scalerValue),
-            strutStyle: const StrutStyle(),
-          )..layout();
-          return p.height;
-        }();
-        final t1 = tester.getTopLeft(find.text('1')).dy;
-        final t2 = tester.getTopLeft(find.text('2')).dy;
-        expect((t2 - t1 - expectedPitch).abs(), lessThan(1.5),
-            reason: 'scaler=$scalerValue 行号间距应等于实测行高');
-        // 首行号在行高盒内垂直居中：中心 = 内容起点 + 半个行高
-        final c1 = tester.getCenter(find.text('1')).dy;
-        final fieldTop = tester.getTopLeft(find.byType(CodeField)).dy;
-        expect((c1 - fieldTop - 16 - expectedPitch / 2).abs(), lessThan(2.0),
-            reason: 'scaler=$scalerValue 首行号中心应贴齐内容首行中心（padding 16）');
+        // 用 RenderEditable 的 caret rect 作为内容行位置的唯一事实来源：
+        // 行号中心必须等于对应文档行 caret rect 中心（任何 padding/缩放/
+        // 字体度量环境下都成立）
+        final editableState =
+            tester.state<EditableTextState>(find.byType(EditableText));
+        final ro = editableState.renderEditable;
+        final plain = ro.text!.toPlainText();
+        final lines = plain.split('\n');
+        var charOffset = 0;
+        for (var i = 0; i < lines.length; i++) {
+          final rect = ro.getLocalRectForCaret(
+            TextPosition(offset: charOffset),
+          );
+          final contentCenter = ro.localToGlobal(rect.center).dy;
+          final numberFind = find.text('${i + 1}');
+          expect(numberFind, findsWidgets,
+              reason: 'scaler=$scalerValue 第 ${i + 1} 行必须有行号');
+          final numberCenter = tester.getCenter(numberFind.first).dy;
+          expect((numberCenter - contentCenter).abs(), lessThan(1.6),
+              reason: 'scaler=$scalerValue 第 ${i + 1} 行行号与内容应对齐: '
+                  '$numberCenter vs $contentCenter');
+          charOffset += lines[i].length + 1;
+        }
       }
     });
   });

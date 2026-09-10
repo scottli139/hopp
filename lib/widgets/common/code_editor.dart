@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderEditable;
 import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:highlight/highlight.dart';
@@ -87,6 +88,13 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
   /// 驱动行号栏当帧直绘；CodeField 的滚动控制器在其内部，无法直接持有）
   final ValueNotifier<double> _scrollOffset = ValueNotifier(0.0);
 
+  /// 行号栏几何基准（直接从 RenderEditable 实测，见 _scheduleGutterMeasure）。
+  /// 未实测前用常量兜底：首行 top 16（包内 contentPadding）+ painter 行高
+  final GlobalKey _gutterKey = GlobalKey();
+  double? _gutterTopPad;
+  double? _gutterRowHeight;
+  bool _gutterMeasureScheduled = false;
+
   @override
   void initState() {
     super.initState();
@@ -126,6 +134,7 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    if (widget.showLineNumbers) _scheduleGutterMeasure();
 
     return widget.showLineNumbers
         ? Row(
@@ -139,6 +148,68 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
         : _buildCodeField(theme);
   }
 
+  /// 后帧从 CodeField 内的 RenderEditable 实测行号栏几何基准：
+  /// 首行在滚动内容坐标系中的 top（caret rect + 滚动 offset）与行高
+  /// （次行 caret top 差）。padding/字体度量的任何假设都不需要——
+  /// 实测值与屏幕所见构造性一致（用户截图反馈：uiScale 80/90% 下行号
+  /// 与内容恒定错位 2-4 逻辑像素，常量假设在低缩放档位失效）
+  void _scheduleGutterMeasure() {
+    if (_gutterMeasureScheduled) return;
+    _gutterMeasureScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _gutterMeasureScheduled = false;
+      if (!mounted) return;
+      final measured = _measureGutterBase();
+      if (measured == null) return;
+      final (topPad, rowHeight) = measured;
+      if (topPad == _gutterTopPad && rowHeight == _gutterRowHeight) return;
+      setState(() {
+        _gutterTopPad = topPad;
+        _gutterRowHeight = rowHeight;
+      });
+    });
+  }
+
+  /// 实测首行 top（gutter 坐标系、未滚动内容坐标）与行高；失败返回 null
+  (double, double)? _measureGutterBase() {
+    RenderEditable? editable;
+    void visit(RenderObject o) {
+      if (editable != null) return;
+      if (o is RenderEditable) {
+        editable = o;
+        return;
+      }
+      o.visitChildren(visit);
+    }
+
+    final root = context.findRenderObject();
+    final gutterBox =
+        _gutterKey.currentContext?.findRenderObject() as RenderBox?;
+    if (root == null || gutterBox == null || !gutterBox.hasSize) return null;
+    visit(root);
+    final ro = editable;
+    if (ro == null || ro.text == null) return null;
+    final plain = ro.text!.toPlainText();
+    if (plain.isEmpty) return null;
+
+    // caret rect 处于 RenderEditable 本地坐标（随内部滚动平移）；
+    // 加回滚动 offset 得到未滚动内容坐标，再换算到 gutter 坐标系
+    final r0 = ro.getLocalRectForCaret(const TextPosition(offset: 0));
+    final contentTopInGutter = ro.localToGlobal(Offset(0, r0.top)).dy +
+        _scrollOffset.value -
+        gutterBox.localToGlobal(Offset.zero).dy;
+
+    var rowHeight = _measureCodeLineHeight(MediaQuery.textScalerOf(context));
+    final firstNewline = plain.indexOf('\n');
+    if (firstNewline >= 0 && firstNewline + 1 < plain.length) {
+      final r1 =
+          ro.getLocalRectForCaret(TextPosition(offset: firstNewline + 1));
+      final h = r1.top - r0.top;
+      if (h > 1) rowHeight = h;
+    }
+    return (contentTopInGutter, rowHeight);
+  }
+
   /// 行号栏：视口高小层，按代码区滚动 offset 当帧直绘可见行号。
   ///
   /// 旧实现是 NeverScrollableScrollPhysics 的静态行号列——内容滚动后
@@ -148,16 +219,15 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
   Widget _buildLineNumberArea(ThemeData theme) {
     final lineCount = widget.code.split('\n').length;
     final scaler = MediaQuery.textScalerOf(context);
-    // 实测当前缩放下的可视行高（code12 × 1.5；字体度量取整使 scale()
-    // 估算与真实渲染存在亚像素偏差并逐行累计）
-    final rowHeight = _measureCodeLineHeight(scaler);
 
     return OffsetGutter(
+      key: _gutterKey,
       theme: theme,
       rowDocLines: [for (var i = 1; i <= lineCount; i++) i],
-      rowHeight: rowHeight,
-      // CodeField 内部 InputDecoration contentPadding 为 vertical: 16
-      topPadding: 16,
+      rowHeight: _gutterRowHeight ?? _measureCodeLineHeight(scaler),
+      // 兜底 16 = 包内 InputDecoration contentPadding；实测后由
+      // RenderEditable caret 位置取代（见 _measureGutterBase）
+      topPadding: _gutterTopPad ?? 16,
       listenable: _scrollOffset,
       readOffset: () => _scrollOffset.value,
       width: _lineNumberWidth,

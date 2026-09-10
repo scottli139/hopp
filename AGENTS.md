@@ -31,7 +31,7 @@
 |----------|------|
 | **技术栈** | Flutter 3.35.x + Dart + Riverpod + Dio + Hive |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **当前版本** | `0.17.0` |
+| **当前版本** | `0.17.3` |
 
 > 历史参考：项目曾使用 Tauri (React + Rust)，详见 [ARCHIVED_TAURI.md](./docs/ARCHIVED_TAURI.md)。
 
@@ -143,7 +143,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 
 | 问题 | 优先级 | 状态 |
 |------|--------|------|
-| 行号与内容滚动不同步 | P2 | 响应体完整模式已根治（v0.17.1，行号与正文同一滚动视图 + 换行感知定位）；性能模式行号栏冻结与 CodeEditor 编辑场景仍挂 Issue #4 |
+| 行号与内容滚动不同步 | P2 | 响应查看器三模式已根治（v0.17.3 全模式虚拟化 + `_OffsetGutter` offset 直绘）；CodeEditor 编辑场景仍挂 Issue #4 |
 
 ---
 

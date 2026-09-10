@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show RenderEditable;
 import 'package:flutter/services.dart';
 import 'package:highlight/highlight_core.dart';
 import 'package:highlight/languages/json.dart';
@@ -109,18 +108,18 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
 
   // 滚动控制器
   final ScrollController _scrollController = ScrollController();
-  final ScrollController _lineNumberScrollController = ScrollController();
 
-  // 完整模式语法高亮 span 缓存（随内容/主题变化重建）
+  // 完整/原始模式语法高亮 span 缓存（随内容/主题变化重建）
   String _spanCacheKey = '';
   List<InlineSpan>? _cachedSpans;
 
-  // 行号栏后帧校准：以实际渲染对象（RenderEditable）的行位置为准。
-  // 独立 TextPainter 的测算在分数缩放/字体回退等环境下可能与真实渲染
-  // 存在亚行级偏差，后帧用渲染实测值校准一次即完全一致。
-  String? _renderedLayoutKey;
-  ({List<double> tops, double height})? _renderedLayout;
-  bool _renderMeasureScheduled = false;
+  // 完整/原始模式可视行布局缓存：内容/宽度/缩放/主题变化时重算。
+  // 由单次 TextPainter 排版得出各文档行的软换行位置，ListView 逐可视行
+  // 渲染——不再有 7000+px 超高文本层（Windows 分数 DPI 下巨高层会被引擎
+  // 按过期偏移合成，表现为行号错乱/冻结、内容回跳）。
+  String _visualRowKey = '';
+  List<({int? docLine, List<InlineSpan> spans})>? _visualRows;
+  List<int?>? _rowDocLines;
 
   /// 主内容滚动控制器：外部传入优先，否则用内部控制器
   ScrollController get _effectiveScrollController =>
@@ -143,7 +142,6 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   @override
   void dispose() {
     _scrollController.dispose();
-    _lineNumberScrollController.dispose();
     super.dispose();
   }
 
@@ -500,9 +498,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         return _buildPerformanceView(theme);
       case ResponseDisplayMode.full:
       case ResponseDisplayMode.auto:
-        return _buildFullView(theme);
+        return _buildVirtualizedTextView(theme, beautify: true);
       case ResponseDisplayMode.raw:
-        return _buildRawView(theme);
+        return _buildVirtualizedTextView(theme, beautify: false);
     }
   }
 
@@ -533,12 +531,17 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 行号区域
+                  // 行号区域：与内容共用同一 ScrollController，当帧直绘可见
+                  // 行号（修复旧版独立行号滚动控制器无人驱动、行号冻结的问题）
                   if (widget.showLineNumbers)
-                    _buildLineNumberArea(
-                      theme,
-                      chunks.map((c) => c.docLine).toList(),
+                    _OffsetGutter(
+                      theme: theme,
+                      rowDocLines: [for (final c in chunks) c.docLine],
                       rowHeight: 22,
+                      topPadding: 12,
+                      scrollController: _effectiveScrollController,
+                      width: _lineNumberWidth,
+                      rightPadding: _lineNumberPadding,
                     ),
                   // 分割线
                   if (widget.showLineNumbers)
@@ -601,51 +604,6 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     chunks.add(
         (text: line.substring(start), docLine: first ? docIndex + 1 : null));
     return chunks;
-  }
-
-  /// 构建行号区域（docLine 为 null 的行是续行，不显示行号）
-  ///
-  /// [rowHeight] 必须与内容区的行高完全一致（性能模式条目 = 18 文本 +
-  /// 上下各 2 padding = 22；原始模式 = 18），否则行号逐行漂移
-  Widget _buildLineNumberArea(
-    ThemeData theme,
-    List<int?> docLines, {
-    required double rowHeight,
-  }) {
-    return Container(
-      width: _lineNumberWidth,
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      padding: const EdgeInsets.only(
-        right: _lineNumberPadding,
-        top: 12,
-        bottom: 12,
-      ),
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(
-          scrollbars: false,
-        ),
-        child: SingleChildScrollView(
-          controller: _lineNumberScrollController,
-          physics: const NeverScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              for (final n in docLines)
-                Text(
-                  n == null ? '' : '$n',
-                  textAlign: TextAlign.right,
-                  style: AppTextStyles.code11.copyWith(
-                    height: rowHeight / 11,
-                    inherit: false,
-                    letterSpacing: 0,
-                    color: theme.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.6),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   /// 构建单行显示
@@ -807,30 +765,38 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     );
   }
 
-  /// 完整模式视图（highlight 语法高亮 + SelectableText 渲染 + 软换行）
+  /// 完整/原始模式视图：虚拟化可视行渲染。
   ///
-  /// 约束：文本宽度必须 ≤ 视口宽（软换行），不能有横向溢出。实测（用户
-  /// 三段录屏 + 本机复现）：Windows 150% 缩放下，宽度超过视口的大文本层
-  /// 在滚动重绘后会被引擎按错误比例光栅化（字形放大约 1.5–2 倍、行距变大、
-  /// 行内容横向错位），点击强制重建图片后恢复、再次滚动又复发；行号栏等
-  /// 窄层不受影响。软换行后文本层宽度恒等于视口宽，免疫该引擎异常。
-  Widget _buildFullView(ThemeData theme) {
+  /// 设计约束：不得把整份响应渲染为一个超高文本层。实测（用户多段录屏）：
+  /// Windows 分数 DPI 下 7000+px 的超高文本层会被引擎按过期偏移合成——
+  /// 屏幕显示与框架状态脱节（行号看似错乱/冻结、内容回跳到历史滚动位置，
+  /// 点击触发重光栅化后暂时恢复）。此处改为 TextPainter 单次排版测算各
+  /// 文档行的软换行点，ListView 逐可视行渲染：所有层都是视口量级小层，
+  /// 从根上免疫该类引擎合成异常；行号按同一 ScrollController 的 offset
+  /// 当帧直绘，与内容天然同步。选择能力由 SelectionArea 提供（跨行选择）。
+  Widget _buildVirtualizedTextView(
+    ThemeData theme, {
+    required bool beautify,
+  }) {
     // 注解仅注入显示文本，原始报文与 Copy 不受影响（F8.5）
-    var content = _formatContent();
-    if (_isJson && _annotateEpoch) {
+    var content = beautify ? _formatContent() : widget.content;
+    if (beautify && _isJson && _annotateEpoch) {
       content =
           content.split('\n').map(EpochAnnotation.annotateLine).join('\n');
     }
     final baseStyle = _viewerCodeStyle(theme);
-    final lines = content.split('\n');
 
-    final cacheKey = '${theme.brightness}|$content';
-    if (_cachedSpans == null || _spanCacheKey != cacheKey) {
-      _cachedSpans = _computeSpans(content, theme, baseStyle);
-      _spanCacheKey = cacheKey;
+    final spanKey = '${theme.brightness}|$beautify|$content';
+    if (_cachedSpans == null || _spanCacheKey != spanKey) {
+      _cachedSpans = beautify
+          ? _computeSpans(content, theme, baseStyle)
+          : [TextSpan(text: content, style: baseStyle)];
+      _spanCacheKey = spanKey;
     }
 
     const contentPadding = 12.0;
+    // 可视行高：code12（12px）× height 1.5，与 painter 排版行高一致
+    const rowHeight = 12 * 1.5;
     final gutterWidth = widget.showLineNumbers ? _lineNumberWidth : 0.0;
     const dividerWidth = 1.0;
 
@@ -842,33 +808,24 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               gutterWidth -
               (widget.showLineNumbers ? dividerWidth : 0.0) -
               contentPadding * 2;
-          // 行号布局：优先用后帧从渲染对象实测校准过的值，
-          // 首帧（或实测尚未返回时）用与渲染同参数的 TextPainter 估算
           final scaler = MediaQuery.textScalerOf(context);
-          final layoutSignature = '${theme.brightness}|${content.hashCode}|'
-              '$textWidth|$scaler|$_annotateEpoch';
-          final gutterLayout = widget.showLineNumbers
-              ? (_renderedLayoutKey == layoutSignature
-                  ? _renderedLayout!
-                  : _computeDocLineLayout(content, baseStyle, textWidth, scaler,
-                      DefaultTextStyle.of(context)))
-              : null;
-          if (widget.showLineNumbers && _renderedLayoutKey != layoutSignature) {
-            _scheduleRenderedLayoutMeasure(layoutSignature);
+          final layoutKey = '${theme.brightness}|$beautify|${content.hashCode}|'
+              '$textWidth|$scaler';
+          if (_visualRows == null || _visualRowKey != layoutKey) {
+            _computeVisualRows(content, _cachedSpans!, baseStyle, textWidth,
+                scaler, DefaultTextStyle.of(context));
+            _visualRowKey = layoutKey;
           }
 
-          // 行号栏不放进滚动视图：超高 Stack 层在 Windows 分数 DPI 下
-          // 滚动重绘时会被引擎按过期偏移合成（行号错乱/重影）。
-          // 改为视口高固定列，按 scrollController.offset 每帧绘制可见行号
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (widget.showLineNumbers) ...[
-                _WrapAwareGutter(
+                _OffsetGutter(
                   theme: theme,
-                  docLineCount: lines.length,
-                  layout: gutterLayout!,
-                  contentPadding: contentPadding,
+                  rowDocLines: _rowDocLines!,
+                  rowHeight: rowHeight,
+                  topPadding: contentPadding,
                   scrollController: _effectiveScrollController,
                   width: _lineNumberWidth,
                   rightPadding: _lineNumberPadding,
@@ -876,12 +833,24 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                 const AppDivider.vertical(subtle: true),
               ],
               Expanded(
-                child: SingleChildScrollView(
+                child: Scrollbar(
                   controller: _effectiveScrollController,
-                  child: Padding(
-                    padding: const EdgeInsets.all(contentPadding),
-                    child: SelectableText.rich(
-                      TextSpan(style: baseStyle, children: _cachedSpans),
+                  child: SelectionArea(
+                    child: ListView.builder(
+                      controller: _effectiveScrollController,
+                      padding: const EdgeInsets.all(contentPadding),
+                      itemExtent: rowHeight,
+                      itemCount: _visualRows!.length,
+                      itemBuilder: (context, index) {
+                        return Text.rich(
+                          TextSpan(
+                            style: baseStyle,
+                            children: _visualRows![index].spans,
+                          ),
+                          softWrap: false,
+                          overflow: TextOverflow.clip,
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -891,6 +860,116 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         },
       ),
     );
+  }
+
+  /// 单次 TextPainter 排版，计算每个文档行的软换行点并切出各可视行的
+  /// span 片段。可视行不跨文档行（硬换行必是可视行边界），空文档行产生
+  /// 一个空白可视行以占位行高。
+  void _computeVisualRows(
+    String content,
+    List<InlineSpan> spans,
+    TextStyle baseStyle,
+    double maxWidth,
+    TextScaler scaler,
+    DefaultTextStyle defaultTextStyle,
+  ) {
+    // 与渲染同一份 span/宽度/缩放参数
+    final painter = TextPainter(
+      text: TextSpan(style: baseStyle, children: spans),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+      strutStyle: const StrutStyle(),
+      textHeightBehavior: defaultTextStyle.textHeightBehavior,
+      textWidthBasis: defaultTextStyle.textWidthBasis,
+    )..layout(maxWidth: maxWidth);
+
+    final intervals = _flattenSpans(spans);
+    final rows = <({int? docLine, List<InlineSpan> spans})>[];
+    final rowDocLines = <int?>[];
+
+    // 与行切片共用的游标（可视行按文档顺序产生，区间单调推进）
+    var cursor = 0;
+    List<InlineSpan> sliceSpans(int start, int end) {
+      final out = <InlineSpan>[];
+      while (cursor < intervals.length && intervals[cursor].end <= start) {
+        cursor++;
+      }
+      var j = cursor;
+      while (j < intervals.length && intervals[j].start < end) {
+        final iv = intervals[j];
+        final s = iv.start > start ? iv.start : start;
+        final e = iv.end < end ? iv.end : end;
+        out.add(TextSpan(text: content.substring(s, e), style: iv.style));
+        j++;
+      }
+      return out.isEmpty ? [const TextSpan(text: ' ')] : out;
+    }
+
+    final docLines = content.split('\n');
+    var docStart = 0;
+    for (var k = 0; k < docLines.length; k++) {
+      final docEnd = docStart + docLines[k].length; // 不含 '\n'
+      if (docEnd == docStart) {
+        rows.add((docLine: k + 1, spans: [const TextSpan(text: ' ')]));
+        rowDocLines.add(k + 1);
+      } else {
+        var pos = docStart;
+        var first = true;
+        while (pos < docEnd) {
+          final boundary = painter.getLineBoundary(TextPosition(offset: pos));
+          final end = boundary.end.clamp(pos + 1, docEnd);
+          rows.add((
+            docLine: first ? k + 1 : null,
+            spans: sliceSpans(pos, end),
+          ));
+          rowDocLines.add(first ? k + 1 : null);
+          first = false;
+          pos = end;
+        }
+      }
+      docStart = docEnd + 1;
+    }
+
+    _visualRows = rows;
+    _rowDocLines = rowDocLines;
+  }
+
+  /// 把 span 树拍平成 (start, end, style) 区间；style 为沿父链 merge 后
+  /// 的有效样式（不含根部 baseStyle，渲染时由行根 span 再叠加）
+  List<({int start, int end, TextStyle? style})> _flattenSpans(
+    List<InlineSpan> spans,
+  ) {
+    final out = <({int start, int end, TextStyle? style})>[];
+    var offset = 0;
+
+    void walk(InlineSpan span, TextStyle? inherited) {
+      if (span is TextSpan) {
+        final resolved = span.style == null
+            ? inherited
+            : (inherited?.merge(span.style!) ?? span.style);
+        if (span.text != null && span.text!.isNotEmpty) {
+          out.add((
+            start: offset,
+            end: offset + span.text!.length,
+            style: resolved,
+          ));
+          offset += span.text!.length;
+        }
+        if (span.children != null) {
+          for (final child in span.children!) {
+            walk(child, resolved);
+          }
+        }
+      } else {
+        // 本查看器不会产生非 TextSpan；按纯文本长度推进保持偏移一致
+        offset += span.toPlainText().length;
+      }
+    }
+
+    for (final span in spans) {
+      walk(span, null);
+    }
+    return out;
   }
 
   /// 计算高亮 span：JSON 走 highlight 解析，其余按纯文本
@@ -940,90 +1019,6 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         leadingDistribution: TextLeadingDistribution.even,
         textBaseline: TextBaseline.alphabetic,
       );
-
-  /// 调度一次后帧渲染实测（去重）；实测值写回后触发重建替换估算值
-  void _scheduleRenderedLayoutMeasure(String signature) {
-    if (_renderMeasureScheduled) return;
-    _renderMeasureScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _renderMeasureScheduled = false;
-      if (!mounted) return;
-      final layout = _measureRenderedDocLineLayout();
-      if (layout == null || !mounted) return;
-      setState(() {
-        _renderedLayout = layout;
-        _renderedLayoutKey = signature;
-      });
-    });
-  }
-
-  /// 从实际渲染对象测量各文档行首条可视行的 top 与段落总高。
-  /// 字符偏移基于渲染文本本身（toPlainText），对任何内容/缩放/字体
-  /// 环境都与屏幕所见一致。
-  ({List<double> tops, double height})? _measureRenderedDocLineLayout() {
-    RenderEditable? ro;
-    void visit(RenderObject o) {
-      if (ro != null) return;
-      if (o is RenderEditable) {
-        ro = o;
-        return;
-      }
-      o.visitChildren(visit);
-    }
-
-    final root = context.findRenderObject();
-    if (root == null) return null;
-    visit(root);
-    if (ro == null) return null;
-
-    final plain = ro!.text!.toPlainText();
-    if (plain.isEmpty) return null;
-    final lines = plain.split('\n');
-    final tops = <double>[];
-    var offset = 0;
-    for (final line in lines) {
-      // caret rect 的 top 即该文档行首条可视行的 top
-      final rect = ro!.getLocalRectForCaret(TextPosition(offset: offset));
-      tops.add(rect.top);
-      offset += line.length + 1;
-    }
-    return (tops: tops, height: ro!.size.height);
-  }
-
-  /// 计算每个文档行首条可视行相对段落顶部的 top 及段落总高（与渲染同一份
-  /// span/宽度）
-  ({List<double> tops, double height}) _computeDocLineLayout(
-    String content,
-    TextStyle baseStyle,
-    double maxWidth,
-    TextScaler scaler,
-    DefaultTextStyle defaultTextStyle,
-  ) {
-    // 与 SelectableText → EditableText 的实际排版参数逐项对齐：
-    // strutStyle 是 SelectableText 的固定默认值，textHeightBehavior /
-    // textWidthBasis 继承自 DefaultTextStyle
-    final painter = TextPainter(
-      text: TextSpan(style: baseStyle, children: _cachedSpans),
-      textDirection: TextDirection.ltr,
-      textScaler: scaler,
-      strutStyle: const StrutStyle(),
-      textHeightBehavior: defaultTextStyle.textHeightBehavior,
-      textWidthBasis: defaultTextStyle.textWidthBasis,
-    )..layout(maxWidth: maxWidth);
-
-    final tops = <double>[];
-    var charOffset = 0;
-    for (final line in content.split('\n')) {
-      // caret 偏移的 dy 即该字符所在可视行的 top
-      tops.add(
-        painter
-            .getOffsetForCaret(TextPosition(offset: charOffset), Rect.zero)
-            .dy,
-      );
-      charOffset += line.length + 1;
-    }
-    return (tops: tops, height: painter.height);
-  }
 
   /// 构建语法高亮样式表（className → 颜色样式；字号字体继承 code12）
   Map<String, TextStyle> _codeThemeStyles(ThemeData theme) {
@@ -1082,46 +1077,6 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     };
 
     return isDark ? darkTheme : lightTheme;
-  }
-
-  /// 原始文本视图
-  Widget _buildRawView(ThemeData theme) {
-    return widget.showLineNumbers
-        ? Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 行号区域
-              _buildLineNumberArea(
-                theme,
-                [for (var i = 1; i <= _lines.length; i++) i],
-                rowHeight: 18,
-              ),
-              // 分割线
-              const AppDivider.vertical(subtle: true),
-              // 代码区域
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _effectiveScrollController,
-                  padding: const EdgeInsets.all(12),
-                  child: SelectableText(
-                    widget.content,
-                    style: _viewerCodeStyle(theme),
-                  ),
-                ),
-              ),
-            ],
-          )
-        : SingleChildScrollView(
-            controller: _effectiveScrollController,
-            padding: const EdgeInsets.all(12),
-            child: SelectableText(
-              widget.content,
-              style: AppTextStyles.code12.copyWith(
-                height: 1.4,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          );
   }
 
   /// 格式化大小
@@ -1210,42 +1165,46 @@ class LargeResponseWarning extends StatelessWidget {
   }
 }
 
-/// 软换行感知行号栏（完整模式专用）。
+/// 行号栏：不放进滚动视图，固定视口高，按 [scrollController] 的 offset
+/// 当帧只绘制当前可见的行号（续行无行号）。
 ///
-/// 不放进滚动视图：固定视口高，按 [scrollController] 的 offset 每帧只绘制
-/// 当前可见的行号。超高行号 Stack 层在 Windows 分数 DPI 下滚动重绘时会被
-/// 引擎按过期偏移合成（行号错乱/重影），视口高小层从根上避开该问题；
-/// 与正文共用同一 ScrollController，同步是当帧精确的。
-class _WrapAwareGutter extends StatelessWidget {
-  const _WrapAwareGutter({
+/// 超高行号层在 Windows 分数 DPI 下滚动重绘时会被引擎按过期偏移合成
+/// （行号错乱/重影/冻结），视口高小层从根上避开该问题；与正文共用同一
+/// ScrollController，同步是当帧精确的。
+class _OffsetGutter extends StatelessWidget {
+  const _OffsetGutter({
     required this.theme,
-    required this.docLineCount,
-    required this.layout,
-    required this.contentPadding,
+    required this.rowDocLines,
+    required this.rowHeight,
+    required this.topPadding,
     required this.scrollController,
     required this.width,
     required this.rightPadding,
   });
 
   final ThemeData theme;
-  final int docLineCount;
-  final ({List<double> tops, double height}) layout;
-  final double contentPadding;
+
+  /// 每个可视行对应的文档行号（1-based）；续行为 null
+  final List<int?> rowDocLines;
+
+  /// 可视行高（不含 ListView 顶部 padding）
+  final double rowHeight;
+
+  /// 内容 ListView 的顶部 padding
+  final double topPadding;
   final ScrollController scrollController;
   final double width;
   final double rightPadding;
 
   @override
   Widget build(BuildContext context) {
+    // 行号文本行盒撑满整行高（字形垂直居中于行盒），top 即内容行 top
     final gutterStyle = AppTextStyles.code11.copyWith(
-      height: 1.5 * 12 / 11,
+      height: rowHeight / 11,
       inherit: false,
       letterSpacing: 0,
       color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
     );
-    // 行号行高与正文行高一致（18），小号字形取行高差的一半做垂直居中
-    const lineHeight = 12 * 1.5;
-    final numberOffset = (lineHeight - 11 * (1.5 * 12 / 11)) / 2;
 
     return Container(
       width: width,
@@ -1256,19 +1215,38 @@ class _WrapAwareGutter extends StatelessWidget {
           return AnimatedBuilder(
             animation: scrollController,
             builder: (context, _) {
-              final offset =
-                  scrollController.hasClients ? scrollController.offset : 0.0;
+              // 模式切换等重建瞬间，旧 ListView 尚未 dispose、新 ListView 已
+              // attach，controller 会短暂挂在两个 ScrollPosition 上——此时
+              // 读 .offset 会断言；取最新 attach 的 position
+              final positions = scrollController.positions;
+              final rawOffset = positions.isEmpty ? 0.0 : positions.last.pixels;
               final viewportH = constraints.maxHeight;
+              // 模式切换等重建瞬间，controller 可能还带着旧 ScrollPosition 的
+              // offset（超过当前内容范围）；钳制到估算有效区间，保证行号始终
+              // 落在真实内容上
+              final estimatedMax =
+                  (rowDocLines.length * rowHeight + topPadding * 2 - viewportH)
+                      .clamp(0.0, double.infinity);
+              final offset = rawOffset.clamp(0.0, estimatedMax);
               final children = <Widget>[];
-              for (var i = 1; i <= docLineCount; i++) {
-                final y =
-                    layout.tops[i - 1] + contentPadding + numberOffset - offset;
-                if (y < -lineHeight || y > viewportH) continue;
+              final first = ((offset - topPadding) / rowHeight).floor().clamp(
+                    0,
+                    rowDocLines.length,
+                  );
+              for (var r = first; r < rowDocLines.length; r++) {
+                final y = topPadding + r * rowHeight - offset;
+                if (y > viewportH) break;
+                final n = rowDocLines[r];
+                if (n == null) continue;
                 children.add(
                   Positioned(
                     top: y,
                     right: 0,
-                    child: Text('$i', style: gutterStyle),
+                    child: Text(
+                      '$n',
+                      style: gutterStyle,
+                      textAlign: TextAlign.right,
+                    ),
                   ),
                 );
               }

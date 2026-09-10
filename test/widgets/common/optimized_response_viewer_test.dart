@@ -103,8 +103,8 @@ void main() {
     });
   });
 
-  group('OptimizedResponseViewer 完整模式渲染器（字号翻转回归）', () {
-    testWidgets('完整模式用 SelectableText.rich 渲染而非 CodeField', (tester) async {
+  group('OptimizedResponseViewer 完整模式渲染器（巨文本层回归）', () {
+    testWidgets('完整模式虚拟化行渲染：无 CodeField、无整段 SelectableText', (tester) async {
       await tester.pumpWidget(buildViewer(
         content: jsonWithEpoch,
         contentType: 'application/json',
@@ -112,7 +112,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(CodeField), findsNothing);
-      expect(find.byType(SelectableText), findsWidgets);
+      // 虚拟化后完整模式不再有承载整份响应的 SelectableText/EditableText
+      expect(find.byType(EditableText), findsNothing);
+      expect(find.byType(ListView), findsWidgets);
     });
 
     testWidgets('行号随滚动更新：滚到底后首行号消失、末行号出现', (tester) async {
@@ -148,8 +150,9 @@ void main() {
   });
 
   group('OptimizedResponseViewer 行号对齐（软换行感知 gutter）', () {
-    /// 完整/原始模式：用 RenderEditable 的真实行位置对比行号 top，
-    /// 返回每行 (行号top - 文本行top) delta 列表
+    /// 完整/原始模式：逐文档行比较「行号 top」与「该行首个可视行 top」，
+    /// 返回每行 (行号top - 文本行top) delta 列表。
+    /// 虚拟化渲染后内容行是 ListView 里的 Text.rich，按行前缀定位。
     Future<List<double>> fullModeDeltas(
       WidgetTester tester,
       String content, {
@@ -172,25 +175,21 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final editableState =
-          tester.state<EditableTextState>(find.byType(EditableText));
-      final ro = editableState.renderEditable;
-      final displayLines = ro.text!.toPlainText().split('\n');
+      final displayLines = content.split('\n');
       final deltas = <double>[];
-      var charOffset = 0;
       for (var i = 0; i < displayLines.length; i++) {
-        final end = charOffset + displayLines[i].length;
-        final boxes = ro.getBoxesForSelection(
-          TextSelection(
-            baseOffset: charOffset,
-            extentOffset: end > charOffset ? end : charOffset + 1,
-          ),
-        );
-        final top = ro.localToGlobal(Offset(0, boxes.first.top)).dy;
+        final line = displayLines[i];
+        if (line.trim().isEmpty) continue;
         final numberFind = find.text('${i + 1}');
         expect(numberFind, findsWidgets, reason: '第 ${i + 1} 行必须有行号（含末尾行）');
-        deltas.add(tester.getTopLeft(numberFind.first).dy - top);
-        charOffset = end + 1;
+        // 行前缀定位该文档行首个可视行（软换行续行不含行首）
+        final prefix = line.substring(0, line.length < 12 ? line.length : 12);
+        final rowFind = find.textContaining(prefix);
+        expect(rowFind, findsWidgets, reason: '第 ${i + 1} 行必须有内容行');
+        deltas.add(
+          tester.getTopLeft(numberFind.first).dy -
+              tester.getTopLeft(rowFind.first).dy,
+        );
       }
       return deltas;
     }
@@ -211,6 +210,48 @@ void main() {
       final hi = deltas.reduce((a, b) => a > b ? a : b);
       // 字形盒与行盒存在恒定小偏差；关键是逐行一致（无累计漂移）
       expect(hi - lo, lessThan(2.0), reason: '各行 delta 应恒定：$lo ~ $hi');
+    });
+
+    testWidgets('完整模式：软换行续行无行号且切片拼接还原原文', (tester) async {
+      final tokenLine = '  "token": "${'B' * 400}",';
+      final lines = <String>[
+        '{',
+        tokenLine,
+        '  "after": 1,',
+        '}',
+      ].join('\n');
+      await tester.pumpWidget(
+        hoppTestApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 800,
+              height: 600,
+              child: OptimizedResponseViewer(
+                content: lines,
+                contentType: 'application/json',
+                initialMode: ResponseDisplayMode.full,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // ListView 内的行 Text 按树序 = 可视行顺序；含 'B' 的都是 token 行切片
+      final rowTexts = tester
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byType(ListView),
+              matching: find.byType(Text),
+            ),
+          )
+          .map((t) => t.textSpan?.toPlainText() ?? t.data ?? '')
+          .toList();
+      final tokenSlices = rowTexts.where((t) => t.contains('B')).toList();
+      expect(tokenSlices.length, greaterThan(1), reason: '400 字符长行应软换行为多行');
+      expect(tokenSlices.join(), tokenLine, reason: '切片拼接必须逐字符还原原文档行');
+      // 行号 3 属于 token 之后的内容行，验证其存在且只出现一次
+      expect(find.text('3'), findsOneWidget);
     });
 
     testWidgets('原始模式：行号逐行对齐', (tester) async {
@@ -264,6 +305,48 @@ void main() {
         expect((numberTop - itemTop).abs(), lessThan(2.0),
             reason: '性能模式第 ${pair.$1} 行行号应贴齐条目');
       }
+    });
+
+    testWidgets('模式来回切换后行号仍随滚动更新', (tester) async {
+      final controller = ScrollController();
+      final lines = List.generate(50, (i) => '  "key$i": $i,').join('\n');
+      await tester.pumpWidget(
+        hoppTestApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 800,
+              height: 200,
+              child: OptimizedResponseViewer(
+                content: '{\n$lines\n}',
+                contentType: 'application/json',
+                initialMode: ResponseDisplayMode.full,
+                scrollController: controller,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 完整 → 性能 → 完整：每次切换后行号都应正常渲染
+      await tester.tap(find.text('Performance'));
+      await tester.pumpAndSettle();
+      expect(find.text('1'), findsWidgets);
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(find.text('1'), findsNothing);
+      expect(find.text('52'), findsWidgets);
+
+      await tester.tap(find.text('Full'));
+      await tester.pumpAndSettle();
+      // 模式切换会重建滚动视图（滚动位置回到顶部），行号仍应正常渲染
+      expect(find.text('1'), findsWidgets);
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(find.text('52'), findsWidgets);
+      controller.jumpTo(0);
+      await tester.pumpAndSettle();
+      expect(find.text('1'), findsWidgets);
     });
   });
 }

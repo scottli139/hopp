@@ -13,6 +13,7 @@ import '../../theme/app_syntax_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/app_logger.dart';
 import 'app_divider.dart';
+import 'offset_gutter.dart';
 
 /// Supported language modes for syntax highlighting
 enum CodeLanguage {
@@ -82,6 +83,10 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
   late CodeController _controller;
   late final bool _ownsController;
 
+  /// 代码区垂直滚动 offset（由包在 CodeField 外的 ScrollNotification 喂入，
+  /// 驱动行号栏当帧直绘；CodeField 的滚动控制器在其内部，无法直接持有）
+  final ValueNotifier<double> _scrollOffset = ValueNotifier(0.0);
+
   @override
   void initState() {
     super.initState();
@@ -106,6 +111,7 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
   @override
   void dispose() {
     _controller.removeListener(_onTextChanged);
+    _scrollOffset.dispose();
     // 外部传入的 controller 由调用方持有dispose
     if (_ownsController) {
       _controller.dispose();
@@ -133,34 +139,44 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
         : _buildCodeField(theme);
   }
 
+  /// 行号栏：视口高小层，按代码区滚动 offset 当帧直绘可见行号。
+  ///
+  /// 旧实现是 NeverScrollableScrollPhysics 的静态行号列——内容滚动后
+  /// 行号冻结在顶部（Issue #4）；超高校正层还会命中 Windows 分数 DPI
+  /// 的引擎合成异常。改为与响应查看器同一套 OffsetGutter：滚动位置由
+  /// 包在 CodeField 外的 ScrollNotification 当帧喂入，同步无延迟。
   Widget _buildLineNumberArea(ThemeData theme) {
     final lineCount = widget.code.split('\n').length;
+    final scaler = MediaQuery.textScalerOf(context);
+    // 实测当前缩放下的可视行高（code12 × 1.5；字体度量取整使 scale()
+    // 估算与真实渲染存在亚像素偏差并逐行累计）
+    final rowHeight = _measureCodeLineHeight(scaler);
 
-    return Container(
+    return OffsetGutter(
+      theme: theme,
+      rowDocLines: [for (var i = 1; i <= lineCount; i++) i],
+      rowHeight: rowHeight,
+      // CodeField 内部 InputDecoration contentPadding 为 vertical: 16
+      topPadding: 16,
+      listenable: _scrollOffset,
+      readOffset: () => _scrollOffset.value,
       width: _lineNumberWidth,
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      padding: const EdgeInsets.only(
-        right: _lineNumberPadding,
-        top: 12,
-        bottom: 12,
-      ),
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        child: Column(
-          children: List.generate(lineCount, (index) {
-            return Text(
-              '${index + 1}',
-              textAlign: TextAlign.right,
-              style: AppTextStyles.code11.copyWith(
-                height: 1.5,
-                color:
-                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-              ),
-            );
-          }),
-        ),
-      ),
+      rightPadding: _lineNumberPadding,
     );
+  }
+
+  /// 与 CodeField 文本同参的行高实测
+  double _measureCodeLineHeight(TextScaler scaler) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: 'A',
+        style: AppTextStyles.code12.copyWith(height: 1.5),
+      ),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+      strutStyle: const StrutStyle(),
+    )..layout();
+    return painter.height;
   }
 
   Widget _buildCodeField(ThemeData theme) {
@@ -178,15 +194,23 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
       ),
       child: CodeTheme(
         data: _buildCodeTheme(theme),
-        child: CodeField(
-          controller: _controller,
-          focusNode: widget.focusNode,
-          readOnly: widget.readOnly,
-          expands: widget.expands,
-          minLines: widget.minLines,
-          maxLines: widget.maxLines,
-          gutterStyle: GutterStyle.none,
-          textStyle: AppTextStyles.code12.copyWith(height: 1.5),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification.metrics.axis == Axis.vertical) {
+              _scrollOffset.value = notification.metrics.pixels;
+            }
+            return false;
+          },
+          child: CodeField(
+            controller: _controller,
+            focusNode: widget.focusNode,
+            readOnly: widget.readOnly,
+            expands: widget.expands,
+            minLines: widget.minLines,
+            maxLines: widget.maxLines,
+            gutterStyle: GutterStyle.none,
+            textStyle: AppTextStyles.code12.copyWith(height: 1.5),
+          ),
         ),
       ),
     );

@@ -811,12 +811,13 @@ group('CurlParser', () {
 
 设计约束：**不得把整份响应渲染为一个超高文本层**。实测（用户多段录屏 + 本机逐像素分析）：Windows 分数 DPI（150%）下，7000+px 超高文本层会被引擎按过期偏移合成——屏幕显示与框架状态脱节（行号栏按框架 offset 正确显示，内容层却显示陈旧位图，且反复停在逐像素一致的历史滚动位置；点击触发重光栅化后暂时恢复）。这类引擎合成异常无法从 widget 层修复，只能通过消灭巨高层规避。
 
-- **完整/原始模式**：`TextPainter` 单次排版测算各文档行的软换行点（`getLineBoundary` 按文档行区间行走，可视行不跨文档行），`ListView.builder`（itemExtent 18）逐可视行渲染；行内容是按字符区间从高亮 span 树切出的片段（`_flattenSpans` + 游标切片，O(行数+区间数)），跨行选择由 `SelectionArea` 提供。
-- **行号栏**：三模式共用 `_OffsetGutter`——不放进滚动视图，固定视口高，按同一 `ScrollController` 的 offset 当帧直绘可见行号（续行无号）。与内容天然同步；性能模式行号冻结的旧疾（Issue #4，独立行号滚动控制器无人驱动）一并根治。
-- **样式基准**：`_viewerCodeStyle`（inherit:false + letterSpacing:0 + height 1.5），排版 painter 与渲染行同参，行高恒为 18 逻辑像素。
-- 回归测试：软换行切片拼接逐字符还原原文、行号逐行对齐（完整/原始/性能三模式）、行号随滚动虚拟化更新（`test/widgets/common/optimized_response_viewer_test.dart`）。
+- **完整/原始模式**：`TextPainter` 单次排版测算各文档行的软换行点（`getLineBoundary` 按文档行区间行走，可视行不跨文档行），`ListView.builder`（itemExtent = 实测行高）逐可视行渲染；行内容是按字符区间从高亮 span 树切出的片段（`_flattenSpans` + 游标切片，O(行数+区间数)），跨行选择由 `SelectionArea` 提供。
+- **行号栏**：三模式 + 请求体编辑器共用 `OffsetGutter`（`lib/widgets/common/offset_gutter.dart`）——不放进滚动视图，固定视口高，按可监听对象的 offset 当帧直绘可见行号（续行无号）。响应查看器传 ScrollController（瞬态多挂读 `positions.last.pixels`）；CodeEditor 场景经包在 CodeField 外的 `ScrollNotification` 当帧喂入（包内滚动控制器不可达）。行号在行高盒内垂直居中，不依赖行号自身字体度量。
+- **行高必须实测**：字体度量取整使 `TextScaler.scale()` 估算与真实渲染存在亚像素~0.5px/行偏差并逐行累计（textScaler 1.25 下 scale(18)=22.5 vs 实测 23.0）；itemExtent、性能模式行距、行号 pitch 统一用与内容同参的 `TextPainter` 实测（`_measureViewerLineHeight` / `_measureCodeLineHeight`）。
+- **样式基准**：`_viewerCodeStyle`（inherit:false + letterSpacing:0 + height 1.5），排版 painter 与渲染行同参。
+- 回归测试：软换行切片拼接逐字符还原原文、行号逐行对齐（完整/原始/性能三模式 + CodeEditor、textScaler 1.0/1.25）、行号随滚动虚拟化更新、模式来回切换（`test/widgets/common/optimized_response_viewer_test.dart`、`code_editor_test.dart`）。
 
-历史教训（勿走回头路）：v0.17.1 字号翻转（超宽文本层错误比例光栅化）→ 软换行；v0.17.2 行号栏超高 Stack 层过期合成 → 视口高覆盖层；v0.17.3 内容巨高层过期合成 → 全模式虚拟化。三次都是同一类引擎层 bug 在不同层上的显形，最终的免疫方案是让所有渲染层保持视口量级。
+历史教训（勿走回头路）：v0.17.1 字号翻转（超宽文本层错误比例光栅化）→ 软换行；v0.17.2 行号栏超高 Stack 层过期合成 → 视口高覆盖层；v0.17.3 内容巨高层过期合成 → 全模式虚拟化；v0.17.4 CodeEditor 静态行号列（Issue #4）+ 固定行高未随缩放 → 共享 OffsetGutter + 行高实测。四次都是同一类问题在不同层/不同基准上的显形，免疫方案：渲染层保持视口量级 + 行高一律实测。
 
 ---
 

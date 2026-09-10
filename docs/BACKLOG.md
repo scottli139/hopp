@@ -111,7 +111,8 @@
 
 | 问题 | 优先级 | 状态 |
 |------|--------|------|
-| 行号与内容滚动不同步 | P2 | 仅剩 CodeEditor 编辑场景（响应查看器完整/原始/性能三模式 v0.17.3 已根治：全模式虚拟化 + `_OffsetGutter` offset 直绘，见 [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md) 渲染机制一节；`scroll_response target=body` 可自动化验证） |
+| 行号与内容滚动不同步 | P2 | 已根治（v0.17.4，Issue #4 全场景收口：CodeEditor 场景经 ScrollNotification 驱动共享 `OffsetGutter`，响应查看器三模式 v0.17.3 全模式虚拟化；回归测试 `code_editor_test.dart` / `optimized_response_viewer_test.dart`） |
+| 超大请求体编辑渲染异常风险 | P3 | 观察项（请求体 CodeField 是单个 EditableText 巨高层，400+ 行时与响应查看器旧疾同类（Windows 分数 DPI 引擎合成异常，实测 400 行 body 内容层曾整片不渲染、行号正常）；日常请求体远小于此，编辑器无法像只读查看器那样简单虚拟化，命中再议） |
 | 导入对话框拖放未实现 | P3 | 待修（Postman/OpenAPI 导入的拖放区均为视觉残桩，实际只能点击选择；实现需引入 desktop_drop 类依赖） |
 | export_dialog_test 在 Windows 本机 tearDown 挂 | P3 | 环境限定（2026-09-07 实测：临时目录删除 errno 32 文件被占用，疑杀毒/索引占用新写出的 .hopp.json；HEAD 基线 worktree 同挂，确认非 M8.9 回归；CI/Linux 不受影响） |
 

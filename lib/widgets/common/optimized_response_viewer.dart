@@ -15,6 +15,7 @@ import '../../utils/app_logger.dart';
 import '../../utils/epoch_annotation.dart';
 import 'app_button.dart';
 import 'app_divider.dart';
+import 'offset_gutter.dart';
 
 /// JSON 语法高亮注册（highlight 全局单例只需注册一次）
 bool _jsonHighlightRegistered = false;
@@ -121,9 +122,32 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   List<({int? docLine, List<InlineSpan> spans})>? _visualRows;
   List<int?>? _rowDocLines;
 
+  /// 实测当前 textScaler 下的可视行高：字体度量取整使 scale() 估算与
+  /// 真实渲染存在亚像素偏差并逐行累计（1.25 下 scale(18)=22.5 vs 实测 23.0）
+  double _measureViewerLineHeight(TextScaler scaler) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: 'A',
+        style: _viewerCodeStyle(Theme.of(context)),
+      ),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+      strutStyle: const StrutStyle(),
+    )..layout();
+    return painter.height;
+  }
+
   /// 主内容滚动控制器：外部传入优先，否则用内部控制器
   ScrollController get _effectiveScrollController =>
       widget.scrollController ?? _scrollController;
+
+  /// 当帧滚动 offset。模式切换等重建瞬间，旧 ListView 尚未 dispose、
+  /// 新 ListView 已 attach，controller 会短暂挂在两个 ScrollPosition
+  /// 上——此时读 .offset 会断言；取最新 attach 的 position
+  double _readScrollOffset() {
+    final positions = _effectiveScrollController.positions;
+    return positions.isEmpty ? 0.0 : positions.last.pixels;
+  }
 
   @override
   void initState() {
@@ -519,8 +543,14 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
+              final scaler = MediaQuery.textScalerOf(context);
+              // 条目行距 = 上下各 2 padding + 实测可视行高（字体度量取整
+              // 使 scale() 估算有亚像素偏差并逐行累计）
+              final rowPitch = 4 + _measureViewerLineHeight(scaler);
               // 等宽字体：ASCII 占 1 单元，CJK 等宽字符占 2 单元
-              final maxUnits = ((constraints.maxWidth - gutterWidth - 24) / 7.2)
+              // （单元宽 7.2px 未缩放，随 textScaler 同步放大）
+              final maxUnits = ((constraints.maxWidth - gutterWidth - 24) /
+                      scaler.scale(7.2))
                   .floor()
                   .clamp(20, 100000);
               final chunks = <({String text, int? docLine})>[
@@ -534,12 +564,13 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                   // 行号区域：与内容共用同一 ScrollController，当帧直绘可见
                   // 行号（修复旧版独立行号滚动控制器无人驱动、行号冻结的问题）
                   if (widget.showLineNumbers)
-                    _OffsetGutter(
+                    OffsetGutter(
                       theme: theme,
                       rowDocLines: [for (final c in chunks) c.docLine],
-                      rowHeight: 22,
+                      rowHeight: rowPitch,
                       topPadding: 12,
-                      scrollController: _effectiveScrollController,
+                      listenable: _effectiveScrollController,
+                      readOffset: _readScrollOffset,
                       width: _lineNumberWidth,
                       rightPadding: _lineNumberPadding,
                     ),
@@ -795,8 +826,6 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     }
 
     const contentPadding = 12.0;
-    // 可视行高：code12（12px）× height 1.5，与 painter 排版行高一致
-    const rowHeight = 12 * 1.5;
     final gutterWidth = widget.showLineNumbers ? _lineNumberWidth : 0.0;
     const dividerWidth = 1.0;
 
@@ -809,6 +838,9 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               (widget.showLineNumbers ? dividerWidth : 0.0) -
               contentPadding * 2;
           final scaler = MediaQuery.textScalerOf(context);
+          // 可视行高为当前缩放下的实测值（字体度量取整使 scale() 估算
+          // 与真实渲染存在亚像素偏差并逐行累计）
+          final scaledRowHeight = _measureViewerLineHeight(scaler);
           final layoutKey = '${theme.brightness}|$beautify|${content.hashCode}|'
               '$textWidth|$scaler';
           if (_visualRows == null || _visualRowKey != layoutKey) {
@@ -821,12 +853,13 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (widget.showLineNumbers) ...[
-                _OffsetGutter(
+                OffsetGutter(
                   theme: theme,
                   rowDocLines: _rowDocLines!,
-                  rowHeight: rowHeight,
+                  rowHeight: scaledRowHeight,
                   topPadding: contentPadding,
-                  scrollController: _effectiveScrollController,
+                  listenable: _effectiveScrollController,
+                  readOffset: _readScrollOffset,
                   width: _lineNumberWidth,
                   rightPadding: _lineNumberPadding,
                 ),
@@ -839,7 +872,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                     child: ListView.builder(
                       controller: _effectiveScrollController,
                       padding: const EdgeInsets.all(contentPadding),
-                      itemExtent: rowHeight,
+                      itemExtent: scaledRowHeight,
                       itemCount: _visualRows!.length,
                       itemBuilder: (context, index) {
                         return Text.rich(
@@ -1162,102 +1195,5 @@ class LargeResponseWarning extends StatelessWidget {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
-  }
-}
-
-/// 行号栏：不放进滚动视图，固定视口高，按 [scrollController] 的 offset
-/// 当帧只绘制当前可见的行号（续行无行号）。
-///
-/// 超高行号层在 Windows 分数 DPI 下滚动重绘时会被引擎按过期偏移合成
-/// （行号错乱/重影/冻结），视口高小层从根上避开该问题；与正文共用同一
-/// ScrollController，同步是当帧精确的。
-class _OffsetGutter extends StatelessWidget {
-  const _OffsetGutter({
-    required this.theme,
-    required this.rowDocLines,
-    required this.rowHeight,
-    required this.topPadding,
-    required this.scrollController,
-    required this.width,
-    required this.rightPadding,
-  });
-
-  final ThemeData theme;
-
-  /// 每个可视行对应的文档行号（1-based）；续行为 null
-  final List<int?> rowDocLines;
-
-  /// 可视行高（不含 ListView 顶部 padding）
-  final double rowHeight;
-
-  /// 内容 ListView 的顶部 padding
-  final double topPadding;
-  final ScrollController scrollController;
-  final double width;
-  final double rightPadding;
-
-  @override
-  Widget build(BuildContext context) {
-    // 行号文本行盒撑满整行高（字形垂直居中于行盒），top 即内容行 top
-    final gutterStyle = AppTextStyles.code11.copyWith(
-      height: rowHeight / 11,
-      inherit: false,
-      letterSpacing: 0,
-      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-    );
-
-    return Container(
-      width: width,
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      padding: EdgeInsets.only(right: rightPadding),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return AnimatedBuilder(
-            animation: scrollController,
-            builder: (context, _) {
-              // 模式切换等重建瞬间，旧 ListView 尚未 dispose、新 ListView 已
-              // attach，controller 会短暂挂在两个 ScrollPosition 上——此时
-              // 读 .offset 会断言；取最新 attach 的 position
-              final positions = scrollController.positions;
-              final rawOffset = positions.isEmpty ? 0.0 : positions.last.pixels;
-              final viewportH = constraints.maxHeight;
-              // 模式切换等重建瞬间，controller 可能还带着旧 ScrollPosition 的
-              // offset（超过当前内容范围）；钳制到估算有效区间，保证行号始终
-              // 落在真实内容上
-              final estimatedMax =
-                  (rowDocLines.length * rowHeight + topPadding * 2 - viewportH)
-                      .clamp(0.0, double.infinity);
-              final offset = rawOffset.clamp(0.0, estimatedMax);
-              final children = <Widget>[];
-              final first = ((offset - topPadding) / rowHeight).floor().clamp(
-                    0,
-                    rowDocLines.length,
-                  );
-              for (var r = first; r < rowDocLines.length; r++) {
-                final y = topPadding + r * rowHeight - offset;
-                if (y > viewportH) break;
-                final n = rowDocLines[r];
-                if (n == null) continue;
-                children.add(
-                  Positioned(
-                    top: y,
-                    right: 0,
-                    child: Text(
-                      '$n',
-                      style: gutterStyle,
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                );
-              }
-              return SizedBox(
-                height: viewportH,
-                child: Stack(children: children),
-              );
-            },
-          );
-        },
-      ),
-    );
   }
 }

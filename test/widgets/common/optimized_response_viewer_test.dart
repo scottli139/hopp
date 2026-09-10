@@ -157,17 +157,21 @@ void main() {
       WidgetTester tester,
       String content, {
       ResponseDisplayMode mode = ResponseDisplayMode.full,
+      double textScaler = 1.0,
     }) async {
       await tester.pumpWidget(
-        hoppTestApp(
-          home: Scaffold(
-            body: SizedBox(
-              width: 800,
-              height: 600,
-              child: OptimizedResponseViewer(
-                content: content,
-                contentType: 'application/json',
-                initialMode: mode,
+        MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(textScaler)),
+          child: hoppTestApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 800,
+                height: 600,
+                child: OptimizedResponseViewer(
+                  content: content,
+                  contentType: 'application/json',
+                  initialMode: mode,
+                ),
               ),
             ),
           ),
@@ -186,9 +190,10 @@ void main() {
         final prefix = line.substring(0, line.length < 12 ? line.length : 12);
         final rowFind = find.textContaining(prefix);
         expect(rowFind, findsWidgets, reason: '第 ${i + 1} 行必须有内容行');
+        // 行号在行高盒内垂直居中（字形视觉中心 = 行中心），与内容行比较中心
         deltas.add(
-          tester.getTopLeft(numberFind.first).dy -
-              tester.getTopLeft(rowFind.first).dy,
+          tester.getCenter(numberFind.first).dy -
+              tester.getCenter(rowFind.first).dy,
         );
       }
       return deltas;
@@ -265,6 +270,65 @@ void main() {
       expect(hi - lo, lessThan(2.0), reason: '原始模式各行 delta 应恒定：$lo ~ $hi');
     });
 
+    testWidgets('完整模式：textScaler 1.25（uiScale 125%）下行号逐行对齐', (tester) async {
+      // itemExtent/行号 pitch 必须为当前缩放下的实测行高：固定 18 会让
+      // 行号与内容逐行脱节（回归：1.25 下行号曾上移一整行）。
+      // 行数控制在缩放后仍全部可见（虚拟化 gutter 只渲染视口内行号）
+      final lines = <String>[
+        '{',
+        for (var i = 1; i <= 5; i++) '  "key$i": $i,',
+        '  "token": "${'B' * 200}",',
+        '  "after": 1,',
+        '}',
+      ].join('\n');
+      final deltas = await fullModeDeltas(tester, lines, textScaler: 1.25);
+      final lo = deltas.reduce((a, b) => a < b ? a : b);
+      final hi = deltas.reduce((a, b) => a > b ? a : b);
+      expect(hi - lo, lessThan(2.0), reason: '1.25 缩放下各行 delta 应恒定：$lo ~ $hi');
+    });
+
+    testWidgets('性能模式：textScaler 1.25 下行距随缩放、行号逐行对齐', (tester) async {
+      final lines = <String>[
+        '{',
+        for (var i = 1; i <= 30; i++) '  "key$i": $i,',
+        '}',
+      ].join('\n');
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.25)),
+          child: hoppTestApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 800,
+                height: 600,
+                child: OptimizedResponseViewer(
+                  content: lines,
+                  contentType: 'application/json',
+                  initialMode: ResponseDisplayMode.performance,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      for (final pair in [(2, 'key1'), (11, 'key10'), (21, 'key20')]) {
+        final numberFind = find.text('${pair.$1}');
+        final contentFind = find.byWidgetPredicate(
+          (w) =>
+              w is SelectableText &&
+              (w.data?.contains('"${pair.$2}"') ?? false),
+        );
+        expect(numberFind, findsWidgets);
+        expect(contentFind, findsWidgets);
+        // 行号在行高盒内垂直居中（视觉中心 = 条目中心），比较中心
+        final numberCenter = tester.getCenter(numberFind.first).dy;
+        final itemCenter = tester.getCenter(contentFind.first).dy;
+        expect((numberCenter - itemCenter).abs(), lessThan(2.0),
+            reason: '1.25 下性能模式第 ${pair.$1} 行行号应贴齐条目');
+      }
+    });
+
     testWidgets('性能模式：行号与虚拟化条目逐行对齐', (tester) async {
       final lines = <String>[
         '{',
@@ -299,10 +363,10 @@ void main() {
         );
         expect(numberFind, findsWidgets);
         expect(contentFind, findsWidgets);
-        final numberTop = tester.getTopLeft(numberFind.first).dy;
-        // 条目容器 padding vertical: 2 → 条目 top = 文本 top - 2
-        final itemTop = tester.getTopLeft(contentFind.first).dy - 2;
-        expect((numberTop - itemTop).abs(), lessThan(2.0),
+        // 行号在行高盒内垂直居中（视觉中心 = 条目中心），比较中心
+        final numberCenter = tester.getCenter(numberFind.first).dy;
+        final itemCenter = tester.getCenter(contentFind.first).dy;
+        expect((numberCenter - itemCenter).abs(), lessThan(2.0),
             reason: '性能模式第 ${pair.$1} 行行号应贴齐条目');
       }
     });

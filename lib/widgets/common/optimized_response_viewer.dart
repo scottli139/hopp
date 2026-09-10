@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderEditable;
 import 'package:flutter/services.dart';
 import 'package:highlight/highlight_core.dart';
 import 'package:highlight/languages/json.dart';
@@ -113,6 +114,13 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   // 完整模式语法高亮 span 缓存（随内容/主题变化重建）
   String _spanCacheKey = '';
   List<InlineSpan>? _cachedSpans;
+
+  // 行号栏后帧校准：以实际渲染对象（RenderEditable）的行位置为准。
+  // 独立 TextPainter 的测算在分数缩放/字体回退等环境下可能与真实渲染
+  // 存在亚行级偏差，后帧用渲染实测值校准一次即完全一致。
+  String? _renderedLayoutKey;
+  ({List<double> tops, double height})? _renderedLayout;
+  bool _renderMeasureScheduled = false;
 
   /// 主内容滚动控制器：外部传入优先，否则用内部控制器
   ScrollController get _effectiveScrollController =>
@@ -834,16 +842,20 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               gutterWidth -
               (widget.showLineNumbers ? dividerWidth : 0.0) -
               contentPadding * 2;
-          // 用与渲染一致的 TextPainter 计算各文档行首条可视行的位置，
-          // 行号才能与软换行后的正文逐行对齐
+          // 行号布局：优先用后帧从渲染对象实测校准过的值，
+          // 首帧（或实测尚未返回时）用与渲染同参数的 TextPainter 估算
+          final scaler = MediaQuery.textScalerOf(context);
+          final layoutSignature = '${theme.brightness}|${content.hashCode}|'
+              '$textWidth|$scaler|$_annotateEpoch';
           final gutterLayout = widget.showLineNumbers
-              ? _computeDocLineLayout(
-                  content,
-                  baseStyle,
-                  textWidth,
-                  MediaQuery.textScalerOf(context),
-                  DefaultTextStyle.of(context))
+              ? (_renderedLayoutKey == layoutSignature
+                  ? _renderedLayout!
+                  : _computeDocLineLayout(content, baseStyle, textWidth, scaler,
+                      DefaultTextStyle.of(context)))
               : null;
+          if (widget.showLineNumbers && _renderedLayoutKey != layoutSignature) {
+            _scheduleRenderedLayoutMeasure(layoutSignature);
+          }
 
           // 行号与正文放在同一个垂直滚动视图里，保证二者始终同步滚动
           return SingleChildScrollView(
@@ -919,6 +931,55 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         leadingDistribution: TextLeadingDistribution.even,
         textBaseline: TextBaseline.alphabetic,
       );
+
+  /// 调度一次后帧渲染实测（去重）；实测值写回后触发重建替换估算值
+  void _scheduleRenderedLayoutMeasure(String signature) {
+    if (_renderMeasureScheduled) return;
+    _renderMeasureScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _renderMeasureScheduled = false;
+      if (!mounted) return;
+      final layout = _measureRenderedDocLineLayout();
+      if (layout == null || !mounted) return;
+      setState(() {
+        _renderedLayout = layout;
+        _renderedLayoutKey = signature;
+      });
+    });
+  }
+
+  /// 从实际渲染对象测量各文档行首条可视行的 top 与段落总高。
+  /// 字符偏移基于渲染文本本身（toPlainText），对任何内容/缩放/字体
+  /// 环境都与屏幕所见一致。
+  ({List<double> tops, double height})? _measureRenderedDocLineLayout() {
+    RenderEditable? ro;
+    void visit(RenderObject o) {
+      if (ro != null) return;
+      if (o is RenderEditable) {
+        ro = o;
+        return;
+      }
+      o.visitChildren(visit);
+    }
+
+    final root = context.findRenderObject();
+    if (root == null) return null;
+    visit(root);
+    if (ro == null) return null;
+
+    final plain = ro!.text!.toPlainText();
+    if (plain.isEmpty) return null;
+    final lines = plain.split('\n');
+    final tops = <double>[];
+    var offset = 0;
+    for (final line in lines) {
+      // caret rect 的 top 即该文档行首条可视行的 top
+      final rect = ro!.getLocalRectForCaret(TextPosition(offset: offset));
+      tops.add(rect.top);
+      offset += line.length + 1;
+    }
+    return (tops: tops, height: ro!.size.height);
+  }
 
   /// 计算每个文档行首条可视行相对段落顶部的 top 及段落总高（与渲染同一份
   /// span/宽度）

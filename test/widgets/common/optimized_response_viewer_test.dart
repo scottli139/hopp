@@ -115,7 +115,7 @@ void main() {
       expect(find.byType(SelectableText), findsWidgets);
     });
 
-    testWidgets('行号与正文同一滚动视图：滚动后行号随动', (tester) async {
+    testWidgets('行号随滚动更新：滚到底后首行号消失、末行号出现', (tester) async {
       final controller = ScrollController();
       final lines = List.generate(50, (i) => '  "key$i": $i,').join('\n');
       await tester.pumpWidget(
@@ -135,17 +135,15 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final before = tester.getTopLeft(find.text('1')).dy;
-      expect(before, greaterThanOrEqualTo(0));
+      expect(find.text('1'), findsWidgets);
 
       controller.jumpTo(controller.position.maxScrollExtent);
       await tester.pumpAndSettle();
-      // 行号随内容一起滚动：行号 1 滚出视口顶部
-      expect(
-        tester.getTopLeft(find.text('1')).dy,
-        lessThan(before - controller.position.maxScrollExtent + 1),
-      );
-      expect(tester.getTopLeft(find.text('1')).dy, lessThan(0));
+      // 行号随内容一起滚动：行号 1 滚出视口（虚拟化 gutter 不再渲染），
+      // 末行行号 52（{ + 50 行 + }）进入视口
+      expect(find.text('1'), findsNothing);
+      expect(find.text('52'), findsWidgets);
+      expect(find.text('51'), findsWidgets);
     });
   });
 

@@ -857,18 +857,27 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             _scheduleRenderedLayoutMeasure(layoutSignature);
           }
 
-          // 行号与正文放在同一个垂直滚动视图里，保证二者始终同步滚动
-          return SingleChildScrollView(
-            controller: _effectiveScrollController,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (widget.showLineNumbers) ...[
-                  _buildWrapAwareGutter(
-                      theme, lines.length, gutterLayout!, contentPadding),
-                  const AppDivider.vertical(subtle: true),
-                ],
-                Expanded(
+          // 行号栏不放进滚动视图：超高 Stack 层在 Windows 分数 DPI 下
+          // 滚动重绘时会被引擎按过期偏移合成（行号错乱/重影）。
+          // 改为视口高固定列，按 scrollController.offset 每帧绘制可见行号
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.showLineNumbers) ...[
+                _WrapAwareGutter(
+                  theme: theme,
+                  docLineCount: lines.length,
+                  layout: gutterLayout!,
+                  contentPadding: contentPadding,
+                  scrollController: _effectiveScrollController,
+                  width: _lineNumberWidth,
+                  rightPadding: _lineNumberPadding,
+                ),
+                const AppDivider.vertical(subtle: true),
+              ],
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _effectiveScrollController,
                   child: Padding(
                     padding: const EdgeInsets.all(contentPadding),
                     child: SelectableText.rich(
@@ -876,8 +885,8 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
@@ -1014,43 +1023,6 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       charOffset += line.length + 1;
     }
     return (tops: tops, height: painter.height);
-  }
-
-  /// 软换行感知行号栏：每个行号按文档行首条可视行的 top 精确定位
-  Widget _buildWrapAwareGutter(
-    ThemeData theme,
-    int docLineCount,
-    ({List<double> tops, double height}) layout,
-    double contentPadding,
-  ) {
-    final gutterStyle = AppTextStyles.code11.copyWith(
-      height: 1.5 * 12 / 11,
-      inherit: false,
-      letterSpacing: 0,
-      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-    );
-    // 行号行高与正文行高一致（18），小号字形取行高差的一半做垂直居中
-    const lineHeight = 12 * 1.5;
-    final numberOffset = (lineHeight - 11 * (1.5 * 12 / 11)) / 2;
-
-    return Container(
-      width: _lineNumberWidth,
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      padding: const EdgeInsets.only(right: _lineNumberPadding),
-      child: SizedBox(
-        height: layout.height + contentPadding * 2,
-        child: Stack(
-          children: [
-            for (var i = 1; i <= docLineCount; i++)
-              Positioned(
-                top: layout.tops[i - 1] + contentPadding + numberOffset,
-                right: 0,
-                child: Text('$i', style: gutterStyle),
-              ),
-          ],
-        ),
-      ),
-    );
   }
 
   /// 构建语法高亮样式表（className → 颜色样式；字号字体继承 code12）
@@ -1235,5 +1207,79 @@ class LargeResponseWarning extends StatelessWidget {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+  }
+}
+
+/// 软换行感知行号栏（完整模式专用）。
+///
+/// 不放进滚动视图：固定视口高，按 [scrollController] 的 offset 每帧只绘制
+/// 当前可见的行号。超高行号 Stack 层在 Windows 分数 DPI 下滚动重绘时会被
+/// 引擎按过期偏移合成（行号错乱/重影），视口高小层从根上避开该问题；
+/// 与正文共用同一 ScrollController，同步是当帧精确的。
+class _WrapAwareGutter extends StatelessWidget {
+  const _WrapAwareGutter({
+    required this.theme,
+    required this.docLineCount,
+    required this.layout,
+    required this.contentPadding,
+    required this.scrollController,
+    required this.width,
+    required this.rightPadding,
+  });
+
+  final ThemeData theme;
+  final int docLineCount;
+  final ({List<double> tops, double height}) layout;
+  final double contentPadding;
+  final ScrollController scrollController;
+  final double width;
+  final double rightPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final gutterStyle = AppTextStyles.code11.copyWith(
+      height: 1.5 * 12 / 11,
+      inherit: false,
+      letterSpacing: 0,
+      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+    );
+    // 行号行高与正文行高一致（18），小号字形取行高差的一半做垂直居中
+    const lineHeight = 12 * 1.5;
+    final numberOffset = (lineHeight - 11 * (1.5 * 12 / 11)) / 2;
+
+    return Container(
+      width: width,
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+      padding: EdgeInsets.only(right: rightPadding),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return AnimatedBuilder(
+            animation: scrollController,
+            builder: (context, _) {
+              final offset =
+                  scrollController.hasClients ? scrollController.offset : 0.0;
+              final viewportH = constraints.maxHeight;
+              final children = <Widget>[];
+              for (var i = 1; i <= docLineCount; i++) {
+                final y =
+                    layout.tops[i - 1] + contentPadding + numberOffset - offset;
+                if (y < -lineHeight || y > viewportH) continue;
+                children.add(
+                  Positioned(
+                    top: y,
+                    right: 0,
+                    child: Text('$i', style: gutterStyle),
+                  ),
+                );
+              }
+              return SizedBox(
+                height: viewportH,
+                child: Stack(children: children),
+              );
+            },
+          );
+        },
+      ),
+    );
   }
 }

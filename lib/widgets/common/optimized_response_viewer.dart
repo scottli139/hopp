@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:highlight/highlight_core.dart';
@@ -23,6 +24,69 @@ void _ensureJsonHighlightRegistered() {
   if (_jsonHighlightRegistered) return;
   highlight.registerLanguage('json', json);
   _jsonHighlightRegistered = true;
+}
+
+/// 大响应完整模式准备结果（isolate 返回，跨 isolate 可传）
+typedef _PreparedFullContent = ({
+  String content,
+  List<String> styleKeys,
+  List<(int, int, int)> spans,
+});
+
+/// 大响应完整模式准备（在后台 isolate 执行，保持 UI 线程不阻塞）：
+/// JSON 格式化 → epoch 注解 → highlight 解析并拍平为 (start, end, styleKeyIdx)
+/// 区间。样式表在 UI 线程持有，区间只传 key 索引（避免重复字符串膨胀消息）。
+///
+/// 注意：与 UI 线程同步路径行为严格一致——先注解再高亮（注解文本使内容
+/// 不再是合法 JSON，但 highlight 按正则宽松分词，未命中片段按纯文本处理）。
+_PreparedFullContent _prepareFullContentIsolate(Map<String, Object?> args) {
+  final content = args['content'] as String;
+  final annotate = args['annotate'] as bool;
+
+  var display = content;
+  try {
+    final decoded = jsonDecode(content);
+    display = const JsonEncoder.withIndent('  ').convert(decoded);
+  } catch (_) {
+    // 解析失败沿用原文（与 UI 线程 _formatContent 一致）
+  }
+  if (annotate) {
+    display = display.split('\n').map(EpochAnnotation.annotateLine).join('\n');
+  }
+
+  highlight.registerLanguage('json', json);
+  final result = highlight.parse(display, language: 'json');
+
+  final styleKeys = <String>[];
+  final keyIndex = <String, int>{};
+  final spans = <(int, int, int)>[];
+  var offset = 0;
+
+  void walk(Node node, String? inherited) {
+    // 有效类名 = 最近的带类名祖先（与 _buildHighlightSpans 的 span 树继承一致）
+    final className = node.className ?? inherited;
+    final value = node.value;
+    if (value != null && value.isNotEmpty) {
+      // 区间必须全覆盖（含无类名分段，key=-1），否则行切片会丢文本
+      var idx = -1;
+      if (className != null) {
+        idx = keyIndex.putIfAbsent(className, () {
+          styleKeys.add(className);
+          return styleKeys.length - 1;
+        });
+      }
+      spans.add((offset, offset + value.length, idx));
+      offset += value.length;
+    }
+    for (final child in node.children ?? const <Node>[]) {
+      walk(child, className);
+    }
+  }
+
+  for (final node in result.nodes ?? const <Node>[]) {
+    walk(node, null);
+  }
+  return (content: display, styleKeys: styleKeys, spans: spans);
 }
 
 /// 响应显示模式
@@ -110,17 +174,84 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   // 滚动控制器
   final ScrollController _scrollController = ScrollController();
 
-  // 完整/原始模式语法高亮 span 缓存（随内容/主题变化重建）
-  String _spanCacheKey = '';
-  List<InlineSpan>? _cachedSpans;
+  /// 完整/原始模式异步管线阈值（字节）：超过后格式化/高亮进 isolate、
+  /// 行计算分块让出事件循环——大响应不再阻塞 UI（9000 行曾卡死 >30s）
+  static const int _kAsyncPipelineBytes = 100 * 1024;
 
-  // 完整/原始模式可视行布局缓存：内容/宽度/缩放/主题变化时重算。
-  // 由单次 TextPainter 排版得出各文档行的软换行位置，ListView 逐可视行
-  // 渲染——不再有 7000+px 超高文本层（Windows 分数 DPI 下巨高层会被引擎
-  // 按过期偏移合成，表现为行号错乱/冻结、内容回跳）。
-  String _visualRowKey = '';
-  List<({int? docLine, List<InlineSpan> spans})>? _visualRows;
-  List<int?>? _rowDocLines;
+  // ---- 完整/原始模式派生数据缓存（key 变化即重建）----
+  /// 当前派生数据的身份 key（内容身份/宽度/缩放/主题/模式/注解开关）
+  String _layoutKey = '';
+  List<({int start, int end, TextStyle? style})> _intervals = const [];
+  List<({int? docLine, List<InlineSpan> spans})> _visualRows = [];
+  List<int?> _rowDocLines = [];
+
+  /// 同步路径的 format+annotate 缓存（同一份内容不再每次 build 重算）
+  String _preparedSyncKey = '';
+  String _preparedSyncContent = '';
+
+  /// 异步管线状态：_preparing = isolate 准备中；_rowsComputing = 分块
+  /// 行计算进行中（两者期间内容区显示进度指示）
+  bool _preparing = false;
+  bool _rowsComputing = false;
+
+  /// 取消令牌：内容/宽度/缩放/主题/注解变化时递增，进行中的异步管线
+  /// 与分块行计算在每步检查，过期即丢弃
+  int _pipelineToken = 0;
+
+  /// 可视行计数通知器：异步分块行计算渐进追加时驱动 ListView 重建。
+  /// 不能用 state 的 setState——行数据在 LayoutBuilder 闭包内消费，
+  /// setState 只触发 widget 更新，约束未变时 builder 不重跑、子树陈旧
+  /// （曾导致渐进加载后 ScrollPosition extent 停在首个分块的行数）
+  final ValueNotifier<int> _rowCountNotifier = ValueNotifier(0);
+
+  bool _extentRefreshScheduled = false;
+
+  /// itemCount 增长后强制滚动视口重算 extent。
+  ///
+  /// 框架已知行为（SliverMultiBoxAdaptorElement.performRebuild 源码注释）：
+  /// 列表行数增长时若现有可视子元素未变，布局阶段被跳过，maxScrollExtent
+  /// 停在旧值，直到发生真实滚动才自愈（极端表现：渐进加载完成后 extent
+  /// 停在首个分块的行数，用户误以为内容被截断）。跨帧 ±1px 微移强制视口
+  /// 重算且视觉无痕（同帧双跳会被净零 offset 优化掉，必须分两帧）；
+  /// 用户正在滚动时跳过（滚动本身即触发布局、extent 自愈）。
+  void _scheduleExtentRefresh() {
+    if (_extentRefreshScheduled) return;
+    _extentRefreshScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        _extentRefreshScheduled = false;
+        return;
+      }
+      final positions = _effectiveScrollController.positions;
+      if (positions.isEmpty) {
+        _extentRefreshScheduled = false;
+        return;
+      }
+      final position = positions.last;
+      if (position.isScrollingNotifier.value) {
+        // 用户滚动中：不打断；本次滚动的布局会自行刷新 extent
+        _extentRefreshScheduled = false;
+        return;
+      }
+      final offset = position.pixels;
+      position.jumpTo(offset + 1);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _extentRefreshScheduled = false;
+        if (!mounted) return;
+        final ps = _effectiveScrollController.positions;
+        if (ps.isEmpty) return;
+        final p = ps.last;
+        if (p.pixels != offset && !p.isScrollingNotifier.value) {
+          p.jumpTo(offset);
+        }
+      });
+    });
+  }
+
+  // ---- 性能模式分块缓存（内容/宽度/缩放/显示行数变化时重建）----
+  String _perfCacheKey = '';
+  List<({String text, int? docLine})> _perfChunks = const [];
+  List<int?> _perfRowDocLines = const [];
 
   /// 实测当前 textScaler 下的可视行高：字体度量取整使 scale() 估算与
   /// 真实渲染存在亚像素偏差并逐行累计（1.25 下 scale(18)=22.5 vs 实测 23.0）
@@ -165,6 +296,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
 
   @override
   void dispose() {
+    _rowCountNotifier.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -173,6 +305,14 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
   void _initializeContent() {
     _lines = widget.content.split('\n');
     _isJson = _detectJson();
+    // 内容变化：所有派生缓存失效，进行中的异步管线取消
+    _pipelineToken++;
+    _layoutKey = '';
+    _preparedSyncKey = '';
+    _perfCacheKey = '';
+    _preparing = false;
+    _rowsComputing = false;
+    _rowCountNotifier.value = 0;
 
     // 确定初始显示模式
     if (widget.initialMode == ResponseDisplayMode.auto) {
@@ -257,6 +397,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         _showAllLines = true;
       }
     });
+    _scheduleExtentRefresh();
   }
 
   /// 显示所有行
@@ -265,6 +406,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
       _displayedLines = _lines.length;
       _showAllLines = true;
     });
+    _scheduleExtentRefresh();
   }
 
   /// 切换显示模式
@@ -277,6 +419,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
         _displayedLines = _lines.length;
       }
     });
+    _scheduleExtentRefresh();
   }
 
   /// 格式化 JSON 代码
@@ -553,10 +696,19 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                       scaler.scale(7.2))
                   .floor()
                   .clamp(20, 100000);
-              final chunks = <({String text, int? docLine})>[
-                for (var i = 0; i < displayLines.length; i++)
-                  ..._chunkLine(displayLines[i], i, maxUnits),
-              ];
+              // 分块结果按（内容/显示行数/宽度/缩放）缓存——不再每次 build
+              // 对全部行重切（9000 行 × 每次重建曾是滚动/交互卡顿来源之一）
+              final perfKey = '${identityHashCode(widget.content)}|'
+                  '${displayLines.length}|$maxUnits|${scaler.scale(1.0)}';
+              if (_perfCacheKey != perfKey) {
+                _perfChunks = [
+                  for (var i = 0; i < displayLines.length; i++)
+                    ..._chunkLine(displayLines[i], i, maxUnits),
+                ];
+                _perfRowDocLines = [for (final c in _perfChunks) c.docLine];
+                _perfCacheKey = perfKey;
+              }
+              final chunks = _perfChunks;
 
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -566,7 +718,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                   if (widget.showLineNumbers)
                     OffsetGutter(
                       theme: theme,
-                      rowDocLines: [for (final c in chunks) c.docLine],
+                      rowDocLines: _perfRowDocLines,
                       rowHeight: rowPitch,
                       topPadding: 12,
                       listenable: _effectiveScrollController,
@@ -581,18 +733,25 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                   Expanded(
                     child: Scrollbar(
                       controller: _effectiveScrollController,
-                      child: ListView.builder(
-                        controller: _effectiveScrollController,
-                        // 与行号栏 top/bottom padding 对齐，保证行号与条目同一起点
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        itemCount: chunks.length,
-                        itemBuilder: (context, index) {
-                          return _buildLineItem(
-                            chunks[index].text,
-                            index,
-                            theme,
-                          );
-                        },
+                      child: SelectionArea(
+                        child: ListView.builder(
+                          controller: _effectiveScrollController,
+                          // 与行号栏 top/bottom padding 对齐，保证行号与条目同一起点
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          // 行距恒定（maxLines:1 + 固定 padding）——itemExtent 让
+                          // 滚动 offset 计算 O(1)，且行号栏与内容构造性对齐
+                          // （旧版注解追加文本使行换行撑高、行距漂移的潜伏
+                          // 不同步一并根治）
+                          itemExtent: rowPitch,
+                          itemCount: chunks.length,
+                          itemBuilder: (context, index) {
+                            return _buildLineItem(
+                              chunks[index].text,
+                              index,
+                              theme,
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
@@ -637,7 +796,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     return chunks;
   }
 
-  /// 构建单行显示
+  /// 构建单行显示（固定行距：maxLines:1 + 水平裁剪，行高不随内容波动）
   Widget _buildLineItem(String line, int index, ThemeData theme) {
     // JSON 行 + 注解开启时，用富文本分段渲染 epoch 注释
     if (_isJson && _annotateEpoch) {
@@ -651,9 +810,12 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
                 : theme.colorScheme.surfaceContainerHighest
                     .withValues(alpha: 0.3),
           ),
-          child: SelectableText.rich(
+          child: Text.rich(
             TextSpan(children: spans),
             style: _viewerCodeStyle(theme),
+            softWrap: false,
+            overflow: TextOverflow.clip,
+            maxLines: 1,
           ),
         );
       }
@@ -669,12 +831,18 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
             ? theme.colorScheme.surface
             : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       ),
-      // 软换行：行宽超过视口的大文本层会命中 Windows 高分屏滚动光栅化异常
-      child: SelectableText(line.isEmpty ? ' ' : line, // 保持空行高度
-          style: _viewerCodeStyle(
-            theme,
-            color: isJsonLine ? _getJsonLineColor(line, theme) : null,
-          )),
+      // 裁剪而非换行：行宽超视口换行会撑高条目、破坏与行号栏的行距对齐
+      // （且宽文本层在 Windows 高分屏下有滚动光栅化异常前科）
+      child: Text(
+        line.isEmpty ? ' ' : line, // 保持空行高度
+        style: _viewerCodeStyle(
+          theme,
+          color: isJsonLine ? _getJsonLineColor(line, theme) : null,
+        ),
+        softWrap: false,
+        overflow: TextOverflow.clip,
+        maxLines: 1,
+      ),
     );
   }
 
@@ -796,38 +964,31 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     );
   }
 
-  /// 完整/原始模式视图：虚拟化可视行渲染。
+  /// 完整/原始模式视图：虚拟化可视行渲染 + 大内容异步管线。
   ///
   /// 设计约束：不得把整份响应渲染为一个超高文本层。实测（用户多段录屏）：
   /// Windows 分数 DPI 下 7000+px 的超高文本层会被引擎按过期偏移合成——
   /// 屏幕显示与框架状态脱节（行号看似错乱/冻结、内容回跳到历史滚动位置，
-  /// 点击触发重光栅化后暂时恢复）。此处改为 TextPainter 单次排版测算各
-  /// 文档行的软换行点，ListView 逐可视行渲染：所有层都是视口量级小层，
-  /// 从根上免疫该类引擎合成异常；行号按同一 ScrollController 的 offset
-  /// 当帧直绘，与内容天然同步。选择能力由 SelectionArea 提供（跨行选择）。
+  /// 点击触发重光栅化后暂时恢复）。ListView 逐可视行渲染：所有层都是视口
+  /// 量级小层，从根上免疫该类引擎合成异常；行号按同一 ScrollController
+  /// 的 offset 当帧直绘，与内容天然同步。选择能力由 SelectionArea 提供。
+  ///
+  /// 性能设计（9000 行响应曾卡死 UI >30s 的根治）：
+  /// - 真凶是整文 TextPainter + 逐位置 getLineBoundary 的 O(n²) 查询。
+  ///   软换行不跨文档行（硬换行必是边界），改为逐文档行探测：短 ASCII 行
+  ///   用校准字宽直接判一行（等宽字体，精确），长行/非 ASCII 行用单行
+  ///   TextPainter 精确排版（与整文排版等价，但查询只在短文本上进行）。
+  /// - 超过 [_kAsyncPipelineBytes] 的内容：格式化/注解/highlight 进后台
+  ///   isolate（纯 Dart），行计算分块并让出事件循环、渐进追加渲染，
+  ///   UI 全程可交互；格式化结果与 highlight 区间不再每次 build 重算。
   Widget _buildVirtualizedTextView(
     ThemeData theme, {
     required bool beautify,
   }) {
-    // 注解仅注入显示文本，原始报文与 Copy 不受影响（F8.5）
-    var content = beautify ? _formatContent() : widget.content;
-    if (beautify && _isJson && _annotateEpoch) {
-      content =
-          content.split('\n').map(EpochAnnotation.annotateLine).join('\n');
-    }
-    final baseStyle = _viewerCodeStyle(theme);
-
-    final spanKey = '${theme.brightness}|$beautify|$content';
-    if (_cachedSpans == null || _spanCacheKey != spanKey) {
-      _cachedSpans = beautify
-          ? _computeSpans(content, theme, baseStyle)
-          : [TextSpan(text: content, style: baseStyle)];
-      _spanCacheKey = spanKey;
-    }
-
     const contentPadding = 12.0;
     final gutterWidth = widget.showLineNumbers ? _lineNumberWidth : 0.0;
     const dividerWidth = 1.0;
+    final baseStyle = _viewerCodeStyle(theme);
 
     return Container(
       color: theme.colorScheme.surface,
@@ -841,12 +1002,30 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
           // 可视行高为当前缩放下的实测值（字体度量取整使 scale() 估算
           // 与真实渲染存在亚像素偏差并逐行累计）
           final scaledRowHeight = _measureViewerLineHeight(scaler);
-          final layoutKey = '${theme.brightness}|$beautify|${content.hashCode}|'
-              '$textWidth|$scaler';
-          if (_visualRows == null || _visualRowKey != layoutKey) {
-            _computeVisualRows(content, _cachedSpans!, baseStyle, textWidth,
-                scaler, DefaultTextStyle.of(context));
-            _visualRowKey = layoutKey;
+          final layoutKey = '${theme.brightness}|$beautify|$_annotateEpoch|'
+              '${identityHashCode(widget.content)}|${widget.content.length}|'
+              '$textWidth|${scaler.scale(1.0)}';
+          if (_layoutKey != layoutKey) {
+            _layoutKey = layoutKey;
+            if (widget.content.length > _kAsyncPipelineBytes) {
+              _startAsyncPipeline(
+                theme,
+                beautify: beautify,
+                baseStyle: baseStyle,
+                maxWidth: textWidth,
+                scaler: scaler,
+                defaultTextStyle: DefaultTextStyle.of(context),
+              );
+            } else {
+              _computeSync(
+                theme,
+                beautify: beautify,
+                baseStyle: baseStyle,
+                maxWidth: textWidth,
+                scaler: scaler,
+                defaultTextStyle: DefaultTextStyle.of(context),
+              );
+            }
           }
 
           return Row(
@@ -855,7 +1034,7 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               if (widget.showLineNumbers) ...[
                 OffsetGutter(
                   theme: theme,
-                  rowDocLines: _rowDocLines!,
+                  rowDocLines: _rowDocLines,
                   rowHeight: scaledRowHeight,
                   topPadding: contentPadding,
                   listenable: _effectiveScrollController,
@@ -868,23 +1047,52 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
               Expanded(
                 child: Scrollbar(
                   controller: _effectiveScrollController,
-                  child: SelectionArea(
-                    child: ListView.builder(
-                      controller: _effectiveScrollController,
-                      padding: const EdgeInsets.all(contentPadding),
-                      itemExtent: scaledRowHeight,
-                      itemCount: _visualRows!.length,
-                      itemBuilder: (context, index) {
-                        return Text.rich(
-                          TextSpan(
-                            style: baseStyle,
-                            children: _visualRows![index].spans,
+                  child: Stack(
+                    children: [
+                      SelectionArea(
+                        // 行数经 ValueListenableBuilder 驱动重建：
+                        // LayoutBuilder 的 builder 在约束不变时不重跑，
+                        // 渐进追加的行数必须走普通 build 路径更新
+                        child: ValueListenableBuilder<int>(
+                          valueListenable: _rowCountNotifier,
+                          builder: (context, rowCount, _) {
+                            return ListView.builder(
+                              controller: _effectiveScrollController,
+                              padding: const EdgeInsets.all(contentPadding),
+                              itemExtent: scaledRowHeight,
+                              itemCount: rowCount,
+                              itemBuilder: (context, index) {
+                                return Text.rich(
+                                  TextSpan(
+                                    style: baseStyle,
+                                    children: _visualRows[index].spans,
+                                  ),
+                                  softWrap: false,
+                                  overflow: TextOverflow.clip,
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      // 异步管线进度：准备期（isolate）空内容时居中指示，
+                      // 行计算期间顶部细条（已有渐进内容可见）
+                      if (_preparing && _visualRows.isEmpty)
+                        const Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
-                          softWrap: false,
-                          overflow: TextOverflow.clip,
-                        );
-                      },
-                    ),
+                        )
+                      else if (_preparing || _rowsComputing)
+                        const Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: LinearProgressIndicator(minHeight: 2),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -895,76 +1103,161 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     );
   }
 
-  /// 单次 TextPainter 排版，计算每个文档行的软换行点并切出各可视行的
-  /// span 片段。可视行不跨文档行（硬换行必是可视行边界），空文档行产生
-  /// 一个空白可视行以占位行高。
-  void _computeVisualRows(
-    String content,
-    List<InlineSpan> spans,
-    TextStyle baseStyle,
-    double maxWidth,
-    TextScaler scaler,
-    DefaultTextStyle defaultTextStyle,
-  ) {
-    // 与渲染同一份 span/宽度/缩放参数
-    final painter = TextPainter(
-      text: TextSpan(style: baseStyle, children: spans),
-      textDirection: TextDirection.ltr,
-      textScaler: scaler,
-      strutStyle: const StrutStyle(),
-      textHeightBehavior: defaultTextStyle.textHeightBehavior,
-      textWidthBasis: defaultTextStyle.textWidthBasis,
-    )..layout(maxWidth: maxWidth);
+  /// 同步管线（≤ 阈值的小内容）：单次 build 内完成全部行计算。
+  /// 保持既有行为：widgets 测试与小响应走此路径。
+  void _computeSync(
+    ThemeData theme, {
+    required bool beautify,
+    required TextStyle baseStyle,
+    required double maxWidth,
+    required TextScaler scaler,
+    required DefaultTextStyle defaultTextStyle,
+  }) {
+    _pipelineToken++;
+    _preparing = false;
+    _rowsComputing = false;
 
-    final intervals = _flattenSpans(spans);
+    final prepared = _prepareContentSync(theme, beautify, baseStyle);
+
+    final computer = _VisualRowComputer(
+      content: prepared,
+      intervals: _intervals,
+      baseStyle: baseStyle,
+      maxWidth: maxWidth,
+      scaler: scaler,
+      defaultTextStyle: defaultTextStyle,
+    );
     final rows = <({int? docLine, List<InlineSpan> spans})>[];
     final rowDocLines = <int?>[];
-
-    // 与行切片共用的游标（可视行按文档顺序产生，区间单调推进）
-    var cursor = 0;
-    List<InlineSpan> sliceSpans(int start, int end) {
-      final out = <InlineSpan>[];
-      while (cursor < intervals.length && intervals[cursor].end <= start) {
-        cursor++;
-      }
-      var j = cursor;
-      while (j < intervals.length && intervals[j].start < end) {
-        final iv = intervals[j];
-        final s = iv.start > start ? iv.start : start;
-        final e = iv.end < end ? iv.end : end;
-        out.add(TextSpan(text: content.substring(s, e), style: iv.style));
-        j++;
-      }
-      return out.isEmpty ? [const TextSpan(text: ' ')] : out;
+    while (computer.hasMore) {
+      computer.process(100000, rows, rowDocLines);
     }
-
-    final docLines = content.split('\n');
-    var docStart = 0;
-    for (var k = 0; k < docLines.length; k++) {
-      final docEnd = docStart + docLines[k].length; // 不含 '\n'
-      if (docEnd == docStart) {
-        rows.add((docLine: k + 1, spans: [const TextSpan(text: ' ')]));
-        rowDocLines.add(k + 1);
-      } else {
-        var pos = docStart;
-        var first = true;
-        while (pos < docEnd) {
-          final boundary = painter.getLineBoundary(TextPosition(offset: pos));
-          final end = boundary.end.clamp(pos + 1, docEnd);
-          rows.add((
-            docLine: first ? k + 1 : null,
-            spans: sliceSpans(pos, end),
-          ));
-          rowDocLines.add(first ? k + 1 : null);
-          first = false;
-          pos = end;
-        }
-      }
-      docStart = docEnd + 1;
-    }
-
     _visualRows = rows;
     _rowDocLines = rowDocLines;
+    _rowCountNotifier.value = rows.length;
+    _scheduleExtentRefresh();
+  }
+
+  /// 同步路径的显示内容 + 高亮区间（结果随 layoutKey 失效而重建，
+  /// 同一份内容/注解开关/主题下不再重复 format / highlight）
+  String _prepareContentSync(
+    ThemeData theme,
+    bool beautify,
+    TextStyle baseStyle,
+  ) {
+    if (!beautify || !_isJson) {
+      _intervals = [
+        (start: 0, end: widget.content.length, style: null),
+      ];
+      return widget.content;
+    }
+    final key = '${identityHashCode(widget.content)}|${widget.content.length}|'
+        '$_annotateEpoch|${theme.brightness}';
+    if (_preparedSyncKey != key) {
+      var content = _formatContent();
+      if (_annotateEpoch) {
+        content =
+            content.split('\n').map(EpochAnnotation.annotateLine).join('\n');
+      }
+      _intervals = _flattenSpans(_computeSpans(content, theme, baseStyle));
+      _preparedSyncContent = content;
+      _preparedSyncKey = key;
+    }
+    return _preparedSyncContent;
+  }
+
+  /// 异步管线（> 阈值的大内容）：准备阶段进 isolate，行计算分块让出
+  /// 事件循环并渐进渲染。token 过期（内容/宽度/缩放/主题再变）即丢弃。
+  Future<void> _startAsyncPipeline(
+    ThemeData theme, {
+    required bool beautify,
+    required TextStyle baseStyle,
+    required double maxWidth,
+    required TextScaler scaler,
+    required DefaultTextStyle defaultTextStyle,
+  }) async {
+    final token = ++_pipelineToken;
+    _preparing = true;
+    _rowsComputing = false;
+    _intervals = const [];
+    _visualRows = [];
+    _rowDocLines = [];
+    _rowCountNotifier.value = 0;
+
+    String prepared;
+    List<({int start, int end, TextStyle? style})> intervals;
+    if (beautify && _isJson) {
+      final res = await compute(_prepareFullContentIsolate, {
+        'content': widget.content,
+        'annotate': _annotateEpoch,
+      });
+      if (!mounted || token != _pipelineToken) return;
+      prepared = res.content;
+      final styles = _codeThemeStyles(theme);
+      final rootStyle = styles['root'];
+      final styleTable = [
+        for (final key in res.styleKeys)
+          _resolveIntervalStyle(styles, key, rootStyle),
+      ];
+      intervals = [
+        for (final (s, e, k) in res.spans)
+          (start: s, end: e, style: k < 0 ? null : styleTable[k]),
+      ];
+    } else {
+      // 原始模式 / 非 JSON：无格式化与高亮，直接进入行计算
+      prepared = widget.content;
+      intervals = [(start: 0, end: prepared.length, style: null)];
+    }
+    if (!mounted || token != _pipelineToken) return;
+
+    setState(() {
+      _preparing = false;
+      _rowsComputing = true;
+      _intervals = intervals;
+      _visualRows = [];
+      _rowDocLines = [];
+    });
+
+    final computer = _VisualRowComputer(
+      content: prepared,
+      intervals: intervals,
+      baseStyle: baseStyle,
+      maxWidth: maxWidth,
+      scaler: scaler,
+      defaultTextStyle: defaultTextStyle,
+    );
+    // 共享同一增长列表：每块处理后通过 _rowCountNotifier 触发渐进渲染，
+    // ListView / 行号栏按当时的行数工作
+    final rows = _visualRows;
+    final rowDocLines = _rowDocLines;
+    const chunkLines = 400;
+    while (computer.hasMore) {
+      computer.process(chunkLines, rows, rowDocLines);
+      if (!mounted || token != _pipelineToken) return;
+      _rowCountNotifier.value = rows.length;
+      _scheduleExtentRefresh();
+      if (computer.hasMore) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+    if (!mounted || token != _pipelineToken) return;
+    setState(() {
+      _rowsComputing = false;
+    });
+    _scheduleExtentRefresh();
+  }
+
+  /// isolate 区间的样式还原：key 映射到主题样式并与 root 样式 merge
+  ///（与同步路径 _flattenSpans 沿父链 merge 的有效样式对齐）
+  TextStyle? _resolveIntervalStyle(
+    Map<String, TextStyle> styles,
+    String key,
+    TextStyle? rootStyle,
+  ) {
+    final style = styles[key];
+    if (style == null) return null;
+    if (key == 'root' || rootStyle == null) return style;
+    return rootStyle.merge(style);
   }
 
   /// 把 span 树拍平成 (start, end, style) 区间；style 为沿父链 merge 后
@@ -1117,6 +1410,194 @@ class _OptimizedResponseViewerState extends State<OptimizedResponseViewer>
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+  }
+}
+
+/// 逐文档行可视行计算器（完整/原始模式共用）。
+///
+/// 软换行不跨文档行（硬换行必是可视行边界），因此整文排版的逐位置
+/// getLineBoundary 查询（O(n²)，9000 行实测 126s）可以等价替换为：
+/// - 纯 ASCII 短行：等宽字体下用校准字宽直接判定单行不折行（精确）；
+/// - 长行 / 含非 ASCII 字符行：单行 TextPainter 精确排版取折行点——
+///   排版参数与渲染同参，单行排版结果与整文中该行段落完全一致，
+///   但所有查询都在短文本上进行（O(行长) 而非 O(全文)）。
+class _VisualRowComputer {
+  _VisualRowComputer({
+    required this.content,
+    required this.intervals,
+    required this.baseStyle,
+    required this.maxWidth,
+    required this.scaler,
+    required this.defaultTextStyle,
+  });
+
+  final String content;
+  final List<({int start, int end, TextStyle? style})> intervals;
+  final TextStyle baseStyle;
+  final double maxWidth;
+  final TextScaler scaler;
+  final DefaultTextStyle defaultTextStyle;
+
+  late final List<String> _docLines = content.split('\n');
+  int _nextLine = 0;
+  int _lineStart = 0; // _nextLine 在 content 中的起始偏移
+  int _cursor = 0; // 全局区间游标（按文档序单调推进）
+  double _asciiAdvance = -1;
+
+  bool get hasMore => _nextLine < _docLines.length;
+
+  /// 处理最多 [maxLines] 个文档行，把产生的可视行追加到 [out] / [docOut]
+  void process(
+    int maxLines,
+    List<({int? docLine, List<InlineSpan> spans})> out,
+    List<int?> docOut,
+  ) {
+    final stop = (_nextLine + maxLines).clamp(0, _docLines.length);
+    while (_nextLine < stop) {
+      final line = _docLines[_nextLine];
+      _appendLine(line, _lineStart, out, docOut);
+      _lineStart += line.length + 1; // 含 '\n'
+      _nextLine++;
+    }
+  }
+
+  /// 是否纯可打印 ASCII（无 tab 等控制字符）：等宽字体下字宽精确可知
+  bool _isSimpleAscii(String line) {
+    for (var i = 0; i < line.length; i++) {
+      final c = line.codeUnitAt(i);
+      if (c < 0x20 || c > 0x7E) return false;
+    }
+    return true;
+  }
+
+  /// 校准 ASCII 字宽（与渲染同参的 TextPainter 实测；等宽字体各字同宽）
+  double _advance() {
+    if (_asciiAdvance < 0) {
+      final painter = TextPainter(
+        text: TextSpan(text: '0' * 100, style: baseStyle),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        strutStyle: const StrutStyle(),
+        textHeightBehavior: defaultTextStyle.textHeightBehavior,
+        textWidthBasis: defaultTextStyle.textWidthBasis,
+      )..layout();
+      _asciiAdvance = painter.width / 100;
+      painter.dispose();
+    }
+    return _asciiAdvance;
+  }
+
+  /// 取 [start, end)（content 全局偏移）覆盖的区间，转为相对 start 的
+  /// 局部区间返回；全局游标随之推进（调用必须按文档序单调）
+  List<({int start, int end, TextStyle? style})> _takeIntervals(
+    int start,
+    int end,
+  ) {
+    final out = <({int start, int end, TextStyle? style})>[];
+    while (_cursor < intervals.length && intervals[_cursor].end <= start) {
+      _cursor++;
+    }
+    var j = _cursor;
+    while (j < intervals.length && intervals[j].start < end) {
+      final iv = intervals[j];
+      final s = iv.start > start ? iv.start : start;
+      final e = iv.end < end ? iv.end : end;
+      out.add((start: s - start, end: e - start, style: iv.style));
+      j++;
+    }
+    return out;
+  }
+
+  List<InlineSpan> _spansFromLocal(
+    int lineStart,
+    List<({int start, int end, TextStyle? style})> local,
+    int from,
+    int to,
+  ) {
+    final spans = <InlineSpan>[];
+    var j = 0;
+    while (j < local.length && local[j].end <= from) {
+      j++;
+    }
+    while (j < local.length && local[j].start < to) {
+      final iv = local[j];
+      final s = iv.start > from ? iv.start : from;
+      final e = iv.end < to ? iv.end : to;
+      spans.add(TextSpan(
+        text: content.substring(lineStart + s, lineStart + e),
+        style: iv.style,
+      ));
+      j++;
+    }
+    return spans;
+  }
+
+  static final List<InlineSpan> _blankRow = [const TextSpan(text: ' ')];
+
+  void _appendLine(
+    String line,
+    int lineStart,
+    List<({int? docLine, List<InlineSpan> spans})> out,
+    List<int?> docOut,
+  ) {
+    final docNumber = _nextLine + 1;
+    if (line.isEmpty) {
+      out.add((docLine: docNumber, spans: _blankRow));
+      docOut.add(docNumber);
+      return;
+    }
+    // 快路径：纯 ASCII 且按校准字宽必然不折行（留 0.5px 余量，边界情形
+    // 一律落到精确路径）
+    if (_isSimpleAscii(line) && line.length * _advance() < maxWidth - 0.5) {
+      final local = _takeIntervals(lineStart, lineStart + line.length);
+      final spans = _spansFromLocal(lineStart, local, 0, line.length);
+      out.add((
+        docLine: docNumber,
+        spans: spans.isEmpty ? [TextSpan(text: line)] : spans,
+      ));
+      docOut.add(docNumber);
+      return;
+    }
+    // 精确路径：单行 TextPainter 排版取折行点
+    final local = _takeIntervals(lineStart, lineStart + line.length);
+    final painter = TextPainter(
+      text: TextSpan(
+        style: baseStyle,
+        children: [
+          for (final iv in local)
+            TextSpan(
+              text: content.substring(lineStart + iv.start, lineStart + iv.end),
+              style: iv.style,
+            ),
+        ],
+      ),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+      strutStyle: const StrutStyle(),
+      textHeightBehavior: defaultTextStyle.textHeightBehavior,
+      textWidthBasis: defaultTextStyle.textWidthBasis,
+    )..layout(maxWidth: maxWidth);
+
+    var pos = 0;
+    var first = true;
+    while (pos < line.length) {
+      final boundary = painter.getLineBoundary(TextPosition(offset: pos));
+      final end = boundary.end.clamp(pos + 1, line.length);
+      final spans = _spansFromLocal(lineStart, local, pos, end);
+      out.add((
+        docLine: first ? docNumber : null,
+        spans: spans.isEmpty
+            ? [
+                TextSpan(
+                    text: content.substring(lineStart + pos, lineStart + end))
+              ]
+            : spans,
+      ));
+      docOut.add(first ? docNumber : null);
+      first = false;
+      pos = end;
+    }
+    painter.dispose();
   }
 }
 

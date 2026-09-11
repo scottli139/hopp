@@ -1012,6 +1012,21 @@ cli/hopp.dart + cli/src/                            # hopp run 运行器（app �
 
 ---
 
+## 大响应渲染性能（v0.17.7, 2026-09-11）
+
+> 用户反馈：显示 9000+ 行响应体时 UI 卡住很久不响应。真机 test-mode 复现：完整模式（480KB/9008 行）UI 线程冻结 >30s。
+
+- **量化方法（ping 探针法）**：test-mode 指令服务器跑在 UI isolate，UI 线程被阻塞时指令响应延迟暴涨——用 ping 往返当探针即可从进程外量化卡顿（注意两点环境坑：Python urllib 走系统代理每次请求 +2s，须 `ProxyHandler({})` 或改用 127.0.0.1 直连绕开 localhost DNS；首请求有 ~1.4s 预热）。
+- **真凶：折行点探测 O(n²)**。完整/原始模式 v0.17.3 虚拟化后用整文 TextPainter 排版 + 逐可视行 `getLineBoundary(TextPosition)` 取折行点；单次查询内部是 O(排版规模) 的线性扫描，9000 行循环 = O(n²)，基准实测 491KB/9008 行耗时 **126s**（同基准下整文 layout 仅 0.9s、highlight.parse 1.2s、jsonDecode+encode 0.2s——直觉嫌疑人全部无辜）。教训：**先逐阶段计时再动手**，最可疑的（高亮解析）并非瓶颈。
+- **修复：逐文档行探测（`_VisualRowComputer`）**。软换行不跨文档行（硬换行必是可视行边界），因此整文排版 + 全局查询可等价拆为逐行判定：纯 ASCII 短行（码位 0x20-0x7E 且 行宽 = 行数 × 校准字宽 < maxWidth - 0.5px 余量）直接判一行——等宽字体下精确（编码连字设计保持单元格宽度不变，不影响）；长行/含非 ASCII 行用**单行 TextPainter** 精确排版取折行点（排版参数与渲染同参；单行排版结果与整文中该段落完全一致，但所有查询都在短文本上进行）。典型 API 响应（几乎全短 ASCII 行）行计算从分钟级降到毫秒级。
+- **异步管线（>100KB）**：`_kAsyncPipelineBytes` 以上走 `_startAsyncPipeline`——JSON 格式化 + epoch 注解 + highlight 解析进后台 isolate（`_prepareFullContentIsolate`，纯 Dart 可 isolate；区间按样式 key 索引拍平回传，UI 线程映射回主题样式并与 root merge，与同步路径 `_flattenSpans` 的父链 merge 语义对齐；无类名分段以 key=-1 占位保证**区间全覆盖**，否则行切片丢文本）；行计算按 400 行分块、块间 `Future.delayed(Duration.zero)` 让出事件循环，渐进追加渲染 + 进度指示。token 取消令牌在内容/宽度/缩放/主题/注解变化时作废旧管线。真机实测：完整模式切换 12s 窗口内 ping 最差 56ms（旧版首 ping 30s 不返回）。
+- **消灭每次 build 的 O(n) 浪费**：v0.17.3-6 的完整模式每次 build 都 jsonDecode+encode、逐行 epoch 注解、并把整份内容字符串拼进缓存 key（每次 build 分配 MB 级新字符串）。现 format/annotate/highlight 结果全部按内容身份缓存，key 用 `identityHashCode(content)`。
+- **性能模式**：分块结果按（内容/显示行数/宽度/缩放）缓存（原每次 build 全量重切全部行）；ListView 加 `itemExtent` 使滚动 offset 计算 O(1)；行渲染 SelectableText 改 Text + SelectionArea（与完整模式同渲染路径，更轻且支持跨行选择）；行固定 `maxLines: 1` 水平裁剪——顺带根治注解追加文本把行撑高、行距与行号栏漂移的潜伏不同步（itemExtent 下行高恒定，行号与内容构造性对齐）。
+- **框架层陷阱：行数增长布局被跳过、maxScrollExtent 停旧值**。Flutter 已知行为（`SliverMultiBoxAdaptorElement.performRebuild` 源码注释自承）：列表行数增长而可视子元素未变时布局阶段被跳过，extent 停在旧值直到真实滚动才自愈。表现：渐进加载完成后 extent 卡在首块 400 行，滚动条尺寸失真、滚不到底。实测确认：delegate 已更新到 6002 而 extent 停在 400 行对应值；`markNeedsLayout`（哪怕直接标在 RenderViewport 上）与 `controller.notifyListeners()` 均**不触发**重算；唯一可靠触发是真实 offset 变化。修复 `_scheduleExtentRefresh`：跨帧 ±1px 微移（同帧双跳会被净零 offset 优化吞掉，必须两个 postFrame 分两帧；用户滚动中跳过不打断）。此外渐进追加期间不能用 state 的 setState 驱动 ListView 行数——行数据在 LayoutBuilder 闭包内消费，约束不变时 builder 不重跑、子树陈旧，改由 `_rowCountNotifier`（ValueListenableBuilder）走普通 build 路径。
+- **回归测试**：6000 行（>100KB 触发异步管线）widget 测试——`tester.runAsync` + 轮询进度控件消失判定管线完成（进度控件无限动画期间不能 pumpAndSettle），滚到底断言末行号 6002 齐全。
+
+---
+
 ## 环境变量系统 (M8.1)
 
 > 定位（2026-08-20 决策）：「可复用 + AI 变量注入的基础」，不是 Postman parity。AI 生成的请求引用 `{{baseUrl}}` / `{{token}}`。

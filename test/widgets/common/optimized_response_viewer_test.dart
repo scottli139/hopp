@@ -316,8 +316,11 @@ void main() {
         final numberFind = find.text('${pair.$1}');
         final contentFind = find.byWidgetPredicate(
           (w) =>
-              w is SelectableText &&
-              (w.data?.contains('"${pair.$2}"') ?? false),
+              w is Text &&
+              ((w.data ?? w.textSpan?.toPlainText())?.contains(
+                    '"${pair.$2}"',
+                  ) ??
+                  false),
         );
         expect(numberFind, findsWidgets);
         expect(contentFind, findsWidgets);
@@ -358,8 +361,11 @@ void main() {
         final numberFind = find.text('${pair.$1}');
         final contentFind = find.byWidgetPredicate(
           (w) =>
-              w is SelectableText &&
-              (w.data?.contains('"${pair.$2}"') ?? false),
+              w is Text &&
+              ((w.data ?? w.textSpan?.toPlainText())?.contains(
+                    '"${pair.$2}"',
+                  ) ??
+                  false),
         );
         expect(numberFind, findsWidgets);
         expect(contentFind, findsWidgets);
@@ -369,6 +375,57 @@ void main() {
         expect((numberCenter - itemCenter).abs(), lessThan(2.0),
             reason: '性能模式第 ${pair.$1} 行行号应贴齐条目');
       }
+    });
+
+    testWidgets('完整模式：超大响应走异步管线且行数齐全（9000 行卡顿回归）', (tester) async {
+      // > 100KB 触发异步管线（isolate 高亮 + 分块行计算）；
+      // 6000 行 × ~27 字符 ≈ 165KB
+      final lines =
+          List.generate(6000, (i) => '  "key$i": "value-$i",').join('\n');
+      final content = '{\n$lines\n}';
+      final controller = ScrollController();
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          hoppTestApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 800,
+                height: 600,
+                child: OptimizedResponseViewer(
+                  content: content,
+                  contentType: 'application/json',
+                  initialMode: ResponseDisplayMode.full,
+                  scrollController: controller,
+                ),
+              ),
+            ),
+          ),
+        );
+        // 等异步管线完成（isolate 往返 + 分块计算为真实异步，需真实事件
+        // 循环）。管线期间内容区显示进度指示（无限动画，不能
+        // pumpAndSettle）；进度控件消失即管线完成。
+        final sw = Stopwatch()..start();
+        while (sw.elapsed < const Duration(seconds: 120)) {
+          await tester.pump();
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          final busy =
+              find.byType(LinearProgressIndicator).evaluate().isNotEmpty ||
+                  find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
+          if (!busy) break;
+        }
+        expect(sw.elapsed, lessThan(const Duration(seconds: 120)),
+            reason: '异步管线必须在时限内完成');
+      });
+      await tester.pumpAndSettle();
+
+      // 首行号与首行内容在视口内
+      expect(find.text('1'), findsWidgets);
+      expect(find.textContaining('{'), findsWidgets);
+
+      // 滚到底：末行号 6002（{ + 6000 行 + }）进入视口
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(find.text('6002'), findsWidgets);
     });
 
     testWidgets('模式来回切换后行号仍随滚动更新', (tester) async {

@@ -31,7 +31,7 @@
 |----------|------|
 | **技术栈** | Flutter 3.35.x + Dart + Riverpod + Dio + Hive |
 | **目标平台** | macOS 10.15+ / Windows 10+ / Linux |
-| **当前版本** | `0.17.6` |
+| **当前版本** | `0.17.7` |
 
 > 历史参考：项目曾使用 Tauri (React + Rust)，详见 [ARCHIVED_TAURI.md](./docs/ARCHIVED_TAURI.md)。
 
@@ -138,6 +138,7 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 12. ~~**Tier 2 BYOK 云端（M8.9 / F9.9）**~~（已完成并发布，2026-09-08 v0.17.0：云端预设 OpenAI/DeepSeek/Anthropic/自定义 + 应用级 AES 加密 key（ai_keys box 分槽）+ 首次外发隐私门按 Provider 记一次 + provider chip；澄清决策与验收见 [PRD](./docs/PRD.md) F9.9；顺手修复 F8.4 全新目录加密静默降级 bug）
 13. ~~**分栏溢出根治 + 缩放档位下探**~~（已完成，2026-09-08，随 v0.17.0 发布：垂直分栏补 min 比例 0.35/0.18 根治各页签矮面板溢出，认证类型列表/断言 hint 滚动化，断言空态居中，缩放新增 80%/90% 档，侧栏底栏窄宽度 Wrap 降级，见 [CHANGELOG](./docs/CHANGELOG.md)）
 14. ~~**请求体行号首次打开错位根治**~~（已完成，2026-09-11，v0.17.6：CodeController 首帧空文本异步填充致行号几何实测落空、永久停兜底几何（恒定下沉 ~4.6 逻辑像素），文本变化监听同步调度重测收敛；外部缓存 controller 陈旧分叉（行号在/内容空白）initState 后帧校准；行号与内容统一 code12+height 1.5 同基线；真机四档缩放逐像素验证偏差 ≤2 逻辑像素，见 [CHANGELOG](./docs/CHANGELOG.md)）
+15. ~~**9000+ 行大响应卡死根治**~~（已完成，2026-09-11，v0.17.7：真凶是整文 TextPainter + 逐可视行 getLineBoundary 的 O(n²) 折行点查询（491KB 实测 126s）；改逐文档行探测——短 ASCII 行校准字宽直接判一行、长行/非 ASCII 行单行精确排版；>100KB 走异步管线（format/注解/highlight 进 isolate + 400 行分块渐进渲染，全程可交互，真机切换期间 ping 最差 56ms）；性能模式分块缓存 + itemExtent + Text/SelectionArea；另根治 Flutter 框架已知陷阱——行数增长且可视子元素未变时布局被跳过、maxScrollExtent 停旧值，跨帧 ±1px 微移强制重算，见 [CHANGELOG](./docs/CHANGELOG.md) 与 [NOTES](./docs/IMPLEMENTATION_NOTES.md)）
 15. **日常工效补齐（M8.10 / 预计 v0.18.0）**：cURL 生成（F1.10）+ 环境导出（F3.7）+ Body Beautify（UX-3）+ 响应体搜索（F5.4）+ AI 流式输出（F9.6），之后 → v1.0 GA，见 [DEVELOPMENT_PLAN](./docs/DEVELOPMENT_PLAN.md)
 
 ### 已知问题 🐛

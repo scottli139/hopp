@@ -113,7 +113,7 @@
 |------|--------|------|
 | 行号与内容滚动不同步 | P2 | 已根治（v0.17.4，Issue #4 全场景收口：CodeEditor 场景经 ScrollNotification 驱动共享 `OffsetGutter`，响应查看器三模式 v0.17.3 全模式虚拟化；回归测试 `code_editor_test.dart` / `optimized_response_viewer_test.dart`） |
 | 超大请求体编辑渲染异常风险 | P3 | 观察项（请求体 CodeField 是单个 EditableText 巨高层，400+ 行时与响应查看器旧疾同类（Windows 分数 DPI 引擎合成异常，实测 400 行 body 内容层曾整片不渲染、行号正常）；日常请求体远小于此，编辑器无法像只读查看器那样简单虚拟化，命中再议） |
-| 请求体疑似竞态丢失 | P2 | 待复现（2026-09-10 调试中发现一次：test-mode set_body 设置 60 行 body 后，uiScale 切换前后某时刻 controller 被重置为 '' 并经 onChanged 写回导致 request.body 清空；随后同步骤（单击编辑区/切 uiScale）复现失败。疑似请求重建瞬间 didUpdateWidget 读到陈旧空 body 快照回写。真机常规操作未接报，先录观察；若复现优先查 request_editor `_bodyControllers` 与 didUpdateWidget 的 stale-snapshot 回写路径） |
+| 请求体疑似竞态丢失 | P2 | 已根治（v0.17.6：复现并定位到挂载侧分叉——外部缓存 CodeController（`_bodyControllers` putIfAbsent）文本陈旧时 CodeEditor 首次挂载不纠偏（didUpdateWidget 只在更新时跑），行号按新 code 画而内容区空白；initState 补后帧校准 + 文本变化监听同步调度行号几何重测，真机复验内容恢复且行号贴齐；此前的 onChanged 空值回写风险路径随之消除） |
 | 导入对话框拖放未实现 | P3 | 待修（Postman/OpenAPI 导入的拖放区均为视觉残桩，实际只能点击选择；实现需引入 desktop_drop 类依赖） |
 | export_dialog_test 在 Windows 本机 tearDown 挂 | P3 | 环境限定（2026-09-07 实测：临时目录删除 errno 32 文件被占用，疑杀毒/索引占用新写出的 .hopp.json；HEAD 基线 worktree 同挂，确认非 M8.9 回归；CI/Linux 不受影响） |
 

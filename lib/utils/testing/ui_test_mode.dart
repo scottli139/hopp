@@ -1099,16 +1099,24 @@ class UITestModeManager {
       throw Exception('没有活动的请求 Tab');
     }
 
-    final updatedRequest = activeTab.request.copyWith(
-      body: body,
-      bodyType: type,
-    );
+    // UI 模型中 'raw' 才是合法 bodyType，json/text/xml 等是 raw 的子类型
+    // （rawContentType）；直接写 bodyType='json' 会落入 _buildBodyContent
+    // 的 default 空态分支（2026-09-11 真机验证发现）
+    const rawSubtypes = {'json', 'text', 'xml', 'html', 'javascript'};
+    final isRawSubtype = rawSubtypes.contains(type);
+    final updatedRequest = isRawSubtype
+        ? activeTab.request
+            .copyWith(body: body, bodyType: 'raw', rawContentType: type)
+        : activeTab.request.copyWith(body: body, bodyType: type);
     _ref!.read(requestTabProvider.notifier).updateRequest(
           activeTab.id,
           updatedRequest,
         );
 
-    return {'body_type': type, 'body_length': body.length};
+    return {
+      'body_type': isRawSubtype ? 'raw' : type,
+      'body_length': body.length,
+    };
   }
 
   /// 获取响应信息

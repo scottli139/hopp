@@ -105,6 +105,17 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
           language: codeLanguageMode(widget.language),
         );
     _controller.addListener(_onTextChanged);
+    // 外部 controller 由调用方缓存复用（request_editor._bodyControllers
+    // putIfAbsent），其文本可能陈旧而与 widget.code 分叉；didUpdateWidget
+    // 只在更新时纠偏，首次挂载不覆盖——会出现「行号按 code 画、内容区
+    // 空白」的分叉状态（2026-09-11 真机复现）。后帧以 code 为准校准一次。
+    if (widget.controller != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !widget.readOnly && widget.code != _controller.text) {
+          _controller.text = widget.code;
+        }
+      });
+    }
   }
 
   @override
@@ -129,6 +140,10 @@ class _CodeEditorState extends ConsumerState<CodeEditor> {
 
   void _onTextChanged() {
     widget.onChanged?.call(_controller.text);
+    // CodeController 首帧可能先给 RenderEditable 空文本、异步填充
+    // （真机日志实证：挂载后帧量到空文本）。文本到达/变化时重调量测，
+    // 否则行号栏会停在兜底几何（恒定错位）。
+    if (widget.showLineNumbers) _scheduleGutterMeasure();
   }
 
   @override

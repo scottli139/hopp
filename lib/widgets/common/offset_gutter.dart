@@ -11,8 +11,9 @@ import '../../theme/app_text_styles.dart';
 ///
 /// [rowHeight] 必须是当前 textScaler 下的真实可视行高（用与内容同参的
 /// TextPainter 实测；字体度量取整使 scale() 估算与真实渲染存在亚像素
-/// 偏差并逐行累计）。行号文本放在 [rowHeight] 高盒内垂直居中，不依赖
-/// 行号自身的字体度量，与内容行 top 严格一致。
+/// 偏差并逐行累计）。行号文本使用与内容完全相同的字体/字号/height
+/// （code12 + height 1.5）并放在 [rowHeight] 高盒内垂直居中——行盒与
+/// 内容行盒一致，基线天然对齐，不引入另一套字体度量的墨迹偏差。
 class OffsetGutter extends StatelessWidget {
   const OffsetGutter({
     super.key,
@@ -48,8 +49,9 @@ class OffsetGutter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gutterStyle = AppTextStyles.code11.copyWith(
+    final gutterStyle = AppTextStyles.code12.copyWith(
       inherit: false,
+      height: 1.5,
       letterSpacing: 0,
       color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
     );
